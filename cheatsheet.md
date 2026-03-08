@@ -11,8 +11,15 @@
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | 1x (baseline) |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | **~1.7x cheaper** |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | **5x cheaper** |
+| **Opus 4.6 (1M context)** | $10.00 (2x) | $37.50 (1.5x) | $1.00 | 2x baseline |
+| **Sonnet 4.6 (1M context)** | $6.00 (2x) | $22.50 (1.5x) | $0.60 | ~1.2x baseline |
+| **Opus 4.6 (Fast Mode)** | $30.00 (6x) | $150.00 (6x) | N/A | 6x baseline |
 
 > Output tokens cost **5x more** than input tokens across all models. Reducing Claude's verbosity is high-leverage.
+>
+> **1M context**: Applies when input exceeds 200K tokens. ALL tokens are billed at the premium rate (not just those over 200K). Haiku 4.5 does not support 1M context.
+>
+> **Fast Mode**: Opus 4.6 only (research preview). 6x standard rates but includes 1M context at no extra long-context charge. Not available with Batch API.
 >
 > **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x (5-min TTL), 2x (1-hour TTL).
 
@@ -65,6 +72,21 @@ Is the task...
 **Switch models mid-session**: Type `/model` and select, or start with `claude --model sonnet`.
 
 > **Note**: Opus 4.6 is now priced at $5/$25 — the same price Sonnet used to be. The gap between models is smaller, so switching down to Haiku ($1/$5) provides a 5x savings, not 19x as it was historically.
+
+---
+
+## Platform Comparison
+
+| Feature | Anthropic API | AWS Bedrock | Google Vertex AI | Claude Code |
+|---------|:---:|:---:|:---:|:---:|
+| Standard pricing | Base rates | Same (global) / +10% (regional) | Same (global) / +10% (regional) | Included in plan |
+| 1M context (beta) | Yes (Opus, Sonnet) | Yes | Yes | Yes |
+| Fast Mode | Yes (Opus only) | Check availability | Check availability | Yes (`/fast`) |
+| Batch API (50% off) | Yes | Yes | Yes | N/A |
+| Prompt caching | Yes | Yes | Yes | Automatic |
+| Max context | 1M (beta) | 1M (beta) | 1M (beta) | 1M (beta) |
+
+> **Bedrock / Vertex**: Same models, same capabilities. Global (cross-region) inference matches API pricing. Regional inference profiles add ~10%. Choose based on your cloud provider, compliance needs, and existing infrastructure.
 
 ---
 

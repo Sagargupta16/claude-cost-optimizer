@@ -7,6 +7,8 @@
 ## Table of Contents
 
 - [Token Pricing](#token-pricing)
+  - [Long Context Pricing (1M Beta)](#long-context-pricing-1m-beta)
+  - [Fast Mode Pricing](#fast-mode-pricing)
 - [What Counts as Tokens in Claude Code](#what-counts-as-tokens-in-claude-code)
 - [The Context Window and Its Cost Impact](#the-context-window-and-its-cost-impact)
 - [Prompt Caching: Your Biggest Automatic Discount](#prompt-caching-your-biggest-automatic-discount)
@@ -28,6 +30,9 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 | **Claude Opus 4.6** | $5.00 | $25.00 | $0.50 | 200K (1M beta) | 128K |
 | **Claude Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 200K (1M beta) | 64K |
 | **Claude Haiku 4.5** | $1.00 | $5.00 | $0.10 | 200K | 64K |
+| **Opus 4.6 (1M context)** | $10.00 (2x) | $37.50 (1.5x) | $1.00 | 1M beta | 128K |
+| **Sonnet 4.6 (1M context)** | $6.00 (2x) | $22.50 (1.5x) | $0.60 | 1M beta | 64K |
+| **Opus 4.6 (Fast Mode)** | $30.00 (6x) | $150.00 (6x) | N/A | 1M (included) | 128K |
 
 > **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x input price (5-min TTL), 2x input price (1-hour TTL).
 
@@ -56,6 +61,39 @@ Relative to Opus 4.6 (the most expensive model):
 Switching from Opus to Haiku for a task that costs $1.00 on Opus would cost approximately $0.20 on Haiku. The same task on Sonnet would cost about $0.60.
 
 > **Note**: Opus 4.6 is now priced at $5/$25 — the same level Sonnet used to be at. The gap between models is much smaller than it used to be. Model selection still saves money, but the ratios are more modest (5x Haiku-to-Opus vs the historical 19x).
+
+### Long Context Pricing (1M Beta)
+
+Opus 4.6 and Sonnet 4.6 support up to 1M tokens of context (beta). When your input exceeds **200K tokens**, long-context pricing kicks in with higher per-token rates:
+
+| Model | Standard Input | 1M Input (2x) | Standard Output | 1M Output (1.5x) | 1M Cache Hit |
+|-------|:-------------:|:--------------:|:---------------:|:-----------------:|:------------:|
+| **Opus 4.6** | $5.00 | $10.00 | $25.00 | $37.50 | $1.00 |
+| **Sonnet 4.6** | $3.00 | $6.00 | $15.00 | $22.50 | $0.60 |
+| **Haiku 4.5** | — | *Not supported* | — | *Not supported* | — |
+
+> **Critical**: When the 200K input token threshold is crossed, **ALL tokens in the request are billed at the premium rate** — not just the tokens above 200K. Sending 201K input tokens on Opus costs $2.01 at the $10/1M rate, not $1.005 (200K at $5) + $0.01 (1K at $10). This is an important cliff to watch for.
+
+In practice, you are unlikely to hit this threshold in normal Claude Code sessions if you use `/compact` regularly. But if you are working with very large codebases, injecting large files, or running extremely long sessions without compacting, the 200K threshold can be crossed — and the cost doubles instantly.
+
+> **AWS Bedrock / Vertex AI**: Claude models are available on AWS Bedrock and Google Vertex AI at the same pricing for global (cross-region) inference. Regional inference profiles carry a **+10% surcharge** over the standard API rates.
+
+### Fast Mode Pricing
+
+Fast Mode is a research preview available for **Opus 4.6 only**. It uses the same model with faster output at significantly higher rates:
+
+| | Input (per 1M) | Output (per 1M) | Multiplier vs Standard |
+|---|:---:|:---:|:---:|
+| **Standard Opus 4.6** | $5.00 | $25.00 | 1x |
+| **Fast Mode Opus 4.6** | $30.00 | $150.00 | **6x** |
+
+Key details about Fast Mode:
+- **Same model, faster output**: Fast Mode does not switch to a different model. It is Opus 4.6 with prioritized, faster generation.
+- **1M context included**: Fast Mode includes 1M context at no extra long-context surcharge (no additional 2x/1.5x multiplier on top of the 6x).
+- **Not available with Batch API**: You cannot combine the 50% batch discount with Fast Mode.
+- **Use case**: Time-sensitive tasks where latency matters more than cost — urgent debugging, live demos, or rapid prototyping under deadline.
+
+At 6x the standard rate, a session that would cost $2.33 on standard Opus would cost roughly **$14** on Fast Mode. Use it deliberately and sparingly.
 
 ---
 

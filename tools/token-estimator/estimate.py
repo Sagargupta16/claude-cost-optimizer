@@ -32,6 +32,20 @@ MODEL_PRICING = {
     "opus": {"input": 5.00, "output": 25.00, "cache_hit": 0.50, "name": "Opus 4.6"},
     "sonnet": {"input": 3.00, "output": 15.00, "cache_hit": 0.30, "name": "Sonnet 4.6"},
     "haiku": {"input": 1.00, "output": 5.00, "cache_hit": 0.10, "name": "Haiku 4.5"},
+    "opus_4.6_1m": {
+        "input": 10.00,
+        "output": 37.50,
+        "cache_hit": 1.00,
+        "name": "Opus 4.6 (1M context)",
+        "note": "Applies when input >200K tokens. ALL tokens billed at premium rate.",
+    },
+    "fast_mode": {
+        "input": 30.00,
+        "output": 150.00,
+        "cache_hit": None,
+        "name": "Opus 4.6 (Fast Mode)",
+        "note": "Research preview. 6x standard Opus rates. Includes 1M context. Not available with Batch API.",
+    },
 }
 
 # ANSI color codes
@@ -241,7 +255,11 @@ def main():
         "--model",
         choices=list(MODEL_PRICING.keys()),
         default=None,
-        help="Show cost for a specific model only (default: show all)",
+        help=(
+            "Show cost for a specific model only (default: show all). "
+            "Use 'opus_4.6_1m' for 1M context pricing (>200K tokens). "
+            "Use 'fast_mode' for Fast Mode pricing (Opus 4.6, 6x rates)."
+        ),
     )
     parser.add_argument(
         "--json",

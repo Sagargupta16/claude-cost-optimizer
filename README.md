@@ -47,6 +47,8 @@ Understanding the billing model is the foundation of optimization.
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M) | Context Window | Max Output |
 |-------|:---------------------:|:----------------------:|:-------------------:|:--------------:|:----------:|
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | 200K (1M beta) | 128K |
+| **Opus 4.6 (1M, >200K input)** | $10.00 (2x) | $37.50 (1.5x) | $1.00 | 1M | 128K |
+| **Opus 4.6 Fast Mode** | $30.00 (6x) | $150.00 (6x) | -- | 200K | 128K |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 200K (1M beta) | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 200K | 64K |
 
@@ -95,6 +97,7 @@ Deep-dive guides for each optimization area:
 | [03 - Model Selection](guides/03-model-selection.md) | When to use Opus vs Sonnet vs Haiku (with decision tree) |
 | [04 - Workflow Patterns](guides/04-workflow-patterns.md) | Plan mode, subagents, commands, batch operations |
 | [05 - Team Budgeting](guides/05-team-budgeting.md) | Per-developer budgets, cost tracking, ROI calculation |
+| [06 - Access Methods & Pricing](guides/06-access-methods-pricing.md) | Compare API vs Bedrock vs Vertex AI vs Claude Code pricing |
 
 ---
 
