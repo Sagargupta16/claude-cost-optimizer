@@ -30,6 +30,6 @@ This repo is a documentation and tooling project for reducing Claude Code costs.
 
 ## Pricing Data
 
-Current Claude API pricing (2025): Opus $15/$75, Sonnet $3/$15, Haiku $0.80/$4 per 1M input/output tokens.
+Current Claude API pricing (March 2026): Opus 4.6 $5/$25, Sonnet 4.6 $3/$15, Haiku 4.5 $1/$5 per 1M input/output tokens. Cache hit: Opus $0.50, Sonnet $0.30, Haiku $0.10. Batch API: 50% discount.
 
 Update pricing references across all files when rates change.

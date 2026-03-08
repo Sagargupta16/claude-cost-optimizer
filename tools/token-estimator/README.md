@@ -34,9 +34,9 @@ Output:
   --------------------------------------------------
   Model          Input Cost    $/1M tokens
   ..............  ............  ..............
-  Opus 4           $0.0187          $15.00
-  Sonnet 4         $0.0037           $3.00
-  Haiku 3.5        $0.0010           $0.80
+  Opus 4.6         $0.0062           $5.00
+  Sonnet 4.6       $0.0037           $3.00
+  Haiku 4.5        $0.0012           $1.00
 ```
 
 ### Analyze CLAUDE.md cost over a session
@@ -57,9 +57,9 @@ Output includes a projection table:
 
   Model          Total Cost     Per Turn
   ..............  ............  ............
-  Opus 4           $0.6675       $0.0134
-  Sonnet 4         $0.1335       $0.0027
-  Haiku 3.5        $0.0356       $0.0007
+  Opus 4.6         $0.2225       $0.0045
+  Sonnet 4.6       $0.1335       $0.0027
+  Haiku 4.5        $0.0445       $0.0009
 ```
 
 ### Filter to a specific model
@@ -93,13 +93,15 @@ python tools/token-estimator/estimate.py CLAUDE.md --per-turn 50 --json
 
 ## Pricing
 
-The estimator uses current Claude API pricing (as of 2025):
+The estimator uses current Claude API pricing (as of March 2026):
 
-| Model | Input (per 1M tokens) | Output (per 1M tokens) |
-|-------|:---------------------:|:----------------------:|
-| Opus 4 | $15.00 | $75.00 |
-| Sonnet 4 | $3.00 | $15.00 |
-| Haiku 3.5 | $0.80 | $4.00 |
+| Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
+|-------|:---------------------:|:----------------------:|:-------------------------:|
+| Opus 4.6 | $5.00 | $25.00 | $0.50 |
+| Sonnet 4.6 | $3.00 | $15.00 | $0.30 |
+| Haiku 4.5 | $1.00 | $5.00 | $0.10 |
+
+Batch API pricing is 50% off the standard rates above.
 
 ## Tips
 

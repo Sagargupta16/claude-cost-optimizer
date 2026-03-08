@@ -21,11 +21,11 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Claude model pricing per 1M tokens (as of 2025)
+# Claude model pricing per 1M tokens (as of March 2026)
 MODEL_PRICING = {
-    "opus": {"input": 15.00, "output": 75.00},
-    "sonnet": {"input": 3.00, "output": 15.00},
-    "haiku": {"input": 0.80, "output": 4.00},
+    "opus": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
+    "sonnet": {"input": 3.00, "output": 15.00, "cache_hit": 0.30},
+    "haiku": {"input": 1.00, "output": 5.00, "cache_hit": 0.10},
 }
 
 # Fallback: default model for cost estimation when not specified in data
@@ -337,7 +337,7 @@ def generate_recommendations(sessions: list[dict]) -> list[str]:
     if models_used == {"opus"}:
         recommendations.append(
             "You're using Opus exclusively. Consider Sonnet for standard coding "
-            "tasks and Haiku for simple lookups to save 60-95% on those turns."
+            "tasks and Haiku for simple lookups to save 40-80% on those turns."
         )
 
     avg_turns = sum(s["turns"] for s in sessions) / len(sessions)

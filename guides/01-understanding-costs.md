@@ -23,11 +23,13 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 
 ### Current Model Pricing
 
-| Model | Input (per 1M tokens) | Output (per 1M tokens) | Cached Input (per 1M) | Context Window |
-|-------|:---------------------:|:----------------------:|:---------------------:|:--------------:|
-| **Claude Opus 4** | $15.00 | $75.00 | $1.50 | 200K tokens |
-| **Claude Sonnet 4** | $3.00 | $15.00 | $0.30 | 200K tokens |
-| **Claude Haiku 3.5** | $0.80 | $4.00 | $0.08 | 200K tokens |
+| Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M) | Context Window | Max Output |
+|-------|:---------------------:|:----------------------:|:---------------------:|:--------------:|:----------:|
+| **Claude Opus 4.6** | $5.00 | $25.00 | $0.50 | 200K (1M beta) | 128K |
+| **Claude Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 200K (1M beta) | 64K |
+| **Claude Haiku 4.5** | $1.00 | $5.00 | $0.10 | 200K | 64K |
+
+> **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x input price (5-min TTL), 2x input price (1-hour TTL).
 
 ### What These Numbers Mean in Practice
 
@@ -35,23 +37,25 @@ To build intuition, here is what $1.00 buys you with each model:
 
 | Model | $1 of Input Tokens | $1 of Output Tokens | $1 of Cached Input |
 |-------|:-------------------:|:--------------------:|:------------------:|
-| **Opus 4** | ~66,700 tokens (~170 pages) | ~13,300 tokens (~34 pages) | ~666,700 tokens (~1,700 pages) |
-| **Sonnet 4** | ~333,300 tokens (~850 pages) | ~66,700 tokens (~170 pages) | ~3,333,300 tokens (~8,500 pages) |
-| **Haiku 3.5** | ~1,250,000 tokens (~3,200 pages) | ~250,000 tokens (~640 pages) | ~12,500,000 tokens (~32,000 pages) |
+| **Opus 4.6** | ~200,000 tokens (~510 pages) | ~40,000 tokens (~102 pages) | ~2,000,000 tokens (~5,100 pages) |
+| **Sonnet 4.6** | ~333,300 tokens (~850 pages) | ~66,700 tokens (~170 pages) | ~3,333,300 tokens (~8,500 pages) |
+| **Haiku 4.5** | ~1,000,000 tokens (~2,560 pages) | ~200,000 tokens (~510 pages) | ~10,000,000 tokens (~25,600 pages) |
 
 > **Critical insight**: Output tokens cost **5x more** than input tokens across all models. This is why strategies that reduce Claude's output (Plan Mode, concise instructions) are high-leverage.
 
 ### Model Cost Comparisons
 
-Relative to Opus 4 (the most expensive model):
+Relative to Opus 4.6 (the most expensive model):
 
 | Comparison | Input Savings | Output Savings |
 |------------|:------------:|:--------------:|
-| Sonnet 4 vs Opus 4 | **5x cheaper** | **5x cheaper** |
-| Haiku 3.5 vs Opus 4 | **18.75x cheaper** | **18.75x cheaper** |
-| Haiku 3.5 vs Sonnet 4 | **3.75x cheaper** | **3.75x cheaper** |
+| Sonnet 4.6 vs Opus 4.6 | **1.67x cheaper** | **1.67x cheaper** |
+| Haiku 4.5 vs Opus 4.6 | **5x cheaper** | **5x cheaper** |
+| Haiku 4.5 vs Sonnet 4.6 | **3x cheaper** | **3x cheaper** |
 
-Switching from Opus to Haiku for a task that costs $1.00 on Opus would cost approximately $0.05 on Haiku. The same task on Sonnet would cost about $0.20.
+Switching from Opus to Haiku for a task that costs $1.00 on Opus would cost approximately $0.20 on Haiku. The same task on Sonnet would cost about $0.60.
+
+> **Note**: Opus 4.6 is now priced at $5/$25 — the same level Sonnet used to be at. The gap between models is much smaller than it used to be. Model selection still saves money, but the ratios are more modest (5x Haiku-to-Opus vs the historical 19x).
 
 ---
 
@@ -131,10 +135,10 @@ The cost **accelerates** with each turn. A 30-turn session does not cost 30x a s
 
 ### How the Context Window Works
 
-Claude's context window (200K tokens for all current models) is the maximum amount of text it can process in a single turn. Think of it as Claude's working memory.
+Claude's context window (200K tokens standard, 1M beta for Opus 4.6 and Sonnet 4.6) is the maximum amount of text it can process in a single turn. Think of it as Claude's working memory.
 
 ```
-Context Window (200K tokens)
+Context Window (200K tokens standard)
 ┌─────────────────────────────────────────────────────┐
 │ System Prompt          (~3,500 tokens)              │
 │ CLAUDE.md              (~1,050 tokens @ 150 lines)  │
@@ -159,13 +163,13 @@ As your session progresses, the context window fills with conversation history. 
 
 What it costs to fill the context window on a single turn:
 
-| Model | Full 200K Input Cost (per turn) | Full 200K Output Cost (if maxed) |
-|-------|:-------------------------------:|:--------------------------------:|
-| Opus 4 | $3.00 | $6.00+ |
-| Sonnet 4 | $0.60 | $1.20+ |
-| Haiku 3.5 | $0.16 | $0.32+ |
+| Model | Full 200K Input Cost (per turn) | Max Output Cost (if maxed) |
+|-------|:-------------------------------:|:--------------------------:|
+| Opus 4.6 | $1.00 | $3.20 (128K output) |
+| Sonnet 4.6 | $0.60 | $0.96 (64K output) |
+| Haiku 4.5 | $0.20 | $0.32 (64K output) |
 
-> This is why long sessions on Opus can cost $20-50. If you are sending 150K+ input tokens per turn for 10+ turns, the math adds up fast.
+> This is why long sessions on Opus can cost $5-20. If you are sending 150K+ input tokens per turn for 10+ turns, the math adds up — though far less painfully than the old $15/$75 pricing.
 
 ### Practical Rule of Thumb
 
@@ -187,8 +191,8 @@ Prompt caching is the single most impactful automatic cost reduction in Claude C
 When you send a request to Claude, the API checks if the beginning of your input matches a recently cached prompt prefix. If it does, those cached tokens are charged at a **90% discount**.
 
 ```
-Normal input cost:   $3.00 / 1M tokens (Sonnet)
-Cached input cost:   $0.30 / 1M tokens (Sonnet) — 90% cheaper
+Normal input cost:   $3.00 / 1M tokens (Sonnet 4.6)
+Cached input cost:   $0.30 / 1M tokens (Sonnet 4.6) — 90% cheaper
 ```
 
 ### What Gets Cached
@@ -213,7 +217,7 @@ On a typical Turn 10:
 
 ### Cache Savings in Practice
 
-For a 30-turn session on Sonnet 4 with a 150-line CLAUDE.md:
+For a 30-turn session on Sonnet 4.6 with a 150-line CLAUDE.md:
 
 | Component | Tokens (approx) | Without Cache | With Cache | Savings |
 |-----------|:---------------:|:-------------:|:----------:|:-------:|
@@ -295,17 +299,17 @@ When the budget limit is reached, Claude Code will stop processing and notify yo
 | Task Type | Suggested Cap | Model |
 |-----------|:------------:|:-----:|
 | Quick bug fix | $1-2 | Haiku/Sonnet |
-| Feature implementation | $5-10 | Sonnet |
-| Complex refactor | $10-20 | Sonnet/Opus |
-| Architecture exploration | $5-10 | Opus (Plan Mode) |
-| Code review | $2-5 | Sonnet |
-| Generating boilerplate | $1-3 | Haiku |
+| Feature implementation | $3-7 | Sonnet |
+| Complex refactor | $5-15 | Sonnet/Opus |
+| Architecture exploration | $3-7 | Opus (Plan Mode) |
+| Code review | $1-3 | Sonnet |
+| Generating boilerplate | $0.50-2 | Haiku |
 
 ---
 
 ## Worked Example: Cost of a 30-Turn Session
 
-Let us walk through a realistic coding session step by step and calculate the actual cost. This example uses **Sonnet 4** ($3/$15 per 1M tokens, $0.30 cached input per 1M).
+Let us walk through a realistic coding session step by step and calculate the actual cost. This example uses **Sonnet 4.6** ($3/$15 per 1M tokens, $0.30 cached input per 1M).
 
 ### Scenario
 
@@ -434,9 +438,11 @@ Without prompt caching, every input token is charged at full price:
 
 | Model | 30-Turn Session Cost | Monthly (5 sessions/day, 22 days) |
 |-------|:--------------------:|:---------------------------------:|
-| **Opus 4** | ~$7.00 | ~$770 |
-| **Sonnet 4** | ~$1.40 | ~$154 |
-| **Haiku 3.5** | ~$0.37 | ~$41 |
+| **Opus 4.6** | ~$2.33 | ~$256 |
+| **Sonnet 4.6** | ~$1.40 | ~$154 |
+| **Haiku 4.5** | ~$0.47 | ~$52 |
+
+> **Note**: With Opus 4.6 at $5/$25, the cost gap between models is much narrower than it used to be. Opus sessions are only ~1.7x more expensive than Sonnet, making it practical to use Opus more often. Haiku at $1/$5 is still the clear budget choice at 5x cheaper than Opus.
 
 ---
 
@@ -447,7 +453,7 @@ Without prompt caching, every input token is charged at full price:
 Session cost does not grow linearly — it grows quadratically with the number of turns, because each turn includes all previous turns as input.
 
 ```
-Cost per turn over a session (illustrative, Sonnet 4):
+Cost per turn over a session (illustrative, Sonnet 4.6):
 
 Turn  1: $0.02  ▎
 Turn  5: $0.03  ▎▎
@@ -468,9 +474,9 @@ The first 10 turns might cost $0.27 total. The last 10 turns (41-50) might cost 
 
 2. **Large file reads accumulating in history** — When Claude reads a 1,000-line file (10,000 tokens), that content stays in conversation history for every subsequent turn. Reading 3 large files adds ~30,000 tokens of permanent context.
 
-3. **Bloated CLAUDE.md** — A 500-line CLAUDE.md adds ~3,500 tokens to every single turn. Over 30 turns, that is 105,000 extra input tokens — $0.32 on Sonnet, $1.58 on Opus.
+3. **Bloated CLAUDE.md** — A 500-line CLAUDE.md adds ~3,500 tokens to every single turn. Over 30 turns, that is 105,000 extra input tokens — $0.32 on Sonnet, $0.53 on Opus.
 
-4. **Using Opus for routine tasks** — If 60% of your turns are simple (formatting, small fixes, lookups), using Opus for all of them costs 18.75x more than Haiku for those turns.
+4. **Using Opus for routine tasks** — If 60% of your turns are simple (formatting, small fixes, lookups), using Opus for all of them costs 5x more than Haiku for those turns. The gap is narrower than it used to be, but still adds up across many turns.
 
 5. **Trial-and-error coding instead of planning first** — Without Plan Mode, Claude might write code, find it does not work, rewrite it, and iterate 4-5 times. Each iteration adds both input history and output tokens. Planning first typically reduces total turns by 30-50%.
 
@@ -509,15 +515,15 @@ Where:
 ```
 claude_md_cost = lines x 7 x turns x blended_input_price
 
-Example (150 lines, 30 turns, Sonnet 4, 80% cache rate):
+Example (150 lines, 30 turns, Sonnet 4.6, 80% cache rate):
 = 150 x 7 x 30 x ((0.80 x $0.0000003) + (0.20 x $0.000003))
 = 31,500 x $0.00000084
 = $0.026
 
-Same example on Opus 4:
-= 31,500 x ((0.80 x $0.0000015) + (0.20 x $0.000015))
-= 31,500 x $0.0000042
-= $0.132
+Same example on Opus 4.6:
+= 31,500 x ((0.80 x $0.0000005) + (0.20 x $0.000005))
+= 31,500 x $0.0000014
+= $0.044
 ```
 
 ### Model Switching Break-Even
@@ -531,7 +537,7 @@ model_savings = remaining_turns x avg_turn_cost x (1 - cheaper_model_ratio)
 Switch if: model_savings > cache_loss
 ```
 
-For a rough rule of thumb: if you have more than 3-4 turns left in a session, switching to a model that is 5x+ cheaper is almost always worth the cache break.
+For a rough rule of thumb: if you have more than 3-4 turns left in a session, switching to a model that is 3x+ cheaper is almost always worth the cache break. With the narrower price gaps between current models, the break-even point may be higher when switching between Opus and Sonnet (only 1.67x difference).
 
 ---
 
@@ -545,7 +551,7 @@ For a rough rule of thumb: if you have more than 3-4 turns left in a session, sw
 
 4. **CLAUDE.md loads on every turn.** Keep it under 150 lines. Every line you cut saves tokens across your entire session.
 
-5. **Model selection is the single biggest cost lever.** Haiku at $0.80/$4.00 vs Opus at $15/$75 is an 18.75x difference. Use the cheapest model that gets the job done.
+5. **Model selection still matters, but the gaps are smaller.** Haiku 4.5 at $1/$5 vs Opus 4.6 at $5/$25 is a 5x difference. Use the cheapest model that gets the job done — but Opus is now much more accessible at the same price Sonnet used to be.
 
 6. **Track your usage.** Run `/usage` regularly. Set `--max-budget-usd` on every session. What gets measured gets managed.
 

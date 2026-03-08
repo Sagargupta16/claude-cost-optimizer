@@ -1,6 +1,6 @@
 # Task Comparison Benchmarks
 
-> The same development tasks performed with and without optimization strategies. All estimates use Sonnet 4 unless otherwise noted.
+> The same development tasks performed with and without optimization strategies. All estimates use Sonnet 4.6 unless otherwise noted.
 
 ## How to Read This
 
@@ -28,7 +28,7 @@ The developer types a single prompt: "Create a UserProfileCard component with av
 | Output tokens (total) | 8,200 |
 | CLAUDE.md tokens loaded per turn | ~2,100 |
 | Files read by Claude | 7 (3 existing components, styles, types, storybook config, package.json) |
-| **Estimated cost (Sonnet 4)** | **$0.37** |
+| **Estimated cost (Sonnet 4.6)** | **$0.37** |
 | Quality | Correct but used wrong CSS naming convention, needed 2 follow-up turns to fix |
 
 **Breakdown of waste:**
@@ -47,7 +47,7 @@ CLAUDE.md (~100 lines) includes a "Component Patterns" section specifying CSS mo
 | Output tokens (total) | 6,800 |
 | CLAUDE.md tokens loaded per turn | ~700 |
 | Files read by Claude | 2 (types file, one example component for reference) |
-| **Estimated cost (Sonnet 4)** | **$0.22** |
+| **Estimated cost (Sonnet 4.6)** | **$0.22** |
 | Quality | Correct on first execution — plan caught the CSS naming question upfront |
 
 ### Comparison
@@ -79,7 +79,7 @@ Developer tells Claude: "The search filter resets when users navigate between pa
 | Output tokens (total) | 12,400 |
 | CLAUDE.md tokens loaded per turn | ~2,100 |
 | Files read by Claude | 14 (search component, store, router, 4 page components, tests, configs, etc.) |
-| **Estimated cost (Sonnet 4)** | **$0.63** |
+| **Estimated cost (Sonnet 4.6)** | **$0.63** |
 | Quality | Fixed the bug, but introduced a minor regression in filter clear behavior (caught later) |
 
 **What went wrong:**
@@ -99,7 +99,7 @@ Developer uses plan mode: "Investigate why the search filter resets when navigat
 | Output tokens (total) | 7,100 |
 | CLAUDE.md tokens loaded per turn | ~700 |
 | Files read by Claude | 5 (search component, store, 2 page components, test file) |
-| **Estimated cost (Sonnet 4)** | **$0.29** |
+| **Estimated cost (Sonnet 4.6)** | **$0.29** |
 | Quality | Clean fix, no regressions, test added for the specific case |
 
 ### Comparison
@@ -131,7 +131,7 @@ Developer tells Claude in the main session: "Write comprehensive unit tests for 
 | Output tokens (total) | 18,500 |
 | CLAUDE.md tokens loaded per turn | ~2,100 |
 | Files read by Claude | 9 (PaymentProcessor, Stripe types, 3 existing test files for patterns, jest config, tsconfig, mock helpers, error types) |
-| **Estimated cost (Sonnet 4)** | **$0.65** |
+| **Estimated cost (Sonnet 4.6)** | **$0.65** |
 | Quality | Tests pass but mock structure differs from project convention — 2 turns spent on revision |
 
 **What went wrong:**
@@ -153,7 +153,7 @@ Developer uses a subagent command for test generation. The `/test` custom comman
 | Output tokens (main + subagent total) | 16,100 |
 | CLAUDE.md tokens loaded per turn (main) | ~700 |
 | Files read by Claude | 4 (PaymentProcessor, Stripe types, 1 example test, mock helpers) |
-| **Estimated cost (Sonnet 4)** | **$0.42** |
+| **Estimated cost (Sonnet 4.6)** | **$0.42** |
 | Quality | Tests pass and follow project conventions — mock pattern was specified in the delegation prompt |
 
 ### Comparison
@@ -185,7 +185,7 @@ Developer tells Claude: "Refactor src/services/user-service.ts. It's too big. Sp
 | Output tokens (total) | 34,600 |
 | CLAUDE.md tokens loaded per turn | ~2,100 |
 | Files read by Claude | 16 (user service, tests, 6 dependent modules, types, configs, etc.) |
-| **Estimated cost (Sonnet 4)** | **$1.46** |
+| **Estimated cost (Sonnet 4.6)** | **$1.46** |
 | Quality | Refactoring complete, 3 test failures fixed after initial pass, one circular dependency resolved in extra turns |
 
 **What went wrong:**
@@ -207,7 +207,7 @@ Developer uses plan mode: "Analyze src/services/user-service.ts and plan a refac
 | Output tokens (main + subagent total) | 28,200 |
 | CLAUDE.md tokens loaded per turn (main) | ~700 |
 | Files read by Claude | 10 (more targeted reads per subagent) |
-| **Estimated cost (Sonnet 4)** | **$0.85** |
+| **Estimated cost (Sonnet 4.6)** | **$0.85** |
 | Quality | Clean refactoring, all tests pass on first run, no circular dependencies (caught in plan) |
 
 ### Comparison
@@ -244,7 +244,7 @@ Assuming a developer performs roughly similar tasks 5 times per week:
 | Monthly cost (80 tasks) | $62.20 | $35.60 | **$26.60/month** |
 | Annual cost (960 tasks) | $746.40 | $427.20 | **$319.20/year** |
 
-> These estimates assume Sonnet 4 pricing for all tasks. Mixing in Haiku for simple tasks (scenarios 1 and 2) would increase savings to 55-65%. See [Model Comparison](model-comparison.md) for model-specific analysis.
+> These estimates assume Sonnet 4.6 pricing for all tasks. Mixing in Haiku for simple tasks (scenarios 1 and 2) would increase savings to 55-65%. See [Model Comparison](model-comparison.md) for model-specific analysis.
 
 ---
 

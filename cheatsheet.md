@@ -6,13 +6,15 @@
 
 ## Token Pricing At a Glance
 
-| Model | Input / 1M tokens | Output / 1M tokens | Cached Input / 1M | Relative Cost |
+| Model | Input / 1M tokens | Output / 1M tokens | Cache Hit / 1M | Relative Cost |
 |-------|:-----------------:|:-------------------:|:-----------------:|:-------------:|
-| **Opus 4** | $15.00 | $75.00 | $1.50 | 1x (baseline) |
-| **Sonnet 4** | $3.00 | $15.00 | $0.30 | **5x cheaper** |
-| **Haiku 3.5** | $0.80 | $4.00 | $0.08 | **~19x cheaper** |
+| **Opus 4.6** | $5.00 | $25.00 | $0.50 | 1x (baseline) |
+| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | **~1.7x cheaper** |
+| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | **5x cheaper** |
 
 > Output tokens cost **5x more** than input tokens across all models. Reducing Claude's verbosity is high-leverage.
+>
+> **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x (5-min TTL), 2x (1-hour TTL).
 
 ---
 
@@ -22,7 +24,7 @@
 
 | # | Strategy | Savings | Effort | Explanation | Guide |
 |---|----------|:-------:|:------:|-------------|-------|
-| 1 | **Use cheaper models for simple tasks** | 30-60% | 1 min | Run `claude --model haiku` for formatting, simple fixes, file lookups, and boilerplate — Haiku handles ~70% of routine work at 1/19th the cost of Opus | [Model Selection](guides/03-model-selection.md) |
+| 1 | **Use cheaper models for simple tasks** | 20-40% | 1 min | Run `claude --model haiku` for formatting, simple fixes, file lookups, and boilerplate — Haiku handles ~70% of routine work at 1/5th the cost of Opus | [Model Selection](guides/03-model-selection.md) |
 | 2 | **Delegate work to subagents** | 20-40% | 5 min | Subagent tool calls get their own isolated context; large file searches and multi-file reads happen outside your main conversation, keeping your primary context small | [Workflow Patterns](guides/04-workflow-patterns.md) |
 | 3 | **Use Plan Mode before coding** | 15-25% | 0 min | Press `Shift+Tab` to toggle Plan Mode — Claude thinks through the approach before writing code, preventing expensive trial-and-error cycles that waste output tokens | [Workflow Patterns](guides/04-workflow-patterns.md) |
 | 4 | **Trim CLAUDE.md to under 150 lines** | 10-20% | 15 min | Every line of CLAUDE.md is loaded as input tokens on *every single turn* — 300 lines across 50 turns means you pay for those lines 50 times; cut ruthlessly | [Context Optimization](guides/02-context-optimization.md) |
@@ -54,13 +56,15 @@
 
 ```
 Is the task...
-├── Complex architecture, debugging, or multi-file refactor? → Opus 4
-├── Standard feature work, code review, writing tests?      → Sonnet 4
-├── Simple fix, formatting, boilerplate, file lookup?       → Haiku 3.5
-└── Not sure?                                               → Start with Sonnet 4
+├── Complex architecture, debugging, or multi-file refactor? → Opus 4.6
+├── Standard feature work, code review, writing tests?      → Sonnet 4.6
+├── Simple fix, formatting, boilerplate, file lookup?       → Haiku 4.5
+└── Not sure?                                               → Start with Sonnet 4.6
 ```
 
 **Switch models mid-session**: Type `/model` and select, or start with `claude --model sonnet`.
+
+> **Note**: Opus 4.6 is now priced at $5/$25 — the same price Sonnet used to be. The gap between models is smaller, so switching down to Haiku ($1/$5) provides a 5x savings, not 19x as it was historically.
 
 ---
 
@@ -161,15 +165,15 @@ Build: `npm run build` — must pass before PR
 
 | Fact | Number |
 |------|--------|
-| Opus output is ___ per 1M tokens | **$75** |
-| Haiku is ___ cheaper than Opus on input | **~19x** |
+| Opus 4.6 output is ___ per 1M tokens | **$25** |
+| Haiku 4.5 is ___ cheaper than Opus 4.6 on input | **5x** |
 | Output tokens cost ___ more than input | **5x** |
 | Prompt cache discount | **90%** |
 | CLAUDE.md loads on every ___ | **turn** |
 | 1 line of code is roughly ___ tokens | **~10** |
 | 150-line CLAUDE.md per turn is roughly | **~1,050 tokens** |
-| 50-turn session CLAUDE.md cost (Sonnet) | **~$0.16** |
-| 50-turn session CLAUDE.md cost (Opus) | **~$0.79** |
+| 50-turn session CLAUDE.md cost (Sonnet 4.6) | **~$0.16** |
+| 50-turn session CLAUDE.md cost (Opus 4.6) | **~$0.26** |
 | Average tool result size | **500-5,000 tokens** |
 
 ---

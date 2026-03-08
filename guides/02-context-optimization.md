@@ -63,7 +63,7 @@ We recommend keeping CLAUDE.md under **150 lines**. Here is why:
 
 > The cost column assumes a blended rate with 80% cache hits. Actual savings from trimming are about 20% of the raw difference (since most of these tokens get cached), but the cache is not free — cached tokens still cost 10% of full price.
 
-**On Opus 4**, multiply these numbers by 5x. A 500-line CLAUDE.md on Opus costs about $181.50/month just for the CLAUDE.md itself across 110 sessions.
+**On Opus 4.6**, multiply these numbers by ~1.67x (Opus input is $5/MTok vs Sonnet's $3/MTok). A 500-line CLAUDE.md on Opus 4.6 costs about $60.50/month just for the CLAUDE.md itself across 110 sessions.
 
 ### What Belongs in CLAUDE.md
 
@@ -312,7 +312,7 @@ src/
 6. Post-deploy: verify monitoring dashboards
 ```
 
-**Token count: ~2,660 tokens per turn. Over 30 turns with 80% caching: ~$0.048 (Sonnet) / ~$0.240 (Opus)**
+**Token count: ~2,660 tokens per turn. Over 30 turns with 80% caching: ~$0.048 (Sonnet 4.6) / ~$0.080 (Opus 4.6)**
 
 ### After: 62 Lines (Optimized)
 
@@ -361,7 +361,7 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 - Squash merge, 1+ review required
 ```
 
-**Token count: ~434 tokens per turn. Over 30 turns with 80% caching: ~$0.008 (Sonnet) / ~$0.039 (Opus)**
+**Token count: ~434 tokens per turn. Over 30 turns with 80% caching: ~$0.008 (Sonnet 4.6) / ~$0.013 (Opus 4.6)**
 
 ### What Was Cut and Why
 
@@ -385,8 +385,8 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 | Lines | 380 | 62 | **84% fewer** |
 | Tokens per turn | ~2,660 | ~434 | **84% fewer** |
 | 30-turn Sonnet cost | $0.048 | $0.008 | **$0.040 saved/session** |
-| 30-turn Opus cost | $0.240 | $0.039 | **$0.201 saved/session** |
-| Monthly Opus cost (110 sessions) | $26.40 | $4.29 | **$22.11 saved/month** |
+| 30-turn Opus 4.6 cost | $0.080 | $0.013 | **$0.067 saved/session** |
+| Monthly Opus 4.6 cost (110 sessions) | $8.80 | $1.43 | **$7.37 saved/month** |
 
 ---
 

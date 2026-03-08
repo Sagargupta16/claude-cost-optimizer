@@ -13,13 +13,15 @@ Each benchmark file compares costs along a specific dimension: task type, model 
 
 ### Pricing Reference
 
-All cost calculations use the following rates:
+All cost calculations use the following rates (March 2026):
 
-| Model | Input (per 1M tokens) | Output (per 1M tokens) |
-|-------|:---------------------:|:----------------------:|
-| Opus 4 | $15.00 | $75.00 |
-| Sonnet 4 | $3.00 | $15.00 |
-| Haiku 3.5 | $0.80 | $4.00 |
+| Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
+|-------|:---------------------:|:----------------------:|:-------------------------:|
+| Opus 4.6 | $5.00 | $25.00 | $0.50 |
+| Sonnet 4.6 | $3.00 | $15.00 | $0.30 |
+| Haiku 4.5 | $1.00 | $5.00 | $0.10 |
+
+Batch API pricing is 50% off the standard rates above.
 
 ### What "Estimated" Means
 
@@ -104,7 +106,7 @@ When submitting results, please include:
 ### [Your Scenario Name]
 
 **Environment:**
-- Model: [Opus 4 / Sonnet 4 / Haiku 3.5]
+- Model: [Opus 4.6 / Sonnet 4.6 / Haiku 4.5]
 - CLAUDE.md: [line count] lines (~[token count] tokens)
 - Codebase: [language/framework], [approximate size]
 - Date: [YYYY-MM-DD]
@@ -144,13 +146,13 @@ Not every session needs optimization. Use these benchmarks to identify your high
 
 - If you run 50+ turns per session, **context size optimization** has the biggest payoff.
 - If you use Opus for everything, **model selection** is your biggest lever.
-- If you frequently do simple tasks (renames, formatting, small fixes), **switching to Haiku** for those tasks alone can cut monthly costs by 30-50%.
+- If you frequently do simple tasks (renames, formatting, small fixes), **switching to Haiku** for those tasks alone can cut monthly costs by 20-40%.
 
 ### Cost vs. Quality Tradeoffs
 
 Some optimizations reduce cost at the expense of quality or developer experience. The benchmarks note these tradeoffs explicitly. For example:
 
-- Haiku is 60x cheaper than Opus but struggles with complex architectural reasoning.
+- Haiku is 5x cheaper than Opus but struggles with complex architectural reasoning.
 - A minimal CLAUDE.md saves tokens but may require more follow-up turns to correct style violations.
 - Subagent delegation reduces main context bloat but adds overhead for simple tasks.
 

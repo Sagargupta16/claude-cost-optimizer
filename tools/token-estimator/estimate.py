@@ -27,11 +27,11 @@ except ImportError:
     sys.exit(1)
 
 
-# Claude model pricing per 1M tokens (as of 2025)
+# Claude model pricing per 1M tokens (as of March 2026)
 MODEL_PRICING = {
-    "opus": {"input": 15.00, "output": 75.00, "name": "Opus 4"},
-    "sonnet": {"input": 3.00, "output": 15.00, "name": "Sonnet 4"},
-    "haiku": {"input": 0.80, "output": 4.00, "name": "Haiku 3.5"},
+    "opus": {"input": 5.00, "output": 25.00, "cache_hit": 0.50, "name": "Opus 4.6"},
+    "sonnet": {"input": 3.00, "output": 15.00, "cache_hit": 0.30, "name": "Sonnet 4.6"},
+    "haiku": {"input": 1.00, "output": 5.00, "cache_hit": 0.10, "name": "Haiku 4.5"},
 }
 
 # ANSI color codes

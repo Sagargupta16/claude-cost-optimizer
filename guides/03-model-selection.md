@@ -2,7 +2,7 @@
 
 > **The single highest-impact optimization.** Choosing the right model per task can reduce your Claude Code bill by 30-60% with zero loss in output quality.
 
-Most developers default to the most capable model for everything. This is like hiring a senior architect to change a lightbulb. Claude Opus 4 is extraordinary — but for renaming a variable, it is a $75/M-output-token lightbulb-changer.
+Most developers default to the most capable model for everything. This is like hiring a senior architect to change a lightbulb. Claude Opus 4.6 is extraordinary — but for renaming a variable, it is a $25/M-output-token lightbulb-changer.
 
 ---
 
@@ -22,26 +22,28 @@ Most developers default to the most capable model for everything. This is like h
 
 ## Model Lineup and Pricing
 
-### Current Pricing (per 1M tokens)
+### Current Pricing (March 2026, per 1M tokens)
 
-| Model | Input Cost | Output Cost | Relative Cost | Context Window |
-|-------|:----------:|:-----------:|:-------------:|:--------------:|
-| **Opus 4** | $15.00 | $75.00 | 1x (baseline) | 200K |
-| **Sonnet 4** | $3.00 | $15.00 | 5x cheaper | 200K |
-| **Haiku 3.5** | $0.80 | $4.00 | ~19x cheaper | 200K |
+| Model | Input Cost | Output Cost | Cache Hit | Relative Cost | Context Window |
+|-------|:----------:|:-----------:|:---------:|:-------------:|:--------------:|
+| **Opus 4.6** | $5.00 | $25.00 | $0.50 | 1x (baseline) | 200K |
+| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | ~1.67x cheaper | 200K |
+| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 5x cheaper | 200K |
+
+> **Note**: Opus 4.6 is now significantly more affordable than previous generations (down from $15/$75 to $5/$25). This narrows the gap between models, but smart model selection still yields meaningful savings.
 
 ### What These Numbers Mean in Practice
 
 A typical Claude Code turn involves roughly **2,000-5,000 input tokens** and **500-3,000 output tokens**. Here is what a single turn costs across models:
 
-| Scenario | Input Tokens | Output Tokens | Opus 4 | Sonnet 4 | Haiku 3.5 |
-|----------|:------------:|:-------------:|:------:|:--------:|:---------:|
-| Quick fix (small) | 2,000 | 500 | $0.068 | $0.014 | $0.004 |
-| Component creation (medium) | 5,000 | 2,000 | $0.225 | $0.045 | $0.012 |
-| Architecture analysis (large) | 10,000 | 5,000 | $0.525 | $0.105 | $0.028 |
-| Multi-file refactor (XL) | 20,000 | 10,000 | $1.050 | $0.210 | $0.056 |
+| Scenario | Input Tokens | Output Tokens | Opus 4.6 | Sonnet 4.6 | Haiku 4.5 |
+|----------|:------------:|:-------------:|:--------:|:----------:|:---------:|
+| Quick fix (small) | 2,000 | 500 | $0.023 | $0.014 | $0.005 |
+| Component creation (medium) | 5,000 | 2,000 | $0.075 | $0.045 | $0.015 |
+| Architecture analysis (large) | 10,000 | 5,000 | $0.175 | $0.105 | $0.035 |
+| Multi-file refactor (XL) | 20,000 | 10,000 | $0.350 | $0.210 | $0.070 |
 
-> **Key insight**: Output tokens cost 5x more than input tokens. Tasks that generate a lot of code (scaffolding, boilerplate, test suites) are where model selection has the most impact.
+> **Key insight**: Output tokens cost 5x more than input tokens across all models. Tasks that generate a lot of code (scaffolding, boilerplate, test suites) are where model selection has the most impact.
 
 ### Prompt Caching and Real-World Costs
 
@@ -68,15 +70,15 @@ Typical daily task distribution:
 
 ### Cost Impact of the 80/20 Rule
 
-Assume 50 tasks per day with an average cost of $0.30/task on Opus:
+Assume 50 tasks per day with an average cost of $0.10/task on Opus 4.6:
 
 | Strategy | Daily Cost | Monthly Cost (22 days) | Savings |
 |----------|:----------:|:----------------------:|:-------:|
-| **All Opus** | $15.00 | $330.00 | — |
-| **80/20 split** (Haiku/Sonnet for 80%) | $5.40 | $118.80 | **64%** |
-| **Optimized split** (40/40/20) | $4.20 | $92.40 | **72%** |
+| **All Opus 4.6** | $5.00 | $110.00 | — |
+| **80/20 split** (Haiku/Sonnet for 80%) | $2.00 | $44.00 | **60%** |
+| **Optimized split** (40/40/20) | $1.70 | $37.40 | **66%** |
 
-The math is unambiguous. Model selection is the single biggest lever you have.
+With Opus 4.6's lower pricing, the absolute dollar savings are smaller than they used to be — but a 60-66% reduction still adds up fast across a team. Model selection remains the single biggest lever you have.
 
 ---
 
@@ -123,7 +125,7 @@ If the decision tree feels heavy, just ask two questions:
 
 ## Task Categories with Recommended Models
 
-### Simple Tasks: Use Haiku 3.5
+### Simple Tasks: Use Haiku 4.5
 
 **Cost per task: $0.003-$0.02**
 
@@ -147,7 +149,7 @@ Haiku handles these tasks with the same quality as more expensive models. There 
 claude --model haiku "rename getUserData to fetchUserProfile in src/api/"
 ```
 
-### Medium Tasks: Use Sonnet 4
+### Medium Tasks: Use Sonnet 4.6
 
 **Cost per task: $0.02-$0.15**
 
@@ -171,11 +173,11 @@ Sonnet is the sweet spot for most development work. It handles logic, generates 
 claude --model sonnet "write unit tests for src/services/CartService.ts"
 ```
 
-### Complex Tasks: Use Opus 4
+### Complex Tasks: Use Opus 4.6
 
-**Cost per task: $0.15-$1.50+**
+**Cost per task: $0.05-$0.50+**
 
-Reserve Opus for tasks where deep reasoning, multi-file coordination, or architectural understanding provides genuine value.
+Reserve Opus for tasks where deep reasoning, multi-file coordination, or architectural understanding provides genuine value. With Opus 4.6's more affordable pricing, the cost penalty for using it is smaller — but it is still ~1.67x more than Sonnet and 5x more than Haiku, so defaulting to it for every task is still wasteful.
 
 | Task | Example | Why Opus Is Worth It |
 |------|---------|----------------------|
@@ -280,52 +282,52 @@ These are real-world estimates based on typical token usage patterns. All costs 
 
 **Task**: Rename `getUserData` to `fetchUserProfile` across 8 files.
 
-| | Haiku 3.5 | Sonnet 4 | Opus 4 |
-|-|:---------:|:--------:|:------:|
+| | Haiku 4.5 | Sonnet 4.6 | Opus 4.6 |
+|-|:---------:|:----------:|:--------:|
 | Input tokens | ~3,000 | ~3,000 | ~3,000 |
 | Output tokens | ~1,200 | ~1,200 | ~1,200 |
-| **Cost** | **$0.007** | **$0.027** | **$0.135** |
+| **Cost** | **$0.009** | **$0.027** | **$0.045** |
 | Quality | Identical | Identical | Identical |
 
-**Verdict**: Haiku. Saves $0.128 per rename. Over 10 renames/day, that is $1.28/day saved.
+**Verdict**: Haiku. Saves $0.036 per rename vs Opus. Over 10 renames/day, that is $0.36/day saved. The gap is narrower than it used to be with old Opus pricing, but Haiku is still 5x cheaper for tasks where quality is identical.
 
 ### Example 2: Write Unit Tests for a Service
 
 **Task**: Write comprehensive unit tests for `PaymentService` (5 methods, ~200 lines).
 
-| | Haiku 3.5 | Sonnet 4 | Opus 4 |
-|-|:---------:|:--------:|:------:|
+| | Haiku 4.5 | Sonnet 4.6 | Opus 4.6 |
+|-|:---------:|:----------:|:--------:|
 | Input tokens | ~8,000 | ~8,000 | ~8,000 |
 | Output tokens | ~4,000 | ~4,000 | ~4,000 |
-| **Cost** | **$0.022** | **$0.084** | **$0.420** |
-| Quality | Good (may miss edge cases) | Very good | Excellent (not worth 5x more) |
+| **Cost** | **$0.028** | **$0.084** | **$0.140** |
+| Quality | Good (may miss edge cases) | Very good | Excellent (not worth 1.67x more) |
 
-**Verdict**: Sonnet. Saves $0.336 vs Opus with negligible quality difference for standard test writing.
+**Verdict**: Sonnet. Saves $0.056 vs Opus with negligible quality difference for standard test writing.
 
 ### Example 3: Debug a Race Condition
 
 **Task**: Investigate and fix intermittent auth failures in a distributed system spanning 12 files.
 
-| | Haiku 3.5 | Sonnet 4 | Opus 4 |
-|-|:---------:|:--------:|:------:|
+| | Haiku 4.5 | Sonnet 4.6 | Opus 4.6 |
+|-|:---------:|:----------:|:--------:|
 | Turns needed | ~15 (struggles) | ~8 | ~4 |
 | Total input tokens | ~120,000 | ~80,000 | ~60,000 |
 | Total output tokens | ~30,000 | ~25,000 | ~20,000 |
-| **Total cost** | **$0.216** | **$0.615** | **$2.400** |
+| **Total cost** | **$0.270** | **$0.615** | **$0.800** |
 | Quality | Poor (likely fails) | Decent | High (finds root cause) |
 | Time | 25 min | 15 min | 8 min |
 
-**Verdict**: Opus. The cheaper models take more turns (costing more in total) and may not solve the problem. Opus solves it in fewer turns, and developer time saved justifies the cost.
+**Verdict**: Opus. While the cost gap between Opus and Sonnet is now much narrower ($0.80 vs $0.615), Opus solves it in fewer turns and developer time saved justifies the modest premium.
 
 ### Example 4: Create a CRUD API Endpoint
 
 **Task**: Add a new `/api/projects` endpoint with GET, POST, PUT, DELETE.
 
-| | Haiku 3.5 | Sonnet 4 | Opus 4 |
-|-|:---------:|:--------:|:------:|
+| | Haiku 4.5 | Sonnet 4.6 | Opus 4.6 |
+|-|:---------:|:----------:|:--------:|
 | Input tokens | ~6,000 | ~6,000 | ~6,000 |
 | Output tokens | ~3,500 | ~3,500 | ~3,500 |
-| **Cost** | **$0.019** | **$0.071** | **$0.353** |
+| **Cost** | **$0.024** | **$0.071** | **$0.118** |
 | Quality | Adequate (follows patterns) | Good | Excellent (overkill) |
 
 **Verdict**: Sonnet. Standard CRUD follows patterns that Sonnet handles well.
@@ -334,14 +336,14 @@ These are real-world estimates based on typical token usage patterns. All costs 
 
 **Task**: Design the migration strategy from MongoDB to PostgreSQL for a 20-collection database with complex relationships.
 
-| | Haiku 3.5 | Sonnet 4 | Opus 4 |
-|-|:---------:|:--------:|:------:|
+| | Haiku 4.5 | Sonnet 4.6 | Opus 4.6 |
+|-|:---------:|:----------:|:--------:|
 | Input tokens | ~15,000 | ~15,000 | ~15,000 |
 | Output tokens | ~8,000 | ~8,000 | ~8,000 |
-| **Cost** | **$0.044** | **$0.165** | **$0.825** |
+| **Cost** | **$0.055** | **$0.165** | **$0.275** |
 | Quality | Superficial plan | Good plan | Thorough, catches edge cases |
 
-**Verdict**: Opus. Migration planning is high-stakes. A missed edge case can cost days of developer time. The extra $0.66 is negligible compared to the cost of a botched migration.
+**Verdict**: Opus. Migration planning is high-stakes. A missed edge case can cost days of developer time. The extra $0.11 vs Sonnet is negligible compared to the cost of a botched migration.
 
 ---
 
@@ -351,23 +353,25 @@ These are real-world estimates based on typical token usage patterns. All costs 
 
 Many developers set Opus as their default model and never change it. Their reasoning: "I want the best output, and the cost is acceptable."
 
-Here is why this is wrong:
+With Opus 4.6's more affordable pricing ($5/$25 vs the old $15/$75), this anti-pattern is less financially devastating than it used to be — but it is still wasteful:
 
 **1. Quality is often identical across models for simple tasks.**
 
-For formatting, renaming, import management, config changes, and other mechanical tasks, Haiku produces output that is indistinguishable from Opus. You are paying 19x more for the same result.
+For formatting, renaming, import management, config changes, and other mechanical tasks, Haiku produces output that is indistinguishable from Opus. You are paying 5x more for the same result.
 
-**2. The cost compounds faster than you think.**
+**2. The cost still compounds.**
 
 ```
 Scenario: 50 tasks/day, 22 working days/month
 
-All Opus:    50 tasks x $0.30 avg x 22 days = $330/month
-Smart split: (20 x $0.01) + (20 x $0.07) + (10 x $0.40) x 22 = $70/month
+All Opus 4.6: 50 tasks x $0.10 avg x 22 days = $110/month
+Smart split:  (20 x $0.005) + (20 x $0.03) + (10 x $0.10) x 22 = $37/month
 
-Annual difference: $3,120
-Team of 5 annual difference: $15,600
+Annual difference: $876
+Team of 5 annual difference: $4,380
 ```
+
+While the savings are more modest than they were at old Opus pricing, $4,380/year for a 5-person team is still worth capturing — especially since it requires no loss in output quality.
 
 **3. More expensive does not mean faster for simple tasks.**
 
@@ -430,7 +434,7 @@ This sounds like it wastes tokens on failed attempts, but in practice, most task
 ## Quick Reference Card
 
 ```
-HAIKU 3.5 ($0.80/$4 per 1M tokens)
+HAIKU 4.5 ($1/$5 per 1M tokens)
 ├── Formatting and linting fixes
 ├── Variable and function renaming
 ├── Import management
@@ -440,7 +444,7 @@ HAIKU 3.5 ($0.80/$4 per 1M tokens)
 ├── Simple type annotations
 └── Mechanical find-and-replace
 
-SONNET 4 ($3/$15 per 1M tokens)
+SONNET 4.6 ($3/$15 per 1M tokens)
 ├── Component and module creation
 ├── Bug fixes (single file or simple multi-file)
 ├── Unit and integration test writing
@@ -450,7 +454,7 @@ SONNET 4 ($3/$15 per 1M tokens)
 ├── Single-file refactoring
 └── Error handling implementation
 
-OPUS 4 ($15/$75 per 1M tokens)
+OPUS 4.6 ($5/$25 per 1M tokens)
 ├── Architecture design and planning
 ├── Multi-file refactoring (5+ files)
 ├── Complex debugging (race conditions, memory leaks)

@@ -1,6 +1,6 @@
 # Guide 05: Team Budgeting
 
-> **Claude Code costs scale linearly with team size — unless you manage them.** A team of 5 without budgets can spend $500-2,000/month. With the strategies in this guide, the same team spends $150-400/month.
+> **Claude Code costs scale linearly with team size — unless you manage them.** A team of 5 without budgets can spend $200-800/month. With the strategies in this guide, the same team spends $100-300/month.
 
 Individual optimization matters, but team-level cost management is where the real financial discipline happens. This guide covers budgets, tracking, ROI analysis, and scaling strategies for teams of all sizes.
 
@@ -33,11 +33,13 @@ Not every developer uses Claude Code the same way. Set budgets based on role and
 
 | Role | Typical Usage | Recommended Budget | Rationale |
 |------|---------------|:------------------:|-----------|
-| **Junior Developer** | High-frequency simple tasks, learning | $40-80/month | Lots of small queries; should use Haiku heavily |
-| **Mid-Level Developer** | Mixed task complexity | $60-120/month | Component creation, bug fixes, test writing |
-| **Senior Developer** | Lower frequency, higher complexity | $80-150/month | Architecture work, complex debugging (Opus usage) |
-| **Tech Lead** | Architecture, reviews, planning | $100-200/month | Higher Opus usage justified for strategic decisions |
-| **DevOps/Platform** | Infrastructure, CI/CD, automation | $40-80/month | Mostly config generation, script writing |
+| **Junior Developer** | High-frequency simple tasks, learning | $30-60/month | Lots of small queries; should use Haiku 4.5 heavily |
+| **Mid-Level Developer** | Mixed task complexity | $50-100/month | Component creation, bug fixes, test writing |
+| **Senior Developer** | Lower frequency, higher complexity | $60-120/month | Architecture work, complex debugging (Opus 4.6 usage) |
+| **Tech Lead** | Architecture, reviews, planning | $70-150/month | Higher Opus 4.6 usage justified for strategic decisions |
+| **DevOps/Platform** | Infrastructure, CI/CD, automation | $30-60/month | Mostly config generation, script writing |
+
+> **Note**: These budgets reflect March 2026 pricing where Opus 4.6 is significantly cheaper ($5/$25 per MTok) than previous generations. Budget tiers are lower across the board compared to the old $15/$75 Opus pricing.
 
 ### Setting the Initial Budget
 
@@ -83,13 +85,15 @@ Monthly Cost = (Simple Tasks x Simple Cost) +
                (Complex Tasks x Complex Cost)
 
 Where (per developer per day):
-  Simple Tasks  = ~15-25 tasks/day   x $0.01 avg (Haiku)   = $0.15-0.25/day
-  Medium Tasks  = ~8-15 tasks/day    x $0.07 avg (Sonnet)   = $0.56-1.05/day
-  Complex Tasks = ~2-5 tasks/day     x $0.40 avg (Opus)     = $0.80-2.00/day
+  Simple Tasks  = ~15-25 tasks/day   x $0.01 avg (Haiku 4.5)  = $0.15-0.25/day
+  Medium Tasks  = ~8-15 tasks/day    x $0.07 avg (Sonnet 4.6)  = $0.56-1.05/day
+  Complex Tasks = ~2-5 tasks/day     x $0.13 avg (Opus 4.6)    = $0.26-0.65/day
 
-  Daily Total   = $1.51-3.30/day
-  Monthly Total = $33-73/developer (optimized)
+  Daily Total   = $0.97-1.95/day
+  Monthly Total = $21-43/developer (optimized)
 ```
+
+> **Note**: The Opus 4.6 average cost per complex task has dropped from ~$0.40 (at old $15/$75 pricing) to ~$0.13 (at current $5/$25 pricing). This significantly reduces the cost of architecture, debugging, and multi-file work.
 
 ### Estimation Worksheet
 
@@ -102,9 +106,9 @@ Team size:                    _____ developers
 Working days/month:           _____ (default: 22)
 
 Per Developer (daily averages):
-  Simple tasks (Haiku):       _____ tasks x $0.01 = $_____ /day
-  Medium tasks (Sonnet):      _____ tasks x $0.07 = $_____ /day
-  Complex tasks (Opus):       _____ tasks x $0.40 = $_____ /day
+  Simple tasks (Haiku 4.5):   _____ tasks x $0.01 = $_____ /day
+  Medium tasks (Sonnet 4.6):  _____ tasks x $0.07 = $_____ /day
+  Complex tasks (Opus 4.6):   _____ tasks x $0.13 = $_____ /day
 
   Daily subtotal:             $_____ /day
   Monthly subtotal:           $_____ x 22 = $_____ /month
@@ -117,16 +121,16 @@ Add 20% buffer:              $_____ x 1.2 = $_____ /month (budgeted)
 ### Example: Team of 5
 
 ```
-Junior Dev (2):      $50/month x 2  = $100
-Mid-Level Dev (2):   $80/month x 2  = $160
-Tech Lead (1):       $130/month x 1 = $130
+Junior Dev (2):      $40/month x 2  = $80
+Mid-Level Dev (2):   $65/month x 2  = $130
+Tech Lead (1):       $100/month x 1 = $100
 
-Subtotal:            $390/month
-Buffer (20%):        $78/month
-Budgeted Total:      $468/month
+Subtotal:            $310/month
+Buffer (20%):        $62/month
+Budgeted Total:      $372/month
 
-Compare to unoptimized: 5 developers x $200/month = $1,000/month
-Savings: $532/month = $6,384/year
+Compare to unoptimized: 5 developers x $110/month = $550/month
+Savings: $178/month = $2,136/year
 ```
 
 ---
@@ -148,10 +152,10 @@ This repo includes a [Usage Analyzer](../tools/usage-analyzer/README.md) that pa
 python tools/usage-analyzer/analyze.py ~/.claude/projects/ --period monthly
 
 # Example output:
-# Month: 2025-11
+# Month: 2026-03
 # Total tokens: 2,450,000 input / 890,000 output
-# Estimated cost: $67.40
-# Top projects: webapp ($34.20), api-service ($22.10), scripts ($11.10)
+# Estimated cost: $52.30
+# Top projects: webapp ($26.10), api-service ($17.20), scripts ($9.00)
 # Model split: Haiku 45%, Sonnet 40%, Opus 15%
 ```
 
@@ -164,23 +168,23 @@ Weekly Team Report Template:
 
 Developer       | This Week | Month-to-Date | Budget | % Used
 ----------------|:---------:|:-------------:|:------:|:------:
-Alice (Jr)      | $12.40    | $38.20        | $60    | 64%
-Bob (Mid)       | $18.90    | $62.10        | $100   | 62%
-Carol (Sr)      | $22.30    | $89.40        | $130   | 69%
-Dave (Mid)      | $15.60    | $51.80        | $100   | 52%
-Eve (Lead)      | $28.10    | $112.50       | $180   | 63%
+Alice (Jr)      | $9.40     | $28.20        | $50    | 56%
+Bob (Mid)       | $14.90    | $48.10        | $80    | 60%
+Carol (Sr)      | $17.30    | $69.40        | $100   | 69%
+Dave (Mid)      | $12.60    | $41.80        | $80    | 52%
+Eve (Lead)      | $22.10    | $88.50        | $130   | 68%
 
-Team Total      | $97.30    | $354.00       | $570   | 62%
+Team Total      | $76.30    | $276.00       | $440   | 63%
 ```
 
 ### Key Metrics to Track
 
 | Metric | What It Tells You | Target |
 |--------|-------------------|--------|
-| **Cost per developer per day** | Individual efficiency | $1.50-3.50 (optimized) |
+| **Cost per developer per day** | Individual efficiency | $1.00-2.50 (optimized) |
 | **Model distribution** | Are devs using the right models? | 40% Haiku, 40% Sonnet, 20% Opus |
 | **Tokens per task** | Are prompts efficient? | Decreasing over time |
-| **Cost per commit** | Cost of productive output | $0.50-2.00 |
+| **Cost per commit** | Cost of productive output | $0.30-1.50 |
 | **Opus usage %** | Over-reliance on expensive model | Under 25% of total tasks |
 
 ---
@@ -193,8 +197,8 @@ Not every task should go through Claude Code. Here is a decision framework for t
 
 | Approach | Best For | Typical Cost | Speed |
 |----------|----------|:------------:|:-----:|
-| **Claude Code** | Interactive development, multi-file changes, exploration | $0.01-1.50/task | Fast (for complex work) |
-| **Claude API** (direct) | Batch processing, CI/CD pipelines, automated code review | $0.005-0.50/call | Variable |
+| **Claude Code** | Interactive development, multi-file changes, exploration | $0.01-0.50/task | Fast (for complex work) |
+| **Claude API** (direct) | Batch processing, CI/CD pipelines, automated code review | $0.005-0.30/call | Variable |
 | **Manual coding** | Trivial changes, domain-expert knowledge, creative design | $0 (but developer time) | Depends on task |
 
 ### Decision Matrix
@@ -221,11 +225,11 @@ Does the task require deep domain knowledge only the developer has?
 
 | Workflow | Claude Code | Claude API | Manual | Recommendation |
 |----------|:-----------:|:----------:|:------:|----------------|
-| Code review (PR) | $0.15-0.50 | $0.05-0.20 | 15-30 min | API (automated in CI) |
-| Generate test suite | $0.10-0.30 | $0.05-0.15 | 30-60 min | Claude Code |
+| Code review (PR) | $0.10-0.30 | $0.05-0.15 | 15-30 min | API (automated in CI) |
+| Generate test suite | $0.08-0.25 | $0.04-0.12 | 30-60 min | Claude Code |
 | Fix linting errors | $0.02-0.05 | N/A | 2-5 min | Manual (use lint --fix) |
-| Write documentation | $0.05-0.20 | $0.03-0.10 | 20-45 min | Claude Code |
-| Scaffold new service | $0.15-0.50 | N/A | 15-30 min | Claude Code |
+| Write documentation | $0.05-0.15 | $0.03-0.08 | 20-45 min | Claude Code |
+| Scaffold new service | $0.10-0.35 | N/A | 15-30 min | Claude Code |
 | Update dependency versions | $0.02-0.05 | N/A | 5 min | Manual (Renovate/Dependabot) |
 
 ---
@@ -261,7 +265,7 @@ MONTHLY ROI CALCULATION
 
 3. CLAUDE CODE COSTS
    Monthly token spend:                       $_____ /month
-   Subscription cost (Pro/Max plan):          $_____ /month
+   Subscription cost (Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo): $_____ /month
    Total Claude Code cost (C):                $_____ /month
 
 4. ROI CALCULATION
@@ -281,34 +285,36 @@ TIME SAVINGS:
   40 hours x $75/hour = $3,000 value
 
 CLAUDE CODE COSTS:
-  Token spend: $80/month
-  Pro plan: $20/month (or Max: $100/month)
-  Total: $100/month (or $180/month with Max)
+  Token spend: $60/month
+  Pro plan: $20/month (or Max 5x: $100/month, Max 20x: $200/month)
+  Total: $80/month (Pro) or $160/month (Max 5x) or $260/month (Max 20x)
 
 ROI:
-  ($3,000 - $100) / $100 = 2,900% ROI (Pro plan)
-  ($3,000 - $180) / $180 = 1,567% ROI (Max plan)
+  ($3,000 - $80) / $80 = 3,650% ROI (Pro plan)
+  ($3,000 - $160) / $160 = 1,775% ROI (Max 5x plan)
+  ($3,000 - $260) / $260 = 1,054% ROI (Max 20x plan)
 
 NET BENEFIT:
-  $2,900/month per developer (Pro plan)
-  $2,820/month per developer (Max plan)
+  $2,920/month per developer (Pro plan)
+  $2,840/month per developer (Max 5x plan)
+  $2,740/month per developer (Max 20x plan)
 ```
 
-Even with conservative estimates (half the tasks, half the time saved), the ROI is still over 700%. The question is not whether Claude Code is worth it — it is how to maximize the ROI by minimizing waste.
+Even with conservative estimates (half the tasks, half the time saved), the ROI is still over 500%. The question is not whether Claude Code is worth it — it is how to maximize the ROI by minimizing waste.
 
 ### ROI by Task Type
 
 | Task Type | Avg Time Saved | Claude Code Cost | ROI (at $75/hr) |
 |-----------|:--------------:|:----------------:|:----------------:|
-| Test writing | 25 min | $0.12 | 25,000% |
-| Bug fixing | 20 min | $0.15 | 16,600% |
-| Component creation | 30 min | $0.10 | 37,400% |
-| Code review | 15 min | $0.08 | 23,337% |
-| Documentation | 20 min | $0.06 | 41,500% |
-| Architecture planning | 45 min | $0.80 | 6,937% |
-| Simple refactoring | 10 min | $0.03 | 41,500% |
+| Test writing | 25 min | $0.10 | 31,150% |
+| Bug fixing | 20 min | $0.12 | 20,733% |
+| Component creation | 30 min | $0.08 | 46,775% |
+| Code review | 15 min | $0.06 | 31,150% |
+| Documentation | 20 min | $0.05 | 49,900% |
+| Architecture planning | 45 min | $0.27 | 20,733% |
+| Simple refactoring | 10 min | $0.02 | 62,400% |
 
-> Even the lowest-ROI task (architecture planning) returns 69x the investment.
+> Even the lowest-ROI task (architecture planning) returns over 200x the investment.
 
 ---
 
@@ -328,26 +334,26 @@ Cost allocation helps you:
 Organization
 ├── Team A
 │   ├── Project: E-commerce Platform
-│   │   ├── Feature development:  45% ($180/month)
-│   │   ├── Bug fixes:            20% ($80/month)
-│   │   ├── Testing:              15% ($60/month)
-│   │   ├── Code review:          10% ($40/month)
-│   │   └── Documentation:        10% ($40/month)
-│   │   Total: $400/month
+│   │   ├── Feature development:  45% ($120/month)
+│   │   ├── Bug fixes:            20% ($53/month)
+│   │   ├── Testing:              15% ($40/month)
+│   │   ├── Code review:          10% ($27/month)
+│   │   └── Documentation:        10% ($27/month)
+│   │   Total: $267/month
 │   │
 │   └── Project: Internal Tools
-│       ├── Feature development:  50% ($50/month)
-│       ├── Bug fixes:            25% ($25/month)
-│       └── Testing:              25% ($25/month)
-│       Total: $100/month
+│       ├── Feature development:  50% ($33/month)
+│       ├── Bug fixes:            25% ($17/month)
+│       └── Testing:              25% ($17/month)
+│       Total: $67/month
 │
 └── Team B
     └── Project: Mobile API
-        ├── Feature development:  40% ($120/month)
-        ├── Performance work:     25% ($75/month)
-        ├── Bug fixes:            20% ($60/month)
-        └── Testing:              15% ($45/month)
-        Total: $300/month
+        ├── Feature development:  40% ($80/month)
+        ├── Performance work:     25% ($50/month)
+        ├── Bug fixes:            20% ($40/month)
+        └── Testing:              15% ($30/month)
+        Total: $200/month
 ```
 
 ### Tracking Cost by Project
@@ -379,21 +385,21 @@ When planning sprints, estimate Claude Code costs alongside development time:
 
 ```
 Feature: User notification preferences
-  - Frontend component (Sonnet, ~$0.15)
-  - API endpoint (Sonnet, ~$0.10)
-  - Database migration (Haiku, ~$0.02)
-  - Unit tests (Sonnet, ~$0.12)
-  - Integration test (Sonnet, ~$0.08)
-  - Code review assist (Haiku, ~$0.04)
-  Estimated Claude Code cost: ~$0.51
+  - Frontend component (Sonnet 4.6, ~$0.10)
+  - API endpoint (Sonnet 4.6, ~$0.07)
+  - Database migration (Haiku 4.5, ~$0.02)
+  - Unit tests (Sonnet 4.6, ~$0.10)
+  - Integration test (Sonnet 4.6, ~$0.07)
+  - Code review assist (Haiku 4.5, ~$0.03)
+  Estimated Claude Code cost: ~$0.39
 
 Feature: Payment system overhaul
-  - Architecture design (Opus, ~$0.80)
-  - 5 service refactors (Sonnet, ~$0.50)
-  - Database migration (Opus plan + Sonnet impl, ~$0.35)
-  - Test suite (Sonnet, ~$0.30)
-  - Security review (Opus, ~$0.60)
-  Estimated Claude Code cost: ~$2.55
+  - Architecture design (Opus 4.6, ~$0.27)
+  - 5 service refactors (Sonnet 4.6, ~$0.40)
+  - Database migration (Opus 4.6 plan + Sonnet 4.6 impl, ~$0.25)
+  - Test suite (Sonnet 4.6, ~$0.25)
+  - Security review (Opus 4.6, ~$0.20)
+  Estimated Claude Code cost: ~$1.37
 ```
 
 ---
@@ -406,12 +412,12 @@ Feature: Payment system overhaul
 
 | Action | Impact |
 |--------|--------|
-| Set Sonnet as the team default model | Prevents Opus overuse from day one |
+| Set Sonnet 4.6 as the team default model | Prevents Opus overuse from day one |
 | Share a standard CLAUDE.md template | Consistent costs across the team |
 | Create a shared command library | Standardized workflows, pre-set models |
 | Weekly informal cost review | Catch problems early |
 
-**Expected cost**: $150-400/month total.
+**Expected cost**: $100-300/month total.
 
 ### Phase 2: Growing Team (5-15 developers)
 
@@ -425,7 +431,7 @@ Feature: Payment system overhaul
 | Build an internal "tips" channel | Peer-driven optimization |
 | Conduct monthly cost reviews | Identify trends and outliers |
 
-**Expected cost**: $400-1,200/month total.
+**Expected cost**: $300-900/month total.
 
 ### Phase 3: Large Team (15-50+ developers)
 
@@ -441,18 +447,20 @@ Feature: Payment system overhaul
 | Custom tooling for usage analytics | Deep visibility into spending patterns |
 | Negotiate enterprise pricing | Volume discounts |
 
-**Expected cost**: $1,200-5,000/month total.
+**Expected cost**: $900-3,500/month total.
 
 ### Cost Scaling: Optimized vs Unoptimized
 
 | Team Size | Unoptimized | Optimized | Monthly Savings |
 |:---------:|:-----------:|:---------:|:---------------:|
-| 5 | $1,000 | $350 | $650 |
-| 10 | $2,000 | $650 | $1,350 |
-| 20 | $4,000 | $1,200 | $2,800 |
-| 50 | $10,000 | $2,800 | $7,200 |
+| 5 | $550 | $250 | $300 |
+| 10 | $1,100 | $450 | $650 |
+| 20 | $2,200 | $850 | $1,350 |
+| 50 | $5,500 | $2,000 | $3,500 |
 
-At 50 developers, cost optimization saves **$86,400/year**.
+At 50 developers, cost optimization saves **$42,000/year**.
+
+> **Note**: These numbers reflect Opus 4.6 pricing ($5/$25 per MTok). The absolute cost of "unoptimized" usage is significantly lower than it was at old Opus pricing ($15/$75), but the percentage savings from optimization remain substantial.
 
 ---
 
@@ -480,7 +488,7 @@ Day 1: Setup
   [ ] Install Claude Code and verify it works
   [ ] Copy the team's standard CLAUDE.md to your project(s)
   [ ] Copy the team's .claudeignore template
-  [ ] Set your default model to Sonnet (not Opus)
+  [ ] Set your default model to Sonnet 4.6 (not Opus)
   [ ] Install the team's shared command library
 
 Day 1: Read These Guides (30 minutes total)
@@ -489,7 +497,7 @@ Day 1: Read These Guides (30 minutes total)
   [ ] This guide's ROI section (understand the economics)
 
 Week 1: Practice
-  [ ] Use Haiku for at least 50% of your tasks
+  [ ] Use Haiku 4.5 for at least 50% of your tasks
   [ ] Use plan mode for any task touching 3+ files
   [ ] Use /compact after every planning phase
   [ ] Write one complete prompt (no follow-up corrections needed)
@@ -548,7 +556,7 @@ Set up automated notifications when developers approach budget limits:
 # Run daily via cron or CI
 
 #!/bin/bash
-BUDGET_MONTHLY=100  # dollars
+BUDGET_MONTHLY=80  # dollars
 ALERT_THRESHOLD=0.8 # 80%
 
 current_spend=$(python tools/usage-analyzer/analyze.py \
@@ -570,17 +578,17 @@ For teams of 15+, build or adopt a dashboard that shows:
 TEAM CLAUDE CODE DASHBOARD
 
 Real-Time Metrics:
-├── Total spend MTD: $1,247 / $2,000 budget (62%)
-├── Projected month-end: $1,890 (within budget)
+├── Total spend MTD: $847 / $1,400 budget (60%)
+├── Projected month-end: $1,290 (within budget)
 ├── Developers over 80% budget: 2 of 18
 └── Cost trend: -12% vs last month
 
 Per-Developer View:
-├── [Green]  Alice: $38 / $80 (48%)
-├── [Green]  Bob: $62 / $100 (62%)
-├── [Yellow] Carol: $108 / $130 (83%) ← approaching limit
-├── [Green]  Dave: $45 / $100 (45%)
-└── [Red]    Eve: $192 / $180 (107%) ← over budget
+├── [Green]  Alice: $28 / $50 (56%)
+├── [Green]  Bob: $48 / $80 (60%)
+├── [Yellow] Carol: $83 / $100 (83%) ← approaching limit
+├── [Green]  Dave: $36 / $80 (45%)
+└── [Red]    Eve: $140 / $130 (108%) ← over budget
 
 Alerts This Week:
 ├── Carol hit 80% threshold on Tuesday
@@ -670,7 +678,7 @@ After 3 months of active cost management, a well-optimized team should see:
 
 | Metric | Month 1 | Month 3 | Target |
 |--------|:-------:|:-------:|:------:|
-| Average cost/developer | $120 | $65 | $50-80 |
+| Average cost/developer | $80 | $45 | $35-60 |
 | Model split (Haiku/Sonnet/Opus) | 20/50/30 | 40/40/20 | 40/40/20 |
 | Average turns per task | 8 | 4 | 3-5 |
 | Budget utilization | 110% | 75% | 60-85% |
@@ -682,13 +690,13 @@ After 3 months of active cost management, a well-optimized team should see:
 
 | Strategy | Monthly Savings (team of 5) | Effort |
 |----------|:---------------------------:|:------:|
-| Per-developer budgets | $100-300 | Low |
-| Model routing guidelines | $200-400 | Low |
-| Shared command library | $50-100 | Medium (one-time) |
-| Automated usage tracking | $50-150 | Medium (one-time) |
-| Onboarding program | $100-200 | Medium (one-time) |
-| Monthly budget reviews | $50-100 | Low (recurring) |
-| **Combined** | **$550-1,250** | — |
+| Per-developer budgets | $50-150 | Low |
+| Model routing guidelines | $100-200 | Low |
+| Shared command library | $30-70 | Medium (one-time) |
+| Automated usage tracking | $30-80 | Medium (one-time) |
+| Onboarding program | $50-100 | Medium (one-time) |
+| Monthly budget reviews | $30-60 | Low (recurring) |
+| **Combined** | **$290-660** | — |
 
 The investment in team cost management pays for itself within the first month. After that, it is pure savings.
 

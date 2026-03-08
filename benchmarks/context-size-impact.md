@@ -33,7 +33,7 @@ Three CLAUDE.md files of different sizes, all providing project configuration fo
 | **Standard** | 98 | ~700 | Above + code style rules, testing patterns, common pitfalls |
 | **Bloated** | 310 | ~2,100 | Above + full API docs, copy-pasted style guide, redundant examples, historical notes |
 
-Each CLAUDE.md version was used across a simulated 30-turn session performing a mix of tasks (component creation, bug fix, test writing, refactoring). The model is Sonnet 4 for all runs.
+Each CLAUDE.md version was used across a simulated 30-turn session performing a mix of tasks (component creation, bug fix, test writing, refactoring). The model is Sonnet 4.6 for all runs.
 
 ### CLAUDE.md Token Overhead Per Turn
 
@@ -50,9 +50,9 @@ The CLAUDE.md is loaded as input on every turn. Here is the raw (pre-cache) over
 | 30 | 320 | 700 | 2,100 |
 | **Total (30 turns)** | **9,600** | **21,000** | **63,000** |
 
-### Cumulative CLAUDE.md Cost Over 30 Turns (Sonnet 4)
+### Cumulative CLAUDE.md Cost Over 30 Turns (Sonnet 4.6)
 
-Using Sonnet 4 input pricing ($3.00 / 1M tokens):
+Using Sonnet 4.6 input pricing ($3.00 / 1M tokens):
 
 | CLAUDE.md Size | Total Tokens (30 turns) | Raw Cost | With ~90% Caching* | Effective Cost |
 |----------------|:-----------------------:|:--------:|:-------------------:|:--------------:|
@@ -108,24 +108,24 @@ We measured the impact of reading files of different sizes during a 10-turn sess
 
 When Claude reads a file on turn 3 of a 10-turn session, that file's content stays in the conversation history for turns 3-10 (8 turns). Here is the input token overhead from that single file read:
 
-| File Size | Tokens per Turn | Turns in Context | Total Added Tokens | Added Cost (Sonnet 4) |
+| File Size | Tokens per Turn | Turns in Context | Total Added Tokens | Added Cost (Sonnet 4.6) |
 |:---------:|:---------------:|:----------------:|:------------------:|:---------------------:|
 | 1 KB | 250 | 8 | 2,000 | $0.006 |
 | 10 KB | 2,500 | 8 | 20,000 | $0.060 |
 | 100 KB | 25,000 | 8 | 200,000 | $0.600 |
 
-> A single 100 KB file read adds $0.60 to a Sonnet session. With Opus, that same read adds **$3.00** in propagated input costs.
+> A single 100 KB file read adds $0.60 to a Sonnet session. With Opus 4.6, that same read adds **$1.00** in propagated input costs.
 
 ### Multiple File Reads — Compounding Effect
 
 Many tasks require Claude to read several files. Here is the total overhead when multiple files are read on turn 2 of a 10-turn session (9 turns of propagation):
 
-| Files Read | Total Tokens Added to Context | Propagated Over 9 Turns | Added Cost (Sonnet 4) | Added Cost (Opus 4) |
+| Files Read | Total Tokens Added to Context | Propagated Over 9 Turns | Added Cost (Sonnet 4.6) | Added Cost (Opus 4.6) |
 |:----------:|:-----------------------------:|:-----------------------:|:---------------------:|:-------------------:|
-| 3 x 1 KB | 750 | 6,750 | $0.02 | $0.10 |
-| 3 x 10 KB | 7,500 | 67,500 | $0.20 | $1.01 |
-| 1 x 10 KB + 1 x 100 KB | 27,500 | 247,500 | $0.74 | $3.71 |
-| 3 x 100 KB | 75,000 | 675,000 | $2.03 | $10.13 |
+| 3 x 1 KB | 750 | 6,750 | $0.02 | $0.03 |
+| 3 x 10 KB | 7,500 | 67,500 | $0.20 | $0.34 |
+| 1 x 10 KB + 1 x 100 KB | 27,500 | 247,500 | $0.74 | $1.24 |
+| 3 x 100 KB | 75,000 | 675,000 | $2.03 | $3.38 |
 
 ### File Read Optimization Strategies
 
@@ -143,9 +143,9 @@ Based on cost-efficiency data, here are guidelines for how many file reads to bu
 
 | Model | Small Files (1 KB) | Medium Files (10 KB) | Large Files (100 KB) |
 |-------|:------------------:|:-------------------:|:-------------------:|
-| Haiku 3.5 | 20+ (negligible cost) | 10-15 | 1-2 (delegate to subagent) |
-| Sonnet 4 | 15-20 | 5-10 | 1 (delegate to subagent) |
-| Opus 4 | 10-15 | 3-5 | 0 (always delegate to subagent) |
+| Haiku 4.5 | 20+ (negligible cost) | 10-15 | 1-2 (delegate to subagent) |
+| Sonnet 4.6 | 15-20 | 5-10 | 1 (delegate to subagent) |
+| Opus 4.6 | 10-15 | 5-8 | 1-2 (delegate to subagent) |
 
 ---
 
@@ -155,7 +155,7 @@ Based on cost-efficiency data, here are guidelines for how many file reads to bu
 
 Claude Code has a 200K token context window. As a session progresses, the context fills with conversation history. Here is how context utilization typically grows:
 
-| Turn | Typical Context Fill | Cumulative Input Tokens Billed | Per-Turn Input Cost (Sonnet 4) |
+| Turn | Typical Context Fill | Cumulative Input Tokens Billed | Per-Turn Input Cost (Sonnet 4.6) |
 |:----:|:--------------------:|:------------------------------:|:------------------------------:|
 | 1 | 1.5% (~3,000 tok) | 3,000 | $0.009 |
 | 5 | 8% (~16,000 tok) | 52,000 | $0.048 |
@@ -170,7 +170,7 @@ Claude Code has a 200K token context window. As a session progresses, the contex
 
 ### The Cost Curve (Chart as Table)
 
-Cumulative session cost by turn count (Sonnet 4, Standard CLAUDE.md, medium file read activity):
+Cumulative session cost by turn count (Sonnet 4.6, Standard CLAUDE.md, medium file read activity):
 
 ```
 Turn  | Cost   | Visual (each block = $0.10)
@@ -190,7 +190,7 @@ Turn  | Cost   | Visual (each block = $0.10)
 
 This is the critical insight: **later turns are dramatically more expensive than early turns** because they include all prior context.
 
-| Turn Range | Average Per-Turn Cost (Sonnet 4) | Relative Expense |
+| Turn Range | Average Per-Turn Cost (Sonnet 4.6) | Relative Expense |
 |:----------:|:--------------------------------:|:----------------:|
 | Turns 1-5 | $0.03 | 1x (baseline) |
 | Turns 6-10 | $0.07 | 2.3x |
@@ -226,7 +226,7 @@ Start a new Claude Code session when:
 
 **Task**: Implement a feature that involves 3 sub-tasks (API endpoint, UI component, tests). Total work: ~30 turns.
 
-| Approach | Turns | Total Input Tokens | Total Cost (Sonnet 4) |
+| Approach | Turns | Total Input Tokens | Total Cost (Sonnet 4.6) |
 |----------|:-----:|:------------------:|:---------------------:|
 | One 30-turn session | 30 | 1,802,000 | $5.40 |
 | Three 10-turn sessions | 30 | 534,000 | $1.60 |
@@ -246,9 +246,9 @@ A developer works for a full day using Claude Code, performing approximately 8 t
 
 | Configuration | CLAUDE.md | File Reads | Session Strategy | Model |
 |--------------|:---------:|:----------:|:----------------:|:-----:|
-| **Worst case** | 300 lines (2,100 tok) | No limits, reads full files | One continuous session | Opus 4 |
-| **Default** | 300 lines (2,100 tok) | No limits | One session per task (8 sessions) | Sonnet 4 |
-| **Optimized** | 100 lines (700 tok) | Targeted reads, subagents for heavy investigation | One session per task | Sonnet 4 |
+| **Worst case** | 300 lines (2,100 tok) | No limits, reads full files | One continuous session | Opus 4.6 |
+| **Default** | 300 lines (2,100 tok) | No limits | One session per task (8 sessions) | Sonnet 4.6 |
+| **Optimized** | 100 lines (700 tok) | Targeted reads, subagents for heavy investigation | One session per task | Sonnet 4.6 |
 | **Maximum savings** | 50 lines (320 tok) | Aggressive subagent delegation | One session per task, Haiku for 3 simple tasks | Mixed |
 
 ### Full-Day Cost Comparison
@@ -257,9 +257,9 @@ A developer works for a full day using Claude Code, performing approximately 8 t
 |--------|:----------:|:-------:|:---------:|:-----------:|
 | Total input tokens | 4,200,000 | 1,480,000 | 820,000 | 540,000 |
 | Total output tokens | 186,000 | 168,000 | 152,000 | 142,000 |
-| **Total cost** | **$77.25** | **$6.96** | **$4.74** | **$2.78** |
+| **Total cost** | **$25.65** | **$6.96** | **$4.74** | **$2.87** |
 | Quality incidents | 2 | 4 | 2 | 4 |
-| Effective cost (incl. fix-ups) | $84.50 | $7.86 | $5.10 | $3.46 |
+| Effective cost (incl. fix-ups) | $28.07 | $7.86 | $5.10 | $3.55 |
 
 ### Savings Breakdown
 
@@ -269,9 +269,9 @@ A developer works for a full day using Claude Code, performing approximately 8 t
 | Trim CLAUDE.md from 300 to 100 lines | 12% | 12% |
 | Use targeted file reads instead of full-file reads | 10% | 21% |
 | Use subagents for file-heavy investigation | 8% | 27% |
-| Use Haiku for 3 simple tasks (formatting, rename, simple fix) | 5% | 32% |
-| **Total optimization vs. Default** | -- | **32%** |
-| **Total optimization vs. Worst Case** | -- | **96%** |
+| Use Haiku for 3 simple tasks (formatting, rename, simple fix) | 4% | 31% |
+| **Total optimization vs. Default** | -- | **31%** |
+| **Total optimization vs. Worst Case** | -- | **89%** |
 
 ---
 
