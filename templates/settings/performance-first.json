@@ -1,0 +1,83 @@
+{
+  "$schema": "https://cdn.jsdelivr.net/gh/anthropics/claude-code@main/.claude/settings.schema.json",
+
+  "_comment": [
+    "PERFORMANCE-FIRST SETTINGS — Speed and quality priority.",
+    "Opus for complex tasks. Fewest restrictions, maximum capability.",
+    "Best for: complex architecture work, critical debugging, code reviews.",
+    "Trade-off: highest cost per session. Use for high-value tasks only.",
+    "Copy this file to your project's .claude/settings.json"
+  ],
+
+  "model": {
+    "default": "opus",
+    "thinking": "opus",
+    "_comment": "Opus for deep reasoning. Worth the cost for complex or ambiguous tasks."
+  },
+
+  "preferences": {
+    "autoApprove": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write",
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(npx *)"
+    ],
+    "codeStyle": "thorough",
+    "verbosity": "detailed",
+    "_comment": "Auto-approve most operations to minimize friction. Detailed output for full context."
+  },
+
+  "context": {
+    "CLAUDE.md": {
+      "maxTokens": 2000,
+      "_comment": "Use comprehensive template for maximum first-pass accuracy."
+    },
+    "fileReading": {
+      "maxLines": 1000,
+      "preferPartialReads": false,
+      "_comment": "Full file reads for complete understanding. Cost is secondary to quality."
+    }
+  },
+
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "Write",
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(node *)",
+      "Bash(python *)",
+      "WebFetch"
+    ],
+    "deny": [
+      "Bash(rm -rf /)*",
+      "Bash(git push --force*)",
+      "Bash(sudo *)"
+    ],
+    "_comment": "Nearly unrestricted. Only block genuinely dangerous operations."
+  },
+
+  "behavior": {
+    "editStyle": "thorough",
+    "searchBeforeReading": false,
+    "preferGrep": false,
+    "avoidFullFileReads": false,
+    "_comment": "No artificial restrictions. Read freely, edit comprehensively."
+  },
+
+  "costGuardrails": {
+    "maxTurnsPerTask": 50,
+    "warnAtTurns": 40,
+    "preferSingleFileEdits": false,
+    "avoidLargeRefactors": false,
+    "_comment": "High limits for complex tasks. Trust the model to be efficient."
+  }
+}

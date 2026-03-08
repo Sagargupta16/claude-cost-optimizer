@@ -1,0 +1,76 @@
+{
+  "$schema": "https://cdn.jsdelivr.net/gh/anthropics/claude-code@main/.claude/settings.schema.json",
+
+  "_comment": [
+    "COST-CONSCIOUS SETTINGS — Aggressive cost savings profile.",
+    "Defaults to Haiku for most tasks. Restricts expensive operations.",
+    "Best for: solo devs on tight budgets, routine maintenance, simple tasks.",
+    "Trade-off: lower quality on complex reasoning, more turns for hard problems.",
+    "Copy this file to your project's .claude/settings.json"
+  ],
+
+  "model": {
+    "default": "haiku",
+    "thinking": "haiku",
+    "_comment": "Use Haiku for everything. Override per-task with /model if needed."
+  },
+
+  "preferences": {
+    "autoApprove": [],
+    "codeStyle": "concise",
+    "verbosity": "minimal",
+    "_comment_verbosity": "Minimal output = fewer output tokens = lower cost."
+  },
+
+  "context": {
+    "CLAUDE.md": {
+      "maxTokens": 500,
+      "_comment": "Use the minimal template (~320 tokens) to reduce per-turn overhead."
+    },
+    "fileReading": {
+      "maxLines": 200,
+      "preferPartialReads": true,
+      "_comment": "Read only what's needed — avoid ingesting full large files."
+    }
+  },
+
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(npm test*)",
+      "Bash(npm run lint*)",
+      "Bash(npm run build*)"
+    ],
+    "deny": [
+      "WebFetch",
+      "Bash(npm install*)",
+      "Bash(npx*)",
+      "Bash(pip install*)",
+      "Bash(curl*)",
+      "Bash(wget*)"
+    ],
+    "_comment": "Block network/install operations to prevent costly side effects."
+  },
+
+  "behavior": {
+    "editStyle": "minimal",
+    "searchBeforeReading": true,
+    "preferGrep": true,
+    "avoidFullFileReads": true,
+    "_comment_editStyle": "Make targeted edits — avoid rewriting entire files.",
+    "_comment_search": "Search first, read only relevant sections."
+  },
+
+  "costGuardrails": {
+    "maxTurnsPerTask": 10,
+    "warnAtTurns": 7,
+    "preferSingleFileEdits": true,
+    "avoidLargeRefactors": true,
+    "_comment": "Hard limits to prevent runaway sessions. Ask for confirmation past 7 turns."
+  }
+}
