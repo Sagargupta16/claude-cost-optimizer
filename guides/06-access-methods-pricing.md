@@ -505,6 +505,36 @@ This gives you predictable costs for daily work, the cheapest possible rate for 
 
 ---
 
+## Regional and Country-Specific Pricing
+
+### Claude Code Subscriptions: No PPP Pricing
+
+As of March 2026, Claude Code subscriptions are priced in **USD globally** with no purchasing power parity (PPP) or country-specific pricing. Whether you're in the US, India, Brazil, or Japan, the rates are the same:
+
+| Plan | Price (USD) |
+|------|:-----------:|
+| Pro | $20/mo |
+| Max 5x | $100/mo |
+| Max 20x | $200/mo |
+
+This means the effective cost relative to local purchasing power varies significantly by country. For developers in regions with lower costs of living, the API pay-per-token model with cheaper models (Haiku at $1/$5) may be more cost-effective than a subscription.
+
+### Cloud Provider Committed-Use Discounts
+
+If you access Claude through AWS Bedrock or Google Vertex AI, you can stack cloud-level discounts on top of token pricing:
+
+- **AWS Savings Plans**: Commit to consistent usage for 1 or 3 years for additional discounts on Bedrock
+- **GCP Committed Use Discounts (CUDs)**: Similar committed-use pricing on Vertex AI
+- **AWS/GCP credits**: Startup programs, migration credits, and enterprise agreements can offset Claude costs
+
+These discounts are not available through the Anthropic API directly or Claude Code subscriptions.
+
+### Off-Peak 2x Usage Events
+
+Anthropic periodically runs promotional events that double usage limits during off-peak hours (see [Off-Peak 2x in README](../README.md#off-peak-2x-usage-promotional-events)). During these events, developers outside the US get the most benefit since their entire workday falls outside US peak hours (8 AM - 2 PM ET).
+
+---
+
 ## Key Takeaways
 
 1. **Global endpoints on Bedrock and Vertex AI are the same price as the Anthropic API** -- use them if you need cloud billing integration without paying more
