@@ -22,6 +22,8 @@
 > **Fast Mode**: Opus 4.6 only (research preview). 6x standard rates but includes 1M context at no extra long-context charge. Not available with Batch API.
 >
 > **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x (5-min TTL), 2x (1-hour TTL).
+>
+> **Off-Peak 2x Usage**: Anthropic runs promotional events (e.g., "Spring Break", March 13-27 2026) that double usage limits outside peak hours (8 AM - 2 PM ET) and on all weekends. If you're outside the US, your entire workday likely falls in the 2x window. Watch for these events.
 
 ---
 

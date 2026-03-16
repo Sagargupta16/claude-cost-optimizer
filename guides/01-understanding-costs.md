@@ -36,6 +36,12 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 
 > **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x input price (5-min TTL), 2x input price (1-hour TTL).
 
+### Off-Peak 2x Usage Events
+
+Anthropic periodically runs promotional events that **double usage limits** during off-peak hours. Example: "Spring Break for Claude Code" (March 13-27, 2026) offered 2x limits outside the peak window of **8 AM - 2 PM ET** and on all weekends.
+
+This is significant for cost optimization: if you can shift heavy Claude Code work to off-peak hours, you effectively get **twice the output for the same subscription cost**. Users in Asia, India, and Australia benefit the most since their entire workday falls outside US peak hours.
+
 ### What These Numbers Mean in Practice
 
 To build intuition, here is what $1.00 buys you with each model:

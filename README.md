@@ -55,6 +55,25 @@ Understanding the billing model is the foundation of optimization.
 
 > **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x (5-min TTL), 2x (1-hour TTL).
 
+### Off-Peak 2x Usage (Promotional Events)
+
+Anthropic periodically runs promotional events that **double usage limits** during off-peak hours. For example, "Spring Break for Claude Code" (March 13-27, 2026) offered 2x limits outside peak hours and on all weekends.
+
+**Peak hours** (normal limits): **8 AM - 2 PM ET** (5-11 AM PT). Everything outside that window + all weekends = **2x usage**.
+
+| Time Zone | Peak (Normal Limits) | 2x Usage Window |
+|-----------|---------------------|-----------------|
+| US West (PT) | 5-11 AM | 11 AM - 5 AM + weekends |
+| US East (ET) | 8 AM - 2 PM | 2 PM - 8 AM + weekends |
+| UK (BST) | 1-7 PM | 7 PM - 1 PM + weekends |
+| Central Europe (CET) | 2-8 PM | 8 PM - 2 PM + weekends |
+| India (IST) | 6:30 PM - 12:30 AM | Entire workday is 2x |
+| China/Singapore (SGT) | 9 PM - 3 AM | Entire workday is 2x |
+| Japan/Korea (JST) | 10 PM - 4 AM | Entire workday is 2x |
+| Australia (AEDT) | 12-6 AM | Entire workday is 2x |
+
+> **Key insight**: If you're outside the US, your entire workday likely falls in the 2x window. Even US-based users get 2x from afternoon through night. Watch for these promotions -- they effectively halve your cost per unit of work.
+
 ### What Counts as Tokens
 
 ```
