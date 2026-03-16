@@ -7,7 +7,7 @@
 ## Table of Contents
 
 - [Token Pricing](#token-pricing)
-  - [Long Context Pricing (1M Beta)](#long-context-pricing-1m-beta)
+  - [Long Context Pricing (1M)](#long-context-pricing-1m)
   - [Fast Mode Pricing](#fast-mode-pricing)
 - [What Counts as Tokens in Claude Code](#what-counts-as-tokens-in-claude-code)
 - [The Context Window and Its Cost Impact](#the-context-window-and-its-cost-impact)
@@ -68,9 +68,9 @@ Switching from Opus to Haiku for a task that costs $1.00 on Opus would cost appr
 
 > **Note**: Opus 4.6 is now priced at $5/$25 — the same level Sonnet used to be at. The gap between models is much smaller than it used to be. Model selection still saves money, but the ratios are more modest (5x Haiku-to-Opus vs the historical 19x).
 
-### Long Context Pricing (1M Beta)
+### Long Context Pricing (1M)
 
-Opus 4.6 and Sonnet 4.6 support up to 1M tokens of context (beta). When your input exceeds **200K tokens**, long-context pricing kicks in with higher per-token rates:
+Opus 4.6 and Sonnet 4.6 support up to 1M tokens of context. When your input exceeds **200K tokens**, long-context pricing kicks in with higher per-token rates:
 
 | Model | Standard Input | 1M Input (2x) | Standard Output | 1M Output (1.5x) | 1M Cache Hit |
 |-------|:-------------:|:--------------:|:---------------:|:-----------------:|:------------:|
