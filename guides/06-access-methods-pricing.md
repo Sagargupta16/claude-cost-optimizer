@@ -46,10 +46,10 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 
 | Model | Input | Output | Cache Hit | Context Window | Max Output |
 |-------|:-----:|:------:|:---------:|:--------------:|:----------:|
-| **Opus 4.6** | $5.00 | $25.00 | $0.50 | 200K (1M beta) | 128K |
+| **Opus 4.6** | $5.00 | $25.00 | $0.50 | 1M | 128K |
 | **Opus 4.6 (1M context, >200K input)** | $10.00 (2x) | $37.50 (1.5x) | $1.00 | 1M | 128K |
 | **Opus 4.6 Fast Mode** (research preview) | $30.00 (6x) | $150.00 (6x) | -- | 200K | 128K |
-| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 200K (1M beta) | 64K |
+| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 1M | 64K |
 | **Sonnet 4.6 (1M context, >200K input)** | $6.00 (2x) | $22.50 (1.5x) | $0.60 | 1M | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 200K | 64K |
 

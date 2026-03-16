@@ -80,11 +80,11 @@ Is the task...
 | Feature | Anthropic API | AWS Bedrock | Google Vertex AI | Claude Code |
 |---------|:---:|:---:|:---:|:---:|
 | Standard pricing | Base rates | Same (global) / +10% (regional) | Same (global) / +10% (regional) | Included in plan |
-| 1M context (beta) | Yes (Opus, Sonnet) | Yes | Yes | Yes |
+| 1M context | Yes (Opus, Sonnet) | Yes | Yes | Yes |
 | Fast Mode | Yes (Opus only) | Check availability | Check availability | Yes (`/fast`) |
 | Batch API (50% off) | Yes | Yes | Yes | N/A |
 | Prompt caching | Yes | Yes | Yes | Automatic |
-| Max context | 1M (beta) | 1M (beta) | 1M (beta) | 1M (beta) |
+| Max context | 1M | 1M | 1M | 1M |
 
 > **Bedrock / Vertex**: Same models, same capabilities. Global (cross-region) inference matches API pricing. Regional inference profiles add ~10%. Choose based on your cloud provider, compliance needs, and existing infrastructure.
 

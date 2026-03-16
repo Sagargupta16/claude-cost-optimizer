@@ -1,4 +1,5 @@
 # Claude Cost Optimizer
+n[![Stars](https://img.shields.io/github/stars/Sagargupta16/claude-cost-optimizer?style=flat)](https://github.com/Sagargupta16/claude-cost-optimizer/stargazers) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Last Commit](https://img.shields.io/github/last-commit/Sagargupta16/claude-cost-optimizer)](https://github.com/Sagargupta16/claude-cost-optimizer/commits/main)
 
 > **Save 30-60% on Claude Code costs** with proven strategies, real benchmarks, and copy-paste configs.
 
@@ -46,10 +47,10 @@ Understanding the billing model is the foundation of optimization.
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M) | Context Window | Max Output |
 |-------|:---------------------:|:----------------------:|:-------------------:|:--------------:|:----------:|
-| **Opus 4.6** | $5.00 | $25.00 | $0.50 | 200K (1M beta) | 128K |
+| **Opus 4.6** | $5.00 | $25.00 | $0.50 | 1M | 128K |
 | **Opus 4.6 (1M, >200K input)** | $10.00 (2x) | $37.50 (1.5x) | $1.00 | 1M | 128K |
 | **Opus 4.6 Fast Mode** | $30.00 (6x) | $150.00 (6x) | -- | 200K | 128K |
-| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 200K (1M beta) | 64K |
+| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 1M | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 200K | 64K |
 
 > **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x (5-min TTL), 2x (1-hour TTL).

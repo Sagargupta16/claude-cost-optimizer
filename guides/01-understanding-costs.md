@@ -27,11 +27,11 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M) | Context Window | Max Output |
 |-------|:---------------------:|:----------------------:|:---------------------:|:--------------:|:----------:|
-| **Claude Opus 4.6** | $5.00 | $25.00 | $0.50 | 200K (1M beta) | 128K |
-| **Claude Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 200K (1M beta) | 64K |
+| **Claude Opus 4.6** | $5.00 | $25.00 | $0.50 | 1M | 128K |
+| **Claude Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 1M | 64K |
 | **Claude Haiku 4.5** | $1.00 | $5.00 | $0.10 | 200K | 64K |
-| **Opus 4.6 (1M context)** | $10.00 (2x) | $37.50 (1.5x) | $1.00 | 1M beta | 128K |
-| **Sonnet 4.6 (1M context)** | $6.00 (2x) | $22.50 (1.5x) | $0.60 | 1M beta | 64K |
+| **Opus 4.6 (1M context)** | $10.00 (2x) | $37.50 (1.5x) | $1.00 | 1M | 128K |
+| **Sonnet 4.6 (1M context)** | $6.00 (2x) | $22.50 (1.5x) | $0.60 | 1M | 64K |
 | **Opus 4.6 (Fast Mode)** | $30.00 (6x) | $150.00 (6x) | N/A | 1M (included) | 128K |
 
 > **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x input price (5-min TTL), 2x input price (1-hour TTL).
@@ -173,10 +173,10 @@ The cost **accelerates** with each turn. A 30-turn session does not cost 30x a s
 
 ### How the Context Window Works
 
-Claude's context window (200K tokens standard, 1M beta for Opus 4.6 and Sonnet 4.6) is the maximum amount of text it can process in a single turn. Think of it as Claude's working memory.
+Claude's context window (1M tokens for Opus 4.6 and Sonnet 4.6, 200K for Haiku 4.5) is the maximum amount of text it can process in a single turn. Think of it as Claude's working memory.
 
 ```
-Context Window (200K tokens standard)
+Context Window (1M tokens for Opus/Sonnet, 200K for Haiku)
 ┌─────────────────────────────────────────────────────┐
 │ System Prompt          (~3,500 tokens)              │
 │ CLAUDE.md              (~1,050 tokens @ 150 lines)  │
