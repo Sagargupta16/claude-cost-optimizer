@@ -26,8 +26,8 @@ Most developers default to the most capable model for everything. This is like h
 
 | Model | Input Cost | Output Cost | Cache Hit | Relative Cost | Context Window |
 |-------|:----------:|:-----------:|:---------:|:-------------:|:--------------:|
-| **Opus 4.6** | $5.00 | $25.00 | $0.50 | 1x (baseline) | 200K |
-| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | ~1.67x cheaper | 200K |
+| **Opus 4.6** | $5.00 | $25.00 | $0.50 | 1x (baseline) | 1M |
+| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | ~1.67x cheaper | 1M |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 5x cheaper | 200K |
 
 > **Note**: Opus 4.6 is now significantly more affordable than previous generations (down from $15/$75 to $5/$25). This narrows the gap between models, but smart model selection still yields meaningful savings.

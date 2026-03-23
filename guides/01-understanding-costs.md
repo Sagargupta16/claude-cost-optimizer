@@ -200,20 +200,20 @@ As your session progresses, the context window fills with conversation history. 
 
 1. **Claude Code automatically truncates** older messages from the conversation history
 2. This can cause Claude to "forget" earlier context and decisions
-3. You pay for nearly 200K input tokens per turn at this point
+3. You pay for a very large number of input tokens per turn at this point
 4. Quality degrades because Claude loses important context
 
 ### Context Window Cost at Capacity
 
 What it costs to fill the context window on a single turn:
 
-| Model | Full 200K Input Cost (per turn) | Max Output Cost (if maxed) |
-|-------|:-------------------------------:|:--------------------------:|
-| Opus 4.6 | $1.00 | $3.20 (128K output) |
-| Sonnet 4.6 | $0.60 | $0.96 (64K output) |
-| Haiku 4.5 | $0.20 | $0.32 (64K output) |
+| Model | Full 200K Input Cost (per turn) | Full 1M Input Cost (per turn) | Max Output Cost (if maxed) |
+|-------|:-------------------------------:|:-----------------------------:|:--------------------------:|
+| Opus 4.6 | $1.00 | $10.00 (2x rate) | $3.20 (128K output) |
+| Sonnet 4.6 | $0.60 | $6.00 (2x rate) | $0.96 (64K output) |
+| Haiku 4.5 | $0.20 | N/A (200K max) | $0.32 (64K output) |
 
-> This is why long sessions on Opus can cost $5-20. If you are sending 150K+ input tokens per turn for 10+ turns, the math adds up — though far less painfully than the old $15/$75 pricing.
+> Long sessions on Opus can cost $5-20+. If you cross the 200K input threshold, the 2x long-context surcharge applies to ALL tokens in the request -- not just the ones above 200K.
 
 ### Practical Rule of Thumb
 

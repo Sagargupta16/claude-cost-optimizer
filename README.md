@@ -1,5 +1,5 @@
 # Claude Cost Optimizer
-n[![Stars](https://img.shields.io/github/stars/Sagargupta16/claude-cost-optimizer?style=flat)](https://github.com/Sagargupta16/claude-cost-optimizer/stargazers) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Last Commit](https://img.shields.io/github/last-commit/Sagargupta16/claude-cost-optimizer)](https://github.com/Sagargupta16/claude-cost-optimizer/commits/main)
+[![Stars](https://img.shields.io/github/stars/Sagargupta16/claude-cost-optimizer?style=flat)](https://github.com/Sagargupta16/claude-cost-optimizer/stargazers) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Last Updated](https://img.shields.io/badge/updated-March_2026-brightgreen)](https://github.com/Sagargupta16/claude-cost-optimizer/commits/main)
 
 > **Save 30-60% on Claude Code costs** with proven strategies, real benchmarks, and copy-paste configs.
 
@@ -49,17 +49,19 @@ Understanding the billing model is the foundation of optimization.
 |-------|:---------------------:|:----------------------:|:-------------------:|:--------------:|:----------:|
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | 1M | 128K |
 | **Opus 4.6 (1M, >200K input)** | $10.00 (2x) | $37.50 (1.5x) | $1.00 | 1M | 128K |
-| **Opus 4.6 Fast Mode** | $30.00 (6x) | $150.00 (6x) | -- | 200K | 128K |
+| **Opus 4.6 Fast Mode** | $30.00 (6x) | $150.00 (6x) | -- | 1M (included) | 128K |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 1M | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 200K | 64K |
 
+> **New in 2.1+**: `--max-budget-usd <amount>` caps spending per session. `--fallback-model <model>` auto-switches to a cheaper model when the primary is overloaded.
+
 > **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x (5-min TTL), 2x (1-hour TTL).
 
-### Off-Peak 2x Usage (Promotional Events)
+### Off-Peak 2x Usage Events
 
-Anthropic periodically runs promotional events that **double usage limits** during off-peak hours. For example, "Spring Break for Claude Code" (March 13-27, 2026) offered 2x limits outside peak hours and on all weekends.
+Anthropic periodically runs promotional events that **double usage limits** during off-peak hours (e.g., "Spring Break for Claude Code" in March 2026). Watch the [Anthropic blog](https://www.anthropic.com/news) and Claude Code release notes for announcements.
 
-**Peak hours** (normal limits): **8 AM - 2 PM ET** (5-11 AM PT). Everything outside that window + all weekends = **2x usage**.
+During these events, **peak hours** (normal limits) are typically **8 AM - 2 PM ET** (5-11 AM PT). Everything outside that window + all weekends = **2x usage**.
 
 | Time Zone | Peak (Normal Limits) | 2x Usage Window |
 |-----------|---------------------|-----------------|
@@ -85,6 +87,7 @@ Input Tokens (you pay for):
 ├── Conversation history (grows with each turn)
 ├── File contents (from Read/Grep/Glob results)
 ├── Tool call results
+├── MCP server tool schemas (each server adds ~500-2000 tokens)
 └── MCP server responses
 
 Output Tokens (you pay more for):
@@ -118,6 +121,7 @@ Deep-dive guides for each optimization area:
 | [04 - Workflow Patterns](guides/04-workflow-patterns.md) | Plan mode, subagents, commands, batch operations |
 | [05 - Team Budgeting](guides/05-team-budgeting.md) | Per-developer budgets, cost tracking, ROI calculation |
 | [06 - Access Methods & Pricing](guides/06-access-methods-pricing.md) | Compare API vs Bedrock vs Vertex AI vs Claude Code pricing |
+| [07 - MCP & Agent Cost Impact](guides/07-mcp-agent-costs.md) | MCP server overhead, subagent costs, Agent SDK patterns |
 
 ---
 
