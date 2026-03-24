@@ -38,9 +38,9 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 
 ### Off-Peak 2x Usage Events
 
-Anthropic periodically runs promotional events that **double usage limits** during off-peak hours. Example: "Spring Break for Claude Code" (March 13-27, 2026) offered 2x limits outside the peak window of **8 AM - 2 PM ET** and on all weekends.
+Anthropic periodically runs promotional events that **double usage limits** during off-peak hours. Past examples include "Spring Break for Claude Code" (March 2026) which offered 2x limits outside the peak window of **8 AM - 2 PM ET** and on all weekends.
 
-This is significant for cost optimization: if you can shift heavy Claude Code work to off-peak hours, you effectively get **twice the output for the same subscription cost**. Users in Asia, India, and Australia benefit the most since their entire workday falls outside US peak hours.
+These promotions are **not permanent** -- they come and go. Watch the [Anthropic blog](https://www.anthropic.com/news) and [Claude Code support page](https://support.claude.com) for active promotions. When available, shifting heavy work to off-peak hours effectively **halves your cost per unit of work**. Users in Asia, India, and Australia benefit the most since their entire workday falls outside US peak hours.
 
 ### What These Numbers Mean in Practice
 

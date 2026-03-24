@@ -59,9 +59,12 @@ Understanding the billing model is the foundation of optimization.
 
 ### Off-Peak 2x Usage Events
 
-Anthropic periodically runs promotional events that **double usage limits** during off-peak hours (e.g., "Spring Break for Claude Code" in March 2026). Watch the [Anthropic blog](https://www.anthropic.com/news) and Claude Code release notes for announcements.
+Anthropic periodically runs **temporary promotions** that double usage limits during off-peak hours. These are not permanent -- check the [Anthropic blog](https://www.anthropic.com/news) and [support page](https://support.claude.com) for current promotions.
 
-During these events, **peak hours** (normal limits) are typically **8 AM - 2 PM ET** (5-11 AM PT). Everything outside that window + all weekends = **2x usage**.
+When active, **peak hours** (normal limits) are typically **8 AM - 2 PM ET**. Everything outside that window + all weekends = **2x usage**.
+
+<details>
+<summary>Time zone breakdown (click to expand)</summary>
 
 | Time Zone | Peak (Normal Limits) | 2x Usage Window |
 |-----------|---------------------|-----------------|
@@ -74,7 +77,9 @@ During these events, **peak hours** (normal limits) are typically **8 AM - 2 PM 
 | Japan/Korea (JST) | 10 PM - 4 AM | Entire workday is 2x |
 | Australia (AEDT) | 12-6 AM | Entire workday is 2x |
 
-> **Key insight**: If you're outside the US, your entire workday likely falls in the 2x window. Even US-based users get 2x from afternoon through night. Watch for these promotions -- they effectively halve your cost per unit of work.
+</details>
+
+> **Key insight**: If you're outside the US, your entire workday typically falls in the 2x window during these promotions.
 
 ### What Counts as Tokens
 
