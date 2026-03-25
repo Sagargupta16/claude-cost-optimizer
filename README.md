@@ -171,9 +171,9 @@ Copy-paste configs that are already optimized. Drop these into your project:
 
 | Config | Philosophy | Link |
 |--------|-----------|------|
-| Cost-Conscious | Aggressive savings, Haiku default | [cost-conscious.json](templates/settings/cost-conscious.json) |
-| Balanced | Sonnet default, smart routing | [balanced.json](templates/settings/balanced.json) |
-| Performance-First | Opus for complex, speed priority | [performance-first.json](templates/settings/performance-first.json) |
+| Cost-Conscious | Haiku default, strict permissions, turn limits | [cost-conscious.json](templates/settings/cost-conscious.json) |
+| Balanced | Sonnet default, sensible permissions | [balanced.json](templates/settings/balanced.json) |
+| Performance-First | Opus default, minimal restrictions | [performance-first.json](templates/settings/performance-first.json) |
 
 ### Claude Commands
 
