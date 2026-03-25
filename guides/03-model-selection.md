@@ -224,10 +224,8 @@ Set a default model in your Claude Code settings (`~/.claude/settings.json` or p
 
 ```json
 {
-  "model": "sonnet",
-  "preferences": {
-    "defaultModel": "sonnet"
-  }
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "model": "sonnet"
 }
 ```
 
