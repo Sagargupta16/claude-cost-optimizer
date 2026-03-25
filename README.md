@@ -3,7 +3,7 @@
 
 > **Save 30-60% on Claude Code costs** with proven strategies, real benchmarks, and copy-paste configs.
 
-Claude Code is powerful — but costs add up fast. A single afternoon of heavy coding can burn through $20-50 in tokens. Most of this spend is **avoidable** with the right setup.
+Claude Code is powerful - but costs add up fast. A single afternoon of heavy coding can burn through $20-50 in tokens. Most of this spend is **avoidable** with the right setup.
 
 This repo is a collection of **battle-tested strategies** for reducing Claude Code costs without sacrificing quality. Every technique includes expected savings percentages based on real-world benchmarks.
 
@@ -15,11 +15,11 @@ Apply these 5 changes right now and cut costs immediately:
 
 | # | Strategy | Expected Savings | Effort | Guide |
 |---|----------|:----------------:|:------:|-------|
-| 1 | **Keep CLAUDE.md under 150 lines** — every line loads on every turn | 10-20% | 5 min | [Context Optimization](guides/02-context-optimization.md) |
-| 2 | **Use Haiku for simple tasks** (`--model haiku`) — 5x cheaper than Opus | 20-40% | 1 min | [Model Selection](guides/03-model-selection.md) |
-| 3 | **Use Plan Mode before coding** — prevents wasted iterative cycles | 15-25% | 0 min | [Workflow Patterns](guides/04-workflow-patterns.md) |
-| 4 | **Add `.claudeignore`** — stop Claude from reading `node_modules`, `dist`, lock files | 5-15% | 2 min | [Context Optimization](guides/02-context-optimization.md) |
-| 5 | **Delegate to subagents** — isolate expensive searches from main context | 20-40% | 5 min | [Workflow Patterns](guides/04-workflow-patterns.md) |
+| 1 | **Keep CLAUDE.md under 150 lines** - every line loads on every turn | 10-20% | 5 min | [Context Optimization](guides/02-context-optimization.md) |
+| 2 | **Use Haiku for simple tasks** (`--model haiku`) - 5x cheaper than Opus | 20-40% | 1 min | [Model Selection](guides/03-model-selection.md) |
+| 3 | **Use Plan Mode before coding** - prevents wasted iterative cycles | 15-25% | 0 min | [Workflow Patterns](guides/04-workflow-patterns.md) |
+| 4 | **Add `.claudeignore`** - stop Claude from reading `node_modules`, `dist`, lock files | 5-15% | 2 min | [Context Optimization](guides/02-context-optimization.md) |
+| 5 | **Delegate to subagents** - isolate expensive searches from main context | 20-40% | 5 min | [Workflow Patterns](guides/04-workflow-patterns.md) |
 
 > Combined impact: **30-60% reduction** in monthly Claude Code spend.
 
@@ -108,7 +108,7 @@ Output Tokens (you pay more for):
 
 ### Prompt Caching
 
-Claude Code uses **prompt caching** to reduce costs. Cached input tokens cost significantly less (e.g., $0.50/MTok vs $5.00/MTok on Opus 4.6 — a 90% discount). Content that stays the same between turns (like CLAUDE.md and system prompt) gets cached automatically.
+Claude Code uses **prompt caching** to reduce costs. Cached input tokens cost significantly less (e.g., $0.50/MTok vs $5.00/MTok on Opus 4.6 - a 90% discount). Content that stays the same between turns (like CLAUDE.md and system prompt) gets cached automatically.
 
 **What this means**: The first turn is expensive, subsequent turns benefit from caching. Avoid breaking the cache by keeping stable content (CLAUDE.md, file reads) consistent between turns.
 
@@ -136,7 +136,7 @@ Real-world cost measurements for common development tasks:
 
 | Benchmark | What's Compared |
 |-----------|-----------------|
-| [Task Comparison](benchmarks/task-comparison.md) | Same task with/without optimization — before vs after |
+| [Task Comparison](benchmarks/task-comparison.md) | Same task with/without optimization - before vs after |
 | [Model Comparison](benchmarks/model-comparison.md) | Opus vs Sonnet vs Haiku for different task types |
 | [Context Size Impact](benchmarks/context-size-impact.md) | How CLAUDE.md size and file reads affect total cost |
 
@@ -237,7 +237,7 @@ Ways to contribute:
 
 ### How much does Claude Code actually cost?
 
-With the Pro plan ($20/mo), Max 5x ($100/mo), or Max 20x ($200/mo), you get included usage. After that, costs depend on your model and token usage. Heavy users report $3-15/day without optimization. With optimization, most drop to $1-5/day. Note that Opus 4.6 is now priced at $5/$25 — the same price Sonnet used to be — making top-tier model usage much more affordable.
+With the Pro plan ($20/mo), Max 5x ($100/mo), or Max 20x ($200/mo), you get included usage. After that, costs depend on your model and token usage. Heavy users report $3-15/day without optimization. With optimization, most drop to $1-5/day. Note that Opus 4.6 is now priced at $5/$25 - the same price Sonnet used to be - making top-tier model usage much more affordable.
 
 ### Does this apply to Claude API too?
 
@@ -245,7 +245,7 @@ Many strategies (context optimization, model selection, prompt engineering) appl
 
 ### Will these optimizations reduce output quality?
 
-No. The strategies focus on eliminating **waste** — duplicate context, unnecessary file reads, using expensive models for simple tasks. Quality stays the same or improves (because Claude has less noise to process).
+No. The strategies focus on eliminating **waste** - duplicate context, unnecessary file reads, using expensive models for simple tasks. Quality stays the same or improves (because Claude has less noise to process).
 
 ### How do I track my spending?
 
@@ -253,7 +253,7 @@ Use the `/usage` command in Claude Code to see current session stats. For histor
 
 ### What's the biggest single change I can make?
 
-Switch to **Haiku for routine tasks** (formatting, simple fixes, file lookups). It's 5x cheaper than Opus and handles 70% of common coding tasks well. With Opus 4.6 now at $5/$25 (the same price Sonnet used to be), even the top model is much more accessible — but Haiku at $1/$5 still adds up to meaningful savings at scale.
+Switch to **Haiku for routine tasks** (formatting, simple fixes, file lookups). It's 5x cheaper than Opus and handles 70% of common coding tasks well. With Opus 4.6 now at $5/$25 (the same price Sonnet used to be), even the top model is much more accessible - but Haiku at $1/$5 still adds up to meaningful savings at scale.
 
 ---
 
@@ -265,4 +265,4 @@ If this repo helped you save money, consider giving it a star! It helps others f
 
 ## License
 
-[MIT](LICENSE) — use these strategies, templates, and tools however you want.
+[MIT](LICENSE) - use these strategies, templates, and tools however you want.

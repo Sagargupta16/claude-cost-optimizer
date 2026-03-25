@@ -29,37 +29,37 @@
 
 ---
 
-## All Strategies — Ranked by Impact
+## All Strategies - Ranked by Impact
 
 ### Tier 1: High Impact (Do These First)
 
 | # | Strategy | Savings | Effort | Explanation | Guide |
 |---|----------|:-------:|:------:|-------------|-------|
-| 1 | **Use cheaper models for simple tasks** | 20-40% | 1 min | Run `claude --model haiku` for formatting, simple fixes, file lookups, and boilerplate — Haiku handles ~70% of routine work at 1/5th the cost of Opus | [Model Selection](guides/03-model-selection.md) |
+| 1 | **Use cheaper models for simple tasks** | 20-40% | 1 min | Run `claude --model haiku` for formatting, simple fixes, file lookups, and boilerplate - Haiku handles ~70% of routine work at 1/5th the cost of Opus | [Model Selection](guides/03-model-selection.md) |
 | 2 | **Delegate work to subagents** | 20-40% | 5 min | Subagent tool calls get their own isolated context; large file searches and multi-file reads happen outside your main conversation, keeping your primary context small | [Workflow Patterns](guides/04-workflow-patterns.md) |
-| 3 | **Use Plan Mode before coding** | 15-25% | 0 min | Press `Shift+Tab` to toggle Plan Mode — Claude thinks through the approach before writing code, preventing expensive trial-and-error cycles that waste output tokens | [Workflow Patterns](guides/04-workflow-patterns.md) |
-| 4 | **Trim CLAUDE.md to under 150 lines** | 10-20% | 15 min | Every line of CLAUDE.md is loaded as input tokens on *every single turn* — 300 lines across 50 turns means you pay for those lines 50 times; cut ruthlessly | [Context Optimization](guides/02-context-optimization.md) |
-| 5 | **Preserve prompt cache** | 10-25% | 5 min | Cached input tokens cost 90% less; keep CLAUDE.md and system context stable between turns — avoid editing CLAUDE.md mid-session, and keep conversation flow linear | [Understanding Costs](guides/01-understanding-costs.md) |
+| 3 | **Use Plan Mode before coding** | 15-25% | 0 min | Press `Shift+Tab` to toggle Plan Mode - Claude thinks through the approach before writing code, preventing expensive trial-and-error cycles that waste output tokens | [Workflow Patterns](guides/04-workflow-patterns.md) |
+| 4 | **Trim CLAUDE.md to under 150 lines** | 10-20% | 15 min | Every line of CLAUDE.md is loaded as input tokens on *every single turn* - 300 lines across 50 turns means you pay for those lines 50 times; cut ruthlessly | [Context Optimization](guides/02-context-optimization.md) |
+| 5 | **Preserve prompt cache** | 10-25% | 5 min | Cached input tokens cost 90% less; keep CLAUDE.md and system context stable between turns - avoid editing CLAUDE.md mid-session, and keep conversation flow linear | [Understanding Costs](guides/01-understanding-costs.md) |
 
 ### Tier 2: Medium Impact (Set Up Once)
 
 | # | Strategy | Savings | Effort | Explanation | Guide |
 |---|----------|:-------:|:------:|-------------|-------|
-| 6 | **Configure `.claudeignore`** | 5-15% | 2 min | Prevent Claude from indexing `node_modules/`, `dist/`, `.git/`, lock files, and build artifacts — these add thousands of tokens when Claude searches your project | [Context Optimization](guides/02-context-optimization.md) |
-| 7 | **Use `/compact` regularly** | 10-20% | 0 min | Run `/compact` when conversation gets long (20+ turns) to summarize history and reset context window — prevents the exponential cost growth of long sessions | [Context Optimization](guides/02-context-optimization.md) |
-| 8 | **Set budget caps** | 0%* | 1 min | Use `claude --max-budget-usd 5` or configure in settings to prevent runaway sessions — does not save tokens directly but prevents surprise bills | [Understanding Costs](guides/01-understanding-costs.md) |
-| 9 | **Create custom slash commands** | 10-15% | 10 min | Define reusable commands in `.claude/commands/` for repeated workflows — avoids re-explaining the same instructions across sessions, saving input tokens each time | [Workflow Patterns](guides/04-workflow-patterns.md) |
-| 10 | **Use batch operations** | 15-30% | 5 min | Group related changes into single prompts instead of one-at-a-time requests — "rename X in all 12 files" beats 12 individual "rename X in this file" turns | [Workflow Patterns](guides/04-workflow-patterns.md) |
+| 6 | **Configure `.claudeignore`** | 5-15% | 2 min | Prevent Claude from indexing `node_modules/`, `dist/`, `.git/`, lock files, and build artifacts - these add thousands of tokens when Claude searches your project | [Context Optimization](guides/02-context-optimization.md) |
+| 7 | **Use `/compact` regularly** | 10-20% | 0 min | Run `/compact` when conversation gets long (20+ turns) to summarize history and reset context window - prevents the exponential cost growth of long sessions | [Context Optimization](guides/02-context-optimization.md) |
+| 8 | **Set budget caps** | 0%* | 1 min | Use `claude --max-budget-usd 5` or configure in settings to prevent runaway sessions - does not save tokens directly but prevents surprise bills | [Understanding Costs](guides/01-understanding-costs.md) |
+| 9 | **Create custom slash commands** | 10-15% | 10 min | Define reusable commands in `.claude/commands/` for repeated workflows - avoids re-explaining the same instructions across sessions, saving input tokens each time | [Workflow Patterns](guides/04-workflow-patterns.md) |
+| 10 | **Use batch operations** | 15-30% | 5 min | Group related changes into single prompts instead of one-at-a-time requests - "rename X in all 12 files" beats 12 individual "rename X in this file" turns | [Workflow Patterns](guides/04-workflow-patterns.md) |
 
 ### Tier 3: Ongoing Habits (Compound Over Time)
 
 | # | Strategy | Savings | Effort | Explanation | Guide |
 |---|----------|:-------:|:------:|-------------|-------|
-| 11 | **Write concise prompts** | 5-10% | Ongoing | Be specific and direct — "Add null check to `processOrder` in `src/orders.ts` line 47" beats "Can you look at the orders file and maybe add some error handling?" | [Context Optimization](guides/02-context-optimization.md) |
-| 12 | **Avoid reading entire large files** | 5-15% | Ongoing | Point Claude to specific line ranges or functions instead of letting it `Read` a 2000-line file — use "read lines 100-150 of X" or reference functions by name | [Context Optimization](guides/02-context-optimization.md) |
-| 13 | **Start new sessions for new tasks** | 10-20% | Ongoing | Fresh sessions have minimal context; a 50-turn session carries all prior history as input — start clean when switching tasks to avoid paying for irrelevant context | [Understanding Costs](guides/01-understanding-costs.md) |
-| 14 | **Use memory files over inline repeats** | 5-10% | 5 min | Put project conventions in CLAUDE.md once rather than repeating "use single quotes" or "always add tests" in every prompt — say it once, reference forever | [Context Optimization](guides/02-context-optimization.md) |
-| 15 | **Monitor with `/usage`** | Awareness | 0 min | Run `/usage` periodically to see token consumption in your current session — knowing where tokens go is the first step to reducing them | [Understanding Costs](guides/01-understanding-costs.md) |
+| 11 | **Write concise prompts** | 5-10% | Ongoing | Be specific and direct - "Add null check to `processOrder` in `src/orders.ts` line 47" beats "Can you look at the orders file and maybe add some error handling?" | [Context Optimization](guides/02-context-optimization.md) |
+| 12 | **Avoid reading entire large files** | 5-15% | Ongoing | Point Claude to specific line ranges or functions instead of letting it `Read` a 2000-line file - use "read lines 100-150 of X" or reference functions by name | [Context Optimization](guides/02-context-optimization.md) |
+| 13 | **Start new sessions for new tasks** | 10-20% | Ongoing | Fresh sessions have minimal context; a 50-turn session carries all prior history as input - start clean when switching tasks to avoid paying for irrelevant context | [Understanding Costs](guides/01-understanding-costs.md) |
+| 14 | **Use memory files over inline repeats** | 5-10% | 5 min | Put project conventions in CLAUDE.md once rather than repeating "use single quotes" or "always add tests" in every prompt - say it once, reference forever | [Context Optimization](guides/02-context-optimization.md) |
+| 15 | **Monitor with `/usage`** | Awareness | 0 min | Run `/usage` periodically to see token consumption in your current session - knowing where tokens go is the first step to reducing them | [Understanding Costs](guides/01-understanding-costs.md) |
 
 ---
 
@@ -75,7 +75,7 @@ Is the task...
 
 **Switch models mid-session**: Type `/model` and select, or start with `claude --model sonnet`.
 
-> **Note**: Opus 4.6 is now priced at $5/$25 — the same price Sonnet used to be. The gap between models is smaller, so switching down to Haiku ($1/$5) provides a 5x savings, not 19x as it was historically.
+> **Note**: Opus 4.6 is now priced at $5/$25 - the same price Sonnet used to be. The gap between models is smaller, so switching down to Haiku ($1/$5) provides a 5x savings, not 19x as it was historically.
 
 ---
 
@@ -157,8 +157,8 @@ claude --model opus --max-budget-usd 20
 
 Tech: TypeScript, React 19, Node 22, PostgreSQL
 Style: ESLint + Prettier (run `npm run lint` before committing)
-Tests: Vitest — run `npm test` for unit, `npm run e2e` for Playwright
-Build: `npm run build` — must pass before PR
+Tests: Vitest - run `npm test` for unit, `npm run e2e` for Playwright
+Build: `npm run build` - must pass before PR
 
 ## Key Rules
 - Prefer editing existing files over creating new ones
@@ -182,7 +182,7 @@ Build: `npm run build` — must pass before PR
 7. Getting long?       → /compact (summarize and reset context)
 8. Simple task?        → /model haiku (switch down temporarily)
 9. New topic?          → Start a fresh session
-10. Done               → Check /usage — learn your patterns
+10. Done               → Check /usage - learn your patterns
 ```
 
 ---
@@ -212,7 +212,7 @@ Already spending too much? Do these right now:
 2. **Run `/compact`** to shrink conversation history
 3. **Start a new session** if context is bloated beyond recovery
 4. **Set a hard cap**: `claude --max-budget-usd 2` for the next session
-5. **Audit your CLAUDE.md** — delete anything Claude does not need on every turn
+5. **Audit your CLAUDE.md** - delete anything Claude does not need on every turn
 
 ---
 

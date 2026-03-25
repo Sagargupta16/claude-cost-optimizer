@@ -1,4 +1,4 @@
-# CLAUDE.md — claude-cost-optimizer
+# CLAUDE.md - claude-cost-optimizer
 
 ## Purpose
 
@@ -6,12 +6,12 @@ This repo is a documentation and tooling project for reducing Claude Code costs.
 
 ## File Structure
 
-- `guides/` — Deep-dive optimization guides (markdown)
-- `benchmarks/` — Real-world cost measurement data (markdown)
-- `templates/` — Copy-paste CLAUDE.md configs, settings, and commands
-- `tools/token-estimator/` — Python CLI for estimating token counts and costs
-- `tools/usage-analyzer/` — Python CLI for analyzing Claude session data
-- `cheatsheet.md` — One-page quick reference
+- `guides/` - Deep-dive optimization guides (markdown)
+- `benchmarks/` - Real-world cost measurement data (markdown)
+- `templates/` - Copy-paste CLAUDE.md configs, settings, and commands
+- `tools/token-estimator/` - Python CLI for estimating token counts and costs
+- `tools/usage-analyzer/` - Python CLI for analyzing Claude session data
+- `cheatsheet.md` - One-page quick reference
 
 ## Writing Conventions
 

@@ -16,7 +16,7 @@ Ran a cost comparison test? Submit your findings using the [Benchmark Result](/.
 - Add new Claude Code command templates for common workflows.
 
 ### Build a Tool
-The `tools/` directory contains Python utilities for cost estimation and analysis. Contributions that extend or improve these tools are welcome. New tool ideas are also encouraged — open an issue to discuss before building.
+The `tools/` directory contains Python utilities for cost estimation and analysis. Contributions that extend or improve these tools are welcome. New tool ideas are also encouraged - open an issue to discuss before building.
 
 ### Improve the Guides
 - Fix errors, typos, or outdated information.
