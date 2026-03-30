@@ -1,41 +1,14 @@
 {
-  "$schema": "https://cdn.jsdelivr.net/gh/anthropics/claude-code@main/.claude/settings.schema.json",
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
 
   "_comment": [
-    "BALANCED SETTINGS — Recommended default profile.",
+    "BALANCED SETTINGS - Recommended default profile.",
     "Sonnet for most tasks. Reasonable limits, good quality-to-cost ratio.",
     "Best for: most teams, daily development, standard feature work.",
-    "Copy this file to your project's .claude/settings.json"
+    "Copy this file to ~/.claude/settings.json or .claude/settings.json"
   ],
 
-  "model": {
-    "default": "sonnet",
-    "thinking": "sonnet",
-    "_comment": "Sonnet offers strong reasoning at moderate cost. Use Opus for truly complex tasks."
-  },
-
-  "preferences": {
-    "autoApprove": [
-      "Read",
-      "Glob",
-      "Grep"
-    ],
-    "codeStyle": "clean",
-    "verbosity": "normal",
-    "_comment": "Auto-approve read operations to reduce approval friction."
-  },
-
-  "context": {
-    "CLAUDE.md": {
-      "maxTokens": 1000,
-      "_comment": "Standard template (~700 tokens) gives good context without excess overhead."
-    },
-    "fileReading": {
-      "maxLines": 500,
-      "preferPartialReads": false,
-      "_comment": "Allow full file reads for better understanding, within reason."
-    }
-  },
+  "model": "sonnet",
 
   "permissions": {
     "allow": [
@@ -43,35 +16,34 @@
       "Glob",
       "Grep",
       "Edit",
-      "Bash(git *)",
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
       "Bash(npm test*)",
       "Bash(npm run *)",
       "Bash(npx tsc*)",
       "Bash(npx eslint*)"
     ],
     "deny": [
-      "Bash(npm install*)",
       "Bash(rm -rf*)",
-      "Bash(git push*)",
+      "Bash(git push --force*)",
       "Bash(curl*)",
       "Bash(wget*)"
-    ],
-    "_comment": "Allow standard dev operations. Block installs, destructive ops, and network calls."
+    ]
   },
 
-  "behavior": {
-    "editStyle": "standard",
-    "searchBeforeReading": true,
-    "preferGrep": false,
-    "avoidFullFileReads": false,
-    "_comment": "Read what you need, search when efficient, no artificial restrictions."
-  },
-
-  "costGuardrails": {
-    "maxTurnsPerTask": 20,
-    "warnAtTurns": 15,
-    "preferSingleFileEdits": false,
-    "avoidLargeRefactors": false,
-    "_comment": "Generous limits for standard development. Warn before long sessions."
+  "hooks": {
+    "Stop": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo 'Session paused - review token usage with /usage'",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
   }
 }
