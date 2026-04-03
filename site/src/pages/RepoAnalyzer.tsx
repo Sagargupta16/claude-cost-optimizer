@@ -45,11 +45,9 @@ function RepoAnalyzer() {
     try {
       const analysis = await analyzeRepo(parsed)
 
-      // Check if we found anything at all
-      const anyFound = analysis.files.some((f) => f.found)
-      if (!anyFound) {
+      if (!analysis.repoExists) {
         setError(
-          'Could not fetch any files. Make sure the repo is public and the URL is correct.',
+          'Repository not found. Make sure the repo is public and the URL is correct.',
         )
         setStatus('error')
         return

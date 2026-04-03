@@ -48,6 +48,7 @@ export interface AnalysisResult {
     perTurnTokens: number
     sessionTokens30Turns: number
   }
+  repoExists: boolean
   costEstimate: Record<ModelId, { perSession: number; perMonth: number }>
   recommendations: string[]
 }
@@ -118,14 +119,14 @@ async function fetchFile(
 async function fetchDefaultBranch(
   owner: string,
   repo: string,
-): Promise<string> {
+): Promise<{ branch: string; exists: boolean }> {
   try {
     const res = await fetch(`${GITHUB_API}/repos/${owner}/${repo}`)
-    if (!res.ok) throw new Error('repo not found')
+    if (!res.ok) return { branch: 'main', exists: false }
     const data = await res.json()
-    return data.default_branch || 'main'
+    return { branch: data.default_branch || 'main', exists: true }
   } catch {
-    return 'main'
+    return { branch: 'main', exists: false }
   }
 }
 
@@ -161,7 +162,10 @@ export async function analyzeRepo(
   input: RepoInput,
 ): Promise<AnalysisResult> {
   const { owner, repo } = input
-  const branch = input.branch || (await fetchDefaultBranch(owner, repo))
+  const repoInfo = input.branch
+    ? { branch: input.branch, exists: true }
+    : await fetchDefaultBranch(owner, repo)
+  const branch = repoInfo.branch
 
   const files = await Promise.all(
     FILES_TO_FETCH.map((path) => fetchFile(owner, repo, path, branch)),
@@ -403,6 +407,7 @@ export async function analyzeRepo(
     claudeMdAll,
     claudeIgnore,
     settings,
+    repoExists: repoInfo.exists,
     grade,
     tokenEstimate,
     costEstimate,
