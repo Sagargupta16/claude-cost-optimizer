@@ -3,10 +3,10 @@ import styles from './Home.module.css'
 
 const quickWins = [
   {
-    title: 'Keep CLAUDE.md under 150 lines',
+    title: 'Keep CLAUDE.md under 4,000 characters',
     savings: '10-20%',
     description:
-      'Every line costs 7 tokens per turn. A 300-line file wastes over 2,100 tokens on every single interaction.',
+      'Content beyond 4,000 characters per file is silently truncated. Total budget across all instruction files: 12,000 characters.',
   },
   {
     title: 'Use Haiku for simple tasks',

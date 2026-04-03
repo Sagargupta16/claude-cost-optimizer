@@ -15,7 +15,7 @@ Apply these 5 changes right now and cut costs immediately:
 
 | # | Strategy | Expected Savings | Effort | Guide |
 |---|----------|:----------------:|:------:|-------|
-| 1 | **Keep CLAUDE.md under 150 lines** - every line loads on every turn | 10-20% | 5 min | [Context Optimization](guides/02-context-optimization.md) |
+| 1 | **Keep CLAUDE.md under 4,000 characters** (~80 lines) - loaded every turn, truncated beyond 4K | 10-20% | 5 min | [Context Optimization](guides/02-context-optimization.md) |
 | 2 | **Use Haiku for simple tasks** (`--model haiku`) - 5x cheaper than Opus | 20-40% | 1 min | [Model Selection](guides/03-model-selection.md) |
 | 3 | **Use Plan Mode before coding** - prevents wasted iterative cycles | 15-25% | 0 min | [Workflow Patterns](guides/04-workflow-patterns.md) |
 | 4 | **Add `.claudeignore`** - stop Claude from reading `node_modules`, `dist`, lock files | 5-15% | 2 min | [Context Optimization](guides/02-context-optimization.md) |
@@ -48,9 +48,9 @@ Understanding the billing model is the foundation of optimization.
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M) | Context Window | Max Output |
 |-------|:---------------------:|:----------------------:|:-------------------:|:--------------:|:----------:|
-| **Opus 4.6** | $5.00 | $25.00 | $0.50 | 1M | 128K |
-| **Opus 4.6 (1M, >200K input)** | $10.00 (2x) | $37.50 (1.5x) | $1.00 | 1M | 128K |
-| **Opus 4.6 Fast Mode** | $30.00 (6x) | $150.00 (6x) | -- | 1M (included) | 128K |
+| **Opus 4.6** | $5.00 | $25.00 | $0.50 | 1M | 32K |
+| **Opus 4.6 (1M, >200K input)** | $10.00 (2x) | $37.50 (1.5x) | $1.00 | 1M | 32K |
+| **Opus 4.6 Fast Mode** | $30.00 (6x) | $150.00 (6x) | -- | 1M (included) | 32K |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 1M | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 200K | 64K |
 
@@ -105,7 +105,7 @@ Output Tokens (you pay more for):
 
 ### The Key Insight
 
-> **Input tokens are charged every turn.** If your CLAUDE.md is 300 lines and you have 50 turns in a session, you're paying for those 300 lines x 50 times. Cutting it to 100 lines saves you 2/3 of that recurring cost.
+> **Input tokens are charged every turn.** Your CLAUDE.md loads on every single turn. Content beyond 4,000 characters per file is silently truncated, and the total budget across all instruction files is 12,000 characters. Keep it lean -- every extra line costs you tokens on every turn.
 
 ### Prompt Caching
 

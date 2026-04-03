@@ -38,7 +38,7 @@
 | 1 | **Use cheaper models for simple tasks** | 20-40% | 1 min | Run `claude --model haiku` for formatting, simple fixes, file lookups, and boilerplate - Haiku handles ~70% of routine work at 1/5th the cost of Opus | [Model Selection](guides/03-model-selection.md) |
 | 2 | **Delegate work to subagents** | 20-40% | 5 min | Subagent tool calls get their own isolated context; large file searches and multi-file reads happen outside your main conversation, keeping your primary context small | [Workflow Patterns](guides/04-workflow-patterns.md) |
 | 3 | **Use Plan Mode before coding** | 15-25% | 0 min | Press `Shift+Tab` to toggle Plan Mode - Claude thinks through the approach before writing code, preventing expensive trial-and-error cycles that waste output tokens | [Workflow Patterns](guides/04-workflow-patterns.md) |
-| 4 | **Trim CLAUDE.md to under 150 lines** | 10-20% | 15 min | Every line of CLAUDE.md is loaded as input tokens on *every single turn* - 300 lines across 50 turns means you pay for those lines 50 times; cut ruthlessly | [Context Optimization](guides/02-context-optimization.md) |
+| 4 | **Trim CLAUDE.md to under 4,000 characters** | 10-20% | 15 min | Every line loads as input tokens on *every turn*. Content beyond 4,000 chars/file is silently truncated. Total budget across all instruction files: 12,000 chars. Cut ruthlessly | [Context Optimization](guides/02-context-optimization.md) |
 | 5 | **Preserve prompt cache** | 10-25% | 5 min | Cached input tokens cost 90% less; keep CLAUDE.md and system context stable between turns - avoid editing CLAUDE.md mid-session, and keep conversation flow linear | [Understanding Costs](guides/01-understanding-costs.md) |
 
 ### Tier 2: Medium Impact (Set Up Once)
