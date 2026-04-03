@@ -23,6 +23,34 @@ Apply these 5 changes right now and cut costs immediately:
 
 > Combined impact: **30-60% reduction** in monthly Claude Code spend.
 
+**New here?** Start with the **[Getting Started in 5 Minutes](guides/00-getting-started.md)** guide.
+
+### Before vs After
+
+Here's what optimization looks like on a real project (30-turn session, Opus 4.6):
+
+```
+BEFORE (no optimization):
+  CLAUDE.md:        450 lines (6,200 chars -- truncated at 4K)
+  .claudeignore:    missing
+  MCP servers:      6 active
+  System prompt:    ~15,000 tokens/turn
+  Session cost:     $2.85
+  Monthly (3x/day): $188.10
+
+AFTER (5 minutes of setup):
+  CLAUDE.md:        70 lines (2,800 chars -- under limit)
+  .claudeignore:    12 patterns
+  MCP servers:      2 active (disabled 4 unused)
+  System prompt:    ~5,500 tokens/turn
+  Session cost:     $1.12
+  Monthly (3x/day): $73.92
+
+  Savings: $114.18/month (61%)
+```
+
+Try it on your own repo: **[Repo Analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer)**
+
 ---
 
 ## Table of Contents
@@ -121,6 +149,7 @@ Deep-dive guides for each optimization area:
 
 | Guide | What You'll Learn |
 |-------|-------------------|
+| [00 - Getting Started](guides/00-getting-started.md) | Zero to optimized in 5 minutes -- the essential setup |
 | [01 - Understanding Costs](guides/01-understanding-costs.md) | How billing works, what costs the most, where money goes |
 | [02 - Context Optimization](guides/02-context-optimization.md) | Reduce input tokens: CLAUDE.md, .claudeignore, file reads |
 | [03 - Model Selection](guides/03-model-selection.md) | When to use Opus vs Sonnet vs Haiku (with decision tree) |
@@ -234,6 +263,12 @@ python tools/badge-generator/generate.py /path/to/your/project
 
 [Badge Generator Documentation](tools/badge-generator/README.md)
 
+### Repo Analyzer
+
+Paste any public GitHub repo URL to get a full cost audit -- fetches CLAUDE.md, .claudeignore, and settings via GitHub API, then returns a grade, cost estimates, and recommendations:
+
+**[Open Repo Analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer)** | [Source](site/src/pages/RepoAnalyzer.tsx)
+
 ### Interactive Cost Calculator
 
 Browser-based calculator that estimates your monthly Claude Code costs and shows optimization opportunities:
@@ -313,6 +348,7 @@ Ways to contribute:
 - **Add a template**: Submit a CLAUDE.md template for a new stack
 - **Improve guides**: Fix errors, add examples, clarify explanations
 - **Build a tool**: Add utilities that help track or reduce costs
+- **Join Discussions**: Ask questions and share strategies in [GitHub Discussions](https://github.com/Sagargupta16/claude-cost-optimizer/discussions)
 
 ---
 

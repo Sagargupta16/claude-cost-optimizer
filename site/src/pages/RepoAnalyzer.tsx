@@ -1,4 +1,5 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   parseRepoUrl,
   analyzeRepo,
@@ -9,13 +10,24 @@ import styles from './RepoAnalyzer.module.css'
 
 type Status = 'idle' | 'loading' | 'done' | 'error'
 
+const DEMO_REPO = 'Sagargupta16/claude-cost-optimizer'
+
 function RepoAnalyzer() {
+  const [searchParams] = useSearchParams()
   const [url, setUrl] = useState('')
   const [branch, setBranch] = useState('')
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState('')
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [copied, setCopied] = useState(false)
+
+  // Auto-fill from ?repo= query param
+  useEffect(() => {
+    const repoParam = searchParams.get('repo')
+    if (repoParam) {
+      setUrl(repoParam)
+    }
+  }, [searchParams])
 
   const handleAnalyze = useCallback(async () => {
     const parsed = parseRepoUrl(url)
@@ -104,9 +116,21 @@ function RepoAnalyzer() {
           </button>
         </div>
         {status === 'error' && <p className={styles.error}>{error}</p>}
-        <p className={styles.hint}>
-          Uses GitHub's public API (no auth needed for public repos). Rate limit: 60 requests/hour.
-        </p>
+        <div className={styles.hintRow}>
+          <p className={styles.hint}>
+            Uses GitHub's public API (no auth needed for public repos). Rate limit: 60 requests/hour.
+          </p>
+          {!result && (
+            <button
+              className={styles.tryDemo}
+              onClick={() => {
+                setUrl(DEMO_REPO)
+              }}
+            >
+              Try it on our repo
+            </button>
+          )}
+        </div>
       </div>
 
       {status === 'loading' && (

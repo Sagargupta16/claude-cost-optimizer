@@ -100,9 +100,32 @@
   font-size: 0.85rem;
 }
 
+.hintRow {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
 .hint {
   color: var(--text-muted);
   font-size: 0.8rem;
+}
+
+.tryDemo {
+  padding: 0.3rem 0.75rem;
+  background-color: transparent;
+  color: var(--accent-blue);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: border-color 0.15s;
+}
+
+.tryDemo:hover {
+  border-color: var(--accent-blue);
 }
 
 /* Loading */
