@@ -6,11 +6,20 @@ This repo is a documentation and tooling project for reducing Claude Code costs.
 
 ## File Structure
 
-- `guides/` - Deep-dive optimization guides (markdown)
-- `benchmarks/` - Real-world cost measurement data (markdown)
-- `templates/` - Copy-paste CLAUDE.md configs, settings, and commands
+- `guides/` - Deep-dive optimization guides (01-09 + visual diagrams)
+- `benchmarks/` - Real-world cost measurement data and community leaderboard
+- `templates/` - Copy-paste CLAUDE.md configs (10 stacks), settings, and commands
 - `tools/token-estimator/` - Python CLI for estimating token counts and costs
 - `tools/usage-analyzer/` - Python CLI for analyzing Claude session data
+- `tools/badge-generator/` - Python CLI for cost-efficiency grading (A+ to F)
+- `tools/mcp-cost-server/` - MCP server for in-session cost estimation
+- `tools/vscode-extension/` - VS Code extension for token/cost status bar
+- `tools/optimize-command/` - /optimize custom command for Claude Code
+- `tools/actions/` - Reusable GitHub Action for cost auditing
+- `hooks/` - Claude Code hooks for budget enforcement
+- `site/` - React + Vite + TypeScript site (calculator, badge checker) for GitHub Pages
+- `case-studies/` - Community optimization stories
+- `docs/` - Awesome-list submission prep and internal docs
 - `cheatsheet.md` - One-page quick reference
 
 ## Writing Conventions
@@ -34,4 +43,4 @@ Current Claude API pricing (March 2026): Opus 4.6 $5/$25, Sonnet 4.6 $3/$15, Hai
 
 Context windows: Opus 4.6 = 1M, Sonnet 4.6 = 1M, Haiku 4.5 = 200K.
 
-Update pricing references across ALL files (README, guides/01-06, cheatsheet, benchmarks) when rates change.
+Update pricing references across ALL files (README, guides/01-09, cheatsheet, benchmarks, site/src/utils/pricing.ts, tools/*/estimate.py) when rates change.

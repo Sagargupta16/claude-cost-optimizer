@@ -1,67 +1,104 @@
-# Contributing to Claude Cost Optimizer
+# Contributing
 
-Thank you for your interest in helping others save money on Claude Code. Contributions of all kinds are welcome, from quick tips to detailed benchmarks.
+Every contribution helps developers save money on Claude Code. Whether you star the repo, file an issue, or submit a PR -- it all counts.
 
-## Ways to Contribute
+## Contribution Ladder
 
-### Share a Cost-Saving Tip
-Found a technique that reduced your Claude costs? Open an issue using the [Tip Submission](/.github/ISSUE_TEMPLATE/tip-submission.md) template. Include expected savings, effort level, and any evidence you have.
+Pick your comfort level and jump in.
 
-### Submit Benchmark Results
-Ran a cost comparison test? Submit your findings using the [Benchmark Result](/.github/ISSUE_TEMPLATE/benchmark-result.md) template. Reproducible benchmarks with clear methodology are especially valuable.
+| Level | What to do | Time needed |
+|-------|-----------|-------------|
+| 1 | Star the repo, share it with your team | 10 seconds |
+| 2 | Open an issue with a tip, bug report, or question | 5 minutes |
+| 3 | Submit a benchmark or case study via issue template | 15 minutes |
+| 4 | Fix a typo or improve wording in a guide (PR) | 10 minutes |
+| 5 | Add a CLAUDE.md template for a new stack (PR) | 30 minutes |
+| 6 | Build a tool or write a new guide (PR) | 1+ hours |
 
-### Add or Improve Templates
-- Submit a CLAUDE.md template for a stack or framework not yet covered.
-- Improve existing templates based on real-world testing.
-- Add new Claude Code command templates for common workflows.
+Most contributions start at Level 2. You don't need to write code to help.
 
-### Build a Tool
-The `tools/` directory contains Python utilities for cost estimation and analysis. Contributions that extend or improve these tools are welcome. New tool ideas are also encouraged - open an issue to discuss before building.
+## Open an Issue (No Code Required)
 
-### Improve the Guides
-- Fix errors, typos, or outdated information.
-- Add examples, diagrams, or clarifications.
-- Expand sections that are too brief.
-- Update pricing data when Anthropic changes rates.
+The fastest way to contribute:
 
-## Pull Request Guidelines
+- **Share a tip** -- Found a way to cut costs? [Open a tip submission](https://github.com/Sagargupta16/claude-cost-optimizer/issues/new?template=tip-submission.md). Even one sentence is useful.
+- **Report a bug or error** -- Spot wrong pricing, a broken link, or bad advice? Open an issue. No template needed.
+- **Submit benchmarks** -- Ran a cost comparison? [Submit your numbers](https://github.com/Sagargupta16/claude-cost-optimizer/issues/new?template=benchmark-result.md) so others can learn from your data.
+- **Share your story** -- Reduced your Claude costs on a real project? [Tell us how](https://github.com/Sagargupta16/claude-cost-optimizer/issues/new?template=case-study.md).
+- **Ask a question** -- Not sure about something? Open an issue with the "question" label.
 
-1. **Fork the repository** and create your branch from `main`.
-2. **Keep changes focused.** One PR per topic. Don't bundle unrelated changes.
-3. **Test your contributions.** For tools, verify they run without errors. For templates, test them in a real project if possible.
-4. **Update related files.** If your change affects the README, cheatsheet, or other docs, update them too.
-5. **Write a clear PR description.** Explain what you changed and why.
+## Your First PR in 5 Steps
 
-## Markdown Style Guide
+Never submitted a PR before? Follow these exact commands:
 
-This project is primarily documentation. Consistent formatting matters.
+```bash
+# 1. Fork the repo on GitHub (click the Fork button), then clone your fork
+git clone https://github.com/YOUR-USERNAME/claude-cost-optimizer.git
+cd claude-cost-optimizer
 
-- **Headings**: Use `##` for major sections, `###` for subsections. Don't skip levels.
-- **Tables**: Preferred over bullet lists for comparisons and structured data.
-- **Code blocks**: Always specify the language (```bash, ```python, ```json).
-- **Links**: Use relative paths for internal links (`guides/02-context-optimization.md`, not full URLs).
-- **Line length**: No strict limit, but aim for readability. One sentence per line is fine.
-- **Numbers**: Use specific numbers and percentages, not vague claims. "Saves 30-50%" is better than "saves a lot."
-- **Tone**: Direct and practical. Write for developers who want to save money, not for marketing.
+# 2. Create a branch
+git checkout -b my-fix
 
-## Python Code Style
+# 3. Make your changes (edit files, fix typos, add content)
 
-For tools in the `tools/` directory:
+# 4. Commit your changes
+git add the-file-you-changed.md
+git commit -m "fix: correct pricing in caching guide"
 
-- Target Python 3.10+.
-- Follow PEP 8.
-- Use type hints for function signatures.
-- Include docstrings for modules and public functions.
-- Minimize dependencies. Prefer the standard library.
-- Handle errors gracefully with clear, user-facing messages.
-- Include argparse with help text and usage examples.
+# 5. Push and open a PR
+git push origin my-fix
+# Then go to your fork on GitHub and click "Compare & pull request"
+```
+
+That's it. We'll review it and help you get it merged.
+
+## What We're Looking For Right Now
+
+If you want to help but don't know where to start, here are specific things we need:
+
+- **CLAUDE.md templates** for: Django, Rails, Spring Boot, Go, Rust, Flutter, Svelte, Vue, Angular
+- **Benchmark data** comparing costs between Opus, Sonnet, and Haiku for real tasks
+- **Case studies** from teams that reduced costs by 30%+ on production projects
+- **Pricing corrections** if any numbers in the guides are outdated
+- **Tool improvements** to the token estimator or usage analyzer in `tools/`
+- **Typo fixes and wording improvements** in any guide -- always welcome
+
+## PR Guidelines
+
+1. Create your branch from `main`.
+2. One PR per topic. Don't bundle unrelated changes.
+3. Write a short description of what you changed and why.
+4. If you change pricing data, update it everywhere (README, guides, cheatsheet, benchmarks).
+5. For tools, verify they run without errors before submitting.
+
+## Style Quick Reference
+
+### Markdown
+
+| Rule | Example |
+|------|---------|
+| Headings | `##` for sections, `###` for subsections, don't skip levels |
+| Data | Use tables over bullet lists for comparisons |
+| Code blocks | Always tag the language: ` ```bash `, ` ```python `, ` ```json ` |
+| Links | Relative paths for internal links: `guides/02-context-optimization.md` |
+| Numbers | Be specific: "saves 30-50%" not "saves a lot" |
+| Tone | Direct and practical, not marketing copy |
+
+### Python (for tools)
+
+| Rule | Detail |
+|------|--------|
+| Version | Python 3.10+ |
+| Style | PEP 8, type hints on function signatures |
+| Docs | Docstrings on modules and public functions |
+| Deps | Standard library preferred, minimize external packages |
+| CLI | Use argparse with help text |
+| Errors | Handle gracefully with clear user-facing messages |
 
 ## Code of Conduct
 
-This project follows the [Contributor Covenant Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/). By participating, you agree to uphold a respectful and inclusive environment for everyone.
-
-In short: be kind, be constructive, and assume good intentions.
+Be kind, be constructive, assume good intentions. This project follows the [Contributor Covenant](https://www.contributor-covenant.org/version/2/1/code_of_conduct/).
 
 ## Questions?
 
-Open an issue with the question label. There are no bad questions when it comes to understanding Claude costs.
+Open an issue. There are no bad questions when it comes to understanding Claude costs.

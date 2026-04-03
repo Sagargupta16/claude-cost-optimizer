@@ -1,0 +1,11 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Share a Quick Tip
+    url: https://github.com/Sagargupta16/claude-cost-optimizer/issues/new?template=tip-submission.md
+    about: Got a cost-saving trick? Share it in 2 minutes.
+  - name: Submit Your Benchmarks
+    url: https://github.com/Sagargupta16/claude-cost-optimizer/issues/new?template=benchmark-result.md
+    about: Ran a cost comparison? Submit your numbers.
+  - name: Share Your Story
+    url: https://github.com/Sagargupta16/claude-cost-optimizer/issues/new?template=case-study.md
+    about: Tell us how you reduced your Claude costs.
