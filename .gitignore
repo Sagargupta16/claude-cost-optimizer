@@ -22,6 +22,8 @@ Thumbs.db
 # Site build artifacts
 site/node_modules/
 site/dist/
+site/package-lock.json
+*.tsbuildinfo
 
 # VS Code extension build artifacts
 tools/vscode-extension/node_modules/

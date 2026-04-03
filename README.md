@@ -236,13 +236,11 @@ python tools/badge-generator/generate.py /path/to/your/project
 
 ### Interactive Cost Calculator
 
-Browser-based calculator that estimates your monthly Claude Code costs and shows optimization opportunities. Try it locally or deploy via GitHub Pages:
+Browser-based calculator that estimates your monthly Claude Code costs and shows optimization opportunities:
 
-```
-docs/calculator/index.html
-```
+**[Open Calculator](https://sagargupta16.github.io/claude-cost-optimizer/calculator)** | [Source](site/src/pages/Calculator.tsx)
 
-[Open Calculator](docs/calculator/index.html)
+Also includes a **[Badge Checker](https://sagargupta16.github.io/claude-cost-optimizer/badge)** to grade your project's config without installing Python.
 
 ### MCP Cost Server
 

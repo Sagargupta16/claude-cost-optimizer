@@ -17,8 +17,9 @@ This repo is a documentation and tooling project for reducing Claude Code costs.
 - `tools/optimize-command/` - /optimize custom command for Claude Code
 - `tools/actions/` - Reusable GitHub Action for cost auditing
 - `hooks/` - Claude Code hooks for budget enforcement
-- `docs/calculator/` - Interactive HTML cost calculator
+- `site/` - React + Vite + TypeScript site (calculator, badge checker) for GitHub Pages
 - `case-studies/` - Community optimization stories
+- `docs/` - Awesome-list submission prep and internal docs
 - `cheatsheet.md` - One-page quick reference
 
 ## Writing Conventions
