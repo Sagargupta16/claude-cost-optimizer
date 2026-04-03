@@ -4,6 +4,7 @@ import Footer from './components/Footer'
 import Home from './pages/Home'
 import Calculator from './pages/Calculator'
 import BadgeChecker from './pages/BadgeChecker'
+import RepoAnalyzer from './pages/RepoAnalyzer'
 import styles from './App.module.css'
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/calculator" element={<Calculator />} />
           <Route path="/badge" element={<BadgeChecker />} />
+          <Route path="/analyzer" element={<RepoAnalyzer />} />
         </Routes>
       </main>
       <Footer />

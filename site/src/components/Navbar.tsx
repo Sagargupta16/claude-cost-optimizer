@@ -32,7 +32,15 @@ function Navbar() {
               isActive ? `${styles.link} ${styles.active}` : styles.link
             }
           >
-            Badge Checker
+            Badge
+          </NavLink>
+          <NavLink
+            to="/analyzer"
+            className={({ isActive }) =>
+              isActive ? `${styles.link} ${styles.active}` : styles.link
+            }
+          >
+            Repo Analyzer
           </NavLink>
           <a
             href="https://github.com/Sagargupta16/claude-cost-optimizer"
