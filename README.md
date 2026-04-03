@@ -1,5 +1,5 @@
 # Claude Cost Optimizer
-[![Stars](https://img.shields.io/github/stars/Sagargupta16/claude-cost-optimizer?style=flat)](https://github.com/Sagargupta16/claude-cost-optimizer/stargazers) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Last Updated](https://img.shields.io/badge/updated-March_2026-brightgreen)](https://github.com/Sagargupta16/claude-cost-optimizer/commits/main)
+[![Stars](https://img.shields.io/github/stars/Sagargupta16/claude-cost-optimizer?style=flat)](https://github.com/Sagargupta16/claude-cost-optimizer/stargazers) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Last Updated](https://img.shields.io/badge/updated-April_2026-brightgreen)](https://github.com/Sagargupta16/claude-cost-optimizer/commits/main)
 
 > **Save 30-60% on Claude Code costs** with proven strategies, real benchmarks, and copy-paste configs.
 
@@ -33,6 +33,7 @@ Apply these 5 changes right now and cut costs immediately:
 - [Benchmarks](#benchmarks)
 - [Templates](#templates)
 - [Tools](#tools)
+- [Case Studies](#case-studies)
 - [Cheatsheet](#cheatsheet)
 - [Contributing](#contributing)
 - [FAQ](#faq)
@@ -127,6 +128,9 @@ Deep-dive guides for each optimization area:
 | [05 - Team Budgeting](guides/05-team-budgeting.md) | Per-developer budgets, cost tracking, ROI calculation |
 | [06 - Access Methods & Pricing](guides/06-access-methods-pricing.md) | Compare API vs Bedrock vs Vertex AI vs Claude Code pricing |
 | [07 - MCP & Agent Cost Impact](guides/07-mcp-agent-costs.md) | MCP server overhead, subagent costs, Agent SDK patterns |
+| [08 - Prompt Caching Deep Dive](guides/08-prompt-caching.md) | Cache mechanics, TTL economics, maximizing hit rates, ROI math |
+| [09 - Subscription Plan Value](guides/09-subscription-value.md) | Choose the right plan, maximize allowance, upgrade/downgrade signals |
+| [Visual Diagrams](guides/diagrams.md) | Mermaid flowcharts for model selection, session optimization, cost tiers |
 
 ---
 
@@ -139,6 +143,7 @@ Real-world cost measurements for common development tasks:
 | [Task Comparison](benchmarks/task-comparison.md) | Same task with/without optimization - before vs after |
 | [Model Comparison](benchmarks/model-comparison.md) | Opus vs Sonnet vs Haiku for different task types |
 | [Context Size Impact](benchmarks/context-size-impact.md) | How CLAUDE.md size and file reads affect total cost |
+| [Community Leaderboard](benchmarks/leaderboard.md) | Crowdsourced cost-per-task data from the community |
 
 > All benchmarks include methodology, raw numbers, and reproducible steps.
 
@@ -166,6 +171,11 @@ Copy-paste configs that are already optimized. Drop these into your project:
 | FastAPI + Python | [fastapi-python.md](templates/CLAUDE.md/by-stack/fastapi-python.md) |
 | MERN Stack | [mern.md](templates/CLAUDE.md/by-stack/mern.md) |
 | Terraform + AWS | [terraform-aws.md](templates/CLAUDE.md/by-stack/terraform-aws.md) |
+| Go | [go.md](templates/CLAUDE.md/by-stack/go.md) |
+| Rust | [rust.md](templates/CLAUDE.md/by-stack/rust.md) |
+| Django + Python | [django.md](templates/CLAUDE.md/by-stack/django.md) |
+| Ruby on Rails | [rails.md](templates/CLAUDE.md/by-stack/rails.md) |
+| Java Spring Boot | [java-spring.md](templates/CLAUDE.md/by-stack/java-spring.md) |
 
 ### Settings Configs
 
@@ -182,6 +192,7 @@ Copy-paste configs that are already optimized. Drop these into your project:
 | `/cost-check` | Check current session usage | [cost-check.md](templates/commands/cost-check.md) |
 | `/budget-mode` | Force cost-conscious behavior | [budget-mode.md](templates/commands/budget-mode.md) |
 | `/quick-fix` | Minimal-token bug fix | [quick-fix.md](templates/commands/quick-fix.md) |
+| `/optimize` | Audit project config and get cost-saving recommendations | [optimize.md](tools/optimize-command/optimize.md) |
 
 ---
 
@@ -212,6 +223,78 @@ python tools/usage-analyzer/analyze.py ~/.claude/projects/
 
 [Usage Analyzer Documentation](tools/usage-analyzer/README.md)
 
+### Efficiency Badge Generator
+
+Grade your project's cost efficiency (A+ to F) and generate a shields.io badge:
+
+```bash
+python tools/badge-generator/generate.py /path/to/your/project
+# Output: Grade, breakdown, shields.io badge URL, markdown snippet
+```
+
+[Badge Generator Documentation](tools/badge-generator/README.md)
+
+### Interactive Cost Calculator
+
+Browser-based calculator that estimates your monthly Claude Code costs and shows optimization opportunities. Try it locally or deploy via GitHub Pages:
+
+```
+docs/calculator/index.html
+```
+
+[Open Calculator](docs/calculator/index.html)
+
+### MCP Cost Server
+
+An MCP server that provides cost estimation tools directly inside Claude Code sessions:
+
+```bash
+cd tools/mcp-cost-server && npm install && npm run build
+# Then add to your Claude Code settings.json as an MCP server
+```
+
+[MCP Cost Server Documentation](tools/mcp-cost-server/README.md)
+
+### Budget Enforcement Hooks
+
+Claude Code hooks that track tool calls per session and warn when approaching limits:
+
+```bash
+# Copy hooks and add to your settings.json
+cp hooks/budget-tracker.sh hooks/session-summary.sh ~/.claude/
+```
+
+[Hooks Documentation](hooks/README.md)
+
+### VS Code Extension
+
+Shows estimated token count and cost in the VS Code status bar for the active file:
+
+```bash
+cd tools/vscode-extension && npm install && npm run compile
+# Then press F5 in VS Code to test
+```
+
+[VS Code Extension Documentation](tools/vscode-extension/README.md)
+
+### GitHub Action
+
+Reusable GitHub Action that audits Claude Code configuration in PRs and reports cost efficiency:
+
+```yaml
+- uses: ./tools/actions/claude-cost-audit
+  with:
+    path: '.'
+```
+
+[Action Documentation](tools/actions/claude-cost-audit/action.yml)
+
+---
+
+## Case Studies
+
+Real-world optimization stories from the community. [Submit yours](case-studies/README.md) or use the [issue template](.github/ISSUE_TEMPLATE/case-study.md).
+
 ---
 
 ## Cheatsheet
@@ -227,6 +310,8 @@ We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 Ways to contribute:
 - **Share a tip**: Open an issue using the [Tip Submission](.github/ISSUE_TEMPLATE/tip-submission.md) template
 - **Add a benchmark**: Run a test and submit results using the [Benchmark Result](.github/ISSUE_TEMPLATE/benchmark-result.md) template
+- **Submit a case study**: Share your optimization story using the [Case Study](.github/ISSUE_TEMPLATE/case-study.md) template
+- **Add to the leaderboard**: Submit cost-per-task data using the [Leaderboard Entry](.github/ISSUE_TEMPLATE/leaderboard-entry.md) template
 - **Add a template**: Submit a CLAUDE.md template for a new stack
 - **Improve guides**: Fix errors, add examples, clarify explanations
 - **Build a tool**: Add utilities that help track or reduce costs

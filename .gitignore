@@ -18,3 +18,19 @@ Thumbs.db
 *.swp
 *~
 *.log
+
+# Site build artifacts
+site/node_modules/
+site/dist/
+
+# VS Code extension build artifacts
+tools/vscode-extension/node_modules/
+tools/vscode-extension/out/
+tools/vscode-extension/*.vsix
+
+# MCP server build artifacts
+tools/mcp-cost-server/node_modules/
+tools/mcp-cost-server/dist/
+
+# Hook temp files
+/tmp/claude-budget/

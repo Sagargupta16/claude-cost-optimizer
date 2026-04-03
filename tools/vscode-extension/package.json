@@ -1,0 +1,56 @@
+{
+  "name": "claude-cost-estimator",
+  "displayName": "Claude Cost Estimator",
+  "description": "Shows estimated token count and Claude API cost for the active file",
+  "version": "0.1.0",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "claudeCost.estimateFile",
+        "title": "Claude Cost: Estimate Current File"
+      },
+      {
+        "command": "claudeCost.estimateClaudeMd",
+        "title": "Claude Cost: Estimate CLAUDE.md Per-Turn Cost"
+      },
+      {
+        "command": "claudeCost.checkConfig",
+        "title": "Claude Cost: Check Project Configuration"
+      }
+    ],
+    "configuration": {
+      "title": "Claude Cost Estimator",
+      "properties": {
+        "claudeCost.defaultModel": {
+          "type": "string",
+          "default": "sonnet",
+          "enum": ["opus", "sonnet", "haiku"],
+          "description": "Default model for cost estimation"
+        },
+        "claudeCost.showInStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show token count in the status bar"
+        },
+        "claudeCost.claudeMdWarningThreshold": {
+          "type": "number",
+          "default": 150,
+          "description": "Line count threshold for CLAUDE.md warnings"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.5.0"
+  }
+}

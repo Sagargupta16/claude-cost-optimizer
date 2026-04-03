@@ -6,11 +6,19 @@ This repo is a documentation and tooling project for reducing Claude Code costs.
 
 ## File Structure
 
-- `guides/` - Deep-dive optimization guides (markdown)
-- `benchmarks/` - Real-world cost measurement data (markdown)
-- `templates/` - Copy-paste CLAUDE.md configs, settings, and commands
+- `guides/` - Deep-dive optimization guides (01-09 + visual diagrams)
+- `benchmarks/` - Real-world cost measurement data and community leaderboard
+- `templates/` - Copy-paste CLAUDE.md configs (10 stacks), settings, and commands
 - `tools/token-estimator/` - Python CLI for estimating token counts and costs
 - `tools/usage-analyzer/` - Python CLI for analyzing Claude session data
+- `tools/badge-generator/` - Python CLI for cost-efficiency grading (A+ to F)
+- `tools/mcp-cost-server/` - MCP server for in-session cost estimation
+- `tools/vscode-extension/` - VS Code extension for token/cost status bar
+- `tools/optimize-command/` - /optimize custom command for Claude Code
+- `tools/actions/` - Reusable GitHub Action for cost auditing
+- `hooks/` - Claude Code hooks for budget enforcement
+- `docs/calculator/` - Interactive HTML cost calculator
+- `case-studies/` - Community optimization stories
 - `cheatsheet.md` - One-page quick reference
 
 ## Writing Conventions

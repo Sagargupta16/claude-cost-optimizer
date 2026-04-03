@@ -1,5 +1,25 @@
 # Changelog
 
+## [1.2.0] - 2026-04-03
+
+### Added
+- Guide 08: Prompt Caching Deep Dive - cache mechanics, TTL economics, ROI math
+- Guide 09: Maximizing Subscription Value - plan comparison, upgrade/downgrade signals
+- Visual decision tree diagrams (Mermaid) for model selection, session optimization, cost tiers
+- Interactive HTML cost calculator (deployable via GitHub Pages)
+- MCP cost estimation server with estimate_cost, session_estimate, compare_models tools
+- Claude Code budget enforcement hooks (budget-tracker, session-summary)
+- Efficiency badge generator (A+ to F grading, shields.io badge output)
+- VS Code extension for token count and cost estimation in status bar
+- GitHub Action for automated cost auditing on PRs
+- /optimize custom command for project cost-efficiency analysis
+- Case studies directory with submission template and issue template
+- Community benchmark leaderboard with seed data
+- 5 new stack-specific CLAUDE.md templates: Go, Rust, Django, Rails, Java Spring Boot
+- Leaderboard entry issue template
+- Case study issue template
+- Awesome-list submission preparation guide
+
 ## [1.1.0] - 2026-03-16
 
 - Add regional pricing, PPP note, and cloud discount info

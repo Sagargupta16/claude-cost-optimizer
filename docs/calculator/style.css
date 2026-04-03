@@ -1,0 +1,389 @@
+/* ── Reset & Base ────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --surface-alt: #1c2128;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-muted: #8b949e;
+  --accent: #58a6ff;
+  --accent-hover: #79b8ff;
+  --green: #3fb950;
+  --green-dim: #1a3a2a;
+  --red: #f85149;
+  --red-dim: #3a1a1a;
+  --orange: #d29922;
+  --radius: 8px;
+  --mono: "Consolas", "Monaco", "Courier New", monospace;
+}
+
+html {
+  font-size: 15px;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Header ──────────────────────────────────────────────────────── */
+header {
+  text-align: center;
+  padding: 2rem 1rem 1.5rem;
+  border-bottom: 1px solid var(--border);
+}
+
+header h1 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+header .subtitle {
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  margin-top: 0.35rem;
+}
+
+/* ── Main Layout ─────────────────────────────────────────────────── */
+main {
+  flex: 1;
+  padding: 1.5rem 1rem;
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* ── Panels ──────────────────────────────────────────────────────── */
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.panel h2 {
+  font-size: 1.15rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+.panel h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.75rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ── Input Fields ────────────────────────────────────────────────── */
+.field {
+  margin-bottom: 1rem;
+}
+
+.field label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.field input[type="number"] {
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.95rem;
+  font-family: var(--mono);
+  transition: border-color 0.15s;
+}
+
+.field input[type="number"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+/* ── Radio Buttons ───────────────────────────────────────────────── */
+.radio-group {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+
+.radio-label {
+  flex: 1;
+  text-align: center;
+  cursor: pointer;
+  position: relative;
+}
+
+.radio-label input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.radio-label span {
+  display: block;
+  padding: 0.5rem 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--bg);
+  border-right: 1px solid var(--border);
+  transition: background 0.15s, color 0.15s;
+}
+
+.radio-label:last-child span {
+  border-right: none;
+}
+
+.radio-label input[type="radio"]:checked + span {
+  background: var(--accent);
+  color: #fff;
+}
+
+.radio-label input[type="radio"]:focus-visible + span {
+  box-shadow: inset 0 0 0 2px var(--accent-hover);
+}
+
+/* ── Checkbox ────────────────────────────────────────────────────── */
+.checkbox-label {
+  display: flex !important;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+/* ── Cost Cards ──────────────────────────────────────────────────── */
+.cost-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+}
+
+.cost-card {
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.cost-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 0.35rem;
+}
+
+.cost-value {
+  display: block;
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-family: var(--mono);
+}
+
+.cost-card.current .cost-value {
+  color: var(--text);
+}
+
+.cost-card.optimized .cost-value {
+  color: var(--green);
+}
+
+.cost-card.savings .cost-value {
+  color: var(--orange);
+}
+
+.cost-percent {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--orange);
+  margin-top: 0.15rem;
+  font-family: var(--mono);
+}
+
+/* ── Breakdown Table ─────────────────────────────────────────────── */
+.breakdown-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.breakdown-table th,
+.breakdown-table td {
+  padding: 0.5rem 0.65rem;
+  text-align: right;
+  border-bottom: 1px solid var(--border);
+}
+
+.breakdown-table th:first-child,
+.breakdown-table td:first-child {
+  text-align: left;
+}
+
+.breakdown-table th {
+  font-weight: 600;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.breakdown-table td {
+  font-family: var(--mono);
+  color: var(--text);
+}
+
+.breakdown-table .total-row td {
+  font-weight: 700;
+  border-bottom: none;
+  border-top: 2px solid var(--border);
+  padding-top: 0.65rem;
+}
+
+/* ── Recommendations ─────────────────────────────────────────────── */
+.recommendations {
+  list-style: decimal;
+  padding-left: 1.25rem;
+  font-size: 0.85rem;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.recommendations li {
+  margin-bottom: 0.35rem;
+}
+
+.recommendations li strong {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* ── Copy Button ─────────────────────────────────────────────────── */
+.copy-btn {
+  margin-top: 1.25rem;
+  padding: 0.55rem 1.25rem;
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.copy-btn:hover {
+  background: var(--border);
+  border-color: var(--text-muted);
+}
+
+.copy-btn:active {
+  background: var(--accent);
+  color: #fff;
+}
+
+.copy-feedback {
+  font-size: 0.8rem;
+  color: var(--green);
+  margin-left: 0.75rem;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.copy-feedback.visible {
+  opacity: 1;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────── */
+footer {
+  text-align: center;
+  padding: 1.25rem 1rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+footer a {
+  color: var(--accent);
+  text-decoration: none;
+}
+
+footer a:hover {
+  text-decoration: underline;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────── */
+@media (max-width: 800px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .cost-cards {
+    grid-template-columns: 1fr;
+  }
+
+  header h1 {
+    font-size: 1.35rem;
+  }
+
+  .panel {
+    padding: 1.15rem;
+  }
+}
+
+@media (max-width: 480px) {
+  html {
+    font-size: 14px;
+  }
+
+  .radio-label span {
+    padding: 0.45rem 0.25rem;
+    font-size: 0.8rem;
+  }
+}

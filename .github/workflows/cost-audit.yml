@@ -1,0 +1,71 @@
+name: Cost Audit
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+    paths:
+      - 'CLAUDE.md'
+      - '.claudeignore'
+      - '.claude/**'
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Run cost audit
+        id: audit
+        run: |
+          result=$(python tools/badge-generator/generate.py . --json)
+          echo "$result"
+
+          grade=$(echo "$result" | python -c "import sys, json; print(json.load(sys.stdin)['grade'])")
+          score=$(echo "$result" | python -c "import sys, json; print(json.load(sys.stdin)['score'])")
+          badge_url=$(echo "$result" | python -c "import sys, json; print(json.load(sys.stdin)['badge_url'])")
+
+          echo "grade=$grade" >> "$GITHUB_OUTPUT"
+          echo "score=$score" >> "$GITHUB_OUTPUT"
+          echo "badge_url=$badge_url" >> "$GITHUB_OUTPUT"
+
+      - name: Write job summary
+        run: |
+          cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+          ## Cost Audit Results
+
+          **Grade: ${{ steps.audit.outputs.grade }}** (${{ steps.audit.outputs.score }}/100)
+
+          ![Claude Cost Grade](${{ steps.audit.outputs.badge_url }})
+
+          <details>
+          <summary>Full report</summary>
+
+          \`\`\`
+          $(python tools/badge-generator/generate.py .)
+          \`\`\`
+
+          </details>
+          EOF
+
+      - name: Check CLAUDE.md changes on PR
+        if: github.event_name == 'pull_request'
+        run: |
+          # Fetch base branch for comparison
+          git fetch origin ${{ github.base_ref }} --depth=1
+
+          # Check if CLAUDE.md was modified
+          if git diff --name-only origin/${{ github.base_ref }}...HEAD | grep -q '^CLAUDE.md$'; then
+            base_lines=$(git show origin/${{ github.base_ref }}:CLAUDE.md 2>/dev/null | wc -l || echo 0)
+            head_lines=$(wc -l < CLAUDE.md 2>/dev/null || echo 0)
+
+            if [ "$head_lines" -gt "$base_lines" ]; then
+              increase=$((head_lines - base_lines))
+              echo "::warning::CLAUDE.md grew by $increase lines ($base_lines -> $head_lines). Larger CLAUDE.md means more tokens per turn."
+            fi
+          fi

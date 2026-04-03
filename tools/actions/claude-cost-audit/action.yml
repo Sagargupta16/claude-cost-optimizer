@@ -1,0 +1,43 @@
+name: 'Claude Cost Audit'
+description: 'Audit Claude Code configuration for cost efficiency and generate a grade badge'
+
+inputs:
+  path:
+    description: 'Path to the project directory to audit'
+    required: false
+    default: '.'
+
+outputs:
+  grade:
+    description: 'Cost efficiency grade (A+ to F)'
+    value: ${{ steps.run-audit.outputs.grade }}
+  score:
+    description: 'Numeric score (0-100)'
+    value: ${{ steps.run-audit.outputs.score }}
+  badge-url:
+    description: 'shields.io badge URL'
+    value: ${{ steps.run-audit.outputs.badge_url }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+
+    - name: Run cost audit
+      id: run-audit
+      shell: bash
+      run: python "${{ github.action_path }}/audit.py" "${{ inputs.path }}"
+
+    - name: Write job summary
+      shell: bash
+      run: |
+        cat >> "$GITHUB_STEP_SUMMARY" <<EOF
+        ## Claude Cost Audit
+
+        **Grade: ${{ steps.run-audit.outputs.grade }}** (${{ steps.run-audit.outputs.score }}/100)
+
+        ![Claude Cost Grade](${{ steps.run-audit.outputs.badge_url }})
+        EOF
