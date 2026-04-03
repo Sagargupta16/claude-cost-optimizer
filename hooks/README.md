@@ -154,20 +154,54 @@ stdin (JSON) --> session-summary.sh --> stdout (JSON summary message)
 
 ### Hook Input Format
 
-Claude Code sends JSON on stdin. The exact schema depends on the event type, but common fields include:
+Based on community research into Claude Code's observed behavior, hooks receive both a JSON payload on stdin and environment variables.
 
-- `session_id` -- unique identifier for the current session
-- `tool_name` -- name of the tool being called (PreToolUse/PostToolUse)
-- `model` -- the model in use
-- `num_turns` -- number of conversation turns
+**JSON payload on stdin** (PreToolUse/PostToolUse):
+
+```json
+{
+  "hook_event_name": "PreToolUse",
+  "tool_name": "Read",
+  "tool_input": {"file_path": "/path/to/file"},
+  "tool_input_json": "{\"file_path\": \"/path/to/file\"}",
+  "tool_output": "...",
+  "tool_result_is_error": false
+}
+```
+
+Note: `tool_output` and `tool_result_is_error` are only present in PostToolUse events.
+
+**Environment variables** set by Claude Code for each hook invocation:
+
+| Variable | Description | Availability |
+|----------|-------------|--------------|
+| `HOOK_EVENT` | Event name (`"PreToolUse"`, `"PostToolUse"`) | All hook events |
+| `HOOK_TOOL_NAME` | The tool being called (e.g., `"Read"`, `"Bash"`, `"Edit"`) | PreToolUse, PostToolUse |
+| `HOOK_TOOL_INPUT` | Tool input as a string | PreToolUse, PostToolUse |
+| `HOOK_TOOL_IS_ERROR` | `"0"` or `"1"` | PostToolUse only |
+| `HOOK_TOOL_OUTPUT` | The tool's output | PostToolUse only |
+
+Using environment variables (e.g., `$HOOK_TOOL_NAME`) is simpler and more reliable than parsing the JSON payload for common fields like tool name.
+
+### Hook Exit Code Semantics
+
+The exit code from a hook script controls whether the tool call proceeds:
+
+| Exit Code | Meaning | Behavior |
+|:---------:|---------|----------|
+| **0** | Allow | Tool call proceeds. Anything printed to stdout is captured as feedback to Claude. |
+| **2** | Deny | Tool call is blocked. Stdout is used as the denial message shown to Claude. |
+| **Any other** | Warn | Tool call proceeds, but a warning is logged. |
+
+The budget-tracker.sh script always exits 0 (allow) because it is informational only -- it warns but never blocks tool execution.
 
 ### Hook Output Format
 
-Hooks can output JSON to stdout. The supported field:
+Hooks can print text to stdout. The behavior depends on the exit code:
 
-- `message` -- a string displayed to the user in the Claude Code interface
-
-Empty stdout means "no action needed" -- the hook ran silently.
+- **Exit 0**: stdout is captured as feedback to Claude (can be plain text or JSON with a `message` field)
+- **Exit 2**: stdout is used as the denial reason shown to Claude
+- **Empty stdout**: the hook ran silently with no feedback
 
 ## Troubleshooting
 

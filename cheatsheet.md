@@ -196,11 +196,18 @@ Build: `npm run build` - must pass before PR
 | Output tokens cost ___ more than input | **5x** |
 | Prompt cache discount | **90%** |
 | CLAUDE.md loads on every ___ | **turn** |
+| CLAUDE.md max size per file | **4,000 characters** (truncated beyond) |
+| Total instruction file budget | **12,000 characters** (across all CLAUDE.md files) |
 | 1 line of code is roughly ___ tokens | **~10** |
+| Token estimation rule of thumb | **~1 token per 4 bytes** of text |
 | 150-line CLAUDE.md per turn is roughly | **~1,050 tokens** |
 | 50-turn session CLAUDE.md cost (Sonnet 4.6) | **~$0.16** |
 | 50-turn session CLAUDE.md cost (Opus 4.6) | **~$0.26** |
 | Average tool result size | **500-5,000 tokens** |
+| Compaction trigger threshold | **~10,000 tokens** of compactable content |
+| Messages preserved after /compact | **4 most recent** |
+| Opus 4.6 max output per turn | **32K tokens** |
+| Sonnet/Haiku max output per turn | **64K tokens** |
 
 ---
 

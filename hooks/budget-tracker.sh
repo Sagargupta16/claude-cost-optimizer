@@ -5,10 +5,32 @@
 # Purpose: Counts cumulative tool invocations in a session and warns
 #          when approaching a configurable threshold.
 #
-# Claude Code pipes JSON to stdin on each hook invocation. This script
-# reads that payload, increments a per-session counter in a temp file,
-# and outputs a warning (as JSON on stdout) when the count nears or
-# exceeds the threshold.
+# Claude Code pipes JSON to stdin on each hook invocation. The JSON
+# payload has the following structure (based on observed behavior):
+#
+#   {
+#     "hook_event_name": "PreToolUse",
+#     "tool_name": "Read",
+#     "tool_input": {"file_path": "/path/to/file"},
+#     "tool_input_json": "{\"file_path\": \"/path/to/file\"}",
+#     "tool_output": "...",            (PostToolUse only)
+#     "tool_result_is_error": false     (PostToolUse only)
+#   }
+#
+# Claude Code also sets these environment variables for hooks:
+#   HOOK_EVENT      - "PreToolUse" or "PostToolUse"
+#   HOOK_TOOL_NAME  - the tool name (e.g., "Read", "Bash", "Edit")
+#   HOOK_TOOL_INPUT - tool input as a string
+#   HOOK_TOOL_IS_ERROR - "0" or "1" (PostToolUse only)
+#   HOOK_TOOL_OUTPUT   - tool output (PostToolUse only)
+#
+# Exit code semantics for hooks:
+#   0 - Allow the tool call (stdout is captured as feedback to Claude)
+#   2 - Deny the tool call (stdout is used as the denial message)
+#   Any other - Warn (tool continues, but a warning is logged)
+#
+# This script always exits 0 (allow) -- it only provides informational
+# warnings, never blocks tool execution.
 #
 # Configuration (environment variables):
 #   BUDGET_TOOL_LIMIT  - warn after this many tool calls (default: 50)
@@ -43,8 +65,13 @@ except Exception:
     print('default')
 " 2>/dev/null || echo "default")"
 
-# Also grab the tool name for logging purposes.
-TOOL_NAME="$(printf '%s' "$INPUT" | python3 -c "
+# Grab the tool name from the HOOK_TOOL_NAME environment variable.
+# This is simpler and more reliable than parsing JSON. Fall back to
+# JSON parsing if the env var is not set (older Claude Code versions).
+if [ -n "${HOOK_TOOL_NAME:-}" ]; then
+    TOOL_NAME="$HOOK_TOOL_NAME"
+else
+    TOOL_NAME="$(printf '%s' "$INPUT" | python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
@@ -52,6 +79,7 @@ try:
 except Exception:
     print('unknown')
 " 2>/dev/null || echo "unknown")"
+fi
 
 # ---------------------------------------------------------------------------
 # Ensure log directory exists
@@ -96,3 +124,6 @@ fi
 
 # If we're under the warning threshold, output nothing. Claude Code
 # treats empty stdout as "no action needed."
+#
+# Exit 0 = allow the tool call. We never deny (exit 2) -- this hook
+# is informational only. See exit code semantics at the top of this file.

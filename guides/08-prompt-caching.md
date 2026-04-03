@@ -78,15 +78,27 @@ The first turn of any session pays the cache write cost. Subsequent turns benefi
 
 In Claude Code, caching happens automatically. You do not need to set any flags or configuration. The following components form the cacheable prefix of each turn:
 
+### The Static/Dynamic Boundary
+
+Based on community research into Claude Code's internals, the system prompt has a **static/dynamic boundary** (internally referred to as the "system prompt dynamic boundary"). This boundary splits the prompt into two zones:
+
+- **Static zone** (before the boundary): Claude Code's built-in instructions, behavioral rules, and tool descriptions. This content is identical across all sessions and never changes during a session. It is highly cacheable -- once written to cache on turn 1, it stays cached for the entire session.
+- **Dynamic zone** (after the boundary): Environment context (OS, shell, cwd), git status, CLAUDE.md file contents, runtime configuration, and any session-specific state. This content varies per session and can change between turns.
+
+Both zones are cached, but the dynamic zone's cache is invalidated whenever any of its components change. This is why editing CLAUDE.md mid-session is costly -- it sits in the dynamic zone, and any change invalidates the cache for the entire dynamic section (plus all conversation history that follows it in the prefix).
+
+**Practical implication**: The ~3,500 tokens of static instructions get cached reliably regardless of what you do. Your CLAUDE.md and git status get cached too, but only as long as they remain unchanged between turns. Do not edit CLAUDE.md mid-session -- it will invalidate the dynamic section cache.
+
 ### Component Breakdown
 
-| Component | Approx. Tokens | Cache Behavior |
-|-----------|:--------------:|----------------|
-| **System prompt** | ~3,500 | Cached on every turn after the first. This is Claude Code's built-in instruction set -- it never changes during a session. |
-| **CLAUDE.md content** | ~7 per line | Cached as long as you do not edit the file mid-session. A 150-line file adds ~1,050 tokens that stay cached. |
-| **Tool schemas (built-in)** | ~1,000-2,000 | Cached if the set of available tools stays constant. Includes Read, Edit, Write, Bash, Grep, Glob, etc. |
-| **MCP tool schemas** | ~500-3,000 per server | Cached as long as the MCP server list does not change. Each connected server adds its tool definitions to the prompt. |
-| **Conversation history** | Grows each turn | The portion of history that is identical to the previous turn (all turns except the newest) is cached. |
+| Component | Approx. Tokens | Cache Zone | Cache Behavior |
+|-----------|:--------------:|:----------:|----------------|
+| **System prompt** | ~3,500 | Static | Cached on every turn after the first. This is Claude Code's built-in instruction set -- it never changes during a session. |
+| **Tool schemas (built-in)** | ~1,000-2,000 | Static | Cached if the set of available tools stays constant. Includes Read, Edit, Write, Bash, Grep, Glob, etc. |
+| **CLAUDE.md content** | ~7 per line | Dynamic | Cached as long as you do not edit the file mid-session. A 150-line file adds ~1,050 tokens that stay cached. |
+| **Environment context** | ~200-500 | Dynamic | OS, shell, cwd, git status. Changes if you switch directories or git state changes between turns. |
+| **MCP tool schemas** | ~500-3,000 per server | Dynamic | Cached as long as the MCP server list does not change. Each connected server adds its tool definitions to the prompt. |
+| **Conversation history** | Grows each turn | After prefix | The portion of history that is identical to the previous turn (all turns except the newest) is cached. |
 
 ### How It Plays Out Over a Session
 

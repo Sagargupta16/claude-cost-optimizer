@@ -520,6 +520,13 @@ Total: 5 turns, no wasted reads
 
 The `/compact` command tells Claude Code to compress the conversation history. It summarizes previous turns into a compact form, dramatically reducing the input tokens for subsequent turns.
 
+Based on community research into Claude Code's observed behavior, here are the specifics:
+
+- **Automatic trigger**: Compaction triggers automatically when compactable content exceeds approximately **10,000 estimated tokens**. You do not need to run `/compact` manually for this to happen -- Claude Code monitors token usage and compacts when the threshold is crossed.
+- **What is preserved**: After compaction, the **4 most recent messages** are preserved verbatim. Everything older is replaced with a summary.
+- **What the summary contains**: The generated summary includes tool mentions from the session, up to 3 recent user requests, up to 8 key files that were referenced, and an inference of the current work being done. This is designed to retain enough context for Claude to continue working without losing track of the task.
+- **Manual /compact is still valuable**: Even though auto-compaction exists, running `/compact` manually before the threshold gives you more control over the timing. You can also provide a focus hint (e.g., `/compact Focus on the auth refactor`) to influence what the summary prioritizes.
+
 ### When to Compact
 
 Think of `/compact` like saving your game and starting a new chapter. Use it at **natural breakpoints**:

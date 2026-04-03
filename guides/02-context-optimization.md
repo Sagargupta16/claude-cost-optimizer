@@ -49,9 +49,29 @@ This makes CLAUDE.md the highest-leverage optimization target because:
 2. It is under your direct control
 3. Most CLAUDE.md files contain 2-3x more content than Claude actually needs
 
-### The 150-Line Budget
+### Hard Limits: 4,000 Characters Per File, 12,000 Total
 
-We recommend keeping CLAUDE.md under **150 lines**. Here is why:
+Based on community research into Claude Code's internals, there are precise limits on instruction files that make the "keep it short" advice more concrete:
+
+- **Per-file limit**: Each instruction file (CLAUDE.md, CLAUDE.local.md, .claude/CLAUDE.md, .claude/instructions.md) is truncated at **4,000 characters**. Content beyond this limit is silently dropped -- Claude never sees it.
+- **Total budget**: The combined content across **all** instruction files loaded for a session is capped at **12,000 characters**. This budget is shared across every instruction file discovered by walking from the filesystem root to your current working directory.
+- **Discovery order**: Claude Code walks from the filesystem root to your cwd, checking each directory level for: `CLAUDE.md`, `CLAUDE.local.md`, `.claude/CLAUDE.md`, and `.claude/instructions.md`. Files with identical content across scopes are deduplicated automatically.
+
+What this means in practice:
+
+| Scenario | Per-File Budget | Total Budget | Risk |
+|----------|:--------------:|:------------:|------|
+| Single project, one CLAUDE.md | 4,000 chars | 12,000 chars | Plenty of room |
+| Monorepo with root + 2 workspace CLAUDE.md files | 4,000 chars each | 12,000 chars shared | Must keep all three under 12K combined |
+| Nested dirs with parent CLAUDE.md files (e.g., `~/CLAUDE.md` + `~/code/CLAUDE.md` + project) | 4,000 chars each | 12,000 chars shared | Parent files eat into your budget silently |
+
+At roughly 7 characters per word and 10 words per line, 4,000 characters is approximately **57 lines** of typical CLAUDE.md content. The old advice of "keep under 150 lines" assumed shorter lines -- with the 4,000-character hard cap, the real constraint is character count, not line count.
+
+**For monorepos**: If your root CLAUDE.md is 3,500 characters, each workspace CLAUDE.md only has ~2,833 characters of headroom before hitting the 12,000-character combined limit across three files. Plan your instruction hierarchy accordingly.
+
+### The 150-Line Budget (Approximate Guideline)
+
+We recommend keeping CLAUDE.md under **150 lines** as an approximate guideline, but the hard limit is **4,000 characters per file**. Here is the cost breakdown by size:
 
 | CLAUDE.md Size | Tokens Per Turn | Cost Per Turn (Sonnet) | 30-Turn Session Cost | Monthly (110 sessions) |
 |:--------------:|:---------------:|:---------------------:|:--------------------:|:---------------------:|
@@ -818,11 +838,13 @@ project/
 
 This lets you move domain-specific instructions out of the root CLAUDE.md (reducing its size) while still having them available when relevant.
 
+> **Important**: All loaded instruction files share the **12,000-character total budget**. If your root CLAUDE.md is 3,000 characters and your `src/client/CLAUDE.md` is 2,500 characters, that is 5,500 characters of budget consumed when working in `src/client/`. Plan your hierarchy so that the files loaded for any given working directory stay well under 12K combined.
+
 **Example: moving frontend rules to `src/client/CLAUDE.md`**
 
 Root CLAUDE.md (before): 150 lines including 40 lines of React-specific rules
 Root CLAUDE.md (after): 110 lines
-`src/client/CLAUDE.md`: 40 lines of React rules — only loaded during frontend work
+`src/client/CLAUDE.md`: 40 lines of React rules -- only loaded during frontend work
 
 Savings: 40 fewer lines in root CLAUDE.md = ~280 fewer tokens on every non-frontend turn.
 
@@ -852,7 +874,7 @@ Invoke with `/deploy` when needed. This keeps 20+ lines out of CLAUDE.md and onl
 
 Apply these in order of impact:
 
-- [ ] **Audit CLAUDE.md** — cut to under 150 lines, move extras to nested files or commands
+- [ ] **Audit CLAUDE.md** — keep each file under 4,000 characters (hard limit), total under 12,000 characters across all instruction files; move extras to nested files or commands
 - [ ] **Create `.claudeignore`** — copy the recommended file from this guide and customize
 - [ ] **Set budget caps** — `claude --max-budget-usd 5` as your default launch command
 - [ ] **Use `/compact` after 20 turns** — or sooner if `/usage` shows high input token counts
