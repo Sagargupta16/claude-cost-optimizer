@@ -2,7 +2,7 @@ name: Deploy Site
 on:
   push:
     branches: [main]
-    paths: ['site/**']
+    paths: ['site/**', '.github/workflows/deploy-site.yml']
   workflow_dispatch:
 
 permissions:
@@ -25,7 +25,7 @@ jobs:
       - name: Install and build
         working-directory: site
         run: |
-          npm ci
+          npm install
           npm run build
       - uses: actions/upload-pages-artifact@v3
         with:
