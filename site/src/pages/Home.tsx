@@ -36,6 +36,12 @@ const quickWins = [
 
 const tools = [
   {
+    title: 'Repo Analyzer',
+    description: 'Paste a GitHub repo URL to get a full cost audit, grade, and recommendations.',
+    link: '/analyzer',
+    internal: true,
+  },
+  {
     title: 'Cost Calculator',
     description: 'Estimate your monthly Claude costs and see exactly where tokens go.',
     link: '/calculator',
@@ -49,7 +55,7 @@ const tools = [
   },
   {
     title: 'GitHub Repository',
-    description: '6 guides, CLI tools, templates, benchmarks, and community contributions.',
+    description: '9 guides, CLI tools, templates, benchmarks, and community contributions.',
     link: 'https://github.com/Sagargupta16/claude-cost-optimizer',
     internal: false,
   },
@@ -75,8 +81,8 @@ function Home() {
           <Link to="/calculator" className={styles.primaryCta}>
             Open Calculator
           </Link>
-          <Link to="/badge" className={styles.secondaryCta}>
-            Check Your Score
+          <Link to="/analyzer" className={styles.secondaryCta}>
+            Analyze Your Repo
           </Link>
         </div>
       </section>
