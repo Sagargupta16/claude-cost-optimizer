@@ -29,6 +29,16 @@ Counts every tool invocation in the session. Warns when approaching a configurab
 - At 100% of the limit: prints a "limit reached" message
 - Never blocks or prevents tool execution -- warnings only
 
+### cost-logger.sh (PreToolUse)
+
+Logs estimated token count and cost for each tool call to a daily log file. Helps you understand where tokens go and which operations are expensive.
+
+- Estimates input/output tokens by tool type (Read, Edit, Bash, Agent, etc.)
+- Logs each call with timestamp, tool name, token estimate, and cost
+- Warns at 50 and 100 tool calls to suggest session refresh
+- Never blocks -- informational only
+- Review logs at `/tmp/claude-cost-log/session-YYYYMMDD.log`
+
 ### session-summary.sh (Stop)
 
 Runs when the session ends. Produces a summary and appends it to a persistent log file.
