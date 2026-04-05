@@ -62,7 +62,7 @@ const tools = [
 ]
 
 const whatsInside = [
-  { count: 9, label: 'optimization guides' },
+  { count: 10, label: 'optimization guides' },
   { count: 7, label: 'CLI tools and scripts' },
   { count: 10, label: 'ready-to-use templates' },
   { count: 3, label: 'real-world benchmarks' },

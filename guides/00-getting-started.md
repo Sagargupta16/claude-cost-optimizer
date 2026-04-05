@@ -148,6 +148,7 @@ python tools/badge-generator/generate.py /path/to/your/project
 |-----------|------|
 | Understand the full billing model | [Guide 01: Understanding Costs](01-understanding-costs.md) |
 | Optimize context deeply | [Guide 02: Context Optimization](02-context-optimization.md) |
+| Skip the LLM for simple tasks | [Guide 10: Three-Tier Task Routing](10-task-routing.md) |
 | Learn about prompt caching | [Guide 08: Prompt Caching](08-prompt-caching.md) |
 | Choose the right subscription | [Guide 09: Subscription Value](09-subscription-value.md) |
 | See all strategies on one page | [Cheatsheet](../cheatsheet.md) |
