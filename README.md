@@ -1,11 +1,21 @@
 # Claude Cost Optimizer
 [![Stars](https://img.shields.io/github/stars/Sagargupta16/claude-cost-optimizer?style=flat)](https://github.com/Sagargupta16/claude-cost-optimizer/stargazers) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Last Updated](https://img.shields.io/badge/updated-April_2026-brightgreen)](https://github.com/Sagargupta16/claude-cost-optimizer/commits/main)
 
-> **Save 30-60% on Claude Code costs** with proven strategies, real benchmarks, and copy-paste configs.
+> **Save 30-60% on Claude Code costs** with an installable skill, proven strategies, real benchmarks, and copy-paste configs.
+
+### Install the Skill
+
+```bash
+npx skills add https://github.com/Sagargupta16/claude-cost-optimizer
+```
+
+Then activate with `/cost-mode` in any Claude Code session. Reduces token usage 40-70% through concise responses, smart model routing, and efficient workflow patterns. [Learn more](skills/cost-mode/README.md)
+
+---
 
 Claude Code is powerful - but costs add up fast. A single afternoon of heavy coding can burn through $20-50 in tokens. Most of this spend is **avoidable** with the right setup.
 
-This repo is a collection of **battle-tested strategies** for reducing Claude Code costs without sacrificing quality. Every technique includes expected savings percentages based on real-world benchmarks.
+This repo is both an **installable skill** that reduces costs in real-time and a collection of **battle-tested strategies** with expected savings percentages based on real-world benchmarks.
 
 ---
 
@@ -55,6 +65,7 @@ Try it on your own repo: **[Repo Analyzer](https://sagargupta16.github.io/claude
 
 ## Table of Contents
 
+- [Install the Skill](#install-the-skill)
 - [Quick Wins](#quick-wins-start-here)
 - [How Claude Billing Works](#how-claude-billing-works)
 - [Guides](#guides)

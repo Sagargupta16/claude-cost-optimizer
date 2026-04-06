@@ -1,0 +1,25 @@
+{
+  "name": "cost-mode",
+  "version": "1.0.0",
+  "description": "Cost-conscious mode for Claude Code. Cuts filler, suggests cheaper models, encourages efficient patterns.",
+  "author": {
+    "name": "Sagar Gupta",
+    "url": "https://github.com/Sagargupta16"
+  },
+  "homepage": "https://github.com/Sagargupta16/claude-cost-optimizer",
+  "repository": "https://github.com/Sagargupta16/claude-cost-optimizer",
+  "license": "MIT",
+  "keywords": ["cost-optimization", "tokens", "budget", "productivity", "brevity"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Cost Mode",
+    "shortDescription": "Reduce Claude Code token usage by 40-70%.",
+    "longDescription": "Cost-conscious mode that enforces concise responses, suggests cheaper models for simple tasks, and encourages efficient workflow patterns. Three intensity levels: lite, standard, strict.",
+    "developerName": "Sagar Gupta",
+    "category": "Productivity",
+    "capabilities": ["Write", "Code", "Analyze"],
+    "websiteURL": "https://sagargupta16.github.io/claude-cost-optimizer/",
+    "defaultPrompt": ["Enable cost-conscious mode. Reduce token usage while keeping technical accuracy."],
+    "brandColor": "#3fb950"
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "claude-cost-optimizer",
+  "description": "Cost-conscious mode for Claude Code. Reduces token usage 40-70% with concise responses, model routing suggestions, and efficient workflow patterns.",
+  "owner": {
+    "name": "Sagar Gupta",
+    "url": "https://github.com/Sagargupta16"
+  },
+  "plugins": [
+    {
+      "name": "cost-mode",
+      "description": "Activate cost-conscious mode. Cuts filler, suggests cheaper models, encourages efficient patterns. 40-70% token savings.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}

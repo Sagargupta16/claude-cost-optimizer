@@ -1,0 +1,20 @@
+{
+  "name": "claude-cost-optimizer",
+  "interface": {
+    "displayName": "Claude Cost Optimizer"
+  },
+  "plugins": [
+    {
+      "name": "cost-mode",
+      "source": {
+        "source": "local",
+        "path": "./plugins/cost-mode"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
