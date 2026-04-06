@@ -752,7 +752,7 @@ Here is what a cost-optimized Claude Code session looks like in practice:
 | Smart commit strategy | 5-10% | Low (CLAUDE.md update) |
 | Knowing when not to use Claude Code | 10-20% | None (judgment) |
 
-> These savings compound. Applying all patterns together yields the 40-70% total reduction mentioned in the README.
+> These savings compound. Applying all patterns together yields the 30-60% total cost reduction mentioned in the README.
 
 ---
 

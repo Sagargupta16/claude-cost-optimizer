@@ -5,7 +5,7 @@
 ### Added
 - **Installable cost-mode skill**: `npx skills add Sagargupta16/claude-cost-optimizer` then `/cost-mode`
 - Plugin structure (.claude-plugin/, plugins/, skills/, .agents/) for Claude Code marketplace
-- Three intensity levels for cost-mode: lite (20-40%), standard (40-60%), strict (60-70%)
+- Three intensity levels for cost-mode: lite (20-40% output reduction), standard (40-60%), strict (60-70%)
 - Guide 00: Getting Started in 5 Minutes -- zero to optimized in 5 steps
 - Guide 10: Three-Tier Task Routing -- skip LLM for Tier 0, Haiku for Tier 1, Opus for Tier 2
 - Repo Analyzer page -- paste a GitHub URL to get full cost audit, grade, and recommendations

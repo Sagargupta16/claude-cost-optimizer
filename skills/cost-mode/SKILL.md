@@ -1,7 +1,7 @@
 ---
 name: cost-mode
 description: >
-  Cost-conscious Claude Code mode. Reduces token usage 40-70% by enforcing concise responses,
+  Cost-conscious Claude Code mode. Reduces output tokens 40-70% and overall costs 30-60% by enforcing concise responses,
   smart model routing, and efficient workflow patterns. Keeps full technical accuracy.
   Activate with /cost-mode or "enable cost mode". Auto-triggers on mentions of budget,
   cost, tokens, or spending.

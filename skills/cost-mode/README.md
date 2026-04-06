@@ -1,6 +1,6 @@
 # cost-mode
 
-A Claude Code skill that reduces token usage by 40-70% through concise responses, smart model routing, and efficient workflow patterns.
+A Claude Code skill that saves 30-60% on costs through concise responses (40-70% output token reduction), smart model routing, and efficient workflow patterns.
 
 ## Install
 
@@ -47,11 +47,13 @@ Once installed, activate with:
 
 ## Savings
 
-| Intensity | Output Token Reduction | Best For |
-|-----------|:---------------------:|----------|
-| lite | 20-40% | Team-visible work, PRs, shared sessions |
-| standard | 40-60% | Daily development, solo coding |
-| strict | 60-70% | High-volume sessions, budget-constrained |
+| Intensity | Output Token Reduction | Estimated Cost Savings | Best For |
+|-----------|:---------------------:|:---------------------:|----------|
+| lite | 20-40% | ~10-20% | Team-visible work, PRs, shared sessions |
+| standard | 40-60% | ~20-35% | Daily development, solo coding |
+| strict | 60-70% | ~30-45% | High-volume sessions, budget-constrained |
+
+Output tokens cost 5x more than input tokens, so even moderate output reduction has significant cost impact. Combined with model routing and CLI suggestions, total savings reach 30-60%.
 
 ## License
 

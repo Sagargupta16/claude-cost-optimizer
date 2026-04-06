@@ -13,7 +13,7 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Cost Mode",
-    "shortDescription": "Reduce Claude Code token usage by 40-70%.",
+    "shortDescription": "Save 30-60% on Claude Code costs.",
     "longDescription": "Cost-conscious mode that enforces concise responses, suggests cheaper models for simple tasks, and encourages efficient workflow patterns. Three intensity levels: lite, standard, strict.",
     "developerName": "Sagar Gupta",
     "category": "Productivity",
