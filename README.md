@@ -135,6 +135,15 @@ Output Tokens (you pay more for):
 
 > **Input tokens are charged every turn.** Your CLAUDE.md loads on every single turn. Content beyond 4,000 characters per file is silently truncated, and the total budget across all instruction files is 12,000 characters. Keep it lean -- every extra line costs you tokens on every turn.
 
+### Output Tokens: The Expensive Side
+
+Output tokens cost **5x more** than input tokens on every model. Most optimization guides focus on input -- but reducing Claude's verbosity is high-leverage:
+
+- Add "Be concise. Skip explanations unless asked." to your CLAUDE.md
+- Use brevity skills like **[caveman](https://github.com/JuliusBrussee/caveman)** for 50-75% output token reduction
+- Say "diff only" or "just the code" for mechanical tasks
+- A March 2026 study ([arXiv:2604.00025](https://arxiv.org/abs/2604.00025)) found brevity constraints actually improved accuracy by 26 percentage points
+
 ### Prompt Caching
 
 Claude Code uses **prompt caching** to reduce costs. Cached input tokens cost significantly less (e.g., $0.50/MTok vs $5.00/MTok on Opus 4.6 - a 90% discount). Content that stays the same between turns (like CLAUDE.md and system prompt) gets cached automatically.
@@ -374,6 +383,18 @@ Use the `/usage` command in Claude Code to see current session stats. For histor
 ### What's the biggest single change I can make?
 
 Switch to **Haiku for routine tasks** (formatting, simple fixes, file lookups). It's 5x cheaper than Opus and handles 70% of common coding tasks well. With Opus 4.6 now at $5/$25 (the same price Sonnet used to be), even the top model is much more accessible - but Haiku at $1/$5 still adds up to meaningful savings at scale.
+
+---
+
+## Community Tools
+
+Other open-source projects that complement this repo:
+
+| Project | What It Does | Cost Impact |
+|---------|-------------|-------------|
+| [caveman](https://github.com/JuliusBrussee/caveman) | Brevity skill that strips filler from Claude responses | 50-75% output token reduction |
+
+> Know a tool that helps reduce Claude Code costs? [Open a discussion](https://github.com/Sagargupta16/claude-cost-optimizer/discussions) or submit a PR.
 
 ---
 
