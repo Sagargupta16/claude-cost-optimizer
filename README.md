@@ -21,9 +21,9 @@ npx skills add Sagargupta16/claude-cost-optimizer
 Then activate in any session:
 
 ```
-/cost-mode              # Standard (40-60% savings)
-/cost-mode lite         # Professional brevity (20-40%)
-/cost-mode strict       # Telegraphic, max savings (60-70%)
+/cost-mode              # Standard (40-60% output token reduction)
+/cost-mode lite         # Professional brevity (20-40% output reduction)
+/cost-mode strict       # Telegraphic, max savings (60-70% output reduction)
 /cost-mode off          # Resume normal behavior
 ```
 
@@ -98,7 +98,7 @@ cost-mode is the first skill. More are planned:
 
 | Skill | Status | What It Does | Cost Impact |
 |-------|:------:|-------------|:-----------:|
-| **cost-mode** | Live | Concise responses, model routing suggestions, session awareness | 40-70% output reduction |
+| **cost-mode** | Live | Concise responses, model routing suggestions, session awareness | 30-60% cost savings |
 | **claudeignore-gen** | Planned | Auto-generates .claudeignore based on your project's tech stack | 5-15% input reduction |
 | **context-compress** | Planned | Rewrites your CLAUDE.md to be shorter while keeping all essential info | 10-20% input reduction |
 | **cache-optimizer** | Planned | Detects cache-busting patterns and suggests fixes to maximize prompt cache hits | 10-25% input reduction |

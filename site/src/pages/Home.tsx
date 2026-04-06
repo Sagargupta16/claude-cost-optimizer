@@ -86,11 +86,12 @@ function Home() {
       <section className={styles.hero}>
         <p className={styles.tagline}>Claude Code Skill</p>
         <h1 className={styles.title}>
-          Save <span className={styles.accent}>40-70%</span> on tokens
+          Save <span className={styles.accent}>30-60%</span> on costs
         </h1>
         <p className={styles.subtitle}>
-          An installable skill that reduces Claude Code costs through concise
-          responses, smart model routing, and efficient workflow patterns.
+          An installable skill that cuts Claude Code costs through concise
+          responses, model routing, and efficient workflow patterns.
+          10 guides, templates, and CLI tools included.
         </p>
 
         <div className={styles.installBox}>
@@ -170,7 +171,7 @@ function Home() {
 
       {/* Intensity Levels */}
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Three Intensity Levels</h2>
+        <h2 className={styles.sectionTitle}>Three Intensity Levels (Output Token Reduction)</h2>
         <div className={styles.levelsGrid}>
           <div className={styles.levelCard}>
             <div className={styles.levelName}>/cost-mode lite</div>

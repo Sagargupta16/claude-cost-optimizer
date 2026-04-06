@@ -4,7 +4,7 @@
     {
       "name": "cost-mode",
       "version": "1.3.0",
-      "description": "Activate cost-conscious mode. Cuts filler, suggests cheaper models, encourages efficient patterns. 40-70% token savings.",
+      "description": "Activate cost-conscious mode. Cuts filler, suggests cheaper models, encourages efficient patterns. 30-60% cost savings.",
       "source": {
         "source": "github",
         "repo": "Sagargupta16/claude-cost-optimizer"
