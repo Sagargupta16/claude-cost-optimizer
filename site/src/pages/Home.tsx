@@ -52,12 +52,12 @@ const benchmarks = [
 
 const resources = [
   {
-    title: '10 Optimization Guides',
+    title: '11 Optimization Guides',
     desc: 'From getting started to three-tier task routing and prompt caching deep dives.',
     link: 'https://github.com/Sagargupta16/claude-cost-optimizer/tree/main/guides',
   },
   {
-    title: '10 CLAUDE.md Templates',
+    title: '14 CLAUDE.md Templates',
     desc: 'Cost-optimized templates for React, Next.js, FastAPI, Go, Rust, Django, Rails, and more.',
     link: 'https://github.com/Sagargupta16/claude-cost-optimizer/tree/main/templates/CLAUDE.md',
   },
@@ -91,7 +91,7 @@ function Home() {
         <p className={styles.subtitle}>
           An installable skill that cuts Claude Code costs through concise
           responses, model routing, and efficient workflow patterns.
-          10 guides, templates, and CLI tools included.
+          11 guides, 14 templates, and 7 CLI tools included.
         </p>
 
         <div className={styles.installBox}>
@@ -260,7 +260,7 @@ function Home() {
       {/* Stats */}
       <section className={styles.statsBar}>
         <div className={styles.stat}>
-          <span className={styles.statNum}>10</span>
+          <span className={styles.statNum}>11</span>
           <span className={styles.statLbl}>guides</span>
         </div>
         <div className={styles.stat}>
@@ -268,11 +268,11 @@ function Home() {
           <span className={styles.statLbl}>CLI tools</span>
         </div>
         <div className={styles.stat}>
-          <span className={styles.statNum}>10</span>
+          <span className={styles.statNum}>14</span>
           <span className={styles.statLbl}>templates</span>
         </div>
         <div className={styles.stat}>
-          <span className={styles.statNum}>5</span>
+          <span className={styles.statNum}>4</span>
           <span className={styles.statLbl}>skills planned</span>
         </div>
       </section>

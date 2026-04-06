@@ -1,7 +1,7 @@
 # Claude Cost Optimizer
-[![Stars](https://img.shields.io/github/stars/Sagargupta16/claude-cost-optimizer?style=flat)](https://github.com/Sagargupta16/claude-cost-optimizer/stargazers) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Last Updated](https://img.shields.io/badge/updated-April_2026-brightgreen)](https://github.com/Sagargupta16/claude-cost-optimizer/commits/main)
+[![Stars](https://img.shields.io/github/stars/Sagargupta16/claude-cost-optimizer?style=flat)](https://github.com/Sagargupta16/claude-cost-optimizer/stargazers) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Last Updated](https://img.shields.io/badge/updated-March_2026-brightgreen)](https://github.com/Sagargupta16/claude-cost-optimizer/commits/main)
 
-> **Save 30-60% on Claude Code costs** with an installable skill, web tools, and 10 deep-dive guides.
+> **Save 30-60% on Claude Code costs** with an installable skill, web tools, and 11 deep-dive guides.
 
 ## Install
 
@@ -160,7 +160,7 @@ Copy-paste configs that are already optimized:
 
 ---
 
-## Pricing Reference (April 2026)
+## Pricing Reference (March 2026)
 
 | Model | Input / 1M | Output / 1M | Cache Hit / 1M | Context | Max Output |
 |-------|:----------:|:-----------:|:---------------:|:-------:|:----------:|

@@ -708,7 +708,7 @@ The investment in team cost management pays for itself within the first month. A
 - Run the ROI calculation for your team to justify the tool to stakeholders
 - Create a shared CLAUDE.md template and command library
 - Schedule your first monthly budget review
-- Read the [README Quick Wins](../README.md#quick-wins-start-here) section for individual-level optimizations that complement team-level management
+- Read the [README Quick Start](../README.md#quick-start-5-minutes-no-skill-needed) section for individual-level optimizations that complement team-level management
 
 ---
 
