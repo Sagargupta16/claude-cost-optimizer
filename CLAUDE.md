@@ -41,4 +41,4 @@ Current Claude API pricing (March 2026): Opus 4.6 $5/$25, Sonnet 4.6 $3/$15, Hai
 
 Context windows: Opus 4.6 = 1M, Sonnet 4.6 = 1M, Haiku 4.5 = 200K.
 
-Update pricing references across ALL files (README, guides/01-09, cheatsheet, benchmarks, site/src/utils/pricing.ts, tools/*/estimate.py) when rates change.
+Update pricing references across ALL files (README, guides/00-10, cheatsheet, benchmarks, site/src/utils/pricing.ts, tools/*/estimate.py) when rates change.
