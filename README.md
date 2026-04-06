@@ -6,7 +6,7 @@
 ### Install the Skill
 
 ```bash
-npx skills add https://github.com/Sagargupta16/claude-cost-optimizer
+npx skills add Sagargupta16/claude-cost-optimizer
 ```
 
 Then activate with `/cost-mode` in any Claude Code session. Reduces token usage 40-70% through concise responses, smart model routing, and efficient workflow patterns. [Learn more](skills/cost-mode/README.md)

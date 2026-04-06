@@ -2,24 +2,22 @@
 
 ## Purpose
 
-This repo is a documentation and tooling project for reducing Claude Code costs. It contains markdown guides, benchmarks, templates, and Python CLI tools.
+This repo is an installable Claude Code skill and a documentation/tooling project for reducing Claude Code costs. Install: `npx skills add Sagargupta16/claude-cost-optimizer`.
 
 ## File Structure
 
-- `guides/` - Deep-dive optimization guides (01-09 + visual diagrams)
+- `skills/cost-mode/` - Installable Claude Code skill (SKILL.md is single source of truth)
+- `plugins/cost-mode/` - Plugin distribution copy with .codex-plugin metadata
+- `.claude-plugin/` - Plugin identity and marketplace registration
+- `.agents/plugins/` - Agent registry
+- `guides/` - Deep-dive optimization guides (00-10 + visual diagrams)
 - `benchmarks/` - Real-world cost measurement data and community leaderboard
 - `templates/` - Copy-paste CLAUDE.md configs (10 stacks), settings, and commands
-- `tools/token-estimator/` - Python CLI for estimating token counts and costs
-- `tools/usage-analyzer/` - Python CLI for analyzing Claude session data
-- `tools/badge-generator/` - Python CLI for cost-efficiency grading (A+ to F)
-- `tools/mcp-cost-server/` - MCP server for in-session cost estimation
-- `tools/vscode-extension/` - VS Code extension for token/cost status bar
-- `tools/optimize-command/` - /optimize custom command for Claude Code
-- `tools/actions/` - Reusable GitHub Action for cost auditing
-- `hooks/` - Claude Code hooks for budget enforcement
-- `site/` - React + Vite + TypeScript site (calculator, badge checker) for GitHub Pages
+- `tools/` - 7 CLI tools (token-estimator, usage-analyzer, badge-generator, mcp-cost-server, vscode-extension, optimize-command, GitHub Action)
+- `hooks/` - Claude Code hooks for budget enforcement and cost logging
+- `site/` - React + Vite + TypeScript site (calculator, badge checker, repo analyzer) for GitHub Pages
 - `case-studies/` - Community optimization stories
-- `docs/` - Awesome-list submission prep and internal docs
+- `docs/` - Awesome-list submission prep
 - `cheatsheet.md` - One-page quick reference
 
 ## Writing Conventions

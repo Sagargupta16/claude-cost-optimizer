@@ -5,7 +5,7 @@ A Claude Code skill that reduces token usage by 40-70% through concise responses
 ## Install
 
 ```bash
-npx skills add https://github.com/Sagargupta16/claude-cost-optimizer
+npx skills add Sagargupta16/claude-cost-optimizer
 ```
 
 Or clone and reference locally in your Claude Code settings.
