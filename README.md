@@ -5,11 +5,20 @@
 
 ## Install
 
+**Claude Code (official plugin system):**
+
+```bash
+/plugin marketplace add Sagargupta16/claude-cost-optimizer
+/plugin install cost-mode@sagargupta16-claude-cost-optimizer
+```
+
+**Multi-agent (Cursor, Cline, Codex, 40+ agents):**
+
 ```bash
 npx skills add Sagargupta16/claude-cost-optimizer
 ```
 
-Then activate in any Claude Code session:
+Then activate in any session:
 
 ```
 /cost-mode              # Standard (40-60% savings)
@@ -17,8 +26,6 @@ Then activate in any Claude Code session:
 /cost-mode strict       # Telegraphic, max savings (60-70%)
 /cost-mode off          # Resume normal behavior
 ```
-
-Works with Claude Code, Cursor, Cline, Codex, and [40+ other agents](https://skills.sh).
 
 ---
 

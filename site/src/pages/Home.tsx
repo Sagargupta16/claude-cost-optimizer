@@ -102,7 +102,7 @@ function Home() {
         </div>
 
         <p className={styles.installHint}>
-          Then type <code>/cost-mode</code> in any Claude Code session
+          Then type <code>/cost-mode</code> in any session. Or in Claude Code: <code>/plugin marketplace add Sagargupta16/claude-cost-optimizer</code>
         </p>
       </section>
 
