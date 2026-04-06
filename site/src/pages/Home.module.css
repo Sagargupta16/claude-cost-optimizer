@@ -1,72 +1,97 @@
 .home {
   display: flex;
   flex-direction: column;
-  gap: 3rem;
+  gap: 4rem;
+  padding-bottom: 2rem;
 }
 
 /* Hero */
 
 .hero {
   text-align: center;
-  padding: 3rem 0 1rem;
+  padding: 4rem 0 2rem;
 }
 
-.title {
-  font-size: 2.5rem;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  color: var(--text);
+.tagline {
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--accent-green);
   margin-bottom: 1rem;
 }
 
+.title {
+  font-size: 3rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: var(--text);
+  line-height: 1.1;
+  margin-bottom: 1.25rem;
+}
+
+.accent {
+  color: var(--accent-green);
+}
+
 .subtitle {
-  font-size: 1.15rem;
+  font-size: 1.1rem;
   color: var(--text-muted);
-  max-width: 600px;
-  margin: 0 auto 2rem;
+  max-width: 560px;
+  margin: 0 auto 2.5rem;
   line-height: 1.7;
 }
 
-.heroCtas {
-  display: flex;
-  gap: 1rem;
-  justify-content: center;
-  flex-wrap: wrap;
+/* Install box */
+
+.installBox {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  margin: 0 auto;
 }
 
-.primaryCta {
-  display: inline-block;
-  padding: 0.75rem 1.75rem;
+.installCmd {
+  padding: 0.7rem 1rem;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9rem;
+  color: var(--accent-green);
+  white-space: nowrap;
+  user-select: all;
+}
+
+.copyBtn {
+  padding: 0.7rem 1.1rem;
   background-color: var(--accent-green);
   color: #0d1117;
+  border: none;
+  font-size: 0.85rem;
   font-weight: 600;
-  font-size: 1rem;
-  border-radius: var(--radius);
-  text-decoration: none;
+  font-family: inherit;
+  cursor: pointer;
   transition: opacity 0.15s;
 }
 
-.primaryCta:hover {
-  opacity: 0.9;
-  text-decoration: none;
+.copyBtn:hover {
+  opacity: 0.85;
 }
 
-.secondaryCta {
-  display: inline-block;
-  padding: 0.75rem 1.75rem;
-  background-color: transparent;
+.installHint {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.installHint code {
   color: var(--accent-blue);
-  font-weight: 600;
-  font-size: 1rem;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  text-decoration: none;
-  transition: border-color 0.15s;
-}
-
-.secondaryCta:hover {
-  border-color: var(--accent-blue);
-  text-decoration: none;
+  background-color: var(--surface);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.85rem;
 }
 
 /* Sections */
@@ -74,70 +99,342 @@
 .section {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 1.5rem;
 }
 
 .sectionTitle {
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--text);
+  letter-spacing: -0.01em;
 }
 
-/* Quick Wins */
+/* Before / After diff */
 
-.quickWinsGrid {
+.diffGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: 1fr 1fr;
   gap: 1rem;
 }
 
-.quickWinCard {
+@media (max-width: 700px) {
+  .diffGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.diffCard {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.diffLabel {
+  padding: 0.5rem 1rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--error-red);
+  background-color: rgba(248, 81, 73, 0.08);
+  border-bottom: 1px solid var(--border);
+}
+
+.diffLabelGreen {
+  color: var(--accent-green);
+  background-color: rgba(63, 185, 80, 0.08);
+}
+
+.diffContent {
+  padding: 1rem;
+  background-color: var(--surface);
+  min-height: 80px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.diffLine {
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.diffDel {
+  color: var(--text-muted);
+}
+
+.diffAdd {
+  color: var(--text);
+}
+
+.diffAdd code {
+  color: var(--accent-green);
+  background-color: rgba(63, 185, 80, 0.1);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+  font-size: 0.85rem;
+}
+
+.diffMeta {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+/* Features bento grid */
+
+.featuresGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 800px) {
+  .featuresGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .featuresGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.featureCard {
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
   padding: 1.25rem;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.6rem;
+  transition: border-color 0.2s;
 }
 
-.quickWinHeader {
+.featureCard:hover {
+  border-color: #484f58;
+}
+
+.featureHeader {
   display: flex;
-  align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem;
+  align-items: flex-start;
+  gap: 0.5rem;
 }
 
-.quickWinTitle {
-  font-size: 1rem;
+.featureTitle {
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text);
 }
 
-.savingsBadge {
+.featureTag {
   flex-shrink: 0;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: var(--accent-green);
-  background-color: rgba(63, 185, 80, 0.12);
-  padding: 0.2rem 0.6rem;
+  padding: 0.15rem 0.5rem;
   border-radius: 999px;
-  white-space: nowrap;
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
 
-.quickWinDesc {
-  font-size: 0.875rem;
+.tagOutput {
+  color: var(--accent-green);
+  background-color: rgba(63, 185, 80, 0.12);
+}
+
+.tagInput {
+  color: var(--accent-blue);
+  background-color: rgba(88, 166, 255, 0.12);
+}
+
+.tagSkip {
+  color: #d2a8ff;
+  background-color: rgba(210, 168, 255, 0.12);
+}
+
+.tagSafe {
+  color: var(--warning-yellow);
+  background-color: rgba(210, 153, 34, 0.12);
+}
+
+.featureDesc {
+  font-size: 0.85rem;
   color: var(--text-muted);
-  line-height: 1.6;
+  line-height: 1.55;
+}
+
+/* Intensity levels */
+
+.levelsGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 700px) {
+  .levelsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.levelCard {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  transition: border-color 0.2s;
+}
+
+.levelActive {
+  border-color: var(--accent-green);
+  box-shadow: 0 0 20px rgba(63, 185, 80, 0.08);
+}
+
+.levelName {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.85rem;
+  color: var(--accent-blue);
+}
+
+.levelSavings {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--accent-green);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  line-height: 1;
+}
+
+.levelDesc {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  max-width: 240px;
+}
+
+/* Benchmarks */
+
+.benchmarks {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.5rem;
+}
+
+.benchRow {
+  display: grid;
+  grid-template-columns: 160px 1fr 50px;
+  gap: 1rem;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .benchRow {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+}
+
+.benchTask {
+  font-size: 0.85rem;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.benchBars {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.benchBarBefore {
+  height: 14px;
+  background-color: rgba(248, 81, 73, 0.3);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+  min-width: 40px;
+}
+
+.benchBarAfter {
+  height: 14px;
+  background-color: rgba(63, 185, 80, 0.4);
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 6px;
+  min-width: 40px;
+}
+
+.benchVal {
+  font-size: 0.65rem;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  color: var(--text);
+}
+
+.benchPct {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-green);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  text-align: right;
+}
+
+.benchLegend {
+  display: flex;
+  gap: 1.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.legendBefore::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background-color: rgba(248, 81, 73, 0.4);
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.legendAfter::before {
+  content: '';
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  background-color: rgba(63, 185, 80, 0.5);
+  margin-right: 4px;
+  vertical-align: middle;
 }
 
 /* Tools */
 
 .toolsGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
+}
+
+@media (max-width: 700px) {
+  .toolsGrid {
+    grid-template-columns: 1fr;
+  }
 }
 
 .toolCard {
@@ -148,77 +445,119 @@
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s;
+}
+
+.toolCard:hover {
+  border-color: var(--accent-blue);
+  text-decoration: none;
 }
 
 .toolTitle {
-  font-size: 1.05rem;
+  font-size: 1rem;
   font-weight: 600;
   color: var(--text);
 }
 
 .toolDesc {
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: var(--text-muted);
   line-height: 1.5;
   flex: 1;
 }
 
-.toolLink {
-  font-size: 0.875rem;
+.toolArrow {
+  font-size: 0.85rem;
   font-weight: 500;
   color: var(--accent-blue);
-  text-decoration: none;
-  margin-top: 0.25rem;
 }
 
-.toolLink:hover {
-  text-decoration: underline;
+/* Stats bar */
+
+.statsBar {
+  display: flex;
+  justify-content: center;
+  gap: 3rem;
+  padding: 1.5rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
 }
 
-/* Stats */
-
-.statsGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1rem;
-}
-
-.statCard {
-  background-color: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 1.5rem;
+.stat {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.25rem;
-  text-align: center;
+  gap: 0.15rem;
 }
 
-.statNumber {
-  font-size: 2rem;
+.statNum {
+  font-size: 1.75rem;
   font-weight: 800;
   color: var(--accent-green);
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  line-height: 1;
 }
 
-.statLabel {
-  font-size: 0.9rem;
+.statLbl {
+  font-size: 0.8rem;
   color: var(--text-muted);
 }
 
+/* CTA */
+
+.cta {
+  text-align: center;
+  padding: 2rem 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.ctaTitle {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.ctaLinks {
+  display: flex;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.ctaLink {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.ctaLink:hover {
+  color: var(--accent-blue);
+  text-decoration: none;
+}
+
+/* Mobile */
+
 @media (max-width: 600px) {
   .title {
-    font-size: 1.75rem;
+    font-size: 2rem;
   }
 
   .subtitle {
     font-size: 1rem;
   }
 
-  .quickWinsGrid,
-  .toolsGrid,
-  .statsGrid {
-    grid-template-columns: 1fr;
+  .installCmd {
+    font-size: 0.75rem;
+  }
+
+  .statsBar {
+    gap: 1.5rem;
   }
 }
