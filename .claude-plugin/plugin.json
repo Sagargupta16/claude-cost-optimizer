@@ -1,0 +1,8 @@
+{
+  "name": "claude-cost-optimizer",
+  "description": "Cost-conscious mode for Claude Code. Reduces token usage 40-70% through concise responses, smart model routing, and efficient workflow patterns.",
+  "author": {
+    "name": "Sagar Gupta",
+    "url": "https://github.com/Sagargupta16"
+  }
+}

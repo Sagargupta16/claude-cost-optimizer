@@ -56,11 +56,12 @@ That's it. We'll review it and help you get it merged.
 
 If you want to help but don't know where to start, here are specific things we need:
 
-- **CLAUDE.md templates** for: Django, Rails, Spring Boot, Go, Rust, Flutter, Svelte, Vue, Angular
+- **Skill improvements** -- better cost-mode prompts, new intensity levels, edge case handling in `skills/cost-mode/SKILL.md`
+- **CLAUDE.md templates** for: Flutter, Svelte, Vue, Angular, Elixir, C#/.NET
 - **Benchmark data** comparing costs between Opus, Sonnet, and Haiku for real tasks
 - **Case studies** from teams that reduced costs by 30%+ on production projects
 - **Pricing corrections** if any numbers in the guides are outdated
-- **Tool improvements** to the token estimator or usage analyzer in `tools/`
+- **Tool improvements** to the token estimator, usage analyzer, or Repo Analyzer
 - **Typo fixes and wording improvements** in any guide -- always welcome
 
 ## PR Guidelines
@@ -101,4 +102,4 @@ Be kind, be constructive, assume good intentions. This project follows the [Cont
 
 ## Questions?
 
-Open an issue. There are no bad questions when it comes to understanding Claude costs.
+Open an issue or start a thread in [GitHub Discussions](https://github.com/Sagargupta16/claude-cost-optimizer/discussions). There are no bad questions when it comes to understanding Claude costs.
