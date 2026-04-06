@@ -89,14 +89,13 @@ Full walkthrough: **[Getting Started in 5 Minutes](guides/00-getting-started.md)
 
 cost-mode is the first skill. More are planned:
 
-| Skill | Status | What It Does |
-|-------|:------:|-------------|
-| **cost-mode** | Live | Concise responses, model routing, session awareness |
-| **claudeignore-gen** | Planned | Auto-generates .claudeignore based on your project's tech stack |
-| **session-closer** | Planned | Structured session handoff -- summarizes context for the next session |
-| **cache-optimizer** | Planned | Detects cache-busting patterns and suggests fixes to maximize prompt cache hits |
-| **batch-scheduler** | Planned | Identifies non-urgent work and queues it for Batch API (50% discount) |
-| **budget-guard** | Planned | Per-session and per-day spending limits with warnings and auto-escalation |
+| Skill | Status | What It Does | Cost Impact |
+|-------|:------:|-------------|:-----------:|
+| **cost-mode** | Live | Concise responses, model routing suggestions, session awareness | 40-70% output reduction |
+| **claudeignore-gen** | Planned | Auto-generates .claudeignore based on your project's tech stack | 5-15% input reduction |
+| **context-compress** | Planned | Rewrites your CLAUDE.md to be shorter while keeping all essential info | 10-20% input reduction |
+| **cache-optimizer** | Planned | Detects cache-busting patterns and suggests fixes to maximize prompt cache hits | 10-25% input reduction |
+| **budget-guard** | Planned | Per-session and per-day spending limits with warnings before you blow past them | Prevents overspend |
 
 Want to build one? Skills are just `SKILL.md` files -- see [CONTRIBUTING.md](CONTRIBUTING.md) and the [skills/cost-mode/](skills/cost-mode/) directory for the pattern.
 
