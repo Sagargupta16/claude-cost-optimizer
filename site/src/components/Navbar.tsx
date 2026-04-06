@@ -1,47 +1,13 @@
-import { NavLink } from 'react-router-dom'
 import styles from './Navbar.module.css'
 
 function Navbar() {
   return (
     <nav className={styles.navbar}>
       <div className={styles.inner}>
-        <NavLink to="/" className={styles.logo}>
+        <a href="/" className={styles.logo}>
           Claude Cost Optimizer
-        </NavLink>
+        </a>
         <div className={styles.links}>
-          <NavLink
-            to="/"
-            end
-            className={({ isActive }) =>
-              isActive ? `${styles.link} ${styles.active}` : styles.link
-            }
-          >
-            Home
-          </NavLink>
-          <NavLink
-            to="/calculator"
-            className={({ isActive }) =>
-              isActive ? `${styles.link} ${styles.active}` : styles.link
-            }
-          >
-            Calculator
-          </NavLink>
-          <NavLink
-            to="/badge"
-            className={({ isActive }) =>
-              isActive ? `${styles.link} ${styles.active}` : styles.link
-            }
-          >
-            Badge
-          </NavLink>
-          <NavLink
-            to="/analyzer"
-            className={({ isActive }) =>
-              isActive ? `${styles.link} ${styles.active}` : styles.link
-            }
-          >
-            Repo Analyzer
-          </NavLink>
           <a
             href="https://github.com/Sagargupta16/claude-cost-optimizer"
             target="_blank"
@@ -49,6 +15,14 @@ function Navbar() {
             className={styles.link}
           >
             GitHub
+          </a>
+          <a
+            href="https://github.com/Sagargupta16/claude-cost-optimizer/discussions"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.link}
+          >
+            Discussions
           </a>
         </div>
       </div>

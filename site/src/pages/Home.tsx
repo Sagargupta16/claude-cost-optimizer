@@ -1,5 +1,4 @@
 import { useState, useCallback } from 'react'
-import { Link } from 'react-router-dom'
 import styles from './Home.module.css'
 
 const INSTALL_CMD = 'npx skills add Sagargupta16/claude-cost-optimizer'
@@ -51,21 +50,21 @@ const benchmarks = [
   { task: 'Error boundary', before: 3454, after: 1040 },
 ]
 
-const tools = [
+const resources = [
   {
-    title: 'Repo Analyzer',
-    desc: 'Paste a GitHub URL. Get a cost audit, grade, and recommendations.',
-    link: '/analyzer',
+    title: '10 Optimization Guides',
+    desc: 'From getting started to three-tier task routing and prompt caching deep dives.',
+    link: 'https://github.com/Sagargupta16/claude-cost-optimizer/tree/main/guides',
   },
   {
-    title: 'Cost Calculator',
-    desc: 'Estimate monthly spend based on model, sessions, and config.',
-    link: '/calculator',
+    title: '10 CLAUDE.md Templates',
+    desc: 'Cost-optimized templates for React, Next.js, FastAPI, Go, Rust, Django, Rails, and more.',
+    link: 'https://github.com/Sagargupta16/claude-cost-optimizer/tree/main/templates/CLAUDE.md',
   },
   {
-    title: 'Badge Checker',
-    desc: 'Score your setup (A+ to F) and get a shields.io badge.',
-    link: '/badge',
+    title: '7 CLI Tools',
+    desc: 'Token estimator, usage analyzer, badge generator, MCP server, budget hooks, and more.',
+    link: 'https://github.com/Sagargupta16/claude-cost-optimizer/tree/main/tools',
   },
 ]
 
@@ -237,16 +236,22 @@ function Home() {
         </div>
       </section>
 
-      {/* Web Tools */}
+      {/* Resources */}
       <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Web Tools</h2>
+        <h2 className={styles.sectionTitle}>What's in the Repo</h2>
         <div className={styles.toolsGrid}>
-          {tools.map((t) => (
-            <Link key={t.title} to={t.link} className={styles.toolCard}>
-              <h3 className={styles.toolTitle}>{t.title}</h3>
-              <p className={styles.toolDesc}>{t.desc}</p>
-              <span className={styles.toolArrow}>Open</span>
-            </Link>
+          {resources.map((r) => (
+            <a
+              key={r.title}
+              href={r.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.toolCard}
+            >
+              <h3 className={styles.toolTitle}>{r.title}</h3>
+              <p className={styles.toolDesc}>{r.desc}</p>
+              <span className={styles.toolArrow}>View on GitHub</span>
+            </a>
           ))}
         </div>
       </section>
@@ -297,9 +302,14 @@ function Home() {
           >
             Discussions
           </a>
-          <Link to="/analyzer" className={styles.ctaLink}>
-            Repo Analyzer
-          </Link>
+          <a
+            href="https://github.com/Sagargupta16/claude-cost-optimizer/tree/main/guides"
+            target="_blank"
+            rel="noopener noreferrer"
+            className={styles.ctaLink}
+          >
+            Guides
+          </a>
         </div>
       </section>
     </div>
