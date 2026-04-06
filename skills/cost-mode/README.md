@@ -4,11 +4,18 @@ A Claude Code skill that reduces token usage by 40-70% through concise responses
 
 ## Install
 
+**Claude Code (official plugin):**
+
+```bash
+/plugin marketplace add Sagargupta16/claude-cost-optimizer
+/plugin install cost-mode@sagargupta16-claude-cost-optimizer
+```
+
+**Multi-agent (Cursor, Cline, Codex, etc.):**
+
 ```bash
 npx skills add Sagargupta16/claude-cost-optimizer
 ```
-
-Or clone and reference locally in your Claude Code settings.
 
 ## Usage
 
