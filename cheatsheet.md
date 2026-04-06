@@ -211,6 +211,36 @@ Build: `npm run build` - must pass before PR
 
 ---
 
+## Output Token Optimization
+
+Output tokens cost 5x more than input across all models. Most strategies above target input -- these target the expensive side.
+
+| Strategy | Savings (output) | How |
+|----------|:----------------:|-----|
+| **Use a brevity skill (e.g. caveman)** | 50-75% | System prompt that strips filler, pleasantries, and hedging from responses. Technical accuracy unchanged. See [caveman](https://github.com/JuliusBrussee/caveman) |
+| **"Be concise" in CLAUDE.md** | 20-40% | Add "Be concise. Skip explanations unless asked." to your CLAUDE.md. Simple but effective |
+| **Batch outputs** | 10-20% | "Rename X in all files" (one response) vs 12 individual rename requests (12 responses) |
+| **Suppress explanations** | 15-30% | "Just show the code, no explanation" or "diff only" for mechanical tasks |
+| **Use Plan Mode wisely** | 10-20% | Plan Mode output is cheaper than failed code generation + correction cycles |
+
+> **Research backing**: A March 2026 study ([arXiv:2604.00025](https://arxiv.org/abs/2604.00025)) found that brevity constraints actually *improved* model accuracy by 26 percentage points on certain benchmarks. Less verbose does not mean less correct.
+
+### CLAUDE.md Compression
+
+Your CLAUDE.md loads on every turn as input tokens. Applying brevity rules to it compounds savings:
+
+```
+BEFORE (68 chars):
+"This project uses React with TypeScript. Always use functional components."
+
+AFTER (42 chars, same info):
+"React + TypeScript. Functional components only."
+```
+
+Every character saved in CLAUDE.md saves tokens on every turn of every session. At 30 turns/session and 3 sessions/day, a 1,000-character reduction saves ~165,000 input tokens/month.
+
+---
+
 ## Emergency Cost Reduction
 
 Already spending too much? Do these right now:
@@ -227,14 +257,18 @@ Already spending too much? Do these right now:
 
 | Resource | Link |
 |----------|------|
+| Getting Started (5 min) | [guides/00-getting-started.md](guides/00-getting-started.md) |
 | Understanding Costs (deep dive) | [guides/01-understanding-costs.md](guides/01-understanding-costs.md) |
 | Context Optimization | [guides/02-context-optimization.md](guides/02-context-optimization.md) |
 | Model Selection Guide | [guides/03-model-selection.md](guides/03-model-selection.md) |
 | Workflow Patterns | [guides/04-workflow-patterns.md](guides/04-workflow-patterns.md) |
 | Team Budgeting | [guides/05-team-budgeting.md](guides/05-team-budgeting.md) |
+| Three-Tier Task Routing | [guides/10-task-routing.md](guides/10-task-routing.md) |
 | CLAUDE.md Templates | [templates/CLAUDE.md/](templates/CLAUDE.md/) |
 | Token Estimator Tool | [tools/token-estimator/](tools/token-estimator/) |
 | Usage Analyzer Tool | [tools/usage-analyzer/](tools/usage-analyzer/) |
+| Repo Analyzer (web) | [sagargupta16.github.io/claude-cost-optimizer/analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer) |
+| Caveman skill (output tokens) | [github.com/JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) |
 
 ---
 
