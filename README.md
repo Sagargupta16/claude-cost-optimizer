@@ -1,5 +1,9 @@
 # Claude Cost Optimizer
-[![Stars](https://img.shields.io/github/stars/Sagargupta16/claude-cost-optimizer?style=flat)](https://github.com/Sagargupta16/claude-cost-optimizer/stargazers) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE) [![Last Updated](https://img.shields.io/badge/updated-March_2026-brightgreen)](https://github.com/Sagargupta16/claude-cost-optimizer/commits/main)
+
+![GitHub stars](https://img.shields.io/github/stars/Sagargupta16/claude-cost-optimizer?style=flat-square)
+![GitHub forks](https://img.shields.io/github/forks/Sagargupta16/claude-cost-optimizer?style=flat-square)
+![License](https://img.shields.io/github/license/Sagargupta16/claude-cost-optimizer?style=flat-square)
+![Last Commit](https://img.shields.io/github/last-commit/Sagargupta16/claude-cost-optimizer?style=flat-square)
 
 > **Save 30-60% on Claude Code costs** with an installable skill, web tools, and 11 deep-dive guides.
 
@@ -237,6 +241,20 @@ If this repo helped you save money, consider giving it a star!
    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=Sagargupta16/claude-cost-optimizer&type=timeline&legend=bottom-right" />
  </picture>
 </a>
+
+---
+
+## More AI Developer Tools
+
+If you found this useful, check out my other AI/Claude tools:
+
+| Project | Description |
+|---------|-------------|
+| [claude-code-recipes](https://github.com/Sagargupta16/claude-code-recipes) | 50+ copy-paste recipes for Claude Code - commands, subagents, hooks, skills |
+| [claude-skills](https://github.com/Sagargupta16/claude-skills) | Custom Claude Code plugin marketplace with dev-workflow, FARM stack, and more |
+| [agent-recipes](https://github.com/Sagargupta16/agent-recipes) | AI agent workflows for real-world dev tasks - code review, testing, security |
+| [ai-git-hooks](https://github.com/Sagargupta16/ai-git-hooks) | AI-powered git hooks - auto-review diffs, generate commit messages, security scanning |
+| [mcp-toolkit](https://github.com/Sagargupta16/mcp-toolkit) | Production-ready middleware for MCP servers - auth, caching, rate limiting |
 
 ---
 
