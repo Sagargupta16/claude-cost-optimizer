@@ -35,11 +35,11 @@ Not every developer uses Claude Code the same way. Set budgets based on role and
 |------|---------------|:------------------:|-----------|
 | **Junior Developer** | High-frequency simple tasks, learning | $30-60/month | Lots of small queries; should use Haiku 4.5 heavily |
 | **Mid-Level Developer** | Mixed task complexity | $50-100/month | Component creation, bug fixes, test writing |
-| **Senior Developer** | Lower frequency, higher complexity | $60-120/month | Architecture work, complex debugging (Opus 4.6 usage) |
-| **Tech Lead** | Architecture, reviews, planning | $70-150/month | Higher Opus 4.6 usage justified for strategic decisions |
+| **Senior Developer** | Lower frequency, higher complexity | $60-120/month | Architecture work, complex debugging (Opus 4.7 usage) |
+| **Tech Lead** | Architecture, reviews, planning | $70-150/month | Higher Opus 4.7 usage justified for strategic decisions |
 | **DevOps/Platform** | Infrastructure, CI/CD, automation | $30-60/month | Mostly config generation, script writing |
 
-> **Note**: These budgets reflect March 2026 pricing where Opus 4.6 is significantly cheaper ($5/$25 per MTok) than previous generations. Budget tiers are lower across the board compared to the old $15/$75 Opus pricing.
+> **Note**: These budgets reflect April 2026 pricing where Opus 4.7 (and legacy 4.6) is significantly cheaper ($5/$25 per MTok) than Opus 4.1 ($15/$75). Budget tiers are lower across the board compared to the old Opus pricing. Opus 4.7's new tokenizer uses up to 35% more tokens for the same text, so budgeting for it slightly higher than you would for 4.6 is wise.
 
 ### Setting the Initial Budget
 
@@ -87,13 +87,13 @@ Monthly Cost = (Simple Tasks x Simple Cost) +
 Where (per developer per day):
   Simple Tasks  = ~15-25 tasks/day   x $0.01 avg (Haiku 4.5)  = $0.15-0.25/day
   Medium Tasks  = ~8-15 tasks/day    x $0.07 avg (Sonnet 4.6)  = $0.56-1.05/day
-  Complex Tasks = ~2-5 tasks/day     x $0.13 avg (Opus 4.6)    = $0.26-0.65/day
+  Complex Tasks = ~2-5 tasks/day     x $0.13 avg (Opus 4.7)    = $0.26-0.65/day
 
   Daily Total   = $0.97-1.95/day
   Monthly Total = $21-43/developer (optimized)
 ```
 
-> **Note**: The Opus 4.6 average cost per complex task has dropped from ~$0.40 (at old $15/$75 pricing) to ~$0.13 (at current $5/$25 pricing). This significantly reduces the cost of architecture, debugging, and multi-file work.
+> **Note**: The Opus average cost per complex task has dropped from ~$0.40 (at old Opus 4.1 $15/$75 pricing) to ~$0.13 (at current $5/$25 pricing for Opus 4.7 and 4.6). This significantly reduces the cost of architecture, debugging, and multi-file work.
 
 ### Estimation Worksheet
 
@@ -108,7 +108,7 @@ Working days/month:           _____ (default: 22)
 Per Developer (daily averages):
   Simple tasks (Haiku 4.5):   _____ tasks x $0.01 = $_____ /day
   Medium tasks (Sonnet 4.6):  _____ tasks x $0.07 = $_____ /day
-  Complex tasks (Opus 4.6):   _____ tasks x $0.13 = $_____ /day
+  Complex tasks (Opus 4.7):   _____ tasks x $0.13 = $_____ /day
 
   Daily subtotal:             $_____ /day
   Monthly subtotal:           $_____ x 22 = $_____ /month
@@ -394,11 +394,11 @@ Feature: User notification preferences
   Estimated Claude Code cost: ~$0.39
 
 Feature: Payment system overhaul
-  - Architecture design (Opus 4.6, ~$0.27)
+  - Architecture design (Opus 4.7, ~$0.27)
   - 5 service refactors (Sonnet 4.6, ~$0.40)
-  - Database migration (Opus 4.6 plan + Sonnet 4.6 impl, ~$0.25)
+  - Database migration (Opus 4.7 plan + Sonnet 4.6 impl, ~$0.25)
   - Test suite (Sonnet 4.6, ~$0.25)
-  - Security review (Opus 4.6, ~$0.20)
+  - Security review (Opus 4.7, ~$0.20)
   Estimated Claude Code cost: ~$1.37
 ```
 
@@ -460,7 +460,7 @@ Feature: Payment system overhaul
 
 At 50 developers, cost optimization saves **$42,000/year**.
 
-> **Note**: These numbers reflect Opus 4.6 pricing ($5/$25 per MTok). The absolute cost of "unoptimized" usage is significantly lower than it was at old Opus pricing ($15/$75), but the percentage savings from optimization remain substantial.
+> **Note**: These numbers reflect Opus 4.7/4.6 pricing ($5/$25 per MTok). The absolute cost of "unoptimized" usage is significantly lower than it was at old Opus 4.1 pricing ($15/$75), but the percentage savings from optimization remain substantial. Opus 4.7's new tokenizer pushes the absolute dollar totals ~20-35% higher vs 4.6 for identical workloads.
 
 ---
 

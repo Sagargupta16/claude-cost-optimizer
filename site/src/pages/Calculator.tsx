@@ -59,7 +59,9 @@ function Calculator() {
           <fieldset className={styles.fieldset}>
             <legend className={styles.legend}>Model</legend>
             <div className={styles.radioGroup}>
-              {(Object.keys(MODELS) as ModelId[]).map((id) => (
+              {(Object.keys(MODELS) as ModelId[])
+                .filter((id) => !MODELS[id].inviteOnly)
+                .map((id) => (
                 <label key={id} className={styles.radioLabel}>
                   <input
                     type="radio"
@@ -68,7 +70,7 @@ function Calculator() {
                     checked={inputs.model === id}
                     onChange={() => {
                       updateField('model', id)
-                      if (id !== 'opus') updateField('fastMode', false)
+                      if (!MODELS[id].fastModeCapable) updateField('fastMode', false)
                     }}
                     className={styles.radio}
                   />
@@ -157,7 +159,7 @@ function Calculator() {
             </label>
           </div>
 
-          {inputs.model === 'opus' && (
+          {MODELS[inputs.model].fastModeCapable && (
             <label className={styles.checkboxLabel}>
               <input
                 type="checkbox"
@@ -165,7 +167,7 @@ function Calculator() {
                 onChange={(e) => updateField('fastMode', e.target.checked)}
                 className={styles.checkbox}
               />
-              <span>Fast Mode (6x cost -- Opus only)</span>
+              <span>Fast Mode (6x cost -- Opus 4.6 research preview only)</span>
             </label>
           )}
         </div>

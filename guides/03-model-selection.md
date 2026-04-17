@@ -2,7 +2,7 @@
 
 > **The single highest-impact optimization.** Choosing the right model per task can reduce your Claude Code bill by 30-60% with zero loss in output quality.
 
-Most developers default to the most capable model for everything. This is like hiring a senior architect to change a lightbulb. Claude Opus 4.6 is extraordinary — but for renaming a variable, it is a $25/M-output-token lightbulb-changer.
+Most developers default to the most capable model for everything. This is like hiring a senior architect to change a lightbulb. Claude Opus 4.7 is extraordinary — but for renaming a variable, it is a $25/M-output-token lightbulb-changer. With Opus 4.7's new tokenizer using up to 35% more tokens for the same text, the effective cost penalty for over-using it is even higher than posted pricing suggests.
 
 ---
 
@@ -22,26 +22,37 @@ Most developers default to the most capable model for everything. This is like h
 
 ## Model Lineup and Pricing
 
-### Current Pricing (March 2026, per 1M tokens)
+### Current Pricing (April 2026, per 1M tokens)
 
-| Model | Input Cost | Output Cost | Cache Hit | Relative Cost | Context Window |
-|-------|:----------:|:-----------:|:---------:|:-------------:|:--------------:|
-| **Opus 4.6** | $5.00 | $25.00 | $0.50 | 1x (baseline) | 1M |
-| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | ~1.67x cheaper | 1M |
-| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 5x cheaper | 200K |
+| Model | Input Cost | Output Cost | Cache Hit | Relative Cost | Context Window | Max Output |
+|-------|:----------:|:-----------:|:---------:|:-------------:|:--------------:|:----------:|
+| **Opus 4.7** (current) | $5.00 | $25.00 | $0.50 | 1x (baseline) | 1M | 128K |
+| **Opus 4.6** (legacy) | $5.00 | $25.00 | $0.50 | 1x (baseline) | 1M | 128K |
+| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | ~1.67x cheaper | 1M | 64K |
+| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 5x cheaper | 200K | 64K |
 
-> **Note**: Opus 4.6 is now significantly more affordable than previous generations (down from $15/$75 to $5/$25). This narrows the gap between models, but smart model selection still yields meaningful savings.
+> **Two things to know about Opus 4.7**:
+> 1. **Same pricing as Opus 4.6** ($5/$25) — no price premium for the upgrade.
+> 2. **New tokenizer** uses up to **35% more tokens** for the same text. So the *effective* cost is higher than the posted rates. A task that cost $1.00 on Opus 4.6 may cost $1.10-$1.35 on Opus 4.7 for the same prompt and output.
+>
+> **Opus 4.6 status**: Marked legacy by Anthropic but fully supported. It remains the only model with Fast Mode (6x, research preview). Consider 4.6 if you have workflows tuned to its exact tokenization, or want Fast Mode.
+>
+> **Opus 4.1**: Still available at older pricing ($15/$75). No reason to use it unless you have a specific compatibility need — migrate to 4.7.
+
+> **Claude Mythos Preview** ([Project Glasswing](https://anthropic.com/glasswing)): A separate research-preview model for **defensive cybersecurity workflows only** (vulnerability discovery, binary analysis, penetration testing). Post-preview pricing is **$25 / $125 per MTok** — 5x Opus 4.7's output rate. **Access is invitation-only** through Glasswing partners (AWS, Apple, Cisco, CrowdStrike, Google, JPMorganChase, Microsoft, NVIDIA, Palo Alto Networks, etc.) and 40+ critical-infrastructure organizations. Not available for general development work. If you're not in the program, ignore it — the posted pricing exists for completeness but no self-serve API access is offered. Mythos posts significantly higher scores on security-specific benchmarks (CyberGym 83.1% vs 4.6's 66.6%, SWE-bench Pro 77.8% vs 53.4%) but won't be generally released — Anthropic plans to fold safer Mythos-class capabilities into future Opus versions.
 
 ### What These Numbers Mean in Practice
 
 A typical Claude Code turn involves roughly **2,000-5,000 input tokens** and **500-3,000 output tokens**. Here is what a single turn costs across models:
 
-| Scenario | Input Tokens | Output Tokens | Opus 4.6 | Sonnet 4.6 | Haiku 4.5 |
-|----------|:------------:|:-------------:|:--------:|:----------:|:---------:|
+| Scenario | Input Tokens | Output Tokens | Opus 4.7* | Sonnet 4.6 | Haiku 4.5 |
+|----------|:------------:|:-------------:|:---------:|:----------:|:---------:|
 | Quick fix (small) | 2,000 | 500 | $0.023 | $0.014 | $0.005 |
 | Component creation (medium) | 5,000 | 2,000 | $0.075 | $0.045 | $0.015 |
 | Architecture analysis (large) | 10,000 | 5,000 | $0.175 | $0.105 | $0.035 |
 | Multi-file refactor (XL) | 20,000 | 10,000 | $0.350 | $0.210 | $0.070 |
+
+> *Opus 4.7 costs shown at posted rate. Multiply by ~1.2-1.35 to account for the new tokenizer's higher token counts on the same text.
 
 > **Key insight**: Output tokens cost 5x more than input tokens across all models. Tasks that generate a lot of code (scaffolding, boilerplate, test suites) are where model selection has the most impact.
 
@@ -70,15 +81,15 @@ Typical daily task distribution:
 
 ### Cost Impact of the 80/20 Rule
 
-Assume 50 tasks per day with an average cost of $0.10/task on Opus 4.6:
+Assume 50 tasks per day with an average cost of $0.10/task on Opus 4.7:
 
 | Strategy | Daily Cost | Monthly Cost (22 days) | Savings |
 |----------|:----------:|:----------------------:|:-------:|
-| **All Opus 4.6** | $5.00 | $110.00 | — |
+| **All Opus 4.7** | $5.00 | $110.00 | — |
 | **80/20 split** (Haiku/Sonnet for 80%) | $2.00 | $44.00 | **60%** |
 | **Optimized split** (40/40/20) | $1.70 | $37.40 | **66%** |
 
-With Opus 4.6's lower pricing, the absolute dollar savings are smaller than they used to be — but a 60-66% reduction still adds up fast across a team. Model selection remains the single biggest lever you have.
+With Opus 4.7's same pricing as 4.6 ($5/$25), the absolute dollar savings are smaller than they used to be versus Opus 4.1 ($15/$75) — but a 60-66% reduction still adds up fast across a team. Model selection remains the single biggest lever you have, and the new tokenizer overhead makes it even more valuable to skip Opus when you don't need it.
 
 ---
 
@@ -92,8 +103,8 @@ START: What is the task?
 ├── Does it require understanding complex architecture or
 │   reasoning about multi-file interactions?
 │   ├── YES → Is it a planning/analysis task (no code output)?
-│   │         ├── YES → Opus (plan mode)
-│   │         └── NO  → Opus
+│   │         ├── YES → Opus 4.7 (plan mode)
+│   │         └── NO  → Opus 4.7
 │   └── NO ↓
 │
 ├── Does it require generating new code with non-trivial logic?
@@ -173,11 +184,29 @@ Sonnet is the sweet spot for most development work. It handles logic, generates 
 claude --model sonnet "write unit tests for src/services/CartService.ts"
 ```
 
-### Complex Tasks: Use Opus 4.6
+### Complex Tasks: Use Opus 4.7
 
-**Cost per task: $0.05-$0.50+**
+**Cost per task: $0.05-$0.50+** (higher in practice due to 4.7's new tokenizer)
 
-Reserve Opus for tasks where deep reasoning, multi-file coordination, or architectural understanding provides genuine value. With Opus 4.6's more affordable pricing, the cost penalty for using it is smaller — but it is still ~1.67x more than Sonnet and 5x more than Haiku, so defaulting to it for every task is still wasteful.
+Reserve Opus for tasks where deep reasoning, multi-file coordination, or architectural understanding provides genuine value. With Opus 4.7's pricing at $5/$25 (same as 4.6, down from 4.1's $15/$75), the cost penalty for using it is smaller than it used to be — but it is still ~1.67x more than Sonnet and 5x more than Haiku at posted rates, and the new tokenizer adds another 20-35% of effective cost on top. Defaulting to Opus for every task remains wasteful.
+
+**Why Opus 4.7 over 4.6**: Anthropic reports a step-change improvement in agentic coding. 4.7 also catches its own logical faults during planning, verifies outputs before reporting, and takes instructions more literally. For long autonomous runs (audit, multi-file refactor, migration), 4.7's self-verification often pays for itself by avoiding expensive retry loops.
+
+**Thinking modes differ**:
+- **Opus 4.7** uses **adaptive thinking** (no separate extended-thinking budget) plus a new `xhigh` effort level.
+- **Opus 4.6** uses **extended thinking** — you can configure a reasoning token budget.
+- If you have prompts or harnesses tuned against extended thinking's explicit budget knobs, they won't carry over to 4.7.
+
+**Benchmarks published by Anthropic for Opus 4.7 vs Opus 4.6** (the numbers are even higher for Mythos Preview — included below for reference):
+
+| Benchmark | Opus 4.6 | Opus 4.7 | Mythos Preview (invite-only) |
+|-----------|:--------:|:--------:|:----------------------------:|
+| SWE-bench Verified | 80.8% | -- | 93.9% |
+| SWE-bench Pro | 53.4% | -- | 77.8% |
+| Terminal-Bench 2.0 | 65.4% | -- | 82.0% |
+| CyberGym (vuln reproduction) | 66.6% | -- | 83.1% |
+
+> Opus 4.7 sits between 4.6 and Mythos on most benchmarks. Anthropic describes the jump from 4.6 to 4.7 as "step-change" but has not published a full side-by-side table yet.
 
 | Task | Example | Why Opus Is Worth It |
 |------|---------|----------------------|
@@ -196,6 +225,8 @@ Reserve Opus for tasks where deep reasoning, multi-file coordination, or archite
 ```bash
 claude --model opus "design a plugin architecture for our CLI tool"
 ```
+
+**Want the legacy Opus 4.6 explicitly?** Use `--model claude-opus-4-6` (or set `ANTHROPIC_MODEL=us.anthropic.claude-opus-4-6-v1` for Bedrock). The `opus` alias maps to 4.7 by default on current Claude Code releases.
 
 ---
 
@@ -280,7 +311,7 @@ These are real-world estimates based on typical token usage patterns. All costs 
 
 **Task**: Rename `getUserData` to `fetchUserProfile` across 8 files.
 
-| | Haiku 4.5 | Sonnet 4.6 | Opus 4.6 |
+| | Haiku 4.5 | Sonnet 4.6 | Opus 4.7 |
 |-|:---------:|:----------:|:--------:|
 | Input tokens | ~3,000 | ~3,000 | ~3,000 |
 | Output tokens | ~1,200 | ~1,200 | ~1,200 |
@@ -293,7 +324,7 @@ These are real-world estimates based on typical token usage patterns. All costs 
 
 **Task**: Write comprehensive unit tests for `PaymentService` (5 methods, ~200 lines).
 
-| | Haiku 4.5 | Sonnet 4.6 | Opus 4.6 |
+| | Haiku 4.5 | Sonnet 4.6 | Opus 4.7 |
 |-|:---------:|:----------:|:--------:|
 | Input tokens | ~8,000 | ~8,000 | ~8,000 |
 | Output tokens | ~4,000 | ~4,000 | ~4,000 |
@@ -306,7 +337,7 @@ These are real-world estimates based on typical token usage patterns. All costs 
 
 **Task**: Investigate and fix intermittent auth failures in a distributed system spanning 12 files.
 
-| | Haiku 4.5 | Sonnet 4.6 | Opus 4.6 |
+| | Haiku 4.5 | Sonnet 4.6 | Opus 4.7 |
 |-|:---------:|:----------:|:--------:|
 | Turns needed | ~15 (struggles) | ~8 | ~4 |
 | Total input tokens | ~120,000 | ~80,000 | ~60,000 |
@@ -321,7 +352,7 @@ These are real-world estimates based on typical token usage patterns. All costs 
 
 **Task**: Add a new `/api/projects` endpoint with GET, POST, PUT, DELETE.
 
-| | Haiku 4.5 | Sonnet 4.6 | Opus 4.6 |
+| | Haiku 4.5 | Sonnet 4.6 | Opus 4.7 |
 |-|:---------:|:----------:|:--------:|
 | Input tokens | ~6,000 | ~6,000 | ~6,000 |
 | Output tokens | ~3,500 | ~3,500 | ~3,500 |
@@ -334,7 +365,7 @@ These are real-world estimates based on typical token usage patterns. All costs 
 
 **Task**: Design the migration strategy from MongoDB to PostgreSQL for a 20-collection database with complex relationships.
 
-| | Haiku 4.5 | Sonnet 4.6 | Opus 4.6 |
+| | Haiku 4.5 | Sonnet 4.6 | Opus 4.7 |
 |-|:---------:|:----------:|:--------:|
 | Input tokens | ~15,000 | ~15,000 | ~15,000 |
 | Output tokens | ~8,000 | ~8,000 | ~8,000 |
@@ -351,7 +382,7 @@ These are real-world estimates based on typical token usage patterns. All costs 
 
 Many developers set Opus as their default model and never change it. Their reasoning: "I want the best output, and the cost is acceptable."
 
-With Opus 4.6's more affordable pricing ($5/$25 vs the old $15/$75), this anti-pattern is less financially devastating than it used to be — but it is still wasteful:
+With Opus 4.7's pricing ($5/$25, unchanged from 4.6, down from 4.1's $15/$75), this anti-pattern is less financially devastating than it used to be — but it is still wasteful, and 4.7's new tokenizer (up to 35% more tokens per turn) quietly widens the gap back out:
 
 **1. Quality is often identical across models for simple tasks.**
 
@@ -362,7 +393,7 @@ For formatting, renaming, import management, config changes, and other mechanica
 ```
 Scenario: 50 tasks/day, 22 working days/month
 
-All Opus 4.6: 50 tasks x $0.10 avg x 22 days = $110/month
+All Opus 4.7: 50 tasks x $0.10 avg x 22 days = $110/month (+35% tokenizer = ~$148)
 Smart split:  (20 x $0.005) + (20 x $0.03) + (10 x $0.10) x 22 = $37/month
 
 Annual difference: $876
@@ -452,15 +483,19 @@ SONNET 4.6 ($3/$15 per 1M tokens)
 ├── Single-file refactoring
 └── Error handling implementation
 
-OPUS 4.6 ($5/$25 per 1M tokens)
+OPUS 4.7 ($5/$25 per 1M tokens, +~35% tokenizer overhead)
 ├── Architecture design and planning
 ├── Multi-file refactoring (5+ files)
 ├── Complex debugging (race conditions, memory leaks)
+├── Long autonomous agentic runs (self-verifies outputs)
 ├── Performance optimization (N+1 queries, bottlenecks)
 ├── Security auditing
 ├── Migration planning
 ├── System integration design
 └── Legacy code comprehension
+
+OPUS 4.6 ($5/$25 per 1M tokens -- legacy, supports Fast Mode 6x)
+└── Only if you need Fast Mode or have prompts tuned to the older tokenizer
 ```
 
 ---

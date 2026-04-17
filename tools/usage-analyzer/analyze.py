@@ -21,9 +21,13 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Claude model pricing per 1M tokens (as of March 2026)
+# Claude model pricing per 1M tokens (as of April 2026)
+# "opus" = current flagship Opus 4.7; "opus-4.6" = legacy.
+# Opus 4.7 and 4.6 share the same posted rate but 4.7's new tokenizer
+# consumes up to ~35% more tokens for the same source text.
 MODEL_PRICING = {
     "opus": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
+    "opus-4.6": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     "sonnet": {"input": 3.00, "output": 15.00, "cache_hit": 0.30},
     "haiku": {"input": 1.00, "output": 5.00, "cache_hit": 0.10},
 }

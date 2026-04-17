@@ -23,18 +23,21 @@
 
 Every interaction with Claude Code consumes tokens. Tokens are the fundamental billing unit — roughly 1 token per 4 characters of English text, or about 0.75 words per token. Code tends to be slightly less dense: a typical line of code is around 8-12 tokens.
 
-### Current Model Pricing
+### Current Model Pricing (April 2026)
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M) | Context Window | Max Output |
 |-------|:---------------------:|:----------------------:|:---------------------:|:--------------:|:----------:|
-| **Opus 4.6** | $5.00 | $25.00 | $0.50 | 1M | 32K |
+| **Opus 4.7** (current) | $5.00 | $25.00 | $0.50 | 1M | 128K |
+| **Opus 4.6** (legacy) | $5.00 | $25.00 | $0.50 | 1M | 128K |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 1M | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 200K | 64K |
-| **Opus 4.6 (1M context)** | $10.00 (2x) | $37.50 (1.5x) | $1.00 | 1M | 32K |
-| **Sonnet 4.6 (1M context)** | $6.00 (2x) | $22.50 (1.5x) | $0.60 | 1M | 64K |
-| **Opus 4.6 (Fast Mode)** | $30.00 (6x) | $150.00 (6x) | N/A | 1M (included) | 32K |
+| **Opus 4.6 (Fast Mode)** | $30.00 (6x) | $150.00 (6x) | N/A | 1M (included) | 128K |
 
-> **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x input price (5-min TTL), 2x input price (1-hour TTL).
+> **1M context at standard rates**: Opus 4.7, Opus 4.6, and Sonnet 4.6 bill the full 1M window at the standard per-token rate -- no long-context premium. (The earlier "2x over 200K" pricing applied to Opus 4.1 and older.)
+>
+> **Opus 4.7 tokenizer caveat**: Opus 4.7 introduced a new tokenizer that may use up to **35% more tokens** for the same source text. Posted pricing is unchanged ($5/$25), but effective per-task cost is 20-35% higher than it would have been on Opus 4.6.
+>
+> **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x input price (5-min TTL), 2x input price (1-hour TTL). **Regional endpoints** (Bedrock/Vertex, Sonnet 4.5+ and Haiku 4.5+): +10%.
 
 ### Off-Peak 2x Usage Events
 
@@ -48,39 +51,42 @@ To build intuition, here is what $1.00 buys you with each model:
 
 | Model | $1 of Input Tokens | $1 of Output Tokens | $1 of Cached Input |
 |-------|:-------------------:|:--------------------:|:------------------:|
-| **Opus 4.6** | ~200,000 tokens (~510 pages) | ~40,000 tokens (~102 pages) | ~2,000,000 tokens (~5,100 pages) |
+| **Opus 4.7 / 4.6** | ~200,000 tokens (~510 pages) | ~40,000 tokens (~102 pages) | ~2,000,000 tokens (~5,100 pages) |
 | **Sonnet 4.6** | ~333,300 tokens (~850 pages) | ~66,700 tokens (~170 pages) | ~3,333,300 tokens (~8,500 pages) |
 | **Haiku 4.5** | ~1,000,000 tokens (~2,560 pages) | ~200,000 tokens (~510 pages) | ~10,000,000 tokens (~25,600 pages) |
+
+> Opus 4.7's token counts may be ~20-35% lower than shown (fewer pages per $1) due to its new tokenizer. Budget with that in mind if you're migrating from 4.6.
 
 > **Critical insight**: Output tokens cost **5x more** than input tokens across all models. This is why strategies that reduce Claude's output (Plan Mode, concise instructions) are high-leverage.
 
 ### Model Cost Comparisons
 
-Relative to Opus 4.6 (the most expensive model):
+Relative to Opus 4.7 (the current flagship, tied with legacy 4.6 as most expensive):
 
 | Comparison | Input Savings | Output Savings |
 |------------|:------------:|:--------------:|
-| Sonnet 4.6 vs Opus 4.6 | **1.67x cheaper** | **1.67x cheaper** |
-| Haiku 4.5 vs Opus 4.6 | **5x cheaper** | **5x cheaper** |
+| Sonnet 4.6 vs Opus 4.7 | **1.67x cheaper** | **1.67x cheaper** |
+| Haiku 4.5 vs Opus 4.7 | **5x cheaper** | **5x cheaper** |
 | Haiku 4.5 vs Sonnet 4.6 | **3x cheaper** | **3x cheaper** |
 
 Switching from Opus to Haiku for a task that costs $1.00 on Opus would cost approximately $0.20 on Haiku. The same task on Sonnet would cost about $0.60.
 
-> **Note**: Opus 4.6 is now priced at $5/$25 — the same level Sonnet used to be at. The gap between models is much smaller than it used to be. Model selection still saves money, but the ratios are more modest (5x Haiku-to-Opus vs the historical 19x).
+> **Note**: Opus 4.7 is priced at $5/$25 — the same as Opus 4.6 and the same level Sonnet used to be at. The gap between models is much smaller than it used to be. Model selection still saves money, but the ratios are more modest (5x Haiku-to-Opus vs the historical 19x). Opus 4.7's new tokenizer narrows the "effective" gap slightly further — budget ~20-35% higher for 4.7 than the posted rate suggests.
 
 ### Long Context Pricing (1M)
 
-Opus 4.6 and Sonnet 4.6 support up to 1M tokens of context. When your input exceeds **200K tokens**, long-context pricing kicks in with higher per-token rates:
+Opus 4.7, Opus 4.6, and Sonnet 4.6 support up to 1M tokens of context at **standard rates** across the full window. There is no longer a "2x over 200K" premium -- that pricing applied to Opus 4.1 and older.
 
-| Model | Standard Input | 1M Input (2x) | Standard Output | 1M Output (1.5x) | 1M Cache Hit |
-|-------|:-------------:|:--------------:|:---------------:|:-----------------:|:------------:|
-| **Opus 4.6** | $5.00 | $10.00 | $25.00 | $37.50 | $1.00 |
-| **Sonnet 4.6** | $3.00 | $6.00 | $15.00 | $22.50 | $0.60 |
-| **Haiku 4.5** | — | *Not supported* | — | *Not supported* | — |
+| Model | Input Rate (any context size) | Output Rate (any context size) | Max Context |
+|-------|:-----------------------------:|:------------------------------:|:-----------:|
+| **Opus 4.7** | $5.00 | $25.00 | 1M |
+| **Opus 4.6** | $5.00 | $25.00 | 1M |
+| **Sonnet 4.6** | $3.00 | $15.00 | 1M |
+| **Haiku 4.5** | $1.00 | $5.00 | 200K |
 
-> **Critical**: When the 200K input token threshold is crossed, **ALL tokens in the request are billed at the premium rate** — not just the tokens above 200K. Sending 201K input tokens on Opus costs $2.01 at the $10/1M rate, not $1.005 (200K at $5) + $0.01 (1K at $10). This is an important cliff to watch for.
+A 900K-token request is billed at the same per-token rate as a 9K-token request. You still pay for each token, so context growth still costs more in absolute dollars -- but there is no rate cliff at 200K anymore.
 
-In practice, you are unlikely to hit this threshold in normal Claude Code sessions if you use `/compact` regularly. But if you are working with very large codebases, injecting large files, or running extremely long sessions without compacting, the 200K threshold can be crossed — and the cost doubles instantly.
+> **Practical implication**: Sending a 300K-token input on Opus 4.7 costs $1.50 at the $5/1M rate. Under the old pricing, it would have been $3.00 (entire request at the 2x rate). Long agentic sessions, large-codebase audits, and big-document analysis are now significantly cheaper.
 
 > **AWS Bedrock / Vertex AI**: Claude models are available on AWS Bedrock and Google Vertex AI at the same pricing for global (cross-region) inference. Regional inference profiles carry a **+10% surcharge** over the standard API rates.
 
@@ -179,7 +185,7 @@ The cost **accelerates** with each turn. A 30-turn session does not cost 30x a s
 
 ### How the Context Window Works
 
-Claude's context window (1M tokens for Opus 4.6 and Sonnet 4.6, 200K for Haiku 4.5) is the maximum amount of text it can process in a single turn. Think of it as Claude's working memory.
+Claude's context window (1M tokens for Opus 4.7, Opus 4.6, and Sonnet 4.6; 200K for Haiku 4.5) is the maximum amount of text it can process in a single turn. Think of it as Claude's working memory.
 
 ```
 Context Window (1M tokens for Opus/Sonnet, 200K for Haiku)
@@ -209,7 +215,7 @@ What it costs to fill the context window on a single turn:
 
 | Model | Full 200K Input Cost (per turn) | Full 1M Input Cost (per turn) | Max Output Cost (if maxed) |
 |-------|:-------------------------------:|:-----------------------------:|:--------------------------:|
-| Opus 4.6 | $1.00 | $10.00 (2x rate) | $0.80 (32K output) |
+| Opus 4.7 / 4.6 | $1.00 | $1.00 (flat rate, no 200K premium) | $0.80 (32K output) |
 | Sonnet 4.6 | $0.60 | $6.00 (2x rate) | $0.96 (64K output) |
 | Haiku 4.5 | $0.20 | N/A (200K max) | $0.32 (64K output) |
 
@@ -482,11 +488,11 @@ Without prompt caching, every input token is charged at full price:
 
 | Model | 30-Turn Session Cost | Monthly (5 sessions/day, 22 days) |
 |-------|:--------------------:|:---------------------------------:|
-| **Opus 4.6** | ~$2.33 | ~$256 |
+| **Opus 4.7 / 4.6** | ~$2.33 | ~$256 |
 | **Sonnet 4.6** | ~$1.40 | ~$154 |
 | **Haiku 4.5** | ~$0.47 | ~$52 |
 
-> **Note**: With Opus 4.6 at $5/$25, the cost gap between models is much narrower than it used to be. Opus sessions are only ~1.7x more expensive than Sonnet, making it practical to use Opus more often. Haiku at $1/$5 is still the clear budget choice at 5x cheaper than Opus.
+> **Note**: With Opus 4.7 (and legacy 4.6) at $5/$25, the cost gap between models is much narrower than it used to be. Opus sessions are only ~1.7x more expensive than Sonnet, making it practical to use Opus more often. Haiku at $1/$5 is still the clear budget choice at 5x cheaper than Opus.
 
 ---
 
@@ -564,7 +570,7 @@ Example (150 lines, 30 turns, Sonnet 4.6, 80% cache rate):
 = 31,500 x $0.00000084
 = $0.026
 
-Same example on Opus 4.6:
+Same example on Opus 4.7 (or legacy 4.6):
 = 31,500 x ((0.80 x $0.0000005) + (0.20 x $0.000005))
 = 31,500 x $0.0000014
 = $0.044
@@ -595,7 +601,7 @@ For a rough rule of thumb: if you have more than 3-4 turns left in a session, sw
 
 4. **CLAUDE.md loads on every turn.** Keep it under 150 lines. Every line you cut saves tokens across your entire session.
 
-5. **Model selection still matters, but the gaps are smaller.** Haiku 4.5 at $1/$5 vs Opus 4.6 at $5/$25 is a 5x difference. Use the cheapest model that gets the job done — but Opus is now much more accessible at the same price Sonnet used to be.
+5. **Model selection still matters, but the gaps are smaller.** Haiku 4.5 at $1/$5 vs Opus 4.7/4.6 at $5/$25 is a 5x difference. Use the cheapest model that gets the job done — but Opus is now much more accessible at the same price Sonnet used to be. Opus 4.7's new tokenizer (+~35% tokens for the same text) slightly re-widens the effective gap.
 
 6. **Track your usage.** Run `/usage` regularly. Set `--max-budget-usd` on every session. What gets measured gets managed.
 

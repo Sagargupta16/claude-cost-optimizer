@@ -1,5 +1,37 @@
 # Changelog
 
+## [1.4.0] - 2026-04-17
+
+### Added
+- **Claude Opus 4.7 support** across all tools, guides, pricing tables, and the web calculator. Opus 4.7 is Anthropic's current flagship (April 2026) at $5/$25 per 1M input/output -- same posted pricing as legacy Opus 4.6.
+- **Claude Mythos Preview entry** in pricing tables, token-estimator, and the site's model registry. $25/$125 per MTok. Invite-only via [Project Glasswing](https://anthropic.com/glasswing) for defensive cybersecurity research. Added `inviteOnly` flag on ModelPricing so Mythos appears in reference tables but is filtered out of the calculator/analyzer selection UIs.
+- `opus-legacy` model option in site/src/utils/pricing.ts (maps to Opus 4.6) to keep Fast Mode accessible for users who need it.
+- `fastModeCapable` flag on ModelPricing type; calculator now scopes Fast Mode UI to the model that actually supports it (Opus 4.6) instead of hardcoding to `model === 'opus'`.
+- Tokenizer overhead warning: Opus 4.7 introduced a new tokenizer that may use up to 35% more tokens for the same source text. Guides now recommend budgeting 20-35% higher for Opus 4.7 tasks vs Opus 4.6.
+- Bedrock model ID reference table in guides/06 (includes `us.anthropic.claude-opus-4-7` cross-region profile + research-preview caveat).
+- New Mermaid diagrams in guides/diagrams.md: "Claude Model Family (April 2026)" showing all GA + research-preview models with cost tiers, and "Pricing Modifier Stack" showing how cache/batch/regional/fast-mode multipliers compose.
+- **Thinking modes table** in cheatsheet: clarifies Opus 4.7 uses adaptive thinking only (no extended thinking), Sonnet 4.6 supports both, Haiku 4.5 is extended-only.
+- **Upcoming retirements table** in cheatsheet and README: Haiku 3 retires 2026-04-19, Sonnet 4 / Opus 4 retire 2026-06-15.
+- Published benchmark numbers (CyberGym, SWE-bench Verified/Pro, Terminal-Bench) in guides/03 comparing Opus 4.6 vs Mythos Preview.
+
+### Changed
+- **1M context pricing corrected**: Opus 4.7, Opus 4.6, and Sonnet 4.6 now bill the full 1M window at **standard per-token rates**. The earlier "2x input, 1.5x output over 200K" documentation was obsolete and applied only to Opus 4.1 and older. Removed the "Long Context Threshold Trap" anti-pattern section since it no longer applies.
+- All pricing tables updated to April 2026 (was March 2026).
+- `Max Output` column for Opus updated to 128K (was incorrectly listed as 32K).
+- Default `opus` alias in the site calculator now refers to Opus 4.7; the calculator surface supports both.
+- Regional endpoint +10% premium clarified to apply specifically to Sonnet 4.5+ and Haiku 4.5+ (global pricing structure changed with that generation).
+- Data residency +10% multiplier clarified as `inference_geo: us-only` on Opus 4.7 and newer, not a blanket "Opus and above" rule.
+
+### Fixed
+- Token estimator Python CLI: removed obsolete `opus_4.6_1m` entry; added legacy `opus_4_6` explicitly.
+- Cheatsheet: corrected max output per turn values and the historical Haiku-to-Opus cost ratio explanation.
+- Benchmarks headers now include explicit "measured on Opus 4.6" note since Opus 4.7 benchmarks are not yet collected.
+- **Comprehensive factual sweep**: updated every remaining "Opus 4.6" default-recommendation reference to "Opus 4.7" across guides/09-subscription-value.md (plan model lineup, allowance table, Batch API table), guides/08-prompt-caching.md (cache pricing table), guides/06-access-methods-pricing.md ("stay under 200K" tip rewritten for current standard-rate 1M context, March→April 2026 date), benchmarks/context-size-impact.md (file read budget table, context window reference), benchmarks/model-comparison.md (decision tree, recommendation labels), and benchmarks/leaderboard.md (pricing note).
+- **Diagrams rewritten** (guides/diagrams.md): replaced `\n` line breaks with `<br/>` inside quoted labels (GitHub renders these correctly, `\n` showed as literal text), dropped inline `<b>` tags that GitHub's sanitizer strips, switched from inline `style` to `classDef` + `class` syntax, wrapped model groupings in `subgraph` blocks for proper boxed regions. All 5 diagrams validated via `@mermaid-js/mermaid-cli@11.12.0`.
+- **Issue templates** (`.github/ISSUE_TEMPLATE/leaderboard-entry.md`, `case-study.md`): added Opus 4.7 option.
+- **Case study template** (`case-studies/TEMPLATE.md`): added Opus 4.7 to example model list.
+- **Context size benchmark**: corrected the "200K token context window" claim to reflect that Opus 4.7/4.6/Sonnet 4.6 are 1M and Haiku 4.5 is 200K.
+
 ## [1.3.0] - 2026-04-06
 
 ### Added

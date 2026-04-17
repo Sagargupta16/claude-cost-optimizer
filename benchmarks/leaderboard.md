@@ -7,7 +7,7 @@
 - **Cost** is the estimated total session cost for completing the task
 - **Tokens** is total tokens (input + output) consumed
 - **Optimizations** lists the techniques applied
-- All costs use March 2026 pricing
+- All costs use April 2026 pricing (Opus 4.7 and 4.6 at $5/$25, Sonnet 4.6 at $3/$15, Haiku 4.5 at $1/$5 per MTok). Entries labeled "Opus 4.6" were measured before Opus 4.7 launched (2026-04-16); 4.7 should produce similar cost ranges, with ~20-35% higher token counts due to its new tokenizer.
 
 ---
 

@@ -6,22 +6,50 @@
 
 ## Token Pricing At a Glance
 
-| Model | Input / 1M tokens | Output / 1M tokens | Cache Hit / 1M | Relative Cost |
-|-------|:-----------------:|:-------------------:|:-----------------:|:-------------:|
-| **Opus 4.6** | $5.00 | $25.00 | $0.50 | 1x (baseline) |
-| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | **~1.7x cheaper** |
-| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | **5x cheaper** |
-| **Opus 4.6 (1M context)** | $10.00 (2x) | $37.50 (1.5x) | $1.00 | 2x baseline |
-| **Sonnet 4.6 (1M context)** | $6.00 (2x) | $22.50 (1.5x) | $0.60 | ~1.2x baseline |
-| **Opus 4.6 (Fast Mode)** | $30.00 (6x) | $150.00 (6x) | N/A | 6x baseline |
+| Model | Input / 1M tokens | Output / 1M tokens | Cache Hit / 1M | Context | Max Output | Relative Cost |
+|-------|:-----------------:|:-------------------:|:-----------------:|:-------:|:----------:|:-------------:|
+| **Opus 4.7** (current) | $5.00 | $25.00 | $0.50 | 1M | 128K | 1x (baseline) |
+| **Opus 4.6** (legacy) | $5.00 | $25.00 | $0.50 | 1M | 128K | 1x (baseline) |
+| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 1M | 64K | **~1.7x cheaper** |
+| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 200K | 64K | **5x cheaper** |
+| **Opus 4.6 (Fast Mode)** | $30.00 (6x) | $150.00 (6x) | N/A | 1M | 128K | 6x baseline |
+| **Mythos Preview** (invite-only, Glasswing) | $25.00 | $125.00 | -- | 1M | -- | 5x baseline output |
 
 > Output tokens cost **5x more** than input tokens across all models. Reducing Claude's verbosity is high-leverage.
 >
-> **1M context**: Applies when input exceeds 200K tokens. ALL tokens are billed at the premium rate (not just those over 200K). Haiku 4.5 does not support 1M context.
+> **1M context on Opus 4.7 / 4.6 / Sonnet 4.6 is at standard rates** -- no long-context premium. (Earlier "2x over 200K" pricing is obsolete.) Haiku 4.5 does not support 1M context.
 >
-> **Fast Mode**: Opus 4.6 only (research preview). 6x standard rates but includes 1M context at no extra long-context charge. Not available with Batch API.
+> **Opus 4.7 tokenizer**: New tokenizer uses **up to 35% more tokens** for the same text. Effective per-task cost is higher than posted pricing implies. Budget accordingly.
 >
-> **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x (5-min TTL), 2x (1-hour TTL).
+> **Opus 4.6 status**: Marked legacy by Anthropic -- still fully usable, and only model supporting Fast Mode. Migrate to 4.7 for step-change improvement in agentic coding.
+>
+> **Mythos Preview**: Invitation-only research model for defensive cybersecurity under [Project Glasswing](https://anthropic.com/glasswing). 5x Opus 4.7's output rate ($125/MTok). Not for general development -- access restricted to ~50 approved critical-infrastructure organizations. Benchmarks: CyberGym 83.1%, SWE-bench Pro 77.8% (both significantly above Opus 4.6).
+>
+> **Fast Mode**: Opus 4.6 ONLY (research preview). 6x standard rates. Not available on Opus 4.7. Not available with Batch API.
+>
+> **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x (5-min TTL), 2x (1-hour TTL). **Regional endpoints** (Bedrock/Vertex, Sonnet 4.5+ and Haiku 4.5+): +10% premium.
+
+### Thinking Modes by Model
+
+| Model | Extended thinking | Adaptive thinking |
+|-------|:-----------------:|:-----------------:|
+| Opus 4.7 | No | Yes |
+| Opus 4.6 | Yes | -- |
+| Sonnet 4.6 | Yes | Yes |
+| Haiku 4.5 | Yes | No |
+| Mythos Preview | Yes | -- |
+
+> **Extended thinking** adds explicit reasoning tokens you pay for as output. **Adaptive thinking** lets the model decide when and how much to think based on task difficulty -- no separate billing flag. Opus 4.7 replaced extended thinking with adaptive thinking + the new `xhigh` effort level.
+
+### Upcoming Model Retirements
+
+| Model | Retirement date | Migration target |
+|-------|:---------------:|------------------|
+| Haiku 3 (`claude-3-haiku-20240307`) | **April 19, 2026** | Haiku 4.5 |
+| Sonnet 4 (`claude-sonnet-4-20250514`) | June 15, 2026 | Sonnet 4.6 |
+| Opus 4 (`claude-opus-4-20250514`) | June 15, 2026 | Opus 4.7 |
+
+> If you have production workloads on any of these, switch now -- Haiku 3 retires in days.
 >
 > **Off-Peak 2x Usage**: Anthropic periodically runs promotional events that double usage limits outside peak hours (typically 8 AM - 2 PM ET) and on all weekends. If you're outside the US, your entire workday likely falls in the 2x window. Watch the [Anthropic blog](https://www.anthropic.com/news) for announcements.
 >
@@ -67,15 +95,15 @@
 
 ```
 Is the task...
-├── Complex architecture, debugging, or multi-file refactor? → Opus 4.6
-├── Standard feature work, code review, writing tests?      → Sonnet 4.6
-├── Simple fix, formatting, boilerplate, file lookup?       → Haiku 4.5
-└── Not sure?                                               → Start with Sonnet 4.6
+├── Complex architecture, long agentic run, or hardest coding? → Opus 4.7
+├── Standard feature work, code review, writing tests?         → Sonnet 4.6
+├── Simple fix, formatting, boilerplate, file lookup?          → Haiku 4.5
+└── Not sure?                                                  → Start with Sonnet 4.6
 ```
 
 **Switch models mid-session**: Type `/model` and select, or start with `claude --model sonnet`.
 
-> **Note**: Opus 4.6 is now priced at $5/$25 - the same price Sonnet used to be. The gap between models is smaller, so switching down to Haiku ($1/$5) provides a 5x savings, not 19x as it was historically.
+> **Note**: Opus 4.7 is now priced at $5/$25 - the same as legacy Opus 4.6, and the same price Sonnet used to be. The gap between models is smaller, so switching down to Haiku ($1/$5) provides a 5x savings, not 19x as it was historically. Opus 4.7's new tokenizer can bump effective cost up to 35%, narrowing the gap further.
 
 ---
 
@@ -84,13 +112,16 @@ Is the task...
 | Feature | Anthropic API | AWS Bedrock | Google Vertex AI | Claude Code |
 |---------|:---:|:---:|:---:|:---:|
 | Standard pricing | Base rates | Same (global) / +10% (regional) | Same (global) / +10% (regional) | Included in plan |
-| 1M context | Yes (Opus, Sonnet) | Yes | Yes | Yes |
-| Fast Mode | Yes (Opus only) | Check availability | Check availability | Yes (`/fast`) |
+| Opus 4.7 availability | GA | Research preview | GA | Via `/model` |
+| 1M context | Yes (Opus 4.7/4.6, Sonnet 4.6) | Yes | Yes | Yes |
+| Fast Mode | Yes (Opus 4.6 only) | Check availability | Check availability | Yes (`/fast`) on 4.6 |
 | Batch API (50% off) | Yes | Yes | Yes | N/A |
 | Prompt caching | Yes | Yes | Yes | Automatic |
 | Max context | 1M | 1M | 1M | 1M |
 
-> **Bedrock / Vertex**: Same models, same capabilities. Global (cross-region) inference matches API pricing. Regional inference profiles add ~10%. Choose based on your cloud provider, compliance needs, and existing infrastructure.
+> **Bedrock / Vertex**: Same models, same capabilities. Global (cross-region) inference matches API pricing. Regional inference profiles add ~10% (Sonnet 4.5+ and Haiku 4.5+). Choose based on your cloud provider, compliance needs, and existing infrastructure.
+>
+> **Opus 4.7 on Bedrock**: Currently research preview. Bedrock model ID `us.anthropic.claude-opus-4-7` (cross-region only). Some API fields (e.g. `temperature`) may be rejected -- use the alias or omit deprecated parameters.
 
 ---
 
@@ -191,8 +222,8 @@ Build: `npm run build` - must pass before PR
 
 | Fact | Number |
 |------|--------|
-| Opus 4.6 output is ___ per 1M tokens | **$25** |
-| Haiku 4.5 is ___ cheaper than Opus 4.6 on input | **5x** |
+| Opus 4.7 output is ___ per 1M tokens | **$25** |
+| Haiku 4.5 is ___ cheaper than Opus on input | **5x** |
 | Output tokens cost ___ more than input | **5x** |
 | Prompt cache discount | **90%** |
 | CLAUDE.md loads on every ___ | **turn** |
@@ -200,14 +231,15 @@ Build: `npm run build` - must pass before PR
 | Total instruction file budget | **12,000 characters** (across all CLAUDE.md files) |
 | 1 line of code is roughly ___ tokens | **~10** |
 | Token estimation rule of thumb | **~1 token per 4 bytes** of text |
+| Opus 4.7 tokenizer overhead vs older models | **up to +35%** |
 | 150-line CLAUDE.md per turn is roughly | **~1,050 tokens** |
 | 50-turn session CLAUDE.md cost (Sonnet 4.6) | **~$0.16** |
-| 50-turn session CLAUDE.md cost (Opus 4.6) | **~$0.26** |
+| 50-turn session CLAUDE.md cost (Opus 4.7, pre-cache) | **~$0.26** (factor +35% for new tokenizer) |
 | Average tool result size | **500-5,000 tokens** |
 | Compaction trigger threshold | **~10,000 tokens** of compactable content |
 | Messages preserved after /compact | **4 most recent** |
-| Opus 4.6 max output per turn | **32K tokens** |
-| Sonnet/Haiku max output per turn | **64K tokens** |
+| Opus 4.7 / 4.6 max output per turn | **128K tokens** |
+| Sonnet / Haiku 4.5 max output per turn | **64K tokens** |
 
 ---
 

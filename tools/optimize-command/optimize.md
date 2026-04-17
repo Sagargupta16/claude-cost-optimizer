@@ -88,7 +88,7 @@ Estimate the per-session cost using these assumptions:
 - Each MCP server adds ~1000 tokens per turn
 - Base system prompt: ~2000 tokens per turn
 - Average output per turn: ~500 tokens
-- Use the pricing for the configured model (default to Opus 4.6 at $5/$25 per 1M input/output tokens if no model is set)
+- Use the pricing for the configured model (default to Opus 4.7 at $5/$25 per 1M input/output tokens if no model is set)
 
 Show the math briefly, then give the final estimate.
 

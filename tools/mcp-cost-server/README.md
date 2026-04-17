@@ -94,11 +94,12 @@ Returns cost for each model, identifies the cheapest option, and shows the perce
 
 ## Pricing Reference
 
-All estimates use March 2026 API pricing (per 1M tokens):
+All estimates use April 2026 API pricing (per 1M tokens):
 
 | Model | Input | Output | Cache Hit |
 |-------|-------|--------|-----------|
-| Opus 4.6 | $5.00 | $25.00 | $0.50 |
+| Opus 4.7 (alias: `opus`) | $5.00 | $25.00 | $0.50 |
+| Opus 4.6 (alias: `opus-4.6`) | $5.00 | $25.00 | $0.50 |
 | Sonnet 4.6 | $3.00 | $15.00 | $0.30 |
 | Haiku 4.5 | $1.00 | $5.00 | $0.10 |
 

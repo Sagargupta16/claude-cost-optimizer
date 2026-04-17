@@ -63,11 +63,12 @@ This is fast and dependency-free, with roughly 10-15% variance compared to the a
 
 ## Pricing Data
 
-Costs are based on Claude API pricing as of March 2026:
+Costs are based on Claude API pricing as of April 2026:
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) |
 |-------|----------------------|------------------------|
-| Opus 4.6 | $5.00 | $25.00 |
+| Opus 4.7 (alias: `opus`) | $5.00 | $25.00 |
+| Opus 4.6 (alias: `opus-4.6`) | $5.00 | $25.00 |
 | Sonnet 4.6 | $3.00 | $15.00 |
 | Haiku 4.5 | $1.00 | $5.00 |
 

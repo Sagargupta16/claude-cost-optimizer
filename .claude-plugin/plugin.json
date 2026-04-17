@@ -1,6 +1,6 @@
 {
   "name": "claude-cost-optimizer",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Cost-conscious mode for Claude Code. Saves 30-60% on costs through concise responses, model routing, and efficient workflow patterns.",
   "author": {
     "name": "Sagar Gupta",

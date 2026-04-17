@@ -23,7 +23,8 @@ assignees: ''
 ## Model Used
 
 <!-- Select one: -->
-- [ ] Opus 4.6
+- [ ] Opus 4.7
+- [ ] Opus 4.6 (legacy)
 - [ ] Sonnet 4.6
 - [ ] Haiku 4.5
 

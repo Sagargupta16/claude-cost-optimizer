@@ -27,24 +27,42 @@ except ImportError:
     sys.exit(1)
 
 
-# Claude model pricing per 1M tokens (as of March 2026)
+# Claude model pricing per 1M tokens (as of April 2026)
+# NOTE: 1M context on Opus 4.7/4.6/Sonnet 4.6 is now billed at standard rates
+# (no long-context premium). The old "2x over 200K" pricing only applied to
+# Opus 4.1 and older.
 MODEL_PRICING = {
-    "opus": {"input": 5.00, "output": 25.00, "cache_hit": 0.50, "name": "Opus 4.6"},
+    "opus": {
+        "input": 5.00,
+        "output": 25.00,
+        "cache_hit": 0.50,
+        "name": "Opus 4.7",
+        "note": "New tokenizer may use up to 35% more tokens than Opus 4.6.",
+    },
+    "opus_4_6": {
+        "input": 5.00,
+        "output": 25.00,
+        "cache_hit": 0.50,
+        "name": "Opus 4.6 (legacy)",
+    },
     "sonnet": {"input": 3.00, "output": 15.00, "cache_hit": 0.30, "name": "Sonnet 4.6"},
     "haiku": {"input": 1.00, "output": 5.00, "cache_hit": 0.10, "name": "Haiku 4.5"},
-    "opus_4.6_1m": {
-        "input": 10.00,
-        "output": 37.50,
-        "cache_hit": 1.00,
-        "name": "Opus 4.6 (1M context)",
-        "note": "Applies when input >200K tokens. ALL tokens billed at premium rate.",
-    },
     "fast_mode": {
         "input": 30.00,
         "output": 150.00,
         "cache_hit": None,
         "name": "Opus 4.6 (Fast Mode)",
-        "note": "Research preview. 6x standard Opus rates. Includes 1M context. Not available with Batch API.",
+        "note": "Research preview. 6x standard Opus rates. Opus 4.6 only. Not available with Batch API.",
+    },
+    "mythos": {
+        "input": 25.00,
+        "output": 125.00,
+        "cache_hit": 2.50,
+        "name": "Mythos Preview",
+        "note": (
+            "Invite-only via Project Glasswing (defensive cybersecurity research). "
+            "Not available for general development. Listed for reference only."
+        ),
     },
 }
 
@@ -257,7 +275,7 @@ def main():
         default=None,
         help=(
             "Show cost for a specific model only (default: show all). "
-            "Use 'opus_4.6_1m' for 1M context pricing (>200K tokens). "
+            "Use 'opus_4_6' for legacy Opus 4.6 pricing. "
             "Use 'fast_mode' for Fast Mode pricing (Opus 4.6, 6x rates)."
         ),
     )

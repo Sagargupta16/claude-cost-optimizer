@@ -330,7 +330,9 @@ function RepoAnalyzer() {
                 </tr>
               </thead>
               <tbody>
-                {(Object.keys(MODELS) as ModelId[]).map((id) => (
+                {(Object.keys(MODELS) as ModelId[])
+                  .filter((id) => !MODELS[id].inviteOnly)
+                  .map((id) => (
                   <tr key={id}>
                     <td>{MODELS[id].name}</td>
                     <td className={styles.mono}>

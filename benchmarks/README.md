@@ -13,15 +13,16 @@ Each benchmark file compares costs along a specific dimension: task type, model 
 
 ### Pricing Reference
 
-All cost calculations use the following rates (March 2026):
+All cost calculations use the following rates (April 2026):
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
 |-------|:---------------------:|:----------------------:|:-------------------------:|
-| Opus 4.6 | $5.00 | $25.00 | $0.50 |
+| Opus 4.7 (current) | $5.00 | $25.00 | $0.50 |
+| Opus 4.6 (legacy) | $5.00 | $25.00 | $0.50 |
 | Sonnet 4.6 | $3.00 | $15.00 | $0.30 |
 | Haiku 4.5 | $1.00 | $5.00 | $0.10 |
 
-Batch API pricing is 50% off the standard rates above.
+Batch API pricing is 50% off the standard rates above. Opus 4.7's new tokenizer can use up to 35% more tokens for the same text, so expect ~20-35% higher absolute costs vs Opus 4.6 for identical workloads.
 
 ### What "Estimated" Means
 
@@ -106,7 +107,7 @@ When submitting results, please include:
 ### [Your Scenario Name]
 
 **Environment:**
-- Model: [Opus 4.6 / Sonnet 4.6 / Haiku 4.5]
+- Model: [Opus 4.7 / Opus 4.6 / Sonnet 4.6 / Haiku 4.5]
 - CLAUDE.md: [line count] lines (~[token count] tokens)
 - Codebase: [language/framework], [approximate size]
 - Date: [YYYY-MM-DD]

@@ -93,14 +93,14 @@ function computeSessionCost(
 
   let sessionTotal = inputCost + cacheCost + outputCost
 
-  if (inputs.fastMode && model === 'opus') {
+  if (inputs.fastMode && pricing.fastModeCapable) {
     sessionTotal *= FAST_MODE_MULTIPLIER
   }
 
   // Compute breakdown costs proportionally
   const totalAllInput = claudeMdInput + mcpInput + fileReadsInput + historyInput
   const inputPlusCacheCost = inputCost + cacheCost
-  const breakdownMultiplier = inputs.fastMode && model === 'opus' ? FAST_MODE_MULTIPLIER : 1
+  const breakdownMultiplier = inputs.fastMode && pricing.fastModeCapable ? FAST_MODE_MULTIPLIER : 1
   const outputCostFinal = outputCost * breakdownMultiplier
 
   const breakdown: CostBreakdown = {
@@ -254,10 +254,17 @@ function generateRecommendations(
     })
   }
 
-  if (inputs.model === 'opus' && !inputs.fastMode) {
+  if ((inputs.model === 'opus' || inputs.model === 'opus-legacy') && !inputs.fastMode) {
     recs.push({
       text: 'Consider Sonnet 4.6 for routine development -- 40% cheaper with similar quality for most tasks',
       impact: 40,
+    })
+  }
+
+  if (inputs.model === 'opus-legacy') {
+    recs.push({
+      text: 'Opus 4.6 is now legacy per Anthropic. Migrate to Opus 4.7 for improved agentic coding at the same price',
+      impact: 5,
     })
   }
 

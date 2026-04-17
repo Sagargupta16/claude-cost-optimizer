@@ -114,7 +114,7 @@ Subagent (Haiku):
   - Context discarded after returning results
 ```
 
-**Why this saves money**: The Grep results (potentially thousands of lines) load into the cheap subagent's context, not the expensive Opus 4.6 context. The main context only receives the summarized result.
+**Why this saves money**: The Grep results (potentially thousands of lines) load into the cheap subagent's context, not the expensive Opus 4.7 context. The main context only receives the summarized result.
 
 ### Pattern 2: Parallel Implementation
 
@@ -148,7 +148,7 @@ Main context (Opus): "Given the project structure, dependency list, API surface,
 and data model summary, design a caching strategy."
 ```
 
-**Why this saves money**: Opus 4.6 only processes the summaries, not the raw files. The heavy reading is done by Haiku 4.5 at 1/5th the cost.
+**Why this saves money**: Opus 4.7 only processes the summaries, not the raw files. The heavy reading is done by Haiku 4.5 at 1/5th the cost.
 
 ### CLAUDE.md Subagent Guidelines
 
@@ -729,11 +729,11 @@ Here is what a cost-optimized Claude Code session looks like in practice:
 
 | Approach | Turns | Avg Cost/Turn | Total |
 |----------|:-----:|:-------------:|:-----:|
-| Unoptimized (all Opus 4.6, no planning, no batching) | 25 | $0.12 | $3.00 |
+| Unoptimized (all Opus 4.7, no planning, no batching) | 25 | $0.12 | $3.00 |
 | Partially optimized (Sonnet 4.6 default, some planning) | 18 | $0.08 | $1.44 |
 | Fully optimized (right models, planning, batching, /compact) | 12 | $0.06 | $0.72 |
 
-**Fully optimized is 76% cheaper** than the unoptimized approach, for the same end result. Even with Opus 4.6's lower pricing, disciplined workflows yield significant savings.
+**Fully optimized is 76% cheaper** than the unoptimized approach, for the same end result. Even with Opus 4.7's lower pricing (vs older $15/$75 Opus 4.1), disciplined workflows yield significant savings.
 
 ---
 

@@ -37,8 +37,18 @@ This repo is an installable Claude Code skill and a documentation/tooling projec
 
 ## Pricing Data
 
-Current Claude API pricing (March 2026): Opus 4.6 $5/$25, Sonnet 4.6 $3/$15, Haiku 4.5 $1/$5 per 1M input/output tokens. Cache hit: Opus $0.50, Sonnet $0.30, Haiku $0.10. Batch API: 50% discount. Fast Mode: 6x standard rates. Long context (>200K input): 2x input, 1.5x output.
+Current Claude API pricing (April 2026):
 
-Context windows: Opus 4.6 = 1M, Sonnet 4.6 = 1M, Haiku 4.5 = 200K.
+- **Opus 4.7** (current flagship): $5/$25 per 1M input/output. 1M context. 128K max output. Cache hit $0.50. Adaptive thinking. **New tokenizer** may use up to 35% more tokens than prior models.
+- **Opus 4.6** (legacy per Anthropic docs): $5/$25. 1M context. 128K max output. Cache hit $0.50. Only model supporting **Fast Mode** (6x = $30/$150 research preview).
+- **Sonnet 4.6**: $3/$15. 1M context. 64K max output. Cache hit $0.30.
+- **Haiku 4.5**: $1/$5. 200K context. 64K max output. Cache hit $0.10.
+
+**Important pricing corrections vs earlier docs**:
+- 1M context on Opus 4.7, Opus 4.6, and Sonnet 4.6 is at **standard rates** -- no long-context premium. (Earlier "2x input, 1.5x output over 200K" is obsolete.)
+- Batch API: 50% discount. Cache writes: 1.25x (5-min), 2x (1-hour).
+- Regional endpoints (Bedrock/Vertex) on Sonnet 4.5+ and Haiku 4.5+: +10%. Data residency (`inference_geo: us-only`) on Opus 4.7+: +10%.
+
+**Bedrock model IDs**: Opus 4.7 = `us.anthropic.claude-opus-4-7` (cross-region inference; currently research preview). Opus 4.6 = `us.anthropic.claude-opus-4-6-v1`.
 
 Update pricing references across ALL files (README, guides/00-10, cheatsheet, benchmarks, site/src/utils/pricing.ts, tools/*/estimate.py) when rates change.

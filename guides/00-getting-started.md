@@ -76,7 +76,7 @@ You don't need Opus for everything. Quick rule:
 
 | Task | Model | Why |
 |------|-------|-----|
-| Architecture, complex refactors | Opus 4.6 | Needs deep reasoning |
+| Architecture, complex refactors | Opus 4.7 | Step-change in agentic coding |
 | Feature implementation, debugging | Sonnet 4.6 | Good balance |
 | Tests, docs, formatting, renames | Haiku 4.5 | Fast, 5x cheaper than Opus |
 

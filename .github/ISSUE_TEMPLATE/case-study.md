@@ -13,7 +13,7 @@ assignees: ''
 - **Codebase size**: <!-- e.g., ~45K lines across 320 files -->
 - **Team size**: <!-- e.g., 3 developers using Claude Code -->
 - **Claude Code plan**: <!-- e.g., Max 5x ($100/mo) -->
-- **Primary model used**: <!-- e.g., Opus 4.6, Sonnet 4.6, Haiku 4.5 -->
+- **Primary model used**: <!-- e.g., Opus 4.7, Opus 4.6, Sonnet 4.6, Haiku 4.5 -->
 
 ## Before Optimization
 

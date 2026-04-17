@@ -54,7 +54,7 @@ This is why caching is so powerful in Claude Code specifically. The structure of
 
 | Model | Standard Input (per 1M) | Cache Hit (per 1M) | Discount | Cache Write (5-min TTL) | Cache Write (1-hour TTL) |
 |-------|:-----------------------:|:-------------------:|:--------:|:-----------------------:|:------------------------:|
-| **Opus 4.6** | $5.00 | $0.50 | **90% off** | $6.25 (1.25x) | $10.00 (2x) |
+| **Opus 4.7 / 4.6** | $5.00 | $0.50 | **90% off** | $6.25 (1.25x) | $10.00 (2x) |
 | **Sonnet 4.6** | $3.00 | $0.30 | **90% off** | $3.75 (1.25x) | $6.00 (2x) |
 | **Haiku 4.5** | $1.00 | $0.10 | **90% off** | $1.25 (1.25x) | $2.00 (2x) |
 

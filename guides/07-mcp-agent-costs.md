@@ -38,7 +38,7 @@ If you have 10 MCP servers connected with ~1,500 tokens average each:
 ```
 15,000 tokens of MCP schemas x 50 turns = 750,000 input tokens
 
-On Opus 4.6:  750K tokens x $5.00/1M = $3.75 just for MCP schemas
+On Opus 4.7:  750K tokens x $5.00/1M = $3.75 just for MCP schemas (+~35% if new tokenizer inflates schema)
 On Sonnet 4.6: 750K tokens x $3.00/1M = $2.25 just for MCP schemas
 ```
 

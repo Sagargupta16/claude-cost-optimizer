@@ -114,13 +114,13 @@ When Claude reads a file on turn 3 of a 10-turn session, that file's content sta
 | 10 KB | 2,500 | 8 | 20,000 | $0.060 |
 | 100 KB | 25,000 | 8 | 200,000 | $0.600 |
 
-> A single 100 KB file read adds $0.60 to a Sonnet session. With Opus 4.6, that same read adds **$1.00** in propagated input costs.
+> A single 100 KB file read adds $0.60 to a Sonnet session. With Opus 4.7, that same read adds **$1.00** in propagated input costs.
 
 ### Multiple File Reads — Compounding Effect
 
 Many tasks require Claude to read several files. Here is the total overhead when multiple files are read on turn 2 of a 10-turn session (9 turns of propagation):
 
-| Files Read | Total Tokens Added to Context | Propagated Over 9 Turns | Added Cost (Sonnet 4.6) | Added Cost (Opus 4.6) |
+| Files Read | Total Tokens Added to Context | Propagated Over 9 Turns | Added Cost (Sonnet 4.6) | Added Cost (Opus 4.7) |
 |:----------:|:-----------------------------:|:-----------------------:|:---------------------:|:-------------------:|
 | 3 x 1 KB | 750 | 6,750 | $0.02 | $0.03 |
 | 3 x 10 KB | 7,500 | 67,500 | $0.20 | $0.34 |
@@ -145,7 +145,7 @@ Based on cost-efficiency data, here are guidelines for how many file reads to bu
 |-------|:------------------:|:-------------------:|:-------------------:|
 | Haiku 4.5 | 20+ (negligible cost) | 10-15 | 1-2 (delegate to subagent) |
 | Sonnet 4.6 | 15-20 | 5-10 | 1 (delegate to subagent) |
-| Opus 4.6 | 10-15 | 5-8 | 1-2 (delegate to subagent) |
+| Opus 4.7 | 10-15 | 5-8 | 1-2 (delegate to subagent) |
 
 ---
 
@@ -153,7 +153,7 @@ Based on cost-efficiency data, here are guidelines for how many file reads to bu
 
 ### How Context Grows
 
-Claude Code has a 200K token context window. As a session progresses, the context fills with conversation history. Here is how context utilization typically grows:
+Claude Code uses the model's full context window: **1M tokens on Opus 4.7, Opus 4.6, and Sonnet 4.6**, and **200K on Haiku 4.5**. As a session progresses, the context fills with conversation history. Here is how context utilization typically grows (200K baseline shown, since most sessions stay well under the 1M cap):
 
 | Turn | Typical Context Fill | Cumulative Input Tokens Billed | Per-Turn Input Cost (Sonnet 4.6) |
 |:----:|:--------------------:|:------------------------------:|:------------------------------:|
@@ -246,7 +246,7 @@ A developer works for a full day using Claude Code, performing approximately 8 t
 
 | Configuration | CLAUDE.md | File Reads | Session Strategy | Model |
 |--------------|:---------:|:----------:|:----------------:|:-----:|
-| **Worst case** | 300 lines (2,100 tok) | No limits, reads full files | One continuous session | Opus 4.6 |
+| **Worst case** | 300 lines (2,100 tok) | No limits, reads full files | One continuous session | Opus 4.7 |
 | **Default** | 300 lines (2,100 tok) | No limits | One session per task (8 sessions) | Sonnet 4.6 |
 | **Optimized** | 100 lines (700 tok) | Targeted reads, subagents for heavy investigation | One session per task | Sonnet 4.6 |
 | **Maximum savings** | 50 lines (320 tok) | Aggressive subagent delegation | One session per task, Haiku for 3 simple tasks | Mixed |

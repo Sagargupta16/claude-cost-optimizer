@@ -64,7 +64,7 @@ No install needed -- use these in your browser:
 
 ## Before vs After
 
-Real project, 30-turn session, Opus 4.6:
+Real project, 30-turn session, Opus 4.7:
 
 ```
 BEFORE (no optimization):                 AFTER (5 minutes of setup):
@@ -164,15 +164,23 @@ Copy-paste configs that are already optimized:
 
 ---
 
-## Pricing Reference (March 2026)
+## Pricing Reference (April 2026)
 
 | Model | Input / 1M | Output / 1M | Cache Hit / 1M | Context | Max Output |
 |-------|:----------:|:-----------:|:---------------:|:-------:|:----------:|
-| Opus 4.6 | $5.00 | $25.00 | $0.50 | 1M | 32K |
+| **Opus 4.7** (current) | $5.00 | $25.00 | $0.50 | 1M | 128K |
+| Opus 4.6 (legacy) | $5.00 | $25.00 | $0.50 | 1M | 128K |
 | Sonnet 4.6 | $3.00 | $15.00 | $0.30 | 1M | 64K |
 | Haiku 4.5 | $1.00 | $5.00 | $0.10 | 200K | 64K |
+| Mythos Preview (invite-only, [Glasswing](https://anthropic.com/glasswing)) | $25.00 | $125.00 | -- | 1M | -- |
 
-Fast Mode: 6x. Long context (>200K input): 2x input, 1.5x output. Batch API: 50% off. Plans: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo.
+**1M context** on Opus 4.7, Opus 4.6, and Sonnet 4.6 bills at **standard rates** across the full window (no long-context premium). **Batch API**: 50% off. **Fast Mode** (Opus 4.6 only): 6x. **Regional endpoints** (Bedrock/Vertex): +10%. Plans: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo.
+
+> **Opus 4.7 tokenizer caveat**: The new tokenizer may use up to **35% more tokens** for the same text. Effective cost is higher than posted pricing suggests -- factor this into per-task budgets.
+>
+> **Mythos Preview**: Research preview for defensive cybersecurity (vulnerability discovery, binary analysis). Invite-only via Project Glasswing (AWS, Apple, Cisco, CrowdStrike, Google, JPMorganChase, Microsoft, NVIDIA, Palo Alto Networks, 40+ critical-infra orgs). Not a general-purpose dev model.
+>
+> **Model retirements coming**: Haiku 3 retires **April 19, 2026** (migrate to Haiku 4.5). Sonnet 4 and Opus 4 (the original 4.0 versions) retire June 15, 2026 (migrate to Sonnet 4.6 / Opus 4.7).
 
 ---
 
@@ -207,7 +215,7 @@ Fast Mode: 6x. Long context (>200K input): 2x input, 1.5x output. Batch API: 50%
 <details>
 <summary>How much does Claude Code actually cost?</summary>
 
-With Pro ($20/mo), Max 5x ($100/mo), or Max 20x ($200/mo), you get included usage. Heavy users report $3-15/day without optimization, $1-5/day with it. Opus 4.6 at $5/$25 is much more affordable than previous generations.
+With Pro ($20/mo), Max 5x ($100/mo), or Max 20x ($200/mo), you get included usage. Heavy users report $3-15/day without optimization, $1-5/day with it. Opus 4.7 (and legacy Opus 4.6) at $5/$25 is much more affordable than Opus 4.1 ($15/$75).
 </details>
 
 <details>
