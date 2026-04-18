@@ -36,3 +36,6 @@ tools/mcp-cost-server/dist/
 
 # Hook temp files
 /tmp/claude-budget/
+
+# Added for consistency
+.env.*.local
