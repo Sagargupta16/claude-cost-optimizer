@@ -1,6 +1,40 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": [
-    "config:recommended"
-  ]
+  "extends": ["config:recommended", ":dependencyDashboard"],
+  "timezone": "Asia/Kolkata",
+  "schedule": ["before 3am on monday"],
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 3,
+  "rangeStrategy": "replace",
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch", "pin", "digest"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash",
+      "groupName": "non-major weekly",
+      "labels": ["dependencies", "auto-merge"]
+    },
+    {
+      "matchUpdateTypes": ["major"],
+      "groupName": "major updates",
+      "labels": ["dependencies", "major"],
+      "dependencyDashboardApproval": true
+    },
+    {
+      "matchDatasources": ["docker"],
+      "groupName": "docker",
+      "schedule": ["before 3am on monday"]
+    },
+    {
+      "matchCategories": ["lock-file-maintenance"],
+      "schedule": ["before 3am on monday"],
+      "automerge": true
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["security"],
+    "schedule": ["at any time"]
+  }
 }
