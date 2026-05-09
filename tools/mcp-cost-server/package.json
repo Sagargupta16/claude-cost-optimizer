@@ -14,5 +14,10 @@
   "devDependencies": {
     "typescript": "^6.0.0",
     "@types/node": "^24.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "ip-address": ">=10.1.1"
+    }
   }
 }
