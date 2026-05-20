@@ -1,5 +1,13 @@
 # CLAUDE.md - claude-cost-optimizer
 
+> This file stacks on top of the workspace root at `C:\Code\GitHub\`:
+> - Root [`CLAUDE.md`](../../CLAUDE.md) -- voice, rules, routing map, references, skills, slash commands, conventions.
+> - Root [`MEMORY.md`](../../MEMORY.md) -- live facts across repos.
+> - Root [`STATUS.md`](../../STATUS.md) -- live PR/CI/security dashboard.
+> - [`.claude/resources/`](../../.claude/resources/README.md) -- deep reference for collaboration, workflow, git, OSS, debugging, voice.
+>
+> Read those first. The guidance below only adds **repo-specific context** -- it does not override anything in the root.
+
 ## Purpose
 
 This repo is an installable Claude Code skill and a documentation/tooling project for reducing Claude Code costs. Install: `npx skills add Sagargupta16/claude-cost-optimizer`.
@@ -51,4 +59,4 @@ Current Claude API pricing (April 2026):
 
 **Bedrock model IDs**: Opus 4.7 = `us.anthropic.claude-opus-4-7` (cross-region inference; currently research preview). Opus 4.6 = `us.anthropic.claude-opus-4-6-v1`.
 
-Update pricing references across ALL files (README, guides/00-10, cheatsheet, benchmarks, site/src/utils/pricing.ts, tools/*/estimate.py) when rates change.
+Update pricing references across ALL files (README, guides/00-10, cheatsheet, benchmarks, site/src/utils/pricing.ts, tools/*/estimate.py) when rates change.

@@ -1,6 +1,6 @@
 {
   "name": "cost-mode",
-  "version": "1.0.0",
+  "version": "1.5.0",
   "description": "Cost-conscious mode for Claude Code. Cuts filler, suggests cheaper models, encourages efficient patterns.",
   "author": {
     "name": "Sagar Gupta",

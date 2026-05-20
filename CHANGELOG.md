@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.5.0] - 2026-05-20
+
+### Added
+- Added repository-level `SECURITY.md` and `.github/pull_request_template.md` to align with community standard practices.
+
+### Changed
+- Resolved 3-way version drift across repository files, standardizing on version 1.5.0.
+
+### Fixed
+- Fixed uncommitted `CLAUDE.md` duplicate H1 header by merging headers and keeping the stacking blockquote intact.
+
 ## [1.4.0] - 2026-04-17
 
 ### Added

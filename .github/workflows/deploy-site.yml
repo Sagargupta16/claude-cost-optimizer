@@ -22,11 +22,15 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: '24'
-      - name: Install and build
+      - name: Install dependencies
         working-directory: site
-        run: |
-          npm install
-          npm run build
+        run: npm install
+      - name: Type-check
+        working-directory: site
+        run: npx tsc --noEmit
+      - name: Build site
+        working-directory: site
+        run: npm run build
       - uses: actions/upload-pages-artifact@v5
         with:
           path: site/dist
