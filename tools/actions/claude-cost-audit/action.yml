@@ -29,7 +29,9 @@ runs:
     - name: Run cost audit
       id: run-audit
       shell: bash
-      run: python "${{ github.action_path }}/audit.py" "${{ inputs.path }}"
+      env:
+        AUDIT_PATH: ${{ inputs.path }}
+      run: python "${{ github.action_path }}/audit.py" "$AUDIT_PATH"
 
     - name: Write job summary
       shell: bash
