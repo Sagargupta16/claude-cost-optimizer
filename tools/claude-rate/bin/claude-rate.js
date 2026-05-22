@@ -16,8 +16,8 @@
 
 'use strict';
 
-const { spawnSync } = require('child_process');
-const path = require('path');
+const { spawnSync } = require('node:child_process');
+const path = require('node:path');
 
 const SCRIPT = path.join(__dirname, '..', 'rate.py');
 
