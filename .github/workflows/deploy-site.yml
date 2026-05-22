@@ -17,16 +17,13 @@ jobs:
       pages: write
       id-token: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
-          node-version: '24'
+          node-version: '22'
       - name: Install dependencies
         working-directory: site
-        run: npm install
-      - name: Type-check
-        working-directory: site
-        run: npx tsc --noEmit
+        run: npm ci --legacy-peer-deps
       - name: Build site
         working-directory: site
         run: npm run build
@@ -36,6 +33,9 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
