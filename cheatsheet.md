@@ -83,6 +83,56 @@
 
 ---
 
+## Legacy & Retired Models (reference only)
+
+> Migration context for code still pinned to older model IDs. **Do not use these for new work** -- prices, IDs, and capabilities are kept here for archive value only.
+
+### Recently retired (requests now fail)
+
+| Model | Retired on | Last priced at (input / output per 1M) | Migrate to |
+|-------|:---------:|:--------------------------------------:|-----------|
+| Claude Opus 3 (`claude-3-opus-20240229`) | 2026-01-05 | $15 / $75 | Opus 4.7 |
+| Claude Sonnet 3.7 (`claude-3-7-sonnet-20250219`) | 2026-02-19 | $3 / $15 | Sonnet 4.6 |
+| Claude Haiku 3.5 (`claude-3-5-haiku-20241022`) | 2026-02-19 (still on Bedrock + Vertex AI) | $0.80 / $4 | Haiku 4.5 |
+| Claude Haiku 3 (`claude-3-haiku-20240307`) | 2026-04-20 | $0.25 / $1.25 | Haiku 4.5 |
+| Claude Sonnet 3.5 v1 (`claude-3-5-sonnet-20240620`) | 2025-10-28 | $3 / $15 | Sonnet 4.6 |
+| Claude Sonnet 3.5 v2 (`claude-3-5-sonnet-20241022`) | 2025-10-28 | $3 / $15 | Sonnet 4.6 |
+| Claude Sonnet 3 (`claude-3-sonnet-20240229`) | 2025-07-21 | $3 / $15 | Sonnet 4.6 |
+| Claude 2 / 2.1 (`claude-2.0`, `claude-2.1`) | 2025-07-21 | $8 / $24 | Opus 4.7 |
+| Claude Instant 1.x | 2024-11-06 | $0.80 / $2.40 | Haiku 4.5 |
+| Claude 1.x | 2024-11-06 | $8 / $24 | Haiku 4.5 |
+
+### Deprecated (still working, retiring soon)
+
+| Model | Deprecated on | Retirement date | Last priced at (input / output per 1M) | Migrate to |
+|-------|:------------:|:---------------:|:--------------------------------------:|-----------|
+| Claude Sonnet 4 (`claude-sonnet-4-20250514`) | 2026-04-14 | **2026-06-15** | $3 / $15 | Sonnet 4.6 |
+| Claude Opus 4 (`claude-opus-4-20250514`) | 2026-04-14 | **2026-06-15** | $15 / $75 | Opus 4.7 |
+
+### Historical pricing patterns (no longer in effect)
+
+The following pricing constructs were real but have since been retired or restructured. Listed here for migration context if you're reading older guides:
+
+- **"2x input, 1.5x output above 200K"** long-context premium -- applied to Opus 4.1 and older. Obsolete on Opus 4.7 / 4.6 and Sonnet 4.6, which bill 1M context at standard rates.
+- **Opus 4.1 ($15/$75)** -- original "Opus 4.x" pricing. Still callable but priced at 3x current Opus rates. Migrate to 4.7 unless you have a specific compatibility need.
+- **Bedrock-only ARN-versioned IDs** like `anthropic.claude-opus-4-20250514-v1:0` -- still resolve via the legacy InvokeModel/Converse path, but the new Mantle endpoint uses cleaner provider-prefixed IDs (`anthropic.claude-opus-4-7`).
+- **Single endpoint type on Bedrock** -- pre-Sonnet-4.5, all Bedrock traffic was effectively "global". The +10% regional premium is a 4.5+ generation construct.
+
+### Snapshots that are still active (not retired, but not the headline tier)
+
+These models are GA and priced but generally not the recommended target for new work -- listed under "Legacy" because they're previous-generation snapshots:
+
+| Snapshot | Pricing (input / output per 1M) | Context | Earliest retirement | Why use |
+|----------|:-------------------------------:|:-------:|:-------------------:|---------|
+| Opus 4.6 | $5 / $25 | 1M | 2027-02-05 | Stable snapshot of the previous-tokenizer Opus |
+| Opus 4.5 | $5 / $25 | 200K | 2026-11-24 | Pinned workloads only |
+| Opus 4.1 | $15 / $75 | 200K | 2026-08-05 | Compatibility only -- 3x more expensive |
+| Sonnet 4.5 | $3 / $15 | 200K | 2026-09-29 | Pinned workloads only |
+
+> Authoritative source for all dates: [Anthropic model deprecations page](https://platform.claude.com/docs/en/about-claude/model-deprecations).
+
+---
+
 ## All Strategies - Ranked by Impact
 
 ### Tier 1: High Impact (Do These First)

@@ -50,9 +50,30 @@ Technical accuracy is never sacrificed. Code in commits and PRs is written norma
 
 ---
 
-## Web Tools
+## Rate your setup
 
-No install needed -- use these in your browser:
+### Locally, in 5 seconds (recommended)
+
+`claude-rate` runs on your filesystem -- no signup, no GitHub upload, no network round-trip. Pick whichever runner fits your shell:
+
+```bash
+# npx (any Node project)
+npx -y @sagargupta16/claude-rate .
+
+# curl one-shot (no Node, no install)
+curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- .
+
+# curl, persistent install
+curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- --install
+```
+
+Add `--fix` to print copy-pasteable fix commands, `--strict` to fail CI when the grade drops below B, or `--json` for machine-readable output. See [tools/claude-rate/README.md](tools/claude-rate/README.md) for the full breakdown.
+
+The local rater inspects things the web analyzer can't: real MCP server count from `.mcp.json`, hooks, `.claudeignore` coverage gaps vs files actually on disk, accidentally-committed secrets, and cost-mode skill installation status.
+
+### Public repos -- web tools
+
+No install needed -- use these in your browser for any public GitHub repo:
 
 | Tool | What It Does |
 |------|-------------|
@@ -185,9 +206,42 @@ Copy-paste configs that are already optimized:
 >
 > **Mythos Preview**: Research preview for defensive cybersecurity (vulnerability discovery, binary analysis). Invite-only via Project Glasswing (AWS, Apple, Cisco, CrowdStrike, Google, JPMorganChase, Microsoft, NVIDIA, Palo Alto Networks, 40+ critical-infra orgs). Not a general-purpose dev model.
 >
-> **Recent model retirements** (already in effect): **Haiku 3** retired **April 20, 2026**, **Haiku 3.5** retired **February 19, 2026** (still available on Bedrock and Vertex AI), **Sonnet 3.7** retired **February 19, 2026**, **Opus 3** retired **January 5, 2026**. If you have any production code referencing these IDs, requests will already be failing. Migrate Haiku 3/3.5 to Haiku 4.5; Sonnet 3.7 to Sonnet 4.6; Opus 3 to Opus 4.7.
+> **Looking for older model IDs and pricing?** See the [Legacy & Retired Models](#legacy--retired-models) section below for migration context.
+
+---
+
+## Legacy & Retired Models
+
+> Reference only -- **don't use these for new work.** Kept for migration context if you're unwinding code that still pins old model IDs.
+
+**Recently retired** (requests now fail):
+
+| Model | Retired on | Migrate to |
+|-------|:----------:|-----------|
+| Claude Opus 3 (`claude-3-opus-20240229`) | 2026-01-05 | Opus 4.7 |
+| Claude Sonnet 3.7 (`claude-3-7-sonnet-20250219`) | 2026-02-19 | Sonnet 4.6 |
+| Claude Haiku 3.5 (`claude-3-5-haiku-20241022`) | 2026-02-19 (still on Bedrock + Vertex AI) | Haiku 4.5 |
+| Claude Haiku 3 (`claude-3-haiku-20240307`) | 2026-04-20 | Haiku 4.5 |
+| Claude Sonnet 3.5 v1 / v2, Sonnet 3, Claude 2.x, Claude 1.x, Instant 1.x | 2024-2025 | See deprecations page |
+
+**Deprecated, retiring soon**:
+
+| Model | Retirement date | Migrate to |
+|-------|:---------------:|-----------|
+| Claude Sonnet 4 (`claude-sonnet-4-20250514`) | **2026-06-15** | Sonnet 4.6 |
+| Claude Opus 4 (`claude-opus-4-20250514`) | **2026-06-15** | Opus 4.7 |
+
+**Older snapshots still callable** (not retired, but not the headline tier):
+
+| Snapshot | Pricing | Context | Why use |
+|----------|:-------:|:-------:|---------|
+| Opus 4.5 | $5/$25 | 200K | Pinned workloads only |
+| Opus 4.1 | $15/$75 | 200K | Compatibility only -- 3x more expensive |
+| Sonnet 4.5 | $3/$15 | 200K | Pinned workloads only |
+
+> Authoritative source: [platform.claude.com/docs/en/about-claude/model-deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations).
 >
-> **Upcoming retirement**: **Sonnet 4** (`claude-sonnet-4-20250514`) and **Opus 4** (`claude-opus-4-20250514`) retire **June 15, 2026** — migrate to Sonnet 4.6 / Opus 4.7.
+> The cheatsheet has a [more detailed legacy table](cheatsheet.md#legacy--retired-models-reference-only) including last-known pricing for every retired tier.
 
 ---
 
