@@ -1,4 +1,18 @@
-export type ModelId = 'opus' | 'opus-legacy' | 'sonnet' | 'haiku' | 'mythos'
+// Pricing data verified against Anthropic docs on 2026-05-22:
+//   - https://platform.claude.com/docs/en/about-claude/pricing
+//   - https://platform.claude.com/docs/en/about-claude/models/overview
+//   - https://platform.claude.com/docs/en/build-with-claude/fast-mode
+//   - https://platform.claude.com/docs/en/about-claude/model-deprecations
+//   - https://claude.com/pricing
+
+export type ModelId =
+  | 'opus'
+  | 'opus-legacy'
+  | 'opus-4-5'
+  | 'sonnet'
+  | 'sonnet-4-5'
+  | 'haiku'
+  | 'mythos'
 
 export interface ModelPricing {
   id: ModelId
@@ -14,6 +28,7 @@ export interface ModelPricing {
   tokenizerOverhead?: number
   notes?: string
   inviteOnly?: boolean
+  lifecycle?: 'active' | 'legacy'
 }
 
 export const MODELS: Record<ModelId, ModelPricing> = {
@@ -27,13 +42,17 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     cacheWrite1hPer1M: 10,
     contextWindow: '1M',
     maxOutput: '128K',
-    fastModeCapable: false,
+    fastModeCapable: true,
     tokenizerOverhead: 1.35,
-    notes: 'New tokenizer (up to 35% more tokens). Adaptive thinking. xhigh effort level.',
+    lifecycle: 'active',
+    notes:
+      'New tokenizer (up to 35% more tokens for the same text). ' +
+      'Adaptive thinking with xhigh effort level. Fast Mode supported (6x). ' +
+      'GA on Anthropic API, Claude Platform on AWS, Bedrock, and Vertex AI.',
   },
   'opus-legacy': {
     id: 'opus-legacy',
-    name: 'Opus 4.6 (legacy)',
+    name: 'Opus 4.6',
     inputPer1M: 5,
     outputPer1M: 25,
     cacheHitPer1M: 0.5,
@@ -42,7 +61,27 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     contextWindow: '1M',
     maxOutput: '128K',
     fastModeCapable: true,
-    notes: 'Fast Mode supported (6x). Legacy per Anthropic docs. Extended thinking.',
+    lifecycle: 'active',
+    notes:
+      'Active. Extended + adaptive thinking. Fast Mode supported (6x). ' +
+      'Earliest retirement: 2027-02-05. Pick over 4.7 only if you have prompts ' +
+      'tuned to the older tokenizer or need a stable snapshot.',
+  },
+  'opus-4-5': {
+    id: 'opus-4-5',
+    name: 'Opus 4.5',
+    inputPer1M: 5,
+    outputPer1M: 25,
+    cacheHitPer1M: 0.5,
+    cacheWrite5mPer1M: 6.25,
+    cacheWrite1hPer1M: 10,
+    contextWindow: '200K',
+    maxOutput: '64K',
+    fastModeCapable: false,
+    lifecycle: 'active',
+    notes:
+      'Active. Extended thinking. No Fast Mode. 200K context (not 1M). ' +
+      'Earliest retirement: 2026-11-24. Migrate to Opus 4.6 or 4.7 unless you have a workload pinned to this snapshot.',
   },
   sonnet: {
     id: 'sonnet',
@@ -55,7 +94,26 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     contextWindow: '1M',
     maxOutput: '64K',
     fastModeCapable: false,
-    notes: 'Extended + adaptive thinking. Best general-purpose default.',
+    lifecycle: 'active',
+    notes:
+      'Extended + adaptive thinking. Best general-purpose default for production workloads. ' +
+      'Earliest retirement: 2027-02-17.',
+  },
+  'sonnet-4-5': {
+    id: 'sonnet-4-5',
+    name: 'Sonnet 4.5',
+    inputPer1M: 3,
+    outputPer1M: 15,
+    cacheHitPer1M: 0.3,
+    cacheWrite5mPer1M: 3.75,
+    cacheWrite1hPer1M: 6,
+    contextWindow: '200K',
+    maxOutput: '64K',
+    fastModeCapable: false,
+    lifecycle: 'active',
+    notes:
+      'Active. Extended thinking. 200K context. Earliest retirement: 2026-09-29. ' +
+      'Migrate to Sonnet 4.6 for the 1M-context window unless your workload is pinned.',
   },
   haiku: {
     id: 'haiku',
@@ -68,7 +126,10 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     contextWindow: '200K',
     maxOutput: '64K',
     fastModeCapable: false,
-    notes: 'Extended thinking. No adaptive thinking. Fastest latency.',
+    lifecycle: 'active',
+    notes:
+      'Extended thinking. No adaptive thinking. Fastest latency. ' +
+      'Earliest retirement: 2026-10-15.',
   },
   mythos: {
     id: 'mythos',
@@ -90,9 +151,20 @@ export const MODELS: Record<ModelId, ModelPricing> = {
 }
 
 export const FAST_MODE_MULTIPLIER = 6
+export const FAST_MODE_OTPS_GAIN = 2.5 // up to 2.5x output tokens per second
 export const BATCH_DISCOUNT = 0.5
 export const REGIONAL_ENDPOINT_PREMIUM = 1.1
 export const DATA_RESIDENCY_PREMIUM = 1.1
+
+// Subscription pricing — monthly vs annual.
+// Pro annual = $200 up front, billed yearly (effective ~$16.67/mo, ~17% off).
+export const SUBSCRIPTION_PRICING = {
+  proMonthly: 20,
+  proAnnualUpfront: 200,
+  proAnnualEffectiveMonthly: 200 / 12,
+  max5x: 100,
+  max20x: 200,
+}
 
 export const TOKEN_ESTIMATES = {
   tokensPerClaudeMdLine: 7,

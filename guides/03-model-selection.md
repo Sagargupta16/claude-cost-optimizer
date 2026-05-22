@@ -22,22 +22,29 @@ Most developers default to the most capable model for everything. This is like h
 
 ## Model Lineup and Pricing
 
-### Current Pricing (April 2026, per 1M tokens)
+### Current Pricing (verified 2026-05-22, per 1M tokens)
 
-| Model | Input Cost | Output Cost | Cache Hit | Relative Cost | Context Window | Max Output |
-|-------|:----------:|:-----------:|:---------:|:-------------:|:--------------:|:----------:|
-| **Opus 4.7** (current) | $5.00 | $25.00 | $0.50 | 1x (baseline) | 1M | 128K |
-| **Opus 4.6** (legacy) | $5.00 | $25.00 | $0.50 | 1x (baseline) | 1M | 128K |
-| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | ~1.67x cheaper | 1M | 64K |
-| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 5x cheaper | 200K | 64K |
+| Model | Input Cost | Output Cost | Cache Hit | 5m Cache Write | 1h Cache Write | Relative Cost | Context Window | Max Output |
+|-------|:----------:|:-----------:|:---------:|:--------------:|:--------------:|:-------------:|:--------------:|:----------:|
+| **Opus 4.7** (current) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1x (baseline) | 1M | 128K |
+| **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1x (baseline) | 1M | 128K |
+| **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1x (baseline) | 200K | 64K |
+| **Opus 4.1** | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 3x baseline | 200K | 32K |
+| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | ~1.67x cheaper | 1M | 64K |
+| **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | ~1.67x cheaper | 200K | 64K |
+| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 5x cheaper | 200K | 64K |
 
 > **Two things to know about Opus 4.7**:
-> 1. **Same pricing as Opus 4.6** ($5/$25) — no price premium for the upgrade.
+> 1. **Same pricing as Opus 4.6 / 4.5** ($5/$25) — no price premium for the upgrade.
 > 2. **New tokenizer** uses up to **35% more tokens** for the same text. So the *effective* cost is higher than the posted rates. A task that cost $1.00 on Opus 4.6 may cost $1.10-$1.35 on Opus 4.7 for the same prompt and output.
 >
-> **Opus 4.6 status**: Marked legacy by Anthropic but fully supported. It remains the only model with Fast Mode (6x, research preview). Consider 4.6 if you have workflows tuned to its exact tokenization, or want Fast Mode.
+> **Opus 4.6 status**: Active (not legacy). Earliest retirement 2027-02-05. Same price as 4.7. **Both 4.7 and 4.6 support Fast Mode** (beta). Pick 4.6 if you have prompts tuned to the older tokenizer, want a stable snapshot, or your prompts already perform well on it.
 >
-> **Opus 4.1**: Still available at older pricing ($15/$75). No reason to use it unless you have a specific compatibility need — migrate to 4.7.
+> **Opus 4.5 (200K-only)**: Active until at least 2026-11-24. Same price as 4.6/4.7 but smaller context window and no Fast Mode. Generally migrate to 4.6/4.7 unless your code is pinned to this snapshot.
+>
+> **Sonnet 4.5 (200K-only)**: Active until at least 2026-09-29. Same price as Sonnet 4.6 but smaller context window. Migrate to 4.6 if you need 1M.
+>
+> **Opus 4.1**: Still available at older pricing ($15/$75) — **3x more expensive** than current Opus tiers. No reason to use it unless you have a specific compatibility need — migrate to 4.7.
 
 > **Claude Mythos Preview** ([Project Glasswing](https://anthropic.com/glasswing)): A separate research-preview model for **defensive cybersecurity workflows only** (vulnerability discovery, binary analysis, penetration testing). Post-preview pricing is **$25 / $125 per MTok** — 5x Opus 4.7's output rate. **Access is invitation-only** through Glasswing partners (AWS, Apple, Cisco, CrowdStrike, Google, JPMorganChase, Microsoft, NVIDIA, Palo Alto Networks, etc.) and 40+ critical-infrastructure organizations. Not available for general development work. If you're not in the program, ignore it — the posted pricing exists for completeness but no self-serve API access is offered. Mythos posts significantly higher scores on security-specific benchmarks (CyberGym 83.1% vs 4.6's 66.6%, SWE-bench Pro 77.8% vs 53.4%) but won't be generally released — Anthropic plans to fold safer Mythos-class capabilities into future Opus versions.
 
@@ -226,7 +233,13 @@ Reserve Opus for tasks where deep reasoning, multi-file coordination, or archite
 claude --model opus "design a plugin architecture for our CLI tool"
 ```
 
-**Want the legacy Opus 4.6 explicitly?** Use `--model claude-opus-4-6` (or set `ANTHROPIC_MODEL=us.anthropic.claude-opus-4-6-v1` for Bedrock). The `opus` alias maps to 4.7 by default on current Claude Code releases.
+**Want a specific Opus snapshot explicitly?** Use the dated/aliased ID:
+- Opus 4.7: `--model claude-opus-4-7` (Anthropic API), `anthropic.claude-opus-4-7` (Bedrock Mantle)
+- Opus 4.6: `--model claude-opus-4-6` (Anthropic API), `anthropic.claude-opus-4-6-v1` (Bedrock legacy InvokeModel/Converse)
+- Opus 4.5: `--model claude-opus-4-5-20251101`
+- Opus 4.1: `--model claude-opus-4-1-20250805`
+
+The `opus` alias maps to 4.7 by default on current Claude Code releases.
 
 ---
 
@@ -494,8 +507,13 @@ OPUS 4.7 ($5/$25 per 1M tokens, +~35% tokenizer overhead)
 ├── System integration design
 └── Legacy code comprehension
 
-OPUS 4.6 ($5/$25 per 1M tokens -- legacy, supports Fast Mode 6x)
-└── Only if you need Fast Mode or have prompts tuned to the older tokenizer
+OPUS 4.6 ($5/$25 per 1M tokens -- active, also supports Fast Mode 6x)
+└── Only if you have prompts tuned to the older tokenizer or want a stable snapshot
+
+OPUS 4.7 / 4.6 FAST MODE ($30/$150 per 1M tokens -- 6x premium, beta)
+└── Only when output latency directly impacts revenue / UX
+    (live demos, real-time agentic loops, urgent debugging)
+    NOT for routine interactive coding
 ```
 
 ---

@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.6.0] - 2026-05-22
+
+### Added
+- **Opus 4.5 and Sonnet 4.5 entries** in `site/src/utils/pricing.ts` and across pricing tables. Both 200K-context models, active until at least 2026-11-24 / 2026-09-29 respectively. Filters into the calculator/analyzer alongside 4.6/4.7.
+- **Lifecycle field** on `ModelPricing` type (`active` | `legacy`) for forward compat. Today every priced model is `active`; the field exists to surface deprecation in UIs as snapshots roll forward.
+- **`SUBSCRIPTION_PRICING` constant** in `pricing.ts` capturing the **annual Pro plan** at $200/yr ≈ $16.67/mo (~17% off vs $20/mo monthly). Surfaces in calculator and subscription guides.
+- **Model lifecycle table** in `cheatsheet.md` covering BOTH recently-retired (Haiku 3, Haiku 3.5, Sonnet 3.7, Opus 3) and upcoming retirements (Sonnet 4 + Opus 4 on 2026-06-15, plus earliest-retirement dates for every active model through Opus 4.7).
+- **Claude Platform on AWS** as a separate platform section in `guides/06-access-methods-pricing.md`. Covers CCU billing model ($0.01/CCU), `inference_geo: "us"` data-residency multiplier, and the features it doesn't carry (Fast Mode, Batch API).
+- **Server-side tools pricing block** in `guides/06`: web search ($10/1k searches), web fetch (free + tokens), code execution (free w/ web search/fetch; else $0.05/hr after 1,550 free hours/org/mo), bash (+245 tokens), text editor (+700 tokens), computer use (+735 + 466-499 system).
+- **Tool-use overhead numbers** (346 tokens for `auto`/`none`, 313 for `any`/`tool`) added to the modifiers table.
+- **Claude Managed Agents pricing** section: standard token rates + $0.08/session-hour of `running` time; replaces Code Execution container-hour billing.
+- **Cache-write columns** (5m and 1h) added to every pricing table across README, cheatsheet, guides/01, guides/03, guides/06.
+- **Bedrock Mantle endpoint** documented as the new recommended integration path (`https://bedrock-mantle.{region}.api.aws/anthropic/v1/messages`) alongside the legacy InvokeModel/Converse path. Full feature support/non-support list added to guides/06.
+- **AWS regions table** for Bedrock (27 supported regions with endpoint types) summarized in guides/06.
+- **Vertex AI model IDs table** added to guides/06.
+- **Updated thinking-modes table** in cheatsheet now includes Opus 4.5, Sonnet 4.5.
+
+### Changed
+- **Fast Mode is supported on BOTH Opus 4.7 AND Opus 4.6** (per Anthropic Fast Mode docs). The previous "Opus 4.6 only" claim — repeated in 14 places across README, cheatsheet, guides/01/03/06/diagrams, and `pricing.ts` — was wrong. Fixed everywhere. Also corrected the speed framing: Fast Mode delivers **up to 2.5x output tokens/second**, not generic "faster generation"; the gain is on OTPS, not TTFT.
+- **Opus 4.7 on Bedrock is GA and open to all customers** (no waitlist). The previous "research preview" framing across cheatsheet, guides/06, guides/diagrams, and CHANGELOG was outdated.
+- **Pricing tables expanded** with 5m / 1h cache-write columns, plus rows for Opus 4.5, Sonnet 4.5, and Opus 4.1 (was missing). Pro plan annual rate ($200/yr) added next to monthly ($20/mo).
+- **`fastModeCapable: true`** for Opus 4.7 in `pricing.ts` (was `false`). Calculator's Fast Mode toggle now appears for Opus 4.7 users.
+- **Date stamp** on every pricing table changed from "April 2026" to "verified 2026-05-22" so future drift is auditable.
+- Cheatsheet platform comparison: added Claude Platform on AWS column; clarified Bedrock Opus 4.7 is open access; Fast Mode column now reads "Yes (Opus 4.7 + 4.6)" on Anthropic API and "No" on Claude Platform on AWS.
+
+### Fixed
+- **Haiku 3 retirement date corrected** from "April 19, 2026" to **April 20, 2026** per [model deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations). Also reframed: Haiku 3 is **already retired** as of this changelog entry, not "retiring in days."
+- **Recently-retired models added** to lifecycle docs: Haiku 3.5 (2026-02-19, still on Bedrock + Vertex AI), Sonnet 3.7 (2026-02-19), Opus 3 (2026-01-05). Production callers of these IDs are already failing.
+- **`guides/06` Key Takeaway #4 corrected**: removed the obsolete "1M context doubles your input cost" claim. 1M context bills at standard rates on Opus 4.7/4.6 and Sonnet 4.6 — that "2x over 200K" pricing applied only to Opus 4.1 and older.
+- **Bedrock model IDs table** now distinguishes Mantle endpoint IDs (e.g. `anthropic.claude-opus-4-7`) from legacy InvokeModel/Converse IDs (e.g. `us.anthropic.claude-opus-4-7` cross-region profile). Previously only the legacy form was documented.
+- **`CLAUDE.md` (project)** pricing-data section rewritten with all 7 priced models, full retirement dates, server-side tool costs, Managed Agents billing, and the corrected Fast Mode scope.
+- Removed lingering "(legacy 4.6)" / "legacy per Anthropic docs" framing in guides/01, guides/02, guides/05, README — Opus 4.6 is `Active` per the deprecation page.
+- Added explicit notes that Opus 4.5, Sonnet 4.5, Opus 4.1, and Haiku 4.5 are **200K-context only** so users don't assume the 1M long-context-at-standard-rate benefit applies to them.
+
+### Source verification
+All pricing and lifecycle facts in this revision verified against:
+- https://platform.claude.com/docs/en/about-claude/pricing
+- https://platform.claude.com/docs/en/about-claude/models/overview
+- https://platform.claude.com/docs/en/about-claude/model-deprecations
+- https://platform.claude.com/docs/en/build-with-claude/fast-mode
+- https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock
+- https://claude.com/pricing
+
 ## [1.5.0] - 2026-05-20
 
 ### Added
@@ -22,7 +65,7 @@
 - Bedrock model ID reference table in guides/06 (includes `us.anthropic.claude-opus-4-7` cross-region profile + research-preview caveat).
 - New Mermaid diagrams in guides/diagrams.md: "Claude Model Family (April 2026)" showing all GA + research-preview models with cost tiers, and "Pricing Modifier Stack" showing how cache/batch/regional/fast-mode multipliers compose.
 - **Thinking modes table** in cheatsheet: clarifies Opus 4.7 uses adaptive thinking only (no extended thinking), Sonnet 4.6 supports both, Haiku 4.5 is extended-only.
-- **Upcoming retirements table** in cheatsheet and README: Haiku 3 retires 2026-04-19, Sonnet 4 / Opus 4 retire 2026-06-15.
+- **Upcoming retirements table** in cheatsheet and README: Haiku 3 retires 2026-04-20 (corrected from April 19 in 1.6.0), Sonnet 4 / Opus 4 retire 2026-06-15.
 - Published benchmark numbers (CyberGym, SWE-bench Verified/Pro, Terminal-Bench) in guides/03 comparing Opus 4.6 vs Mythos Preview.
 
 ### Changed

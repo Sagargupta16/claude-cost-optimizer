@@ -83,7 +83,7 @@ We recommend keeping CLAUDE.md under **150 lines** as an approximate guideline, 
 
 > The cost column assumes a blended rate with 80% cache hits. Actual savings from trimming are about 20% of the raw difference (since most of these tokens get cached), but the cache is not free — cached tokens still cost 10% of full price.
 
-**On Opus 4.7** (or legacy 4.6), multiply these numbers by ~1.67x (Opus input is $5/MTok vs Sonnet's $3/MTok). A 500-line CLAUDE.md on Opus costs about $60.50/month just for the CLAUDE.md itself across 110 sessions. **Opus 4.7 adds another ~20-35% on top** because its new tokenizer uses more tokens for the same text.
+**On Opus 4.7** (or Opus 4.6), multiply these numbers by ~1.67x (Opus input is $5/MTok vs Sonnet's $3/MTok). A 500-line CLAUDE.md on Opus costs about $60.50/month just for the CLAUDE.md itself across 110 sessions. **Opus 4.7 adds another ~20-35% on top** because its new tokenizer uses more tokens for the same text.
 
 ### What Belongs in CLAUDE.md
 

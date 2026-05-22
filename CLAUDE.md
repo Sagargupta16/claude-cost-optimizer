@@ -45,18 +45,32 @@ This repo is an installable Claude Code skill and a documentation/tooling projec
 
 ## Pricing Data
 
-Current Claude API pricing (April 2026):
+Current Claude API pricing (verified 2026-05-22):
 
-- **Opus 4.7** (current flagship): $5/$25 per 1M input/output. 1M context. 128K max output. Cache hit $0.50. Adaptive thinking. **New tokenizer** may use up to 35% more tokens than prior models.
-- **Opus 4.6** (legacy per Anthropic docs): $5/$25. 1M context. 128K max output. Cache hit $0.50. Only model supporting **Fast Mode** (6x = $30/$150 research preview).
-- **Sonnet 4.6**: $3/$15. 1M context. 64K max output. Cache hit $0.30.
-- **Haiku 4.5**: $1/$5. 200K context. 64K max output. Cache hit $0.10.
+- **Opus 4.7** (current flagship): $5/$25 per 1M input/output. 1M context. 128K max output. Cache hit $0.50, 5m-write $6.25, 1h-write $10. Adaptive thinking. **Fast Mode supported (beta)**. **New tokenizer** may use up to 35% more tokens than prior models.
+- **Opus 4.6** (active): $5/$25. 1M context. 128K max output. Cache hit $0.50, 5m-write $6.25, 1h-write $10. Extended + adaptive thinking. **Fast Mode supported (beta)**. Earliest retirement 2027-02-05.
+- **Opus 4.5**: $5/$25. 200K context. 64K max output. Cache hit $0.50. Extended thinking only. No Fast Mode. Earliest retirement 2026-11-24.
+- **Opus 4.1**: $15/$75. 200K context. 32K max output. Cache hit $1.50. Extended thinking only. Earliest retirement 2026-08-05.
+- **Sonnet 4.6**: $3/$15. 1M context. 64K max output. Cache hit $0.30. Extended + adaptive thinking. Earliest retirement 2027-02-17.
+- **Sonnet 4.5**: $3/$15. 200K context. 64K max output. Cache hit $0.30. Extended thinking. Earliest retirement 2026-09-29.
+- **Haiku 4.5**: $1/$5. 200K context. 64K max output. Cache hit $0.10. Extended thinking. Earliest retirement 2026-10-15.
+- **Mythos Preview** (invite-only, Glasswing): $25/$125. 1M context. Cache hit $2.50. Defensive cybersecurity research only.
 
-**Important pricing corrections vs earlier docs**:
-- 1M context on Opus 4.7, Opus 4.6, and Sonnet 4.6 is at **standard rates** -- no long-context premium. (Earlier "2x input, 1.5x output over 200K" is obsolete.)
-- Batch API: 50% discount. Cache writes: 1.25x (5-min), 2x (1-hour).
-- Regional endpoints (Bedrock/Vertex) on Sonnet 4.5+ and Haiku 4.5+: +10%. Data residency (`inference_geo: us-only`) on Opus 4.7+: +10%.
+**Important pricing facts**:
+- 1M context on Opus 4.7, Opus 4.6, and Sonnet 4.6 is at **standard rates** -- no long-context premium. Opus 4.5, Sonnet 4.5, Opus 4.1, and Haiku 4.5 are 200K-only.
+- Batch API: 50% discount on both input AND output. Cache writes: 1.25x base input (5-min), 2x base input (1-hour). Cache hit = 0.1x base input.
+- Regional endpoints (Bedrock/Vertex/Claude API `inference_geo: "us"`) on Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models: +10%.
+- **Fast Mode (beta)**: Opus 4.7 + Opus 4.6 only. 6x standard rates ($30/$150). Up to 2.5x OTPS. NOT compatible with Batch, Priority Tier, or Claude Platform on AWS. Header `anthropic-beta: fast-mode-2026-02-01`, `speed: "fast"`.
+- **Server-side tools**: Web search $10/1k searches + tokens. Web fetch free + tokens. Code execution free w/ web search-or-fetch; else 1,550 free hr/org/month + $0.05/hr/container. Bash +245 tokens. Text editor +700 tokens. Computer use +735 tokens + 466-499 system prompt tokens.
+- **Tool-use overhead**: Tool definitions add 346 tokens (`auto`/`none`) or 313 tokens (`any`/`tool`) per call.
+- **Claude Managed Agents**: standard token rates + **$0.08/session-hour** of `running` time. Replaces Code Execution container-hour billing.
 
-**Bedrock model IDs**: Opus 4.7 = `us.anthropic.claude-opus-4-7` (cross-region inference; currently research preview). Opus 4.6 = `us.anthropic.claude-opus-4-6-v1`.
+**Bedrock**: Opus 4.7 GA and **open to all Bedrock customers** (no waitlist). New Mantle endpoint at `https://bedrock-mantle.{region}.api.aws/anthropic/v1/messages` with model ID `anthropic.claude-opus-4-7`. Legacy InvokeModel/Converse path uses `us.anthropic.claude-opus-4-7` (cross-region) for backward compat. Opus 4.6 = `anthropic.claude-opus-4-6` (Mantle) or `anthropic.claude-opus-4-6-v1` (legacy).
+
+**Subscriptions**: Pro $20/mo or **$200/yr (~$16.67/mo, 17% off)**. Max 5x $100/mo. Max 20x $200/mo.
+
+**Recently retired** (will fail): Haiku 3 (`claude-3-haiku-20240307`) retired 2026-04-20. Haiku 3.5 (`claude-3-5-haiku-20241022`) retired 2026-02-19 (still on Bedrock + Vertex AI). Sonnet 3.7 (`claude-3-7-sonnet-20250219`) retired 2026-02-19. Opus 3 (`claude-3-opus-20240229`) retired 2026-01-05.
+
+**Upcoming retirement**: Sonnet 4 (`claude-sonnet-4-20250514`) and Opus 4 (`claude-opus-4-20250514`) retire **2026-06-15**.
 
 Update pricing references across ALL files (README, guides/00-10, cheatsheet, benchmarks, site/src/utils/pricing.ts, tools/*/estimate.py) when rates change.

@@ -164,23 +164,30 @@ Copy-paste configs that are already optimized:
 
 ---
 
-## Pricing Reference (April 2026)
+## Pricing Reference (verified 2026-05-22)
 
-| Model | Input / 1M | Output / 1M | Cache Hit / 1M | Context | Max Output |
-|-------|:----------:|:-----------:|:---------------:|:-------:|:----------:|
-| **Opus 4.7** (current) | $5.00 | $25.00 | $0.50 | 1M | 128K |
-| Opus 4.6 (legacy) | $5.00 | $25.00 | $0.50 | 1M | 128K |
-| Sonnet 4.6 | $3.00 | $15.00 | $0.30 | 1M | 64K |
-| Haiku 4.5 | $1.00 | $5.00 | $0.10 | 200K | 64K |
-| Mythos Preview (invite-only, [Glasswing](https://anthropic.com/glasswing)) | $25.00 | $125.00 | -- | 1M | -- |
+| Model | Input / 1M | Output / 1M | Cache Hit / 1M | 5m Cache Write / 1M | 1h Cache Write / 1M | Context | Max Output |
+|-------|:----------:|:-----------:|:---------------:|:-------------------:|:-------------------:|:-------:|:----------:|
+| **Opus 4.7** (current) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
+| Opus 4.6 | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
+| Opus 4.5 | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K |
+| Opus 4.1 | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
+| Sonnet 4.6 | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K |
+| Sonnet 4.5 | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
+| Haiku 4.5 | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
+| Mythos Preview (invite-only, [Glasswing](https://anthropic.com/glasswing)) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- |
 
-**1M context** on Opus 4.7, Opus 4.6, and Sonnet 4.6 bills at **standard rates** across the full window (no long-context premium). **Batch API**: 50% off. **Fast Mode** (Opus 4.6 only): 6x. **Regional endpoints** (Bedrock/Vertex): +10%. Plans: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo.
+**1M context** on Opus 4.7, Opus 4.6, and Sonnet 4.6 bills at **standard rates** across the full window (no long-context premium). **Batch API**: 50% off both input and output. **Fast Mode** (Opus 4.7 and 4.6, beta): 6x standard rates, up to 2.5x output tokens/sec. **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"` for 4.6+ models): +10%. **Subscriptions**: Pro $20/mo (or **$200/yr ≈ $16.67/mo**, ~17% off), Max 5x $100/mo, Max 20x $200/mo. **Web search**: $10 per 1,000 searches plus token costs. **Web fetch**: free beyond token costs. **Code execution**: free with web search/fetch; otherwise 1,550 free hours/month then $0.05/hour per container. **Bash tool**: +245 input tokens. **Text editor tool**: +700 input tokens.
 
-> **Opus 4.7 tokenizer caveat**: The new tokenizer may use up to **35% more tokens** for the same text. Effective cost is higher than posted pricing suggests -- factor this into per-task budgets.
+> **Opus 4.7 tokenizer caveat**: The new tokenizer may use **up to 35% more tokens** for the same fixed text. Effective per-task cost is higher than posted pricing suggests — factor this into budgets, especially when comparing to Opus 4.6 / Sonnet 4.6.
+>
+> **Fast Mode (beta)**: Available on **both Opus 4.7 and Opus 4.6** via the `fast-mode-2026-02-01` beta header (`speed: "fast"`). 6x standard rates ($30/$150 per MTok). Up to 2.5x more output tokens/second; speed gain is on output tokens/sec, not time-to-first-token. Not available on Claude Platform on AWS, Batch API, or Priority Tier. Switching speeds invalidates prompt cache. [Join the waitlist](https://claude.com/fast-mode).
 >
 > **Mythos Preview**: Research preview for defensive cybersecurity (vulnerability discovery, binary analysis). Invite-only via Project Glasswing (AWS, Apple, Cisco, CrowdStrike, Google, JPMorganChase, Microsoft, NVIDIA, Palo Alto Networks, 40+ critical-infra orgs). Not a general-purpose dev model.
 >
-> **Model retirements coming**: Haiku 3 retires **April 19, 2026** (migrate to Haiku 4.5). Sonnet 4 and Opus 4 (the original 4.0 versions) retire June 15, 2026 (migrate to Sonnet 4.6 / Opus 4.7).
+> **Recent model retirements** (already in effect): **Haiku 3** retired **April 20, 2026**, **Haiku 3.5** retired **February 19, 2026** (still available on Bedrock and Vertex AI), **Sonnet 3.7** retired **February 19, 2026**, **Opus 3** retired **January 5, 2026**. If you have any production code referencing these IDs, requests will already be failing. Migrate Haiku 3/3.5 to Haiku 4.5; Sonnet 3.7 to Sonnet 4.6; Opus 3 to Opus 4.7.
+>
+> **Upcoming retirement**: **Sonnet 4** (`claude-sonnet-4-20250514`) and **Opus 4** (`claude-opus-4-20250514`) retire **June 15, 2026** — migrate to Sonnet 4.6 / Opus 4.7.
 
 ---
 
@@ -215,7 +222,7 @@ Copy-paste configs that are already optimized:
 <details>
 <summary>How much does Claude Code actually cost?</summary>
 
-With Pro ($20/mo), Max 5x ($100/mo), or Max 20x ($200/mo), you get included usage. Heavy users report $3-15/day without optimization, $1-5/day with it. Opus 4.7 (and legacy Opus 4.6) at $5/$25 is much more affordable than Opus 4.1 ($15/$75).
+With Pro ($20/mo or $200/yr ≈ $16.67/mo with annual billing — 17% off), Max 5x ($100/mo), or Max 20x ($200/mo), you get included usage. Heavy users report $3-15/day without optimization, $1-5/day with it. Opus 4.7 and Opus 4.6 at $5/$25 are 3x cheaper per token than Opus 4.1 ($15/$75) — but Opus 4.7's new tokenizer can use up to 35% more tokens, so the effective gap is closer to ~2x.
 </details>
 
 <details>

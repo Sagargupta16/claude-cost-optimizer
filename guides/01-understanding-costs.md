@@ -23,21 +23,24 @@
 
 Every interaction with Claude Code consumes tokens. Tokens are the fundamental billing unit — roughly 1 token per 4 characters of English text, or about 0.75 words per token. Code tends to be slightly less dense: a typical line of code is around 8-12 tokens.
 
-### Current Model Pricing (April 2026)
+### Current Model Pricing (verified 2026-05-22)
 
-| Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M) | Context Window | Max Output |
-|-------|:---------------------:|:----------------------:|:---------------------:|:--------------:|:----------:|
-| **Opus 4.7** (current) | $5.00 | $25.00 | $0.50 | 1M | 128K |
-| **Opus 4.6** (legacy) | $5.00 | $25.00 | $0.50 | 1M | 128K |
-| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 1M | 64K |
-| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 200K | 64K |
-| **Opus 4.6 (Fast Mode)** | $30.00 (6x) | $150.00 (6x) | N/A | 1M (included) | 128K |
+| Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M) | 5m Cache Write | 1h Cache Write | Context Window | Max Output |
+|-------|:---------------------:|:----------------------:|:---------------------:|:--------------:|:--------------:|:--------------:|:----------:|
+| **Opus 4.7** (current) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
+| **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
+| **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K |
+| **Opus 4.1** | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
+| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K |
+| **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
+| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
+| **Opus 4.7 / 4.6 (Fast Mode)** | $30.00 (6x) | $150.00 (6x) | N/A | -- | -- | 1M (included) | 128K |
 
-> **1M context at standard rates**: Opus 4.7, Opus 4.6, and Sonnet 4.6 bill the full 1M window at the standard per-token rate -- no long-context premium. (The earlier "2x over 200K" pricing applied to Opus 4.1 and older.)
+> **1M context at standard rates**: Opus 4.7, Opus 4.6, and Sonnet 4.6 bill the full 1M window at the standard per-token rate -- no long-context premium. (The earlier "2x over 200K" pricing applied to Opus 4.1 and older. Note that Opus 4.5 and Sonnet 4.5 are 200K-only.)
 >
 > **Opus 4.7 tokenizer caveat**: Opus 4.7 introduced a new tokenizer that may use up to **35% more tokens** for the same source text. Posted pricing is unchanged ($5/$25), but effective per-task cost is 20-35% higher than it would have been on Opus 4.6.
 >
-> **Plans**: Pro $20/mo, Max 5x $100/mo, Max 20x $200/mo. **Batch API**: 50% discount. **Cache write**: 1.25x input price (5-min TTL), 2x input price (1-hour TTL). **Regional endpoints** (Bedrock/Vertex, Sonnet 4.5+ and Haiku 4.5+): +10%.
+> **Subscriptions**: Pro **$20/mo** (or **$200/yr ≈ $16.67/mo** with annual billing — ~17% off). Max 5x $100/mo. Max 20x $200/mo. **Batch API**: 50% discount on both input and output. **Cache write**: 1.25x base input price (5-min TTL), 2x base input price (1-hour TTL). **Cache hit/refresh**: 0.1x base input price. **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"`, scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all future models): +10%.
 
 ### Off-Peak 2x Usage Events
 
@@ -61,7 +64,7 @@ To build intuition, here is what $1.00 buys you with each model:
 
 ### Model Cost Comparisons
 
-Relative to Opus 4.7 (the current flagship, tied with legacy 4.6 as most expensive):
+Relative to Opus 4.7 (the current flagship; Opus 4.6 / 4.5 share the same base rate):
 
 | Comparison | Input Savings | Output Savings |
 |------------|:------------:|:--------------:|
@@ -92,18 +95,26 @@ A 900K-token request is billed at the same per-token rate as a 9K-token request.
 
 ### Fast Mode Pricing
 
-Fast Mode is a research preview available for **Opus 4.6 only**. It uses the same model with faster output at significantly higher rates:
+Fast Mode is a beta (research preview) feature available for **Claude Opus 4.7 AND Opus 4.6** (`claude-opus-4-7`, `claude-opus-4-6`). Same model weights, same intelligence — just faster output token generation at premium pricing. [Join the waitlist](https://claude.com/fast-mode).
 
 | | Input (per 1M) | Output (per 1M) | Multiplier vs Standard |
 |---|:---:|:---:|:---:|
-| **Standard Opus 4.6** | $5.00 | $25.00 | 1x |
-| **Fast Mode Opus 4.6** | $30.00 | $150.00 | **6x** |
+| **Standard Opus 4.7 / 4.6** | $5.00 | $25.00 | 1x |
+| **Fast Mode Opus 4.7 / 4.6** | $30.00 | $150.00 | **6x** |
 
 Key details about Fast Mode:
-- **Same model, faster output**: Fast Mode does not switch to a different model. It is Opus 4.6 with prioritized, faster generation.
-- **1M context included**: Fast Mode includes 1M context at no extra long-context surcharge (no additional 2x/1.5x multiplier on top of the 6x).
-- **Not available with Batch API**: You cannot combine the 50% batch discount with Fast Mode.
-- **Use case**: Time-sensitive tasks where latency matters more than cost — urgent debugging, live demos, or rapid prototyping under deadline.
+
+- **Same model, faster output**: Fast Mode runs the same model with a faster inference configuration. Same weights, same behavior — only the runtime is different.
+- **Up to 2.5x output tokens/second**: The speed gain is on output tokens per second (OTPS), **not** time-to-first-token (TTFT). If you're optimizing for TTFT, Fast Mode does not help.
+- **1M context included**: Fast Mode is priced at 6x across the full context window, including requests over 200K input tokens. No additional 2x long-context multiplier stacked on top.
+- **Cache stacks on top**: Prompt-caching multipliers (1.25x 5m write, 2x 1h write, 0.1x hit) apply to Fast Mode rates. So a Fast Mode 5m cache write costs $30 × 1.25 = $37.50 / MTok, and a Fast Mode cache hit costs $30 × 0.1 = $3.00 / MTok.
+- **Switching invalidates cache**: Fast and Standard speeds do not share cached prefixes. If you toggle speeds mid-conversation, you'll pay a full cache-write cost again.
+- **Not available with Batch API**: 50% batch discount cannot be combined with Fast Mode.
+- **Not available with Priority Tier**: Fast Mode and Priority Tier are mutually exclusive.
+- **Not available on Claude Platform on AWS**: First-party API only.
+- **Activation**: Set `speed: "fast"` in your request and include the `anthropic-beta: fast-mode-2026-02-01` header.
+- **Dedicated rate limits**: Fast Mode has its own rate limit pool separate from Standard Opus. Headers like `anthropic-fast-output-tokens-remaining` track it.
+- **Use case**: Time-sensitive tasks where latency directly impacts revenue or user experience — urgent debugging, live demos, real-time agentic loops. Almost never worth it for routine interactive coding.
 
 At 6x the standard rate, a session that would cost $2.33 on standard Opus would cost roughly **$14** on Fast Mode. Use it deliberately and sparingly.
 
@@ -492,7 +503,7 @@ Without prompt caching, every input token is charged at full price:
 | **Sonnet 4.6** | ~$1.40 | ~$154 |
 | **Haiku 4.5** | ~$0.47 | ~$52 |
 
-> **Note**: With Opus 4.7 (and legacy 4.6) at $5/$25, the cost gap between models is much narrower than it used to be. Opus sessions are only ~1.7x more expensive than Sonnet, making it practical to use Opus more often. Haiku at $1/$5 is still the clear budget choice at 5x cheaper than Opus.
+> **Note**: With Opus 4.7 (and Opus 4.6) at $5/$25, the cost gap between models is much narrower than it used to be. Opus sessions are only ~1.7x more expensive than Sonnet, making it practical to use Opus more often. Haiku at $1/$5 is still the clear budget choice at 5x cheaper than Opus.
 
 ---
 
@@ -570,7 +581,7 @@ Example (150 lines, 30 turns, Sonnet 4.6, 80% cache rate):
 = 31,500 x $0.00000084
 = $0.026
 
-Same example on Opus 4.7 (or legacy 4.6):
+Same example on Opus 4.7 (or Opus 4.6):
 = 31,500 x ((0.80 x $0.0000005) + (0.20 x $0.000005))
 = 31,500 x $0.0000014
 = $0.044
