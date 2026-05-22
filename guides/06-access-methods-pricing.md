@@ -25,16 +25,18 @@ Most teams pick a Claude access method based on convenience or existing cloud co
 
 ## Platform Overview
 
-There are four main ways to access Claude models:
+There are five main ways to access Claude models:
 
 | Platform | Access Type | Best For | Billing |
 |----------|------------|----------|---------|
-| **Anthropic API** | Direct REST API | Custom apps, programmatic access | Pay-per-token |
-| **AWS Bedrock** | Managed AWS service | AWS-native teams, data residency | Pay-per-token (AWS billing) |
+| **Anthropic API** (first-party) | Direct REST API | Custom apps, full feature access (Fast Mode, Batch, Files, MCP connector, Managed Agents) | Pay-per-token, USD invoiced by Anthropic |
+| **Claude Platform on AWS** | Anthropic-operated on AWS Marketplace | AWS-native teams that want Anthropic-operated infra + same-day feature parity | Pay-per-token, billed in **Claude Consumption Units (CCU)** at $0.01/CCU through AWS Marketplace |
+| **AWS Bedrock** (Mantle + legacy) | Partner-operated AWS service | AWS-native teams, data residency, AWS security boundary | Pay-per-token (AWS billing) |
 | **Google Vertex AI** | Managed GCP service | GCP-native teams, data residency | Pay-per-token (GCP billing) |
-| **Claude Code** | CLI + Desktop + Mobile | Interactive development, quick tasks | Monthly subscription |
+| **Microsoft Foundry** | Anthropic-operated on Azure | Azure-native teams | Pay-per-token through Azure |
+| **Claude Code** subscription | CLI + Desktop + Mobile | Interactive development | Monthly or annual subscription |
 
-All four platforms provide access to the same Claude models with the same capabilities. The differences are in pricing, infrastructure, compliance features, and billing integration.
+All platforms provide access to the same Claude models with the same intelligence. The differences are in pricing, infrastructure, compliance features, and billing integration. Some features (Fast Mode, Batch API, MCP connector, Files API, server-side tools, Managed Agents) are first-party-only.
 
 ---
 
@@ -42,31 +44,38 @@ All four platforms provide access to the same Claude models with the same capabi
 
 The Anthropic API is the baseline. All other platforms price relative to it.
 
-### Standard Pricing (per 1M tokens)
+### Standard Pricing (per 1M tokens, verified 2026-05-22)
 
-| Model | Input | Output | Cache Hit | Context Window | Max Output |
-|-------|:-----:|:------:|:---------:|:--------------:|:----------:|
-| **Opus 4.7** (current) | $5.00 | $25.00 | $0.50 | 1M | 128K |
-| **Opus 4.6** (legacy) | $5.00 | $25.00 | $0.50 | 1M | 128K |
-| **Opus 4.6 Fast Mode** (research preview) | $30.00 (6x) | $150.00 (6x) | -- | 1M (included) | 128K |
-| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | 1M | 64K |
-| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | 200K | 64K |
-| **Mythos Preview** (Glasswing, invite-only) | $25.00 | $125.00 | -- | 1M | -- |
+| Model | Input | Output | Cache Hit | 5m Cache Write | 1h Cache Write | Context | Max Output |
+|-------|:-----:|:------:|:---------:|:--------------:|:--------------:|:-------:|:----------:|
+| **Opus 4.7** (current) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
+| **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
+| **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K |
+| **Opus 4.1** | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
+| **Opus 4.7 / 4.6 Fast Mode** (beta) | $30.00 (6x) | $150.00 (6x) | -- | -- | -- | 1M (included) | 128K |
+| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K |
+| **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
+| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
+| **Mythos Preview** (Glasswing, invite-only) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- |
 
 > **Mythos Preview** is a separate research-preview model for defensive cybersecurity research only, accessible to [Project Glasswing](https://anthropic.com/glasswing) partners (11 founding: AWS, Anthropic, Apple, Broadcom, Cisco, CrowdStrike, Google, JPMorganChase, Linux Foundation, Microsoft, NVIDIA, Palo Alto Networks; plus 40+ critical-infrastructure organizations and open-source maintainers). $100M of complimentary credits were committed by Anthropic during the preview. No self-serve signup. If you're not in the program, this row is for reference only.
 
-> **1M context at standard rates**: Opus 4.7, Opus 4.6, and Sonnet 4.6 charge the standard per-token rate across the full 1M window — no long-context premium. (Earlier "2x input, 1.5x output above 200K" pricing is obsolete for current models.)
+> **1M context at standard rates**: Opus 4.7, Opus 4.6, and Sonnet 4.6 charge the standard per-token rate across the full 1M window — no long-context premium. Opus 4.5, Sonnet 4.5, Opus 4.1, and Haiku 4.5 are 200K-context only.
 >
 > **Opus 4.7 tokenizer**: New tokenizer uses up to **35% more tokens** for the same text. The posted $5/$25 rate is unchanged but effective cost rises proportionally. Budget accordingly.
+>
+> **Tool-use overhead**: Tool definitions add a system-prompt token cost on every call. Current models add **346 tokens** for `tool_choice: auto` or `none`, **313 tokens** for `any` or `tool`. Add this to your `tools` array (names + descriptions + schemas) when budgeting.
 
 ### Additional Pricing Modifiers
 
 | Modifier | Effect | Details |
 |----------|--------|---------|
-| **Batch API** | 50% discount on all models | Non-real-time processing, results returned asynchronously |
-| **Data residency** (`inference_geo: us-only`) | 1.1x multiplier | Applies to Opus 4.7 and newer models on Claude API (1P) |
-| **Cache write (5-min TTL)** | 1.25x input price | Content cached for 5 minutes |
-| **Cache write (1-hour TTL)** | 2x input price | Content cached for 1 hour |
+| **Batch API** | 50% discount on input AND output | Non-real-time, async results. Stacks with prompt caching. NOT compatible with Fast Mode or Priority Tier. |
+| **Data residency** (`inference_geo: "us"`) | 1.1x multiplier on every category | Applies to Opus 4.6, Sonnet 4.6, and all later models on Claude API (1P) and Claude Platform on AWS. Earlier models error if the parameter is set. |
+| **Fast Mode** (beta) | 6x rates ($30 / $150 per MTok) | Opus 4.7 and Opus 4.6 only. Header `anthropic-beta: fast-mode-2026-02-01`, `speed: "fast"`. Up to 2.5x output tokens/sec. |
+| **Cache write (5-min TTL)** | 1.25x base input price | Content cached for 5 minutes. Pays off after 1 reuse. |
+| **Cache write (1-hour TTL)** | 2x base input price | Content cached for 1 hour. Pays off after 2 reuses. |
+| **Cache hit / refresh** | 0.1x base input price | 90% off vs uncached input. |
 
 ### Batch API Pricing
 
@@ -76,63 +85,133 @@ The Batch API is the single biggest discount available. For any workload that do
 |-------|:-----------:|:------------:|:-------------------:|
 | **Opus 4.7** | $2.50 | $12.50 | 50% |
 | **Opus 4.6** | $2.50 | $12.50 | 50% |
+| **Opus 4.5** | $2.50 | $12.50 | 50% |
+| **Opus 4.1** | $7.50 | $37.50 | 50% |
 | **Sonnet 4.6** | $1.50 | $7.50 | 50% |
+| **Sonnet 4.5** | $1.50 | $7.50 | 50% |
 | **Haiku 4.5** | $0.50 | $2.50 | 50% |
+
+> Batch API is NOT available on Claude Platform on AWS. It IS available on Anthropic API, Bedrock, and Vertex AI.
+
+### Server-side tools (additional charges)
+
+| Tool | Charge | Notes |
+|------|--------|-------|
+| **Web search** | $10 per 1,000 searches + token costs | Each search counts once regardless of result count. Errors are not billed. |
+| **Web fetch** | Free (token costs only) | Use `max_content_tokens` to cap large pages. |
+| **Code execution** | Free with web search/fetch in same request; otherwise 1,550 free hours/org/month, then **$0.05 per hour per container** | 5-minute minimum execution time. Replaced by session runtime when using Managed Agents. |
+| **Bash tool** | +245 input tokens per call | Plus stdout/stderr token costs. |
+| **Text editor tool** | +700 input tokens per call | `text_editor_20250429` for Claude 4.x. |
+| **Computer use tool** | +735 input tokens per tool definition + 466-499 system-prompt tokens | Plus screenshot vision tokens. |
+
+### Claude Managed Agents (separate billing dimension)
+
+Tokens billed at standard model rates (caching multipliers apply identically). **Plus** session runtime: **$0.08 per session-hour** of `running` status (not idle, rescheduling, or terminated). Replaces Code Execution container-hour billing — you are not billed twice. Batch, Fast Mode, data residency, and partner-cloud pricing do **not** apply to Managed Agents sessions.
 
 ---
 
 ## AWS Bedrock Pricing
 
-AWS Bedrock provides Claude access through two endpoint types with different pricing.
+AWS Bedrock provides Claude access through two endpoint types with different pricing. As of 2026-05-22, **Opus 4.7 is generally available and open to all Bedrock customers** (no waitlist). Anthropic also offers two Bedrock integration paths: the new Claude in Amazon Bedrock (Mantle) endpoint, and the legacy InvokeModel/Converse API.
 
-### Global Endpoints (`global.anthropic.claude-*`)
+### Global Endpoints
 
 Global endpoints match Anthropic API pricing exactly:
 
 | Model | Input | Output | Cache Hit |
 |-------|:-----:|:------:|:---------:|
-| **Opus 4.7** (research preview on Bedrock) | $5.00 | $25.00 | $0.50 |
+| **Opus 4.7** (open access, GA) | $5.00 | $25.00 | $0.50 |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 |
+| **Sonnet 4.5** | $3.00 | $15.00 | $0.30 |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 |
+| **Mythos Preview** (invite-only, regional `us-east-1` only) | $25.00 | $125.00 | $2.50 |
 
-### Regional Endpoints (us/eu/jp/apac)
+### Regional Endpoints (us/eu/jp/apac/au inference profiles)
 
-Regional endpoints carry a **10% premium** over global pricing (applies to Sonnet 4.5+ and Haiku 4.5+):
+Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models**. Earlier models retain their existing pricing.
 
 | Model | Regional Input | Regional Output | Premium |
 |-------|:--------------:|:---------------:|:-------:|
 | **Opus 4.7** | $5.50 | $27.50 | +10% |
 | **Opus 4.6** | $5.50 | $27.50 | +10% |
+| **Opus 4.5** | $5.50 | $27.50 | +10% |
 | **Sonnet 4.6** | $3.30 | $16.50 | +10% |
+| **Sonnet 4.5** | $3.30 | $16.50 | +10% |
 | **Haiku 4.5** | $1.10 | $5.50 | +10% |
 
 ### Bedrock Features
 
 - **Batch inference**: Supported, 50% discount (same as Anthropic API)
-- **Available regions**: us-east-1, us-west-2, eu-west-1, and others
-- **Cross-region inference**: Global endpoints route to the nearest region automatically
+- **Available regions** (Mantle endpoint): 27 AWS regions including us-east-1, us-east-2, us-west-1, us-west-2, eu-west-1/2/3, eu-central-1/2, eu-north-1, eu-south-1/2, ap-northeast-1/2/3, ap-south-1/2, ap-southeast-1/2/3/4, ca-central-1, ca-west-1, sa-east-1, af-south-1, il-central-1, me-central-1
+- **Endpoint types**: Global (dynamic routing across all regions, no premium), Regional (single region, +10%), or geographic inference profiles (US, EU, JP, AU at +10%)
+- **Quotas**: Default 2M input TPM, up to 4M without Anthropic approval. AWS sets RPM limits separately.
+- **Authentication**: Bedrock service role (recommended), IAM assumed roles (12-hour max), or short-lived bearer tokens
 - **Billing**: Through your AWS account, consolidated with other AWS services
 - **Committed use discounts**: Available through AWS Savings Plans
 
 ### Bedrock Model IDs
 
-| Model | Bedrock Model ID |
-|-------|------------------|
-| Opus 4.7 | `us.anthropic.claude-opus-4-7` (cross-region inference profile) |
-| Opus 4.6 | `us.anthropic.claude-opus-4-6-v1` |
-| Sonnet 4.6 | `anthropic.claude-sonnet-4-6` |
-| Haiku 4.5 | `anthropic.claude-haiku-4-5-20251001-v1:0` |
+The new **Claude in Amazon Bedrock (Mantle)** endpoint at `https://bedrock-mantle.{region}.api.aws/anthropic/v1/messages` uses the same Messages API shape as the first-party Anthropic API, with an `anthropic.` prefix on model IDs:
+
+| Model | Mantle Model ID | Legacy Bedrock ID (InvokeModel/Converse) |
+|-------|-----------------|------------------------------------------|
+| Opus 4.7 | `anthropic.claude-opus-4-7` | `us.anthropic.claude-opus-4-7` (cross-region inference profile) |
+| Opus 4.6 | `anthropic.claude-opus-4-6` | `anthropic.claude-opus-4-6-v1` |
+| Opus 4.5 | -- | `anthropic.claude-opus-4-5-20251101-v1:0` |
+| Opus 4.1 | -- | `anthropic.claude-opus-4-1-20250805-v1:0` |
+| Sonnet 4.6 | `anthropic.claude-sonnet-4-6` | `anthropic.claude-sonnet-4-6` |
+| Sonnet 4.5 | -- | `anthropic.claude-sonnet-4-5-20250929-v1:0` |
+| Haiku 4.5 | `anthropic.claude-haiku-4-5` | `anthropic.claude-haiku-4-5-20251001-v1:0` |
+| Mythos Preview | `anthropic.claude-mythos-preview` | (Bedrock Marketplace allowlist required) |
+
+### Bedrock Mantle: features supported and NOT supported
+
+**Supported**: Messages API, prompt caching, extended thinking, tool use (bash, computer use, memory tool, text editor), citations, structured outputs.
+
+**NOT supported on Bedrock Mantle**: Files API, server-side tools (code execution, web search, web fetch, advisor), Agent Skills, MCP connector, programmatic tool calling, Message Batches API, Models API, Admin API, Compliance API, Usage and Cost API, Claude Managed Agents, Fast Mode.
 
 > **Key point**: Unless you have a data residency requirement, always use global endpoints on Bedrock. You save 10% for zero effort.
->
-> **Opus 4.7 on Bedrock (research preview)**: Some API fields that older endpoints accept (e.g. `temperature`, certain beta flags) may be rejected by the 4.7 endpoint. Use minimal Converse API payloads, or use Claude Code 2.1.110+ which handles the compatibility layer.
+
+---
+
+## Claude Platform on AWS Pricing
+
+Claude Platform on AWS is **Anthropic-operated** (different from partner-operated Bedrock). It bills through AWS Marketplace using **Claude Consumption Units (CCU)** at a fixed **$0.01 per CCU**. Token usage is rated in USD at standard per-model rates (identical to Anthropic API pricing), then converted to CCUs and metered hourly to AWS.
+
+| Concept | Detail |
+|---------|--------|
+| **Billing unit** | Claude Consumption Unit (CCU) |
+| **CCU price** | $0.01 per CCU (fixed; 100 CCU = $1.00) |
+| **Conversion** | Token usage rated in USD at standard rates, then converted to CCUs |
+| **Cadence** | Hourly metering, monthly invoices via AWS Marketplace |
+| **Payment** | Postpaid only (no prepaid credits) |
+| **Discounts** | Applied as fewer CCUs metered (negotiated through Anthropic account exec) |
+| **Tax** | Pre-tax metering; AWS Marketplace handles tax |
+| **Cost visibility** | Real-time breakdown in Claude Console (via AWS Console); AWS Cost Explorer shows aggregated CCU |
+
+### Inference geography
+
+For Opus 4.6, Sonnet 4.6, and later models, setting `inference_geo: "us"` applies a **1.1x pricing multiplier** to all token categories. `inference_geo: "global"` (default) uses standard pricing.
+
+### What's NOT available on Claude Platform on AWS
+
+- Fast Mode (first-party API only)
+- Batch API (sessions are interactive, no batch mode)
+- Bedrock-style cloud-platform pricing (CCU model is unified)
+
+### Why pick this over Bedrock?
+
+- **Same-day feature parity** with the first-party Anthropic API (Bedrock typically lags)
+- **Anthropic-operated infrastructure** rather than partner-operated
+- **AWS Marketplace billing** so usage rolls into your AWS bill but is governed by Anthropic's deprecation/feature schedule (not Bedrock's)
+- Same model IDs as the Anthropic API (e.g. `claude-opus-4-7`), not Bedrock-style IDs
 
 ---
 
 ## Google Cloud Vertex AI Pricing
 
-Vertex AI follows the same global vs. regional pricing structure as Bedrock.
+Vertex AI follows the same global vs. regional pricing structure as Bedrock, plus a **multi-region** endpoint type unique to Vertex.
 
 ### Global Endpoints
 
@@ -142,24 +221,40 @@ Global endpoints match Anthropic API pricing exactly:
 |-------|:-----:|:------:|:---------:|
 | **Opus 4.7** | $5.00 | $25.00 | $0.50 |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 |
+| **Opus 4.5** | $5.00 | $25.00 | $0.50 |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 |
+| **Sonnet 4.5** | $3.00 | $15.00 | $0.30 |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 |
 
-### Regional Endpoints
+### Regional and Multi-Region Endpoints
 
-Regional endpoints carry the same **10% premium** (and Vertex AI also offers multi-region endpoints at the same premium):
+Both regional endpoints (single GCP region) and multi-region endpoints (dynamic routing within a geography) carry a **10% premium**:
 
-| Model | Regional Input | Regional Output | Premium |
-|-------|:--------------:|:---------------:|:-------:|
+| Model | Regional/Multi-Region Input | Regional/Multi-Region Output | Premium |
+|-------|:---------------------------:|:----------------------------:|:-------:|
 | **Opus 4.7** | $5.50 | $27.50 | +10% |
 | **Opus 4.6** | $5.50 | $27.50 | +10% |
+| **Opus 4.5** | $5.50 | $27.50 | +10% |
 | **Sonnet 4.6** | $3.30 | $16.50 | +10% |
+| **Sonnet 4.5** | $3.30 | $16.50 | +10% |
 | **Haiku 4.5** | $1.10 | $5.50 | +10% |
+
+### Vertex AI Model IDs
+
+| Model | Vertex AI Model ID |
+|-------|---------------------|
+| Opus 4.7 | `claude-opus-4-7` |
+| Opus 4.6 | `claude-opus-4-6` |
+| Opus 4.5 | `claude-opus-4-5@20251101` |
+| Opus 4.1 | `claude-opus-4-1@20250805` |
+| Sonnet 4.6 | `claude-sonnet-4-6` |
+| Sonnet 4.5 | `claude-sonnet-4-5@20250929` |
+| Haiku 4.5 | `claude-haiku-4-5@20251001` |
 
 ### Vertex AI Features
 
 - **Provisioned throughput**: Available on regional endpoints for guaranteed capacity
-- **Available regions**: us-east1, europe-west1, and others
+- **Endpoint types**: Global (no premium), multi-region (+10%), regional (+10%)
 - **Billing**: Through your GCP account, consolidated with other GCP services
 - **Committed use**: Available through GCP CUDs (committed use discounts)
 
@@ -167,15 +262,17 @@ Regional endpoints carry the same **10% premium** (and Vertex AI also offers mul
 
 ## Claude Code Subscription Plans
 
-Claude Code subscriptions bundle access into predictable monthly pricing.
+Claude Code subscriptions bundle access into predictable monthly (or annual) pricing.
 
 ### Plan Comparison
 
-| Plan | Monthly Price | Usage Level | Per-Day Equivalent |
-|------|:------------:|:-----------:|:------------------:|
-| **Pro** | $20/mo | Baseline | ~$0.67/day |
-| **Max 5x** | $100/mo | 5x Pro usage | ~$3.33/day |
-| **Max 20x** | $200/mo | 20x Pro usage | ~$6.67/day |
+| Plan | Monthly Price | Annual Price (effective monthly) | Usage Level | Per-Day Equivalent |
+|------|:------------:|:--------------------------------:|:-----------:|:------------------:|
+| **Pro** | $20/mo | **$200/yr (~$16.67/mo, ~17% off)** | Baseline | ~$0.67/day (annual) |
+| **Max 5x** | $100/mo | (annual not currently published) | 5x Pro usage | ~$3.33/day |
+| **Max 20x** | $200/mo | (annual not currently published) | 20x Pro usage | ~$6.67/day |
+
+> **Annual Pro plan saves 17%** vs monthly. If you'll use Claude for >2 months in a year, annual is a no-brainer. Math: $200/yr ÷ 12 = $16.67/mo vs $20/mo monthly = $40/yr saved.
 
 ### What Is Included
 
@@ -210,15 +307,17 @@ Token usage beyond your plan's included allocation is billed at standard API rat
 
 ### Opus 4.7 / 4.6 Pricing Across All Platforms (per 1M tokens)
 
-Both Opus 4.7 and Opus 4.6 share the same base pricing. Opus 4.7 is research preview on Bedrock but GA on the Anthropic API and Vertex AI.
+Both Opus 4.7 and Opus 4.6 share the same base pricing and are **GA across every platform** (Anthropic API, Claude Platform on AWS, AWS Bedrock, Google Vertex AI).
 
 | Platform | Endpoint | Input | Output | Cache Hit | Batch Input | Batch Output |
 |----------|----------|:-----:|:------:|:---------:|:-----------:|:------------:|
 | **Anthropic API** | Direct | $5.00 | $25.00 | $0.50 | $2.50 | $12.50 |
+| **Claude Platform on AWS** | CCU billing (global) | $5.00 | $25.00 | $0.50 | -- (no Batch) | -- |
+| **Claude Platform on AWS** | `inference_geo: "us"` | $5.50 | $27.50 | $0.55 | -- | -- |
 | **AWS Bedrock** | Global | $5.00 | $25.00 | $0.50 | $2.50 | $12.50 |
-| **AWS Bedrock** | Regional | $5.50 | $27.50 | -- | $2.75 | $13.75 |
-| **Google Vertex AI** | Global | $5.00 | $25.00 | $0.50 | -- | -- |
-| **Google Vertex AI** | Regional | $5.50 | $27.50 | -- | -- | -- |
+| **AWS Bedrock** | Regional | $5.50 | $27.50 | $0.55 | $2.75 | $13.75 |
+| **Google Vertex AI** | Global | $5.00 | $25.00 | $0.50 | $2.50 | $12.50 |
+| **Google Vertex AI** | Regional / Multi-region | $5.50 | $27.50 | $0.55 | $2.75 | $13.75 |
 
 ### Sonnet 4.6 Pricing Across All Platforms (per 1M tokens)
 
@@ -251,7 +350,7 @@ Start here: What is your primary use case?
 |
 +-- Interactive development (coding, debugging, exploration)
 |   |
-|   +-- Light usage (< 2 hrs/day) --> Claude Code Pro ($20/mo)
+|   +-- Light usage (< 2 hrs/day) --> Claude Code Pro ($20/mo or $200/yr ≈ $16.67/mo)
 |   +-- Medium usage (2-6 hrs/day) --> Claude Code Max 5x ($100/mo)
 |   +-- Heavy usage (6+ hrs/day) --> Claude Code Max 20x ($200/mo)
 |
@@ -438,9 +537,9 @@ Good pattern (cache holds):
   Total: $0.725 for 3 turns (2.6x cheaper)
 ```
 
-### 5. Fast Mode Has No Cache Hits
+### 5. Fast Mode + Cache: Stacks but Switching Invalidates
 
-Fast Mode does not support cache hits. Every token is charged at the full 6x rate. This makes long conversations in Fast Mode extraordinarily expensive.
+Prompt-caching multipliers (1.25x 5m write, 2x 1h write, 0.1x hit) DO stack on top of Fast Mode rates. So a Fast Mode cache hit is $30 × 0.1 = $3.00 / MTok of input — still cheaper than uncached Fast Mode input. **However**, Fast and Standard speeds do NOT share cached prefixes. If you toggle between speeds within a session, every switch invalidates the cache and you pay a full cache-write again. Pick a speed and stick with it for the full conversation.
 
 ---
 
@@ -452,7 +551,8 @@ Assumptions: 20 working days/month, 30 turns/day, average 5K input + 2K output t
 
 | Platform | Configuration | Monthly Cost |
 |----------|--------------|:------------:|
-| **Claude Code Pro** | $20/mo subscription | $20 |
+| **Claude Code Pro (annual)** | $200/yr ≈ $16.67/mo | **$17** |
+| **Claude Code Pro (monthly)** | $20/mo subscription | $20 |
 | **Claude Code Max 5x** | $100/mo subscription | $100 |
 | **Anthropic API** | Opus, standard | $360 |
 | **Anthropic API** | Opus, with caching (~70% hit rate) | $144 |
@@ -499,7 +599,7 @@ Here is the concrete recommendation for minimizing Claude costs, ordered by impa
 ### For Interactive Development
 
 1. **Use Claude Code subscriptions** -- the subscription model is almost always cheaper than API rates for interactive work
-2. **Start with Pro ($20/mo)** and upgrade only if you consistently hit limits
+2. **Start with Pro ($20/mo, or $200/yr for 17% off)** and upgrade only if you consistently hit limits
 3. **Use Haiku for routine tasks** -- 5x cheaper than Opus, handles 80% of coding tasks
 4. **Keep sessions short** -- start new sessions rather than letting context grow past 200K
 
@@ -532,13 +632,13 @@ This gives you predictable costs for daily work, the cheapest possible rate for 
 
 ### Claude Code Subscriptions: No PPP Pricing
 
-As of April 2026, Claude Code subscriptions are priced in **USD globally** with no purchasing power parity (PPP) or country-specific pricing. Whether you're in the US, India, Brazil, or Japan, the rates are the same:
+As of 2026-05, Claude Code subscriptions are priced in **USD globally** with no purchasing power parity (PPP) or country-specific pricing. Whether you're in the US, India, Brazil, or Japan, the rates are the same:
 
-| Plan | Price (USD) |
-|------|:-----------:|
-| Pro | $20/mo |
-| Max 5x | $100/mo |
-| Max 20x | $200/mo |
+| Plan | Monthly | Annual (effective monthly) |
+|------|:-------:|:-------------------------:|
+| Pro | $20/mo | $200/yr (~$16.67/mo, 17% off) |
+| Max 5x | $100/mo | -- |
+| Max 20x | $200/mo | -- |
 
 This means the effective cost relative to local purchasing power varies significantly by country. For developers in regions with lower costs of living, the API pay-per-token model with cheaper models (Haiku at $1/$5) may be more cost-effective than a subscription.
 
@@ -561,10 +661,12 @@ Anthropic periodically runs promotional events that double usage limits during o
 ## Key Takeaways
 
 1. **Global endpoints on Bedrock and Vertex AI are the same price as the Anthropic API** -- use them if you need cloud billing integration without paying more
-2. **Regional endpoints cost 10% more everywhere** -- only use them for data residency compliance
+2. **Regional endpoints cost 10% more everywhere** -- only use them for data residency compliance. Scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+.
 3. **The Batch API saves 50%** -- the single biggest discount available, for any workload that can wait
-4. **1M context doubles your input cost on all tokens** -- stay under 200K whenever possible
-5. **Fast Mode is 6x standard pricing** -- almost never worth it for development work
+4. **1M context bills at standard rates on Opus 4.7/4.6 and Sonnet 4.6** -- no long-context premium. (Earlier "2x over 200K" applied to Opus 4.1 and older.) Absolute cost still grows with token count, so trim aggressively anyway.
+5. **Fast Mode is 6x standard pricing** -- supported on Opus 4.7 AND 4.6 (beta). Almost never worth it for development work.
+6. **Pro plan annual saves 17%** -- $200/yr vs $240/yr monthly equivalent, no usage difference.
+7. **Claude Platform on AWS** uses CCU billing at $0.01/CCU but matches per-token rates -- pick it over Bedrock for same-day Anthropic feature parity (no Fast Mode or Batch though).
 6. **Cache hits save 90%** -- structure your prompts to maximize cache reuse
 7. **Claude Code subscriptions beat API rates for interactive development** -- the math almost always works out in favor of a subscription
 8. **The cheapest token is the one you don't send** -- all the strategies in this repo (context optimization, model selection, workflow patterns) compound with platform-level savings

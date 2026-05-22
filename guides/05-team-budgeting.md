@@ -39,7 +39,7 @@ Not every developer uses Claude Code the same way. Set budgets based on role and
 | **Tech Lead** | Architecture, reviews, planning | $70-150/month | Higher Opus 4.7 usage justified for strategic decisions |
 | **DevOps/Platform** | Infrastructure, CI/CD, automation | $30-60/month | Mostly config generation, script writing |
 
-> **Note**: These budgets reflect April 2026 pricing where Opus 4.7 (and legacy 4.6) is significantly cheaper ($5/$25 per MTok) than Opus 4.1 ($15/$75). Budget tiers are lower across the board compared to the old Opus pricing. Opus 4.7's new tokenizer uses up to 35% more tokens for the same text, so budgeting for it slightly higher than you would for 4.6 is wise.
+> **Note**: These budgets reflect 2026-Q2 pricing where Opus 4.7 / 4.6 / 4.5 all share the same $5/$25 per MTok rate, **3x cheaper** than Opus 4.1 at $15/$75. Budget tiers are lower across the board compared to the old Opus pricing. Opus 4.7's new tokenizer uses up to 35% more tokens for the same text, so budgeting for it slightly higher than you would for 4.6 is wise.
 
 ### Setting the Initial Budget
 

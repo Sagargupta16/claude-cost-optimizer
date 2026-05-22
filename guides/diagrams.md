@@ -22,9 +22,11 @@ The current Claude model lineup, their positioning, and cost tiers. Mythos Previ
 flowchart TB
     subgraph GA["Generally Available"]
         direction TB
-        opus7["Opus 4.7 (flagship)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking"]
-        opus6["Opus 4.6 (legacy)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Only model with Fast Mode"]
+        opus7["Opus 4.7 (flagship)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking · Fast Mode (beta)"]
+        opus6["Opus 4.6<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Extended + adaptive · Fast Mode (beta)"]
+        opus45["Opus 4.5<br/>$5 / $25 per 1M<br/>200K context · 64K output<br/>Extended thinking"]
         sonnet["Sonnet 4.6 (safe default)<br/>$3 / $15 per 1M<br/>1M context · 64K output<br/>Extended + adaptive thinking"]
+        sonnet45["Sonnet 4.5<br/>$3 / $15 per 1M<br/>200K context · 64K output<br/>Extended thinking"]
         haiku["Haiku 4.5 (budget)<br/>$1 / $5 per 1M<br/>200K context · 64K output<br/>Extended thinking"]
     end
 
@@ -34,13 +36,13 @@ flowchart TB
     end
 
     classDef flagship fill:#f4d0e0,stroke:#c94a7a,stroke-width:2px,color:#222
-    classDef legacy fill:#f4e0d0,stroke:#c97a4a,color:#222
+    classDef snapshot fill:#f4e0d0,stroke:#c97a4a,color:#222
     classDef default fill:#d0e8f4,stroke:#4a8ac9,stroke-width:2px,color:#222
     classDef budget fill:#d0f4d5,stroke:#4ac96a,color:#222
     classDef preview fill:#e8d0f4,stroke:#7a4ac9,color:#222
 
     class opus7 flagship
-    class opus6 legacy
+    class opus6,opus45,sonnet45 snapshot
     class sonnet default
     class haiku budget
     class mythos preview
@@ -50,10 +52,12 @@ flowchart TB
 
 | Model | Access | Best For | Why Not |
 |-------|--------|----------|---------|
-| Opus 4.7 | GA (Bedrock research preview) | Complex agentic coding, multi-file refactors, long autonomous runs | Overkill for simple edits; new tokenizer uses ~20-35% more tokens |
-| Opus 4.6 | GA | Workloads tuned to old tokenizer, Fast Mode latency-critical paths | Marked legacy; migrate to 4.7 for coding quality |
+| Opus 4.7 | **GA on every platform** (Anthropic API, Claude Platform on AWS, Bedrock, Vertex AI) | Complex agentic coding, multi-file refactors, long autonomous runs | Overkill for simple edits; new tokenizer uses ~20-35% more tokens |
+| Opus 4.6 | GA | Workloads tuned to the older tokenizer; stable snapshot | Choose 4.7 for coding-quality step change unless you have a reason |
+| Opus 4.5 | GA | Pinned snapshots only | 200K context (not 1M); no Fast Mode; migrate up if you can |
 | Sonnet 4.6 | GA | Everyday development (the safe default) | Stretched on complex architecture + long agentic runs |
-| Haiku 4.5 | GA | Formatting, renaming, simple edits, file lookups | Lacks reasoning depth for multi-file work; 200K context (not 1M) |
+| Sonnet 4.5 | GA | Pinned snapshots only | 200K context (not 1M); migrate to 4.6 if you need long context |
+| Haiku 4.5 | GA | Formatting, renaming, simple edits, file lookups | Lacks reasoning depth for multi-file work; 200K context |
 | Mythos Preview | Invite only | Vulnerability discovery, security research (Glasswing partners) | 5x output pricing, not for general use, no self-serve access |
 
 ---
@@ -72,15 +76,15 @@ flowchart TD
     F -- Yes --> G["Use Haiku 4.5<br/>$1 / $5 per 1M"]
     F -- No --> H["Not sure?<br/>Start with Sonnet 4.6"]
 
-    C -. "latency-critical?" .-> C2["Fall back to Opus 4.6<br/>(only model with Fast Mode)"]
+    C -. "latency-critical?" .-> C2["Enable Fast Mode<br/>on Opus 4.7 or 4.6<br/>(6x rate, 2.5x OTPS)"]
 
     classDef flagship fill:#f4d0e0,stroke:#c94a7a,stroke-width:2px,color:#222
-    classDef legacy fill:#f4e0d0,stroke:#c97a4a,color:#222
+    classDef fast fill:#f4e0d0,stroke:#c97a4a,color:#222
     classDef mid fill:#d0e8f4,stroke:#4a8ac9,stroke-width:2px,color:#222
     classDef low fill:#d0f4d5,stroke:#4ac96a,color:#222
 
     class C flagship
-    class C2 legacy
+    class C2 fast
     class E,H mid
     class G low
 ```
@@ -90,7 +94,7 @@ flowchart TD
 | Complexity | Model | Cost (Input/Output per 1M) | Examples |
 |------------|-------|:--------------------------:|----------|
 | High | Opus 4.7 | $5 / $25 | Architecture design, complex debugging, large refactors, long agentic runs |
-| High (Fast Mode) | Opus 4.6 | $30 / $150 | Latency-critical urgent work (6x premium) |
+| High (Fast Mode) | Opus 4.7 / 4.6 | $30 / $150 | Latency-critical urgent work (6x premium, 2.5x output tokens/sec) |
 | Medium | Sonnet 4.6 | $3 / $15 | Feature implementation, code review, test writing |
 | Low | Haiku 4.5 | $1 / $5 | Formatting, renaming, boilerplate, lookups |
 
@@ -223,11 +227,11 @@ flowchart LR
     region -- "Regional endpoint" --> regRegional["× 1.1<br/>(+10%)"]
     region -- "US-only data<br/>residency" --> regData["× 1.1<br/>(+10%)"]
 
-    regGlobal --> fast{"Fast Mode?<br/>(Opus 4.6 only)"}
+    regGlobal --> fast{"Fast Mode?<br/>(Opus 4.7 or 4.6,<br/>beta)"}
     regRegional --> fast
     regData --> fast
 
-    fast -- "Yes" --> fastYes["× 6<br/>(research preview)"]
+    fast -- "Yes" --> fastYes["× 6<br/>(beta, ~2.5x OTPS)"]
     fast -- "No" --> fastNo["× 1.0"]
 
     fastYes --> final["Final $/MTok"]
@@ -254,10 +258,17 @@ flowchart LR
 | Batch + cache read | $5 × 0.5 × 0.1 | $0.25 |
 | Regional endpoint on Bedrock | $5 × 1.1 | $5.50 |
 | Regional + data residency | $5 × 1.1 × 1.1 | $6.05 |
-| Fast Mode (Opus 4.6 only) | $5 × 6 | $30.00 |
+| Fast Mode (Opus 4.7 or 4.6, beta) | $5 × 6 | $30.00 |
 | Fast Mode + cache read | $5 × 6 × 0.1 | $3.00 |
+| Fast Mode + 5m cache write | $5 × 6 × 1.25 | $37.50 |
+| Fast Mode + 1h cache write | $5 × 6 × 2 | $60.00 |
+| Fast Mode + data residency | $5 × 6 × 1.1 | $33.00 |
 
-> **Note**: Fast Mode **cannot** combine with Batch API. All other multipliers can stack.
+> **Notes**:
+> - Fast Mode **cannot** combine with Batch API or Priority Tier.
+> - Switching between Fast and Standard speeds invalidates the prompt cache (different speed prefixes don't share cache).
+> - Cache-write/hit multipliers DO stack on top of Fast Mode rates.
+> - Data residency (`inference_geo: "us"`) only applies to Opus 4.6, Sonnet 4.6, and later models on Anthropic API and Claude Platform on AWS. Earlier models error if the parameter is set.
 
 ---
 
