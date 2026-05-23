@@ -1,0 +1,36 @@
+{
+  "name": "@sagargupta16/claude-rate",
+  "version": "0.1.0",
+  "description": "Rate the cost-efficiency of a Claude / AI setup in a local project directory.",
+  "bin": {
+    "claude-rate": "./bin/claude-rate.js"
+  },
+  "files": [
+    "bin/",
+    "rate.py",
+    "README.md"
+  ],
+  "keywords": [
+    "claude",
+    "claude-code",
+    "anthropic",
+    "ai",
+    "cost",
+    "audit",
+    "rate",
+    "optimization"
+  ],
+  "homepage": "https://github.com/Sagargupta16/claude-cost-optimizer/tree/main/tools/claude-rate",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sagargupta16/claude-cost-optimizer.git",
+    "directory": "tools/claude-rate"
+  },
+  "bugs": {
+    "url": "https://github.com/Sagargupta16/claude-cost-optimizer/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=16"
+  }
+}
