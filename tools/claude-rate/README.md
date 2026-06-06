@@ -51,7 +51,7 @@ No external dependencies. Pure Python 3.10+ stdlib.
 claude-rate -- Claude / AI setup audit
 ============================================================
 Project: /home/sagar/work/my-project
-Verified against Anthropic pricing as of: 2026-05-22
+Verified against Anthropic pricing as of: 2026-06-06
 
   CLAUDE.md                [###############-----]  15/20  3,648 chars primary (near hard limit); 3,648 chars total across 1 file(s)
   .claudeignore            [--------------------]   0/15  not found
@@ -66,6 +66,7 @@ Verified against Anthropic pricing as of: 2026-05-22
 Total: 48/100  (D)
 
 Estimated monthly cost (30 turns/session, 3 sessions/day, 22 days, 70% cache hit)
+  Opus 4.8       $ 2.62/session  ->  $ 172.67/month
   Opus 4.7       $ 2.62/session  ->  $ 172.67/month
   Opus 4.6       $ 1.94/session  ->  $ 127.91/month
   Sonnet 4.6     $ 1.16/session  ->  $  76.74/month
@@ -156,13 +157,13 @@ The deployed web analyzer at [sagargupta16.github.io/claude-cost-optimizer/analy
 
 ## Pricing data
 
-All cost estimates use Anthropic's published rates **verified 2026-05-22**:
+All cost estimates use Anthropic's published rates **verified 2026-06-06**:
 
-- Opus 4.7 / 4.6: $5/$25 per 1M tokens (1M context)
+- Opus 4.8 / 4.7 / 4.6: $5/$25 per 1M tokens (1M context)
 - Sonnet 4.6: $3/$15 per 1M tokens (1M context)
 - Haiku 4.5: $1/$5 per 1M tokens (200K context)
 - Cache hit: 0.1x base input price; 5m write: 1.25x; 1h write: 2x
-- Opus 4.7 cost estimates include the +35% tokenizer overhead
+- Opus 4.8 / 4.7 cost estimates include the +35% tokenizer overhead
 
 Sources:
 - [platform.claude.com/docs/en/about-claude/pricing](https://platform.claude.com/docs/en/about-claude/pricing)

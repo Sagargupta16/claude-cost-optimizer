@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.8.0] - 2026-06-06
+
+### Added
+- **Claude Opus 4.8 support** (`claude-opus-4-8`) across all pricing tables, guides, tools, and the web calculator. Opus 4.8 is Anthropic's new flagship and most capable model at $5/$25 per 1M input/output (same posted price as Opus 4.7 / 4.6). 1M context at standard rates (200K on Microsoft Foundry), 128K max output, adaptive thinking only, `effort` defaults to `high` on all surfaces, knowledge cutoff Jan 2026. Earliest retirement 2027-05-28. Bedrock ID `anthropic.claude-opus-4-8`.
+- **Per-model Fast Mode pricing.** Promoted the single `FAST_MODE_MULTIPLIER` constant to a per-model `fastModeMultiplier` field on `ModelPricing` (site) and per-model entries in the standalone tool tables. Opus 4.8 Fast Mode is **2x** ($10/$50); Opus 4.7 / 4.6 remain **6x** ($30/$150). Opus 4.6 Fast Mode is deprecated as of the 4.8 launch (removed ~30 days later, then falls back to standard speed). Opus 4.8 Fast Mode is Claude API + Managed Agents only.
+- `opus-4-7` model entry in `site/src/utils/pricing.ts` and the standalone tool tables.
+
+### Changed
+- **Default `opus` alias now resolves to Opus 4.8** in the site calculator, MCP cost server, VS Code extension, token-estimator, usage-analyzer, and claude-rate. Opus 4.7 / 4.6 / 4.5 and Sonnet 4.5 are now flagged `legacy`.
+- Renamed the site `ModelId` `opus-legacy` key to `opus-4-6` and added an explicit `opus-4-7` entry; the Fast Mode UI label and savings recommendation are now computed from the per-model multiplier instead of a hardcoded "6x / 83%".
+- Per-model tool-use system-prompt overhead documented in CLAUDE.md (Opus 4.8 = 290/410, Opus 4.7 = 675/804, Opus 4.6 + Sonnet 4.6 = 497/589) -- replaces the stale flat "346 / 313 tokens".
+- Batch API extended-output note added (up to 300K output on Opus 4.8/4.7/4.6 + Sonnet 4.6 via `output-300k-2026-03-24`).
+- Opus 4.1 marked deprecated with a firm 2026-08-05 retirement date (announced 2026-06-05). Migration targets across README + cheatsheet updated to Opus 4.8.
+- All pricing references re-verified against Anthropic docs on 2026-06-06; "verified" dates bumped from 2026-05-22.
+
 ## [1.7.0] - 2026-05-22
 
 ### Added

@@ -8,7 +8,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 // -------------------------------------------------------------------
-// Pricing tables -- April 2026
+// Pricing tables -- verified 2026-06-06
 // -------------------------------------------------------------------
 
 interface ModelPricing {
@@ -18,8 +18,9 @@ interface ModelPricing {
 }
 
 const PRICING: Record<string, ModelPricing> = {
-  // "opus" alias maps to the current flagship (Opus 4.7)
+  // "opus" alias maps to the current flagship (Opus 4.8)
   opus: { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5 },
+  "opus-4.7": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5 },
   "opus-4.6": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5 },
   sonnet: { inputPerMillion: 3, outputPerMillion: 15, cacheHitPerMillion: 0.3 },
   haiku: { inputPerMillion: 1, outputPerMillion: 5, cacheHitPerMillion: 0.1 },
@@ -59,7 +60,7 @@ function estimateCost(args: {
   const model = (args.model ?? "sonnet").toLowerCase();
   const pricing = PRICING[model];
   if (!pricing) {
-    return { error: `Unknown model "${args.model}". Use opus (4.7), opus-4.6, sonnet, or haiku.` };
+    return { error: `Unknown model "${args.model}". Use opus (4.8), opus-4.7, opus-4.6, sonnet, or haiku.` };
   }
 
   const tokens = estimateTokens(args.text);
@@ -107,7 +108,7 @@ function sessionEstimate(args: {
   const model = (args.model ?? "sonnet").toLowerCase();
   const pricing = PRICING[model];
   if (!pricing) {
-    return { error: `Unknown model "${args.model}". Use opus (4.7), opus-4.6, sonnet, or haiku.` };
+    return { error: `Unknown model "${args.model}". Use opus (4.8), opus-4.7, opus-4.6, sonnet, or haiku.` };
   }
 
   const turns = args.turns;

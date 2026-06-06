@@ -1,4 +1,9 @@
-import { type ModelId, MODELS, FAST_MODE_MULTIPLIER, TOKEN_ESTIMATES } from './pricing'
+import { type ModelId, type ModelPricing, MODELS, FAST_MODE_MULTIPLIER, TOKEN_ESTIMATES } from './pricing'
+
+/** Fast Mode premium for a model -- per-model rate, falling back to the global default. */
+function fastModeMultiplier(model: ModelPricing): number {
+  return model.fastModeMultiplier ?? FAST_MODE_MULTIPLIER
+}
 
 export interface CalculatorInputs {
   model: ModelId
@@ -94,13 +99,13 @@ function computeSessionCost(
   let sessionTotal = inputCost + cacheCost + outputCost
 
   if (inputs.fastMode && pricing.fastModeCapable) {
-    sessionTotal *= FAST_MODE_MULTIPLIER
+    sessionTotal *= fastModeMultiplier(pricing)
   }
 
   // Compute breakdown costs proportionally
   const totalAllInput = claudeMdInput + mcpInput + fileReadsInput + historyInput
   const inputPlusCacheCost = inputCost + cacheCost
-  const breakdownMultiplier = inputs.fastMode && pricing.fastModeCapable ? FAST_MODE_MULTIPLIER : 1
+  const breakdownMultiplier = inputs.fastMode && pricing.fastModeCapable ? fastModeMultiplier(pricing) : 1
   const outputCostFinal = outputCost * breakdownMultiplier
 
   const breakdown: CostBreakdown = {
@@ -220,9 +225,11 @@ function generateRecommendations(
   }
 
   if (inputs.fastMode) {
+    const mult = MODELS[inputs.model].fastModeMultiplier ?? FAST_MODE_MULTIPLIER
+    const savePct = Math.round(((mult - 1) / mult) * 100)
     recs.push({
-      text: 'Disable Fast Mode -- saves 83% by removing the 6x multiplier',
-      impact: 83,
+      text: `Disable Fast Mode -- saves ${savePct}% by removing the ${mult}x multiplier`,
+      impact: savePct,
     })
   }
 
@@ -254,16 +261,18 @@ function generateRecommendations(
     })
   }
 
-  if ((inputs.model === 'opus' || inputs.model === 'opus-legacy') && !inputs.fastMode) {
+  const isOpusTier =
+    inputs.model === 'opus' || inputs.model === 'opus-4-7' || inputs.model === 'opus-4-6'
+  if (isOpusTier && !inputs.fastMode) {
     recs.push({
       text: 'Consider Sonnet 4.6 for routine development -- 40% cheaper with similar quality for most tasks',
       impact: 40,
     })
   }
 
-  if (inputs.model === 'opus-legacy') {
+  if (inputs.model === 'opus-4-7' || inputs.model === 'opus-4-6') {
     recs.push({
-      text: 'Opus 4.6 is now legacy per Anthropic. Migrate to Opus 4.7 for improved agentic coding at the same price',
+      text: 'Opus 4.7 and 4.6 are now legacy per Anthropic. Migrate to Opus 4.8 for improved agentic coding at the same price',
       impact: 5,
     })
   }

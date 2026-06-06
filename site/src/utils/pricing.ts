@@ -1,4 +1,4 @@
-// Pricing data verified against Anthropic docs on 2026-05-22:
+// Pricing data verified against Anthropic docs on 2026-06-06:
 //   - https://platform.claude.com/docs/en/about-claude/pricing
 //   - https://platform.claude.com/docs/en/about-claude/models/overview
 //   - https://platform.claude.com/docs/en/build-with-claude/fast-mode
@@ -7,7 +7,8 @@
 
 export type ModelId =
   | 'opus'
-  | 'opus-legacy'
+  | 'opus-4-7'
+  | 'opus-4-6'
   | 'opus-4-5'
   | 'sonnet'
   | 'sonnet-4-5'
@@ -25,6 +26,9 @@ export interface ModelPricing {
   contextWindow: string
   maxOutput: string
   fastModeCapable: boolean
+  // Fast Mode premium relative to standard rates. Opus 4.8 is 2x ($10/$50);
+  // Opus 4.7 / 4.6 are 6x ($30/$150). Undefined when fastModeCapable is false.
+  fastModeMultiplier?: number
   tokenizerOverhead?: number
   notes?: string
   inviteOnly?: boolean
@@ -34,6 +38,27 @@ export interface ModelPricing {
 export const MODELS: Record<ModelId, ModelPricing> = {
   opus: {
     id: 'opus',
+    name: 'Opus 4.8',
+    inputPer1M: 5,
+    outputPer1M: 25,
+    cacheHitPer1M: 0.5,
+    cacheWrite5mPer1M: 6.25,
+    cacheWrite1hPer1M: 10,
+    contextWindow: '1M',
+    maxOutput: '128K',
+    fastModeCapable: true,
+    fastModeMultiplier: 2,
+    tokenizerOverhead: 1.35,
+    lifecycle: 'active',
+    notes:
+      "Anthropic's most capable model. New tokenizer (up to 35% more tokens for the same text). " +
+      'Adaptive thinking only; effort defaults to high on all surfaces. ' +
+      'Fast Mode supported at 2x ($10/$50). 1M context at standard rates. ' +
+      'Knowledge cutoff Jan 2026. Earliest retirement: 2027-05-28. ' +
+      'GA on Anthropic API, Claude Platform on AWS, Bedrock, and Vertex AI (200K context on Microsoft Foundry).',
+  },
+  'opus-4-7': {
+    id: 'opus-4-7',
     name: 'Opus 4.7',
     inputPer1M: 5,
     outputPer1M: 25,
@@ -43,15 +68,16 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     contextWindow: '1M',
     maxOutput: '128K',
     fastModeCapable: true,
+    fastModeMultiplier: 6,
     tokenizerOverhead: 1.35,
-    lifecycle: 'active',
+    lifecycle: 'legacy',
     notes:
-      'New tokenizer (up to 35% more tokens for the same text). ' +
-      'Adaptive thinking with xhigh effort level. Fast Mode supported (6x). ' +
-      'GA on Anthropic API, Claude Platform on AWS, Bedrock, and Vertex AI.',
+      'Previous-generation flagship. New tokenizer (up to 35% more tokens for the same text). ' +
+      'Adaptive thinking only with xhigh effort level. Fast Mode supported (6x = $30/$150). ' +
+      'Earliest retirement: 2027-04-16. Migrate to Opus 4.8 for the same price.',
   },
-  'opus-legacy': {
-    id: 'opus-legacy',
+  'opus-4-6': {
+    id: 'opus-4-6',
     name: 'Opus 4.6',
     inputPer1M: 5,
     outputPer1M: 25,
@@ -61,11 +87,12 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     contextWindow: '1M',
     maxOutput: '128K',
     fastModeCapable: true,
-    lifecycle: 'active',
+    fastModeMultiplier: 6,
+    lifecycle: 'legacy',
     notes:
-      'Active. Extended + adaptive thinking. Fast Mode supported (6x). ' +
-      'Earliest retirement: 2027-02-05. Pick over 4.7 only if you have prompts ' +
-      'tuned to the older tokenizer or need a stable snapshot.',
+      'Legacy. Extended + adaptive thinking. Fast Mode (6x) deprecated as of the Opus 4.8 ' +
+      'launch and removed ~30 days later (then falls back to standard speed). ' +
+      'Earliest retirement: 2027-02-05. Migrate to Opus 4.8.',
   },
   'opus-4-5': {
     id: 'opus-4-5',
@@ -78,10 +105,10 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     contextWindow: '200K',
     maxOutput: '64K',
     fastModeCapable: false,
-    lifecycle: 'active',
+    lifecycle: 'legacy',
     notes:
-      'Active. Extended thinking. No Fast Mode. 200K context (not 1M). ' +
-      'Earliest retirement: 2026-11-24. Migrate to Opus 4.6 or 4.7 unless you have a workload pinned to this snapshot.',
+      'Legacy. Extended thinking. No Fast Mode. 200K context (not 1M). ' +
+      'Earliest retirement: 2026-11-24. Migrate to Opus 4.8 unless you have a workload pinned to this snapshot.',
   },
   sonnet: {
     id: 'sonnet',
@@ -110,9 +137,9 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     contextWindow: '200K',
     maxOutput: '64K',
     fastModeCapable: false,
-    lifecycle: 'active',
+    lifecycle: 'legacy',
     notes:
-      'Active. Extended thinking. 200K context. Earliest retirement: 2026-09-29. ' +
+      'Legacy. Extended thinking. 200K context. Earliest retirement: 2026-09-29. ' +
       'Migrate to Sonnet 4.6 for the 1M-context window unless your workload is pinned.',
   },
   haiku: {
@@ -150,6 +177,9 @@ export const MODELS: Record<ModelId, ModelPricing> = {
   },
 }
 
+// Default Fast Mode premium for models without an explicit fastModeMultiplier.
+// Prefer ModelPricing.fastModeMultiplier: Opus 4.8 is 2x ($10/$50), while
+// Opus 4.7 / 4.6 are 6x ($30/$150).
 export const FAST_MODE_MULTIPLIER = 6
 export const FAST_MODE_OTPS_GAIN = 2.5 // up to 2.5x output tokens per second
 export const BATCH_DISCOUNT = 0.5

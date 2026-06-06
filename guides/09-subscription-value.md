@@ -31,9 +31,9 @@ Claude Code offers three subscription tiers. These are for interactive use of Cl
 
 | Plan | Monthly Price | Annual Price (effective monthly) | Usage Relative to Pro | Per-Day Equivalent | Models Included |
 |------|:------------:|:--------------------------------:|:---------------------:|:------------------:|:---------------:|
-| **Pro** | $20/mo | **$200/yr (~$16.67/mo, 17% off)** | 1x (baseline) | ~$0.67/day (annual) | Opus 4.7, Sonnet 4.6, Haiku 4.5 |
-| **Max 5x** | $100/mo | (no annual rate currently published) | 5x Pro usage | ~$3.33/day | Opus 4.7, Sonnet 4.6, Haiku 4.5 |
-| **Max 20x** | $200/mo | (no annual rate currently published) | 20x Pro usage | ~$6.67/day | Opus 4.7, Sonnet 4.6, Haiku 4.5 |
+| **Pro** | $20/mo | **$200/yr (~$16.67/mo, 17% off)** | 1x (baseline) | ~$0.67/day (annual) | Opus 4.8, Sonnet 4.6, Haiku 4.5 |
+| **Max 5x** | $100/mo | (no annual rate currently published) | 5x Pro usage | ~$3.33/day | Opus 4.8, Sonnet 4.6, Haiku 4.5 |
+| **Max 20x** | $200/mo | (no annual rate currently published) | 20x Pro usage | ~$6.67/day | Opus 4.8, Sonnet 4.6, Haiku 4.5 |
 
 > **Annual Pro saves $40/year (17%)** -- $200 up front vs $240 paid monthly. If you'll use Claude Code for more than ~10 months in a year, annual is the cheaper choice.
 
@@ -42,7 +42,7 @@ Claude Code offers three subscription tiers. These are for interactive use of Cl
 - CLI access (Claude Code terminal interface)
 - Desktop app access (macOS, Windows, Linux)
 - Mobile app access (iOS, Android)
-- Access to all current model tiers (Opus 4.7/4.6, Sonnet 4.6, Haiku 4.5)
+- Access to all current model tiers (Opus 4.8/4.7/4.6, Sonnet 4.6, Haiku 4.5)
 - Automatic prompt caching
 - All Claude Code features (tool use, file editing, subagents, MCP servers, plugins, agent skills)
 
@@ -50,7 +50,7 @@ Claude Code offers three subscription tiers. These are for interactive use of Cl
 
 - Anthropic API access (separate billing, pay-per-token)
 - Batch API (50% discount, API-only)
-- Fast Mode (Opus 4.7 / 4.6, 6x pricing, API beta only)
+- Fast Mode (Opus 4.8 / 4.7 / 4.6, beta; Opus 4.8 = 2x pricing, 4.7 / 4.6 = 6x; API only)
 - Server-side tools billed separately (web search $10/1k, code execution $0.05/hour beyond 1,550 free hours)
 - Claude Managed Agents session runtime ($0.08/session-hour, API-only)
 - Provisioned throughput or committed-use discounts (Bedrock/Vertex only)
@@ -91,7 +91,7 @@ Not all tokens are equal when it comes to your plan allowance. More capable mode
 |-------|:-----------------------:|-----------------|
 | **Haiku 4.5** | Lowest | Stretches your plan the furthest |
 | **Sonnet 4.6** | Medium | Good balance of capability and allowance efficiency |
-| **Opus 4.7** | Highest | Burns through allowance fastest (new tokenizer ~35% more tokens than 4.6 for same text) |
+| **Opus 4.8** | Highest | Burns through allowance fastest (new tokenizer ~35% more tokens than 4.6 for same text) |
 
 > **Key insight**: A Pro plan user who defaults to Haiku for routine tasks and only switches to Opus for complex work can get significantly more done than one who runs Opus for everything. This is the single highest-leverage optimization for subscription plans.
 
@@ -352,7 +352,7 @@ The Batch API offers 50% off standard rates for non-time-sensitive workloads. Th
 
 | Model | Standard API | Batch API | Savings |
 |-------|:-----------:|:---------:|:-------:|
-| Opus 4.7 / 4.6 (output) | $25.00/MTok | $12.50/MTok | 50% |
+| Opus 4.8 / 4.7 / 4.6 (output) | $25.00/MTok | $12.50/MTok | 50% |
 | Sonnet 4.6 (output) | $15.00/MTok | $7.50/MTok | 50% |
 | Haiku 4.5 (output) | $5.00/MTok | $2.50/MTok | 50% |
 
