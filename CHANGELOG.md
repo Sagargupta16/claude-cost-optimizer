@@ -14,6 +14,11 @@
 - Batch API extended-output note added (up to 300K output on Opus 4.8/4.7/4.6 + Sonnet 4.6 via `output-300k-2026-03-24`).
 - Opus 4.1 marked deprecated with a firm 2026-08-05 retirement date (announced 2026-06-05). Migration targets across README + cheatsheet updated to Opus 4.8.
 - All pricing references re-verified against Anthropic docs on 2026-06-06; "verified" dates bumped from 2026-05-22.
+- **Reconciled plugin-identity versions to 1.8.0.** `.claude-plugin/plugin.json`, `.claude-plugin/marketplace.json`, and `plugins/cost-mode/.codex-plugin/plugin.json` were stuck at 1.5.0 while the changelog had advanced to 1.7.0 -- bumped all three to match this release.
+
+### Security
+- **Updated `react-router-dom` to 7.17.0** in `site/` (was resolving to 7.14.0), clearing 3 Dependabot alerts: turbo-stream deserialization RCE (high), `__manifest` DoS (high), and protocol-relative open redirect (moderate).
+- **Updated transitive `hono` to 4.12.23 and `qs` to 6.15.2** in `tools/mcp-cost-server/` (via `pnpm update`, both within existing semver ranges), clearing 5 Dependabot alerts: Set-Cookie injection, mount-prefix routing, IPv6 deny-rule bypass, JWT scheme acceptance (all moderate), and `qs.stringify` DoS (moderate). `npm audit` and `pnpm audit` both report 0 vulnerabilities.
 
 ## [1.7.0] - 2026-05-22
 
