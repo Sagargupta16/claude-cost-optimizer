@@ -167,7 +167,10 @@ function Calculator() {
                 onChange={(e) => updateField('fastMode', e.target.checked)}
                 className={styles.checkbox}
               />
-              <span>Fast Mode (6x cost -- Opus 4.6 research preview only)</span>
+              <span>
+                Fast Mode ({MODELS[inputs.model].fastModeMultiplier ?? 6}x cost --{' '}
+                {MODELS[inputs.model].name} research preview)
+              </span>
             </label>
           )}
         </div>

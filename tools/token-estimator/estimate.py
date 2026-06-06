@@ -27,8 +27,8 @@ except ImportError:
     sys.exit(1)
 
 
-# Claude model pricing per 1M tokens (as of April 2026)
-# NOTE: 1M context on Opus 4.7/4.6/Sonnet 4.6 is now billed at standard rates
+# Claude model pricing per 1M tokens (verified 2026-06-06)
+# NOTE: 1M context on Opus 4.8/4.7/4.6/Sonnet 4.6 is billed at standard rates
 # (no long-context premium). The old "2x over 200K" pricing only applied to
 # Opus 4.1 and older.
 MODEL_PRICING = {
@@ -36,8 +36,14 @@ MODEL_PRICING = {
         "input": 5.00,
         "output": 25.00,
         "cache_hit": 0.50,
-        "name": "Opus 4.7",
-        "note": "New tokenizer may use up to 35% more tokens than Opus 4.6.",
+        "name": "Opus 4.8",
+        "note": "Current flagship. New tokenizer may use up to 35% more tokens than Opus 4.6.",
+    },
+    "opus_4_7": {
+        "input": 5.00,
+        "output": 25.00,
+        "cache_hit": 0.50,
+        "name": "Opus 4.7 (legacy)",
     },
     "opus_4_6": {
         "input": 5.00,
@@ -48,11 +54,18 @@ MODEL_PRICING = {
     "sonnet": {"input": 3.00, "output": 15.00, "cache_hit": 0.30, "name": "Sonnet 4.6"},
     "haiku": {"input": 1.00, "output": 5.00, "cache_hit": 0.10, "name": "Haiku 4.5"},
     "fast_mode": {
+        "input": 10.00,
+        "output": 50.00,
+        "cache_hit": None,
+        "name": "Opus 4.8 (Fast Mode)",
+        "note": "Research preview. 2x standard Opus rates ($10/$50). Opus 4.8 on the Claude API only. Not available with Batch API.",
+    },
+    "fast_mode_legacy": {
         "input": 30.00,
         "output": 150.00,
         "cache_hit": None,
-        "name": "Opus 4.6 (Fast Mode)",
-        "note": "Research preview. 6x standard Opus rates. Opus 4.6 only. Not available with Batch API.",
+        "name": "Opus 4.7/4.6 (Fast Mode)",
+        "note": "Research preview. 6x standard Opus rates ($30/$150). Opus 4.6 Fast Mode deprecated as of the 4.8 launch.",
     },
     "mythos": {
         "input": 25.00,
@@ -275,8 +288,9 @@ def main():
         default=None,
         help=(
             "Show cost for a specific model only (default: show all). "
-            "Use 'opus_4_6' for legacy Opus 4.6 pricing. "
-            "Use 'fast_mode' for Fast Mode pricing (Opus 4.6, 6x rates)."
+            "Use 'opus_4_7' or 'opus_4_6' for legacy Opus pricing. "
+            "Use 'fast_mode' for Opus 4.8 Fast Mode (2x rates) or "
+            "'fast_mode_legacy' for Opus 4.7/4.6 Fast Mode (6x rates)."
         ),
     )
     parser.add_argument(

@@ -34,7 +34,7 @@ Output:
   --------------------------------------------------
   Model          Input Cost    $/1M tokens
   ..............  ............  ..............
-  Opus 4.7         $0.0062           $5.00
+  Opus 4.8         $0.0062           $5.00
   Sonnet 4.6       $0.0037           $3.00
   Haiku 4.5        $0.0012           $1.00
 ```
@@ -57,7 +57,7 @@ Output includes a projection table:
 
   Model          Total Cost     Per Turn
   ..............  ............  ............
-  Opus 4.7         $0.2225       $0.0045
+  Opus 4.8         $0.2225       $0.0045
   Sonnet 4.6       $0.1335       $0.0027
   Haiku 4.5        $0.0445       $0.0009
 ```
@@ -88,16 +88,16 @@ python tools/token-estimator/estimate.py CLAUDE.md --per-turn 50 --json
 |------|-------------|---------|
 | `source` | File path to analyze, or `-` for stdin | `estimate.py CLAUDE.md` |
 | `--per-turn N` | Project cost over N conversation turns | `--per-turn 50` |
-| `--model MODEL` | Show cost for one model: `opus` (4.7), `opus_4_6`, `sonnet`, `haiku`, `fast_mode`, `mythos` | `--model haiku` |
+| `--model MODEL` | Show cost for one model: `opus` (4.8), `opus_4_6`, `sonnet`, `haiku`, `fast_mode`, `mythos` | `--model haiku` |
 | `--json` | Output results as JSON | `--json` |
 
 ## Pricing
 
-The estimator uses current Claude API pricing (as of April 2026):
+The estimator uses current Claude API pricing (as of 2026-06-06):
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
 |-------|:---------------------:|:----------------------:|:-------------------------:|
-| Opus 4.7 (alias: `opus`) | $5.00 | $25.00 | $0.50 |
+| Opus 4.8 (alias: `opus`) | $5.00 | $25.00 | $0.50 |
 | Opus 4.6 (alias: `opus_4_6`) | $5.00 | $25.00 | $0.50 |
 | Sonnet 4.6 | $3.00 | $15.00 | $0.30 |
 | Haiku 4.5 | $1.00 | $5.00 | $0.10 |
@@ -116,4 +116,4 @@ Batch API pricing is 50% off the standard rates above (does not apply to Mythos 
 
 ## Accuracy Note
 
-This tool uses OpenAI's `cl100k_base` tokenizer as an approximation. Claude uses a different tokenizer internally, so counts may differ by 5-15%. For cost planning purposes, this is accurate enough to make informed decisions.
+This tool uses OpenAI's `cl100k_base` tokenizer as an approximation. Claude uses a different tokenizer internally, so counts may differ. Note that the newer tokenizer (Opus 4.7 and later, including Opus 4.8, plus Sonnet 4.6) may use up to 35% more tokens for the same text, so treat these estimates as a lower bound for those models. For cost planning purposes, this is accurate enough to make informed decisions.

@@ -6,7 +6,7 @@ Mermaid flowcharts for key cost optimization decisions. These render natively on
 
 ## Table of Contents
 
-- [Claude Model Family (April 2026)](#claude-model-family-april-2026)
+- [Claude Model Family (June 2026)](#claude-model-family-june-2026)
 - [Model Selection Decision Tree](#model-selection-decision-tree)
 - [Session Cost Optimization Flowchart](#session-cost-optimization-flowchart)
 - [Cost Tier Strategy Map](#cost-tier-strategy-map)
@@ -14,7 +14,7 @@ Mermaid flowcharts for key cost optimization decisions. These render natively on
 
 ---
 
-## Claude Model Family (April 2026)
+## Claude Model Family (June 2026)
 
 The current Claude model lineup, their positioning, and cost tiers. Mythos Preview is an invitation-only research model for defensive cybersecurity under [Project Glasswing](https://anthropic.com/glasswing) — not for general development.
 
@@ -22,7 +22,8 @@ The current Claude model lineup, their positioning, and cost tiers. Mythos Previ
 flowchart TB
     subgraph GA["Generally Available"]
         direction TB
-        opus7["Opus 4.7 (flagship)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking · Fast Mode (beta)"]
+        opus8["Opus 4.8 (flagship)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking · Fast Mode (beta)"]
+        opus7["Opus 4.7<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking · Fast Mode (beta)"]
         opus6["Opus 4.6<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Extended + adaptive · Fast Mode (beta)"]
         opus45["Opus 4.5<br/>$5 / $25 per 1M<br/>200K context · 64K output<br/>Extended thinking"]
         sonnet["Sonnet 4.6 (safe default)<br/>$3 / $15 per 1M<br/>1M context · 64K output<br/>Extended + adaptive thinking"]
@@ -41,8 +42,8 @@ flowchart TB
     classDef budget fill:#d0f4d5,stroke:#4ac96a,color:#222
     classDef preview fill:#e8d0f4,stroke:#7a4ac9,color:#222
 
-    class opus7 flagship
-    class opus6,opus45,sonnet45 snapshot
+    class opus8 flagship
+    class opus7,opus6,opus45,sonnet45 snapshot
     class sonnet default
     class haiku budget
     class mythos preview
@@ -52,8 +53,9 @@ flowchart TB
 
 | Model | Access | Best For | Why Not |
 |-------|--------|----------|---------|
-| Opus 4.7 | **GA on every platform** (Anthropic API, Claude Platform on AWS, Bedrock, Vertex AI) | Complex agentic coding, multi-file refactors, long autonomous runs | Overkill for simple edits; new tokenizer uses ~20-35% more tokens |
-| Opus 4.6 | GA | Workloads tuned to the older tokenizer; stable snapshot | Choose 4.7 for coding-quality step change unless you have a reason |
+| Opus 4.8 | **GA on every platform** (Anthropic API, Claude Platform on AWS, Bedrock, Vertex AI) | Complex agentic coding, multi-file refactors, long autonomous runs | Overkill for simple edits; new tokenizer uses ~20-35% more tokens |
+| Opus 4.7 | GA (previous flagship) | Pinned snapshots tuned to 4.7; stable | Choose 4.8 for the coding-quality step change unless you have a reason |
+| Opus 4.6 | GA | Workloads tuned to the older tokenizer; stable snapshot | Choose 4.8 for coding-quality step change unless you have a reason |
 | Opus 4.5 | GA | Pinned snapshots only | 200K context (not 1M); no Fast Mode; migrate up if you can |
 | Sonnet 4.6 | GA | Everyday development (the safe default) | Stretched on complex architecture + long agentic runs |
 | Sonnet 4.5 | GA | Pinned snapshots only | 200K context (not 1M); migrate to 4.6 if you need long context |
@@ -69,14 +71,14 @@ Use this to pick the right model before starting a task. Starting with Sonnet is
 ```mermaid
 flowchart TD
     A[Start: evaluate task] --> B{"Complex architecture,<br/>long agentic run, or<br/>multi-file refactor?"}
-    B -- Yes --> C["Use Opus 4.7<br/>$5 / $25 per 1M"]
+    B -- Yes --> C["Use Opus 4.8<br/>$5 / $25 per 1M"]
     B -- No --> D{"Standard feature work,<br/>code review, or<br/>writing tests?"}
     D -- Yes --> E["Use Sonnet 4.6<br/>$3 / $15 per 1M"]
     D -- No --> F{"Simple fix, formatting,<br/>boilerplate, or<br/>file lookup?"}
     F -- Yes --> G["Use Haiku 4.5<br/>$1 / $5 per 1M"]
     F -- No --> H["Not sure?<br/>Start with Sonnet 4.6"]
 
-    C -. "latency-critical?" .-> C2["Enable Fast Mode<br/>on Opus 4.7 or 4.6<br/>(6x rate, 2.5x OTPS)"]
+    C -. "latency-critical?" .-> C2["Enable Fast Mode<br/>on Opus 4.8 (2x rate)<br/>or 4.7 (6x rate), 2.5x OTPS"]
 
     classDef flagship fill:#f4d0e0,stroke:#c94a7a,stroke-width:2px,color:#222
     classDef fast fill:#f4e0d0,stroke:#c97a4a,color:#222
@@ -93,7 +95,8 @@ flowchart TD
 
 | Complexity | Model | Cost (Input/Output per 1M) | Examples |
 |------------|-------|:--------------------------:|----------|
-| High | Opus 4.7 | $5 / $25 | Architecture design, complex debugging, large refactors, long agentic runs |
+| High | Opus 4.8 | $5 / $25 | Architecture design, complex debugging, large refactors, long agentic runs |
+| High (Fast Mode) | Opus 4.8 | $10 / $50 | Latency-critical urgent work (2x premium, 2.5x output tokens/sec) |
 | High (Fast Mode) | Opus 4.7 / 4.6 | $30 / $150 | Latency-critical urgent work (6x premium, 2.5x output tokens/sec) |
 | Medium | Sonnet 4.6 | $3 / $15 | Feature implementation, code review, test writing |
 | Low | Haiku 4.5 | $1 / $5 | Formatting, renaming, boilerplate, lookups |
@@ -205,7 +208,7 @@ How the various multipliers combine on top of the base $/MTok rate. Each modifie
 
 ```mermaid
 flowchart LR
-    base["Base rate<br/>Opus 4.7 $5 / $25"] --> cache{"Cache hit<br/>or write?"}
+    base["Base rate<br/>Opus 4.8 $5 / $25"] --> cache{"Cache hit<br/>or write?"}
 
     cache -- "Cache read hit" --> cacheRead["× 0.1<br/>(90% off input)"]
     cache -- "5-min write" --> write5m["× 1.25"]
@@ -227,14 +230,16 @@ flowchart LR
     region -- "Regional endpoint" --> regRegional["× 1.1<br/>(+10%)"]
     region -- "US-only data<br/>residency" --> regData["× 1.1<br/>(+10%)"]
 
-    regGlobal --> fast{"Fast Mode?<br/>(Opus 4.7 or 4.6,<br/>beta)"}
+    regGlobal --> fast{"Fast Mode?<br/>(Opus 4.8, 4.7, or 4.6,<br/>beta)"}
     regRegional --> fast
     regData --> fast
 
-    fast -- "Yes" --> fastYes["× 6<br/>(beta, ~2.5x OTPS)"]
+    fast -- "Yes (Opus 4.8)" --> fastYes8["× 2<br/>(beta, ~2.5x OTPS)"]
+    fast -- "Yes (Opus 4.7 / 4.6)" --> fastYes["× 6<br/>(beta, ~2.5x OTPS)"]
     fast -- "No" --> fastNo["× 1.0"]
 
-    fastYes --> final["Final $/MTok"]
+    fastYes8 --> final["Final $/MTok"]
+    fastYes --> final
     fastNo --> final
 
     classDef discount fill:#d0f4d5,stroke:#4ac96a,color:#222
@@ -244,11 +249,11 @@ flowchart LR
 
     class cacheRead,batchYes discount
     class write5m,write1h,regRegional,regData premium
-    class fastYes expensive
+    class fastYes8,fastYes expensive
     class final result
 ```
 
-### Stacking Examples (Opus 4.7 input at $5/MTok base)
+### Stacking Examples (Opus 4.8 input at $5/MTok base)
 
 | Scenario | Calculation | Effective rate |
 |----------|-------------|---------------:|
@@ -258,11 +263,12 @@ flowchart LR
 | Batch + cache read | $5 × 0.5 × 0.1 | $0.25 |
 | Regional endpoint on Bedrock | $5 × 1.1 | $5.50 |
 | Regional + data residency | $5 × 1.1 × 1.1 | $6.05 |
+| Fast Mode (Opus 4.8, beta) | $5 × 2 | $10.00 |
 | Fast Mode (Opus 4.7 or 4.6, beta) | $5 × 6 | $30.00 |
-| Fast Mode + cache read | $5 × 6 × 0.1 | $3.00 |
-| Fast Mode + 5m cache write | $5 × 6 × 1.25 | $37.50 |
-| Fast Mode + 1h cache write | $5 × 6 × 2 | $60.00 |
-| Fast Mode + data residency | $5 × 6 × 1.1 | $33.00 |
+| Fast Mode + cache read (Opus 4.8) | $5 × 2 × 0.1 | $1.00 |
+| Fast Mode + 5m cache write (Opus 4.8) | $5 × 2 × 1.25 | $12.50 |
+| Fast Mode + 1h cache write (Opus 4.8) | $5 × 2 × 2 | $20.00 |
+| Fast Mode + data residency (Opus 4.8) | $5 × 2 × 1.1 | $11.00 |
 
 > **Notes**:
 > - Fast Mode **cannot** combine with Batch API or Priority Tier.

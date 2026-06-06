@@ -1,17 +1,18 @@
 # Model Comparison Benchmarks
 
-> Opus 4.7 vs Sonnet 4.6 vs Haiku 4.5 across five common task types. Find the best cost-to-quality ratio for each kind of work.
+> Opus 4.8 vs Sonnet 4.6 vs Haiku 4.5 across five common task types. Find the best cost-to-quality ratio for each kind of work.
 
 ## Pricing Reference
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Relative Cost |
 |-------|:---------------------:|:----------------------:|:-------------:|
-| Opus 4.7 (current) | $5.00 | $25.00 | 1x (baseline) |
+| Opus 4.8 (current) | $5.00 | $25.00 | 1x (baseline) |
+| Opus 4.7 (legacy) | $5.00 | $25.00 | 1x (baseline) |
 | Opus 4.6 (legacy) | $5.00 | $25.00 | 1x (baseline) |
 | Sonnet 4.6 | $3.00 | $15.00 | ~1.7x cheaper |
 | Haiku 4.5 | $1.00 | $5.00 | 5x cheaper |
 
-> **Historical note**: The numbers in the task-type sections below were measured on Opus 4.6. On Opus 4.7, expect ~20-35% higher token counts for identical prompts (new tokenizer), which translates to 20-35% higher absolute costs for the same task. Quality is generally better on 4.7 — Anthropic reports a step-change improvement in agentic coding. Fresh benchmark runs with 4.7 are welcome contributions.
+> **Historical note**: The numbers in the task-type sections below were measured on Opus 4.6. On Opus 4.8 (and 4.7), expect ~20-35% higher token counts for identical prompts (new tokenizer, Opus 4.7 and later), which translates to 20-35% higher absolute costs for the same task. Quality is generally better on 4.8 — Anthropic reports a step-change improvement in agentic coding. Fresh benchmark runs with 4.8 are welcome contributions.
 
 ## How to Read This
 
@@ -50,7 +51,7 @@ All three models handle mechanical refactoring equally well. Token counts are ne
 |---------|----------------|
 | **Best Value** | Haiku 4.5 — 5x cheaper than Opus, identical quality |
 | **Best Quality** | Tie — all models score 5/5 |
-| **Avoid** | Opus 4.7 — paying $0.22 for a task Haiku does for $0.05 is wasteful |
+| **Avoid** | Opus 4.8 — paying $0.22 for a task Haiku does for $0.05 is wasteful |
 
 > **Rule of thumb**: If a task can be described as "find X, replace with Y" or "apply this mechanical change," Haiku is always the right choice.
 
@@ -80,7 +81,7 @@ This task involves moderate complexity — TypeScript generics, multiple interac
 | | Recommendation |
 |---------|----------------|
 | **Best Value** | Sonnet 4.6 — 1.7x cheaper than Opus, nearly equal quality (4/5), one minor fix |
-| **Best Quality** | Opus 4.7 — perfect output, zero iterations needed |
+| **Best Quality** | Opus 4.8 — perfect output, zero iterations needed |
 | **Avoid** | Haiku 4.5 for complex components — follow-up turns erode cost savings and quality suffers |
 
 > **Rule of thumb**: For components with complex types, state logic, or multiple interaction patterns, Sonnet is the sweet spot. Use Opus when the cost of getting it wrong (rework time) exceeds the $0.23 premium.
@@ -111,7 +112,7 @@ Bug investigation is where model intelligence matters most. The task requires re
 | | Recommendation |
 |---------|----------------|
 | **Best Value** | Sonnet 4.6 — finds the primary issue quickly, reasonable cost, acceptable that it needs a nudge for the secondary issue |
-| **Best Quality** | Opus 4.7 — finds both causes in a single investigation pass |
+| **Best Quality** | Opus 4.8 — finds both causes in a single investigation pass |
 | **Avoid** | Haiku 4.5 for debugging — low accuracy means more developer time spent steering, which defeats the purpose |
 
 > **Rule of thumb**: For bug investigation, model intelligence directly translates to fewer turns and better hypotheses. Opus pays for itself if the bug is complex. Sonnet is good for straightforward bugs. Haiku is only suitable for "the error message tells you exactly what's wrong" situations.
@@ -142,7 +143,7 @@ Architecture planning requires the model to reason about system design, anticipa
 | | Recommendation |
 |---------|----------------|
 | **Best Value** | Sonnet 4.6 — covers 90% of what Opus produces at 57% of the cost |
-| **Best Quality** | Opus 4.7 — the plan is production-ready without modification |
+| **Best Quality** | Opus 4.8 — the plan is production-ready without modification |
 | **Avoid** | Haiku 4.5 — output requires so much developer augmentation that it saves neither time nor money |
 
 > **Rule of thumb**: For architecture and design tasks, Opus produces plans you can hand directly to a developer (or to Claude for implementation). Sonnet produces good first drafts that need minor refinement. Haiku produces outlines, not plans.
@@ -183,7 +184,7 @@ Architecture planning requires the model to reason about system design, anticipa
 | | Recommendation |
 |---------|----------------|
 | **Best Value** | Sonnet 4.6 — catches the high-impact issues at 56% of Opus's cost |
-| **Best Quality** | Opus 4.7 — catches subtle correctness issues that could become production bugs |
+| **Best Quality** | Opus 4.8 — catches subtle correctness issues that could become production bugs |
 | **Avoid** | Haiku 4.5 for security/correctness review — missing critical issues makes it counterproductive |
 
 > **Rule of thumb**: Use Opus for code reviews involving security, caching, concurrency, or financial logic. Use Sonnet for general code review. Haiku can review formatting and style compliance, but not logic.
@@ -192,7 +193,7 @@ Architecture planning requires the model to reason about system design, anticipa
 
 ## Summary: Model Selection Matrix
 
-| Task Type | Haiku 4.5 | Sonnet 4.6 | Opus 4.7 | Recommendation |
+| Task Type | Haiku 4.5 | Sonnet 4.6 | Opus 4.8 | Recommendation |
 |-----------|:---------:|:--------:|:------:|----------------|
 | Formatting / renaming | 5/5 — $0.05 | 5/5 — $0.13 | 5/5 — $0.22 | **Use Haiku** |
 | Component creation | 3/5 — $0.14 | 4/5 — $0.33 | 5/5 — $0.56 | **Use Sonnet** (Opus for complex types) |
@@ -223,14 +224,14 @@ Is the task mechanical (rename, format, simple find-and-replace)?
 ├── Yes → Use Haiku 4.5
 └── No
     ├── Does the task involve security, financial logic, or complex architecture?
-    │   ├── Yes → Use Opus 4.7
+    │   ├── Yes → Use Opus 4.8
     │   └── No
     │       ├── Is the task straightforward with clear requirements?
     │       │   ├── Yes → Use Haiku 4.5
     │       │   └── No → Use Sonnet 4.6
     │       └── Are you on a tight budget?
     │           ├── Yes → Use Sonnet 4.6 (with plan mode to reduce iterations)
-    │           └── No → Use Opus 4.7 (now only ~1.7x more than Sonnet)
+    │           └── No → Use Opus 4.8 (now only ~1.7x more than Sonnet)
 ```
 
 ### Practical Model Switching

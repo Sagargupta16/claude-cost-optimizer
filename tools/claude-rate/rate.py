@@ -22,7 +22,7 @@ Usage:
 
 No external dependencies. Pure Python 3.10+ stdlib.
 
-Pricing data verified 2026-05-22 against:
+Pricing data verified 2026-06-06 against:
     https://platform.claude.com/docs/en/about-claude/pricing
     https://platform.claude.com/docs/en/about-claude/models/overview
 """
@@ -41,8 +41,20 @@ from typing import Any
 
 # -- Pricing data (mirrors site/src/utils/pricing.ts) ------------------------
 
-# Active models priced as of 2026-05-22. Prices are USD per 1M tokens.
+# Active models priced as of 2026-06-06. Prices are USD per 1M tokens.
 MODELS: dict[str, dict[str, Any]] = {
+    "opus-4-8": {
+        "name": "Opus 4.8",
+        "input": 5.00,
+        "output": 25.00,
+        "cache_hit": 0.50,
+        "cache_5m_write": 6.25,
+        "cache_1h_write": 10.00,
+        "context_window": 1_000_000,
+        "tokenizer_overhead": 1.35,
+        "fast_mode": True,
+        "lifecycle": "active",
+    },
     "opus-4-7": {
         "name": "Opus 4.7",
         "input": 5.00,
@@ -53,7 +65,7 @@ MODELS: dict[str, dict[str, Any]] = {
         "context_window": 1_000_000,
         "tokenizer_overhead": 1.35,
         "fast_mode": True,
-        "lifecycle": "active",
+        "lifecycle": "legacy",
     },
     "opus-4-6": {
         "name": "Opus 4.6",
@@ -65,7 +77,7 @@ MODELS: dict[str, dict[str, Any]] = {
         "context_window": 1_000_000,
         "tokenizer_overhead": 1.0,
         "fast_mode": True,
-        "lifecycle": "active",
+        "lifecycle": "legacy",
     },
     "sonnet-4-6": {
         "name": "Sonnet 4.6",
@@ -974,7 +986,7 @@ def rate(project: Path) -> RateResult:
 # -- Output formatters -------------------------------------------------------
 
 _BAR_WIDTH = 20
-_PRICING_VERIFIED_DATE = "2026-05-22"
+_PRICING_VERIFIED_DATE = "2026-06-06"
 
 
 def _ratio_color(ratio: float) -> str:

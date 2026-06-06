@@ -16,9 +16,10 @@ export interface CostBreakdown {
   model: string;
 }
 
-/** Per-1M-token pricing as of April 2026. */
+/** Per-1M-token pricing verified 2026-06-06. */
 export const PRICING: Record<string, { input: number; output: number }> = {
   opus: { input: 5, output: 25 },
+  "opus-4.7": { input: 5, output: 25 },
   "opus-4.6": { input: 5, output: 25 },
   sonnet: { input: 3, output: 15 },
   haiku: { input: 1, output: 5 },
@@ -26,7 +27,8 @@ export const PRICING: Record<string, { input: number; output: number }> = {
 
 /** Friendly display names for each model tier. */
 export const MODEL_LABELS: Record<string, string> = {
-  opus: "Opus 4.7",
+  opus: "Opus 4.8",
+  "opus-4.7": "Opus 4.7 (legacy)",
   "opus-4.6": "Opus 4.6 (legacy)",
   sonnet: "Sonnet 4.6",
   haiku: "Haiku 4.5",
