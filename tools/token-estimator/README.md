@@ -88,22 +88,23 @@ python tools/token-estimator/estimate.py CLAUDE.md --per-turn 50 --json
 |------|-------------|---------|
 | `source` | File path to analyze, or `-` for stdin | `estimate.py CLAUDE.md` |
 | `--per-turn N` | Project cost over N conversation turns | `--per-turn 50` |
-| `--model MODEL` | Show cost for one model: `opus` (4.8), `opus_4_6`, `sonnet`, `haiku`, `fast_mode`, `mythos` | `--model haiku` |
+| `--model MODEL` | Show cost for one model: `fable` (Fable 5), `opus` (4.8), `opus_4_6`, `sonnet`, `haiku`, `fast_mode`, `mythos` (Mythos 5) | `--model haiku` |
 | `--json` | Output results as JSON | `--json` |
 
 ## Pricing
 
-The estimator uses current Claude API pricing (as of 2026-06-06):
+The estimator uses current Claude API pricing (as of 2026-06-12):
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
 |-------|:---------------------:|:----------------------:|:-------------------------:|
+| Fable 5 (alias: `fable`) | $10.00 | $50.00 | $1.00 |
+| Mythos 5 (alias: `mythos`, Glasswing only) | $10.00 | $50.00 | $1.00 |
 | Opus 4.8 (alias: `opus`) | $5.00 | $25.00 | $0.50 |
 | Opus 4.6 (alias: `opus_4_6`) | $5.00 | $25.00 | $0.50 |
 | Sonnet 4.6 | $3.00 | $15.00 | $0.30 |
 | Haiku 4.5 | $1.00 | $5.00 | $0.10 |
-| Mythos Preview (invite-only, Glasswing) | $25.00 | $125.00 | $2.50 |
 
-Batch API pricing is 50% off the standard rates above (does not apply to Mythos Preview).
+Batch API pricing is 50% off the standard rates above (Fable 5 batch: $5/$25).
 
 ## Tips
 

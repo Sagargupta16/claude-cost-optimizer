@@ -16,8 +16,9 @@ export interface CostBreakdown {
   model: string;
 }
 
-/** Per-1M-token pricing verified 2026-06-06. */
+/** Per-1M-token pricing verified 2026-06-12. */
 export const PRICING: Record<string, { input: number; output: number }> = {
+  fable: { input: 10, output: 50 },
   opus: { input: 5, output: 25 },
   "opus-4.7": { input: 5, output: 25 },
   "opus-4.6": { input: 5, output: 25 },
@@ -27,6 +28,7 @@ export const PRICING: Record<string, { input: number; output: number }> = {
 
 /** Friendly display names for each model tier. */
 export const MODEL_LABELS: Record<string, string> = {
+  fable: "Fable 5",
   opus: "Opus 4.8",
   "opus-4.7": "Opus 4.7 (legacy)",
   "opus-4.6": "Opus 4.6 (legacy)",

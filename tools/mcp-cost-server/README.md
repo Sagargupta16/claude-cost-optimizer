@@ -94,10 +94,11 @@ Returns cost for each model, identifies the cheapest option, and shows the perce
 
 ## Pricing Reference
 
-All estimates use June 2026 API pricing (verified 2026-06-06, per 1M tokens):
+All estimates use June 2026 API pricing (verified 2026-06-12, per 1M tokens):
 
 | Model | Input | Output | Cache Hit |
 |-------|-------|--------|-----------|
+| Fable 5 (alias: `fable`) | $10.00 | $50.00 | $1.00 |
 | Opus 4.8 (alias: `opus`) | $5.00 | $25.00 | $0.50 |
 | Opus 4.7 (alias: `opus-4.7`) | $5.00 | $25.00 | $0.50 |
 | Opus 4.6 (alias: `opus-4.6`) | $5.00 | $25.00 | $0.50 |

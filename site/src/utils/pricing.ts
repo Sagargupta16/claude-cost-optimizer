@@ -1,11 +1,13 @@
-// Pricing data verified against Anthropic docs on 2026-06-06:
+// Pricing data verified against Anthropic docs on 2026-06-12:
 //   - https://platform.claude.com/docs/en/about-claude/pricing
 //   - https://platform.claude.com/docs/en/about-claude/models/overview
+//   - https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5
 //   - https://platform.claude.com/docs/en/build-with-claude/fast-mode
 //   - https://platform.claude.com/docs/en/about-claude/model-deprecations
 //   - https://claude.com/pricing
 
 export type ModelId =
+  | 'fable-5'
   | 'opus'
   | 'opus-4-7'
   | 'opus-4-6'
@@ -13,6 +15,7 @@ export type ModelId =
   | 'sonnet'
   | 'sonnet-4-5'
   | 'haiku'
+  | 'mythos-5'
   | 'mythos'
 
 export interface ModelPricing {
@@ -36,6 +39,28 @@ export interface ModelPricing {
 }
 
 export const MODELS: Record<ModelId, ModelPricing> = {
+  'fable-5': {
+    id: 'fable-5',
+    name: 'Fable 5',
+    inputPer1M: 10,
+    outputPer1M: 50,
+    cacheHitPer1M: 1,
+    cacheWrite5mPer1M: 12.5,
+    cacheWrite1hPer1M: 20,
+    contextWindow: '1M',
+    maxOutput: '128K',
+    fastModeCapable: false,
+    // Docs: same tokenizer as Opus 4.7, "roughly 30% more tokens" vs pre-4.7 models.
+    tokenizerOverhead: 1.3,
+    lifecycle: 'active',
+    notes:
+      "Anthropic's most capable widely released model (Mythos-class tier, GA 2026-06-09). " +
+      '2x Opus 4.8 pricing. Adaptive thinking always on; control depth with effort. ' +
+      'Safety classifiers can refuse requests (stop_reason "refusal"; pre-output refusals are free, ' +
+      'beta fallbacks param + fallback credit cover retries). No Fast Mode; Batch supported ($5/$25). ' +
+      'Requires 30-day data retention. 1M context at standard rates. ' +
+      'GA on Claude API, Claude Platform on AWS, Bedrock, Vertex AI, and Microsoft Foundry.',
+  },
   opus: {
     id: 'opus',
     name: 'Opus 4.8',
@@ -51,7 +76,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     tokenizerOverhead: 1.35,
     lifecycle: 'active',
     notes:
-      "Anthropic's most capable model. New tokenizer (up to 35% more tokens for the same text). " +
+      'Opus-tier flagship (Fable 5 sits above it at 2x). New tokenizer (up to 35% more tokens for the same text). ' +
       'Adaptive thinking only; effort defaults to high on all surfaces. ' +
       'Fast Mode supported at 2x ($10/$50). 1M context at standard rates. ' +
       'Knowledge cutoff Jan 2026. Earliest retirement: 2027-05-28. ' +
@@ -158,6 +183,25 @@ export const MODELS: Record<ModelId, ModelPricing> = {
       'Extended thinking. No adaptive thinking. Fastest latency. ' +
       'Earliest retirement: 2026-10-15.',
   },
+  'mythos-5': {
+    id: 'mythos-5',
+    name: 'Mythos 5',
+    inputPer1M: 10,
+    outputPer1M: 50,
+    cacheHitPer1M: 1,
+    cacheWrite5mPer1M: 12.5,
+    cacheWrite1hPer1M: 20,
+    contextWindow: '1M',
+    maxOutput: '128K',
+    fastModeCapable: false,
+    tokenizerOverhead: 1.3,
+    inviteOnly: true,
+    lifecycle: 'active',
+    notes:
+      "Fable 5's capabilities without the safety classifiers. Same specs and pricing. " +
+      'Limited availability to approved Project Glasswing customers only. ' +
+      'Successor to Mythos Preview.',
+  },
   mythos: {
     id: 'mythos',
     name: 'Mythos Preview',
@@ -170,10 +214,10 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     maxOutput: 'n/a',
     fastModeCapable: false,
     inviteOnly: true,
+    lifecycle: 'legacy',
     notes:
-      'Invitation-only via Project Glasswing. Defensive cybersecurity research only. ' +
-      'Not for general development. Access limited to Glasswing partners (AWS, Apple, ' +
-      'Cisco, CrowdStrike, Google, JPMorganChase, Microsoft, NVIDIA, Palo Alto Networks, etc.).',
+      'Superseded by Mythos 5 -- retires 2026-06-30. Was the invitation-only ' +
+      'defensive-cybersecurity research preview under Project Glasswing.',
   },
 }
 

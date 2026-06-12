@@ -54,6 +54,7 @@ When spawning subagents or the user asks for a task, suggest the cheapest viable
 | Single file: tests, docs, types, simple fixes | "Haiku handles this well: `/model haiku`" |
 | Multi-file feature work, debugging, code review | "Sonnet is sufficient: `/model sonnet`" |
 | Architecture, complex refactors, security audits | Opus (no suggestion needed, already justified) |
+| Routine work while on Fable 5 ($10/$50, 2x Opus) | "Opus 4.8 covers this at half the rate: `/model opus`" |
 
 Only suggest model changes when it would save meaningful cost. Don't suggest on every turn.
 

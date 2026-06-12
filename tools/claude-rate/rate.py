@@ -22,7 +22,7 @@ Usage:
 
 No external dependencies. Pure Python 3.10+ stdlib.
 
-Pricing data verified 2026-06-06 against:
+Pricing data verified 2026-06-12 against:
     https://platform.claude.com/docs/en/about-claude/pricing
     https://platform.claude.com/docs/en/about-claude/models/overview
 """
@@ -41,8 +41,20 @@ from typing import Any
 
 # -- Pricing data (mirrors site/src/utils/pricing.ts) ------------------------
 
-# Active models priced as of 2026-06-06. Prices are USD per 1M tokens.
+# Active models priced as of 2026-06-12. Prices are USD per 1M tokens.
 MODELS: dict[str, dict[str, Any]] = {
+    "fable-5": {
+        "name": "Fable 5",
+        "input": 10.00,
+        "output": 50.00,
+        "cache_hit": 1.00,
+        "cache_5m_write": 12.50,
+        "cache_1h_write": 20.00,
+        "context_window": 1_000_000,
+        "tokenizer_overhead": 1.3,
+        "fast_mode": False,
+        "lifecycle": "active",
+    },
     "opus-4-8": {
         "name": "Opus 4.8",
         "input": 5.00,
@@ -986,7 +998,7 @@ def rate(project: Path) -> RateResult:
 # -- Output formatters -------------------------------------------------------
 
 _BAR_WIDTH = 20
-_PRICING_VERIFIED_DATE = "2026-06-06"
+_PRICING_VERIFIED_DATE = "2026-06-12"
 
 
 def _ratio_color(ratio: float) -> str:

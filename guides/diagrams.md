@@ -16,13 +16,14 @@ Mermaid flowcharts for key cost optimization decisions. These render natively on
 
 ## Claude Model Family (June 2026)
 
-The current Claude model lineup, their positioning, and cost tiers. Mythos Preview is an invitation-only research model for defensive cybersecurity under [Project Glasswing](https://anthropic.com/glasswing) — not for general development.
+The current Claude model lineup, their positioning, and cost tiers. Mythos 5 is the limited-availability sibling of Fable 5 under [Project Glasswing](https://anthropic.com/glasswing) — same specs and price, no safety classifiers.
 
 ```mermaid
 flowchart TB
     subgraph GA["Generally Available"]
         direction TB
-        opus8["Opus 4.8 (flagship)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking · Fast Mode (beta)"]
+        fable5["Fable 5 (most capable)<br/>$10 / $50 per 1M<br/>1M context · 128K output<br/>Always-on adaptive thinking · No Fast Mode"]
+        opus8["Opus 4.8 (Opus flagship)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking · Fast Mode (beta)"]
         opus7["Opus 4.7<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking · Fast Mode (beta)"]
         opus6["Opus 4.6<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Extended + adaptive · Fast Mode (beta)"]
         opus45["Opus 4.5<br/>$5 / $25 per 1M<br/>200K context · 64K output<br/>Extended thinking"]
@@ -31,9 +32,10 @@ flowchart TB
         haiku["Haiku 4.5 (budget)<br/>$1 / $5 per 1M<br/>200K context · 64K output<br/>Extended thinking"]
     end
 
-    subgraph RP["Research Preview (invite-only)"]
+    subgraph RP["Limited Availability (Project Glasswing)"]
         direction TB
-        mythos["Mythos Preview<br/>$25 / $125 per 1M<br/>Project Glasswing<br/>Defensive security only"]
+        mythos5["Mythos 5<br/>$10 / $50 per 1M<br/>Fable 5 without safety classifiers<br/>Approved Glasswing customers only"]
+        mythos["Mythos Preview<br/>$25 / $125 per 1M<br/>Retires 2026-06-30<br/>Migrate to Mythos 5"]
     end
 
     classDef flagship fill:#f4d0e0,stroke:#c94a7a,stroke-width:2px,color:#222
@@ -42,17 +44,18 @@ flowchart TB
     classDef budget fill:#d0f4d5,stroke:#4ac96a,color:#222
     classDef preview fill:#e8d0f4,stroke:#7a4ac9,color:#222
 
-    class opus8 flagship
+    class fable5,opus8 flagship
     class opus7,opus6,opus45,sonnet45 snapshot
     class sonnet default
     class haiku budget
-    class mythos preview
+    class mythos5,mythos preview
 ```
 
 ### Model Positioning
 
 | Model | Access | Best For | Why Not |
 |-------|--------|----------|---------|
+| Fable 5 | **GA on every platform** (Anthropic API, Claude Platform on AWS, Bedrock, Vertex AI, Microsoft Foundry) | The hardest reasoning and longest agentic runs; Mythos-class capability | 2x Opus pricing; always-on thinking; safety classifiers can refuse; no Fast Mode |
 | Opus 4.8 | **GA on every platform** (Anthropic API, Claude Platform on AWS, Bedrock, Vertex AI) | Complex agentic coding, multi-file refactors, long autonomous runs | Overkill for simple edits; new tokenizer uses ~20-35% more tokens |
 | Opus 4.7 | GA (previous flagship) | Pinned snapshots tuned to 4.7; stable | Choose 4.8 for the coding-quality step change unless you have a reason |
 | Opus 4.6 | GA | Workloads tuned to the older tokenizer; stable snapshot | Choose 4.8 for coding-quality step change unless you have a reason |
@@ -60,7 +63,8 @@ flowchart TB
 | Sonnet 4.6 | GA | Everyday development (the safe default) | Stretched on complex architecture + long agentic runs |
 | Sonnet 4.5 | GA | Pinned snapshots only | 200K context (not 1M); migrate to 4.6 if you need long context |
 | Haiku 4.5 | GA | Formatting, renaming, simple edits, file lookups | Lacks reasoning depth for multi-file work; 200K context |
-| Mythos Preview | Invite only | Vulnerability discovery, security research (Glasswing partners) | 5x output pricing, not for general use, no self-serve access |
+| Mythos 5 | Glasswing only | Fable 5's capabilities without safety classifiers (approved customers) | No self-serve access; use Fable 5 instead |
+| Mythos Preview | Retires 2026-06-30 | (superseded by Mythos 5) | 5x output pricing; migrate before retirement |
 
 ---
 
@@ -95,6 +99,7 @@ flowchart TD
 
 | Complexity | Model | Cost (Input/Output per 1M) | Examples |
 |------------|-------|:--------------------------:|----------|
+| Maximum | Fable 5 | $10 / $50 | Hardest reasoning, longest autonomous agentic runs, Mythos-class workloads |
 | High | Opus 4.8 | $5 / $25 | Architecture design, complex debugging, large refactors, long agentic runs |
 | High (Fast Mode) | Opus 4.8 | $10 / $50 | Latency-critical urgent work (2x premium, 2.5x output tokens/sec) |
 | High (Fast Mode) | Opus 4.7 / 4.6 | $30 / $150 | Latency-critical urgent work (6x premium, 2.5x output tokens/sec) |

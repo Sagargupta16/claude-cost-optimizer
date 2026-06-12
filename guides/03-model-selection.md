@@ -2,7 +2,7 @@
 
 > **The single highest-impact optimization.** Choosing the right model per task can reduce your Claude Code bill by 30-60% with zero loss in output quality.
 
-Most developers default to the most capable model for everything. This is like hiring a senior architect to change a lightbulb. Claude Opus 4.8 is extraordinary — but for renaming a variable, it is a $25/M-output-token lightbulb-changer. With Opus 4.8's new tokenizer using up to 35% more tokens for the same text, the effective cost penalty for over-using it is even higher than posted pricing suggests.
+Most developers default to the most capable model for everything. This is like hiring a senior architect to change a lightbulb. Claude Fable 5 is extraordinary — but for renaming a variable, it is a $50/M-output-token lightbulb-changer (and Opus 4.8 a $25 one). With the 4.7-generation tokenizer using up to 35% more tokens for the same text, the effective cost penalty for over-using top-tier models is even higher than posted pricing suggests.
 
 ---
 
@@ -22,11 +22,12 @@ Most developers default to the most capable model for everything. This is like h
 
 ## Model Lineup and Pricing
 
-### Current Pricing (verified 2026-06-06, per 1M tokens)
+### Current Pricing (verified 2026-06-12, per 1M tokens)
 
 | Model | Input Cost | Output Cost | Cache Hit | 5m Cache Write | 1h Cache Write | Relative Cost | Context Window | Max Output |
 |-------|:----------:|:-----------:|:---------:|:--------------:|:--------------:|:-------------:|:--------------:|:----------:|
-| **Opus 4.8** (current) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1x (baseline) | 1M | 128K |
+| **Fable 5** (most capable) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 2x baseline | 1M | 128K |
+| **Opus 4.8** (Opus flagship) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1x (baseline) | 1M | 128K |
 | **Opus 4.7** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1x (baseline) | 1M | 128K |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1x (baseline) | 1M | 128K |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1x (baseline) | 200K | 64K |
@@ -35,6 +36,8 @@ Most developers default to the most capable model for everything. This is like h
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | ~1.67x cheaper | 200K | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 5x cheaper | 200K | 64K |
 
+> **Fable 5** (GA 2026-06-09): Anthropic's most capable widely released model -- a new Mythos-class tier **above** Opus at **$10/$50, 2x Opus 4.8**. 1M context at standard rates, 128K max output, always-on adaptive thinking (control depth with `effort`), Batch supported ($5/$25), no Fast Mode, 30-day data retention required. Safety classifiers can decline a request (HTTP 200 + `stop_reason: "refusal"`; pre-output refusals are free; beta `fallbacks` retries another model server-side). **Cost guidance**: reach for Fable 5 only when the task genuinely needs frontier-plus capability -- the hardest reasoning, the longest autonomous runs. For everything else Opus 4.8 at half the price is the efficient frontier. **Mythos 5** is the same model minus the classifiers, limited to approved [Project Glasswing](https://anthropic.com/glasswing) customers.
+>
 > **Two things to know about Opus 4.8**:
 > 1. **Same pricing as Opus 4.7 / 4.6 / 4.5** ($5/$25) — no price premium for the upgrade.
 > 2. **New tokenizer** (Opus 4.7 and later) uses up to **35% more tokens** for the same text. So the *effective* cost is higher than the posted rates. A task that cost $1.00 on Opus 4.6 may cost $1.10-$1.35 on Opus 4.8 for the same prompt and output.
@@ -49,7 +52,7 @@ Most developers default to the most capable model for everything. This is like h
 >
 > **Opus 4.1**: Still available at older pricing ($15/$75) — **3x more expensive** than current Opus tiers. Deprecated 2026-06-05, retires 2026-08-05. No reason to use it unless you have a specific compatibility need — migrate to 4.8.
 
-> **Claude Mythos Preview** ([Project Glasswing](https://anthropic.com/glasswing)): A separate research-preview model for **defensive cybersecurity workflows only** (vulnerability discovery, binary analysis, penetration testing). Post-preview pricing is **$25 / $125 per MTok** — 5x Opus 4.8's output rate. **Access is invitation-only** through Glasswing partners (AWS, Apple, Cisco, CrowdStrike, Google, JPMorganChase, Microsoft, NVIDIA, Palo Alto Networks, etc.) and 40+ critical-infrastructure organizations. Not available for general development work. If you're not in the program, ignore it — the posted pricing exists for completeness but no self-serve API access is offered. Mythos posts significantly higher scores on security-specific benchmarks (CyberGym 83.1% vs 4.6's 66.6%, SWE-bench Pro 77.8% vs 53.4%) but won't be generally released — Anthropic plans to fold safer Mythos-class capabilities into future Opus versions.
+> **Claude Mythos Preview** ([Project Glasswing](https://anthropic.com/glasswing)): superseded by Mythos 5 -- **retires 2026-06-30**. It was the invitation-only research preview ($25/$125) for defensive cybersecurity through Glasswing partners. Its successor Mythos 5 drops to $10/$50 (same as Fable 5) and remains Glasswing-only; the prediction that Mythos-class capabilities would reach a widely released model came true as **Fable 5**, which is GA for everyone.
 
 ### What These Numbers Mean in Practice
 
@@ -208,14 +211,16 @@ Reserve Opus for tasks where deep reasoning, multi-file coordination, or archite
 - **Opus 4.6** uses **extended thinking** — you can configure a reasoning token budget.
 - If you have prompts or harnesses tuned against extended thinking's explicit budget knobs, they won't carry over to 4.8.
 
-**Benchmarks published by Anthropic for Opus 4.6** (the numbers are even higher for Mythos Preview — included below for reference):
+**Benchmarks published by Anthropic for Opus 4.6** (the numbers were even higher for Mythos Preview, the tier that Fable 5 / Mythos 5 now succeed — included below for reference):
 
-| Benchmark | Opus 4.6 | Mythos Preview (invite-only) |
+| Benchmark | Opus 4.6 | Mythos Preview (retired tier) |
 |-----------|:--------:|:----------------------------:|
 | SWE-bench Verified | 80.8% | 93.9% |
 | SWE-bench Pro | 53.4% | 77.8% |
 | Terminal-Bench 2.0 | 65.4% | 82.0% |
 | CyberGym (vuln reproduction) | 66.6% | 83.1% |
+
+> Mythos-class capability is now generally available as **Fable 5** ($10/$50). Anthropic has not published a per-benchmark scorecard for Fable 5 on these exact suites at the time of writing -- when official numbers land, this table should be extended.
 
 | Task | Example | Why Opus Is Worth It |
 |------|---------|----------------------|
@@ -509,6 +514,13 @@ OPUS 4.8 ($5/$25 per 1M tokens, +~35% tokenizer overhead)
 ├── Migration planning
 ├── System integration design
 └── Legacy code comprehension
+
+FABLE 5 ($10/$50 per 1M tokens -- 2x Opus, most capable widely released model)
+├── The absolute hardest reasoning problems Opus 4.8 can't crack
+├── The longest autonomous agentic runs (single turns can run many minutes)
+├── Mythos-class capability without a Glasswing invitation
+└── Note: always-on thinking, no Fast Mode, safety classifiers may refuse
+    (pre-output refusals are free; use the beta fallbacks param to retry)
 
 OPUS 4.7 ($5/$25 per 1M tokens -- previous-generation, also supports Fast Mode 6x)
 └── Only if you have prompts pinned to that snapshot or already tuned against it

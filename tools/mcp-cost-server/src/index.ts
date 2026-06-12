@@ -8,7 +8,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 // -------------------------------------------------------------------
-// Pricing tables -- verified 2026-06-06
+// Pricing tables -- verified 2026-06-12
 // -------------------------------------------------------------------
 
 interface ModelPricing {
@@ -18,7 +18,9 @@ interface ModelPricing {
 }
 
 const PRICING: Record<string, ModelPricing> = {
-  // "opus" alias maps to the current flagship (Opus 4.8)
+  // "fable" = Fable 5, the most capable widely released model (2x Opus rates)
+  fable: { inputPerMillion: 10, outputPerMillion: 50, cacheHitPerMillion: 1 },
+  // "opus" alias maps to the Opus-tier flagship (Opus 4.8)
   opus: { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5 },
   "opus-4.7": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5 },
   "opus-4.6": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5 },
@@ -60,7 +62,7 @@ function estimateCost(args: {
   const model = (args.model ?? "sonnet").toLowerCase();
   const pricing = PRICING[model];
   if (!pricing) {
-    return { error: `Unknown model "${args.model}". Use opus (4.8), opus-4.7, opus-4.6, sonnet, or haiku.` };
+    return { error: `Unknown model "${args.model}". Use fable (Fable 5), opus (4.8), opus-4.7, opus-4.6, sonnet, or haiku.` };
   }
 
   const tokens = estimateTokens(args.text);
@@ -108,7 +110,7 @@ function sessionEstimate(args: {
   const model = (args.model ?? "sonnet").toLowerCase();
   const pricing = PRICING[model];
   if (!pricing) {
-    return { error: `Unknown model "${args.model}". Use opus (4.8), opus-4.7, opus-4.6, sonnet, or haiku.` };
+    return { error: `Unknown model "${args.model}". Use fable (Fable 5), opus (4.8), opus-4.7, opus-4.6, sonnet, or haiku.` };
   }
 
   const turns = args.turns;
@@ -160,6 +162,11 @@ function sessionEstimate(args: {
   if (turns > 20) {
     recommendations.push(
       "Sessions over 20 turns accumulate significant history cost. Consider starting a fresh session for new tasks."
+    );
+  }
+  if (model === "fable") {
+    recommendations.push(
+      "Fable 5 costs 2x Opus 4.8 ($10/$50 vs $5/$25). Reserve it for the hardest reasoning; route routine work to Opus or Sonnet."
     );
   }
   if (model === "opus") {
@@ -265,7 +272,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           },
           model: {
             type: "string",
-            enum: ["opus", "sonnet", "haiku"],
+            enum: ["fable", "opus", "sonnet", "haiku"],
             description: "Claude model (default: sonnet)",
           },
           turns: {
@@ -290,7 +297,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           },
           model: {
             type: "string",
-            enum: ["opus", "sonnet", "haiku"],
+            enum: ["fable", "opus", "sonnet", "haiku"],
             description: "Claude model (default: sonnet)",
           },
           claude_md_lines: {
@@ -308,7 +315,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: "compare_models",
       description:
-        "Compare cost across Opus, Sonnet, and Haiku for a given token count. Shows which model is cheapest and savings percentages.",
+        "Compare cost across Fable 5, Opus, Sonnet, and Haiku for a given token count. Shows which model is cheapest and savings percentages.",
       inputSchema: {
         type: "object" as const,
         properties: {

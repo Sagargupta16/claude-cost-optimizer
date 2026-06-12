@@ -21,11 +21,13 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Claude model pricing per 1M tokens (verified 2026-06-06)
-# "opus" = current flagship Opus 4.8; "opus-4.7"/"opus-4.6" = legacy.
-# Opus 4.8/4.7/4.6 share the same posted rate but the 4.7+ tokenizer
-# consumes up to ~35% more tokens for the same source text.
+# Claude model pricing per 1M tokens (verified 2026-06-12)
+# "fable" = Fable 5 (most capable, 2x Opus); "opus" = Opus-tier flagship 4.8;
+# "opus-4.7"/"opus-4.6" = legacy. Opus 4.8/4.7/4.6 share the same posted rate
+# but the 4.7+ tokenizer (also used by Fable 5) consumes up to ~35% more
+# tokens for the same source text.
 MODEL_PRICING = {
+    "fable": {"input": 10.00, "output": 50.00, "cache_hit": 1.00},
     "opus": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     "opus-4.7": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     "opus-4.6": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
@@ -91,6 +93,12 @@ def calculate_cost(
 def detect_model(text: str) -> str:
     """Attempt to detect the model name from text content."""
     text_lower = text.lower()
+    if "fable" in text_lower or "mythos" in text_lower:
+        return "fable"
+    if "opus-4-7" in text_lower or "opus-4.7" in text_lower:
+        return "opus-4.7"
+    if "opus-4-6" in text_lower or "opus-4.6" in text_lower:
+        return "opus-4.6"
     if "opus" in text_lower:
         return "opus"
     if "haiku" in text_lower:
@@ -295,7 +303,18 @@ def identify_hotspots(sessions: list[dict]) -> list[str]:
             )
 
     # Check for expensive model usage on many turns
-    opus_sessions = [s for s in sessions if s["model"] == "opus"]
+    fable_sessions = [s for s in sessions if s["model"] == "fable"]
+    if fable_sessions:
+        fable_turns = sum(s["turns"] for s in fable_sessions)
+        total_turns = sum(s["turns"] for s in sessions)
+        if total_turns > 0 and fable_turns / total_turns > 0.3:
+            hotspots.append(
+                f"Fable 5 ($10/$50, 2x Opus) is used for {fable_turns}/{total_turns} "
+                f"({fable_turns * 100 // total_turns}%) of turns. "
+                f"Reserve it for the hardest tasks; Opus 4.8 costs half as much."
+            )
+
+    opus_sessions = [s for s in sessions if s["model"].startswith("opus")]
     if opus_sessions:
         opus_turns = sum(s["turns"] for s in opus_sessions)
         total_turns = sum(s["turns"] for s in sessions)
@@ -339,7 +358,13 @@ def generate_recommendations(sessions: list[dict]) -> list[str]:
 
     # Model-specific recommendations
     models_used = set(s["model"] for s in sessions)
-    if models_used == {"opus"}:
+    if models_used == {"fable"}:
+        recommendations.append(
+            "You're using Fable 5 exclusively ($10/$50 -- 2x Opus 4.8). Route "
+            "standard work to Opus 4.8 or Sonnet 4.6 and keep Fable 5 for the "
+            "hardest reasoning to cut those turns by 50-90%."
+        )
+    elif models_used == {"opus"}:
         recommendations.append(
             "You're using Opus exclusively. Consider Sonnet for standard coding "
             "tasks and Haiku for simple lookups to save 40-80% on those turns."
