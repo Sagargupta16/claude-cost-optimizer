@@ -23,11 +23,12 @@
 
 Every interaction with Claude Code consumes tokens. Tokens are the fundamental billing unit — roughly 1 token per 4 characters of English text, or about 0.75 words per token. Code tends to be slightly less dense: a typical line of code is around 8-12 tokens.
 
-### Current Model Pricing (verified 2026-06-06)
+### Current Model Pricing (verified 2026-06-12)
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M) | 5m Cache Write | 1h Cache Write | Context Window | Max Output |
 |-------|:---------------------:|:----------------------:|:---------------------:|:--------------:|:--------------:|:--------------:|:----------:|
-| **Opus 4.8** (current) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
+| **Fable 5** (most capable) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
+| **Opus 4.8** (Opus flagship) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.7** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K |
@@ -38,7 +39,9 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 | **Opus 4.8 (Fast Mode)** | $10.00 (2x) | $50.00 (2x) | N/A | -- | -- | 1M (included) | 128K |
 | **Opus 4.7 / 4.6 (Fast Mode)** | $30.00 (6x) | $150.00 (6x) | N/A | -- | -- | 1M (included) | 128K |
 
-> **1M context at standard rates**: Opus 4.8, Opus 4.7, Opus 4.6, and Sonnet 4.6 bill the full 1M window at the standard per-token rate -- no long-context premium. (The earlier "2x over 200K" pricing applied to Opus 4.1 and older. Note that Opus 4.5 and Sonnet 4.5 are 200K-only.)
+> **Fable 5** (GA 2026-06-09): Anthropic's new Mythos-class tier above Opus at **2x Opus 4.8's rates** ($10/$50). Always-on adaptive thinking, no Fast Mode, Batch supported ($5/$25), 30-day data retention required. Safety classifiers can refuse a request (`stop_reason: "refusal"`) -- pre-output refusals are not billed. From a cost standpoint, treat Fable 5 as a deliberate splurge for the hardest tasks, not a default.
+>
+> **1M context at standard rates**: Fable 5, Opus 4.8, Opus 4.7, Opus 4.6, and Sonnet 4.6 bill the full 1M window at the standard per-token rate -- no long-context premium. (The earlier "2x over 200K" pricing applied to Opus 4.1 and older. Note that Opus 4.5 and Sonnet 4.5 are 200K-only.)
 >
 > **New tokenizer caveat**: Opus 4.7 and later (including Opus 4.8) use a new tokenizer that may use up to **35% more tokens** for the same source text. Posted pricing is unchanged ($5/$25), but effective per-task cost is 20-35% higher than it would have been on Opus 4.6.
 >
@@ -56,6 +59,7 @@ To build intuition, here is what $1.00 buys you with each model:
 
 | Model | $1 of Input Tokens | $1 of Output Tokens | $1 of Cached Input |
 |-------|:-------------------:|:--------------------:|:------------------:|
+| **Fable 5** | ~100,000 tokens (~255 pages) | ~20,000 tokens (~51 pages) | ~1,000,000 tokens (~2,550 pages) |
 | **Opus 4.8 / 4.7 / 4.6** | ~200,000 tokens (~510 pages) | ~40,000 tokens (~102 pages) | ~2,000,000 tokens (~5,100 pages) |
 | **Sonnet 4.6** | ~333,300 tokens (~850 pages) | ~66,700 tokens (~170 pages) | ~3,333,300 tokens (~8,500 pages) |
 | **Haiku 4.5** | ~1,000,000 tokens (~2,560 pages) | ~200,000 tokens (~510 pages) | ~10,000,000 tokens (~25,600 pages) |
@@ -66,12 +70,14 @@ To build intuition, here is what $1.00 buys you with each model:
 
 ### Model Cost Comparisons
 
-Relative to Opus 4.8 (the current flagship; Opus 4.7 / 4.6 / 4.5 share the same base rate):
+Relative to Opus 4.8 (the Opus-tier flagship; Opus 4.7 / 4.6 / 4.5 share the same base rate). Fable 5 sits above the whole ladder at 2x Opus:
 
 | Comparison | Input Savings | Output Savings |
 |------------|:------------:|:--------------:|
+| Opus 4.8 vs Fable 5 | **2x cheaper** | **2x cheaper** |
 | Sonnet 4.6 vs Opus 4.8 | **1.67x cheaper** | **1.67x cheaper** |
 | Haiku 4.5 vs Opus 4.8 | **5x cheaper** | **5x cheaper** |
+| Haiku 4.5 vs Fable 5 | **10x cheaper** | **10x cheaper** |
 | Haiku 4.5 vs Sonnet 4.6 | **3x cheaper** | **3x cheaper** |
 
 Switching from Opus to Haiku for a task that costs $1.00 on Opus would cost approximately $0.20 on Haiku. The same task on Sonnet would cost about $0.60.
@@ -80,10 +86,11 @@ Switching from Opus to Haiku for a task that costs $1.00 on Opus would cost appr
 
 ### Long Context Pricing (1M)
 
-Opus 4.8, Opus 4.7, Opus 4.6, and Sonnet 4.6 support up to 1M tokens of context at **standard rates** across the full window. There is no longer a "2x over 200K" premium -- that pricing applied to Opus 4.1 and older.
+Fable 5, Opus 4.8, Opus 4.7, Opus 4.6, and Sonnet 4.6 support up to 1M tokens of context at **standard rates** across the full window. There is no longer a "2x over 200K" premium -- that pricing applied to Opus 4.1 and older.
 
 | Model | Input Rate (any context size) | Output Rate (any context size) | Max Context |
 |-------|:-----------------------------:|:------------------------------:|:-----------:|
+| **Fable 5** | $10.00 | $50.00 | 1M |
 | **Opus 4.8** | $5.00 | $25.00 | 1M |
 | **Opus 4.7** | $5.00 | $25.00 | 1M |
 | **Opus 4.6** | $5.00 | $25.00 | 1M |

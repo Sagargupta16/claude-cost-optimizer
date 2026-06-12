@@ -261,6 +261,13 @@ function generateRecommendations(
     })
   }
 
+  if (inputs.model === 'fable-5') {
+    recs.push({
+      text: 'Fable 5 costs 2x Opus 4.8 ($10/$50 vs $5/$25). Reserve it for the hardest reasoning and route routine work to Opus or Sonnet -- saves 50%+ on those turns',
+      impact: 50,
+    })
+  }
+
   const isOpusTier =
     inputs.model === 'opus' || inputs.model === 'opus-4-7' || inputs.model === 'opus-4-6'
   if (isOpusTier && !inputs.fastMode) {

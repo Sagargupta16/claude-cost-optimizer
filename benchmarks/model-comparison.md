@@ -6,13 +6,16 @@
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Relative Cost |
 |-------|:---------------------:|:----------------------:|:-------------:|
-| Opus 4.8 (current) | $5.00 | $25.00 | 1x (baseline) |
+| Fable 5 (most capable) | $10.00 | $50.00 | 2x baseline |
+| Opus 4.8 (Opus flagship) | $5.00 | $25.00 | 1x (baseline) |
 | Opus 4.7 (legacy) | $5.00 | $25.00 | 1x (baseline) |
 | Opus 4.6 (legacy) | $5.00 | $25.00 | 1x (baseline) |
 | Sonnet 4.6 | $3.00 | $15.00 | ~1.7x cheaper |
 | Haiku 4.5 | $1.00 | $5.00 | 5x cheaper |
 
 > **Historical note**: The numbers in the task-type sections below were measured on Opus 4.6. On Opus 4.8 (and 4.7), expect ~20-35% higher token counts for identical prompts (new tokenizer, Opus 4.7 and later), which translates to 20-35% higher absolute costs for the same task. Quality is generally better on 4.8 — Anthropic reports a step-change improvement in agentic coding. Fresh benchmark runs with 4.8 are welcome contributions.
+>
+> **Fable 5** (GA 2026-06-09, $10/$50) is not benchmarked here yet -- it doubles every Opus 4.8 cost figure below for the same token counts. For task-routing purposes, treat it as a tier above Opus reserved for work where Opus 4.8 quality is insufficient. Benchmark contributions welcome.
 
 ## How to Read This
 

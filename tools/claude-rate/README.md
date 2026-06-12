@@ -45,7 +45,7 @@ No external dependencies. Pure Python 3.10+ stdlib.
 claude-rate -- Claude / AI setup audit
 ============================================================
 Project: /home/sagar/work/my-project
-Verified against Anthropic pricing as of: 2026-06-06
+Verified against Anthropic pricing as of: 2026-06-12
 
   CLAUDE.md                [###############-----]  15/20  3,648 chars primary (near hard limit); 3,648 chars total across 1 file(s)
   .claudeignore            [--------------------]   0/15  not found
@@ -60,6 +60,7 @@ Verified against Anthropic pricing as of: 2026-06-06
 Total: 48/100  (D)
 
 Estimated monthly cost (30 turns/session, 3 sessions/day, 22 days, 70% cache hit)
+  Fable 5        $ 5.04/session  ->  $ 332.55/month
   Opus 4.8       $ 2.62/session  ->  $ 172.67/month
   Opus 4.7       $ 2.62/session  ->  $ 172.67/month
   Opus 4.6       $ 1.94/session  ->  $ 127.91/month
@@ -151,13 +152,14 @@ The web analyzer (built in [../../site/](../../site/), not yet live on the deplo
 
 ## Pricing data
 
-All cost estimates use Anthropic's published rates **verified 2026-06-06**:
+All cost estimates use Anthropic's published rates **verified 2026-06-12**:
 
+- Fable 5: $10/$50 per 1M tokens (1M context, most capable widely released model)
 - Opus 4.8 / 4.7 / 4.6: $5/$25 per 1M tokens (1M context)
 - Sonnet 4.6: $3/$15 per 1M tokens (1M context)
 - Haiku 4.5: $1/$5 per 1M tokens (200K context)
 - Cache hit: 0.1x base input price; 5m write: 1.25x; 1h write: 2x
-- Opus 4.8 / 4.7 cost estimates include the +35% tokenizer overhead
+- Opus 4.8 / 4.7 cost estimates include the +35% tokenizer overhead; Fable 5 includes +30%
 
 Sources:
 - [platform.claude.com/docs/en/about-claude/pricing](https://platform.claude.com/docs/en/about-claude/pricing)

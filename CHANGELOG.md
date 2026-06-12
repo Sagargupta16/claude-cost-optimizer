@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.9.0] - 2026-06-12
+
+### Added
+- **Claude Fable 5 support** (`claude-fable-5`) across all pricing tables, guides, tools, and the web calculator. Fable 5 is Anthropic's most capable widely released model -- a new Mythos-class tier above Opus at **$10/$50 per 1M input/output (2x Opus 4.8)**. 1M context at standard rates, 128K max output, cache hit $1, 5m-write $12.50, 1h-write $20, Batch $5/$25. Always-on adaptive thinking (`thinking: disabled` not supported; depth via `effort`). Safety classifiers can decline requests: HTTP 200 + `stop_reason: "refusal"`, pre-output refusals unbilled, beta `fallbacks` param + fallback credit for retries. No Fast Mode. Requires 30-day data retention. GA 2026-06-09 on Claude API, Claude Platform on AWS, Bedrock (`anthropic.claude-fable-5`), Vertex AI, and Microsoft Foundry.
+- **Claude Mythos 5 entry** (`claude-mythos-5`): same specs and pricing as Fable 5 but without the safety classifiers; limited availability to approved Project Glasswing customers. Successor to Mythos Preview. Flagged `inviteOnly` in the site registry (reference tables only, hidden from calculator selection).
+- `fable` model alias in token-estimator, usage-analyzer, mcp-cost-server (tool enums + compare output), VS Code extension, and claude-rate cost projections.
+- Fable 5 routing guidance: cheatsheet decision tree, guide 03 quick-reference card, guide 10 "Tier 2+" block, cost-mode skill model-routing table (downshift suggestion when running routine work on Fable 5), calculator and usage-analyzer recommendations for Fable-heavy usage.
+
+### Changed
+- **Mythos Preview marked retiring 2026-06-30** (announced with the Mythos 5 launch) -- lifecycle flipped to `legacy`, pricing rows annotated, retirement tables updated across README, cheatsheet, and CLAUDE.md. The token-estimator `mythos` alias now prices Mythos 5 ($10/$50) instead of Mythos Preview ($25/$125).
+- Opus 4.8 repositioned from "most capable model" to "Opus-tier flagship" in copy across README, cheatsheet, guides, and the site registry; "most capable" now refers to Fable 5.
+- usage-analyzer model detection extended: recognizes `fable`/`mythos` and distinguishes `opus-4.7` / `opus-4.6` from the `opus` alias; the Opus-share hotspot check now matches all Opus variants.
+- All pricing references re-verified against Anthropic docs on 2026-06-12; "verified" dates bumped from 2026-06-06.
+- Plugin-identity versions bumped to 1.9.0; plugin distribution copy of the cost-mode skill re-synced.
+
 ## [1.8.0] - 2026-06-06
 
 ### Added

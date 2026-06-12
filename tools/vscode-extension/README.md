@@ -63,10 +63,11 @@ This is fast and dependency-free, with roughly 10-15% variance compared to the a
 
 ## Pricing Data
 
-Costs are based on Claude API pricing as of 2026-06-06:
+Costs are based on Claude API pricing as of 2026-06-12:
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) |
 |-------|----------------------|------------------------|
+| Fable 5 (alias: `fable`) | $10.00 | $50.00 |
 | Opus 4.8 (alias: `opus`) | $5.00 | $25.00 |
 | Opus 4.7 (alias: `opus-4.7`) | $5.00 | $25.00 |
 | Opus 4.6 (alias: `opus-4.6`) | $5.00 | $25.00 |

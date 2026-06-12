@@ -280,6 +280,10 @@ TIER 2 -- Opus $5/$25
 ├── Performance optimization
 ├── Framework migration
 └── System design
+
+TIER 2+ -- Fable 5 $10/$50 (2x Opus, use sparingly)
+├── Reasoning problems Opus 4.8 fails on
+└── Longest autonomous agentic runs (hours-scale)
 ```
 
 ---

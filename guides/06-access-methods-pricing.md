@@ -44,11 +44,13 @@ All platforms provide access to the same Claude models with the same intelligenc
 
 The Anthropic API is the baseline. All other platforms price relative to it.
 
-### Standard Pricing (per 1M tokens, verified 2026-06-06)
+### Standard Pricing (per 1M tokens, verified 2026-06-12)
 
 | Model | Input | Output | Cache Hit | 5m Cache Write | 1h Cache Write | Context | Max Output |
 |-------|:-----:|:------:|:---------:|:--------------:|:--------------:|:-------:|:----------:|
-| **Opus 4.8** (current) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
+| **Fable 5** (most capable) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
+| **Mythos 5** (Glasswing, limited) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
+| **Opus 4.8** (Opus flagship) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.7** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K |
@@ -58,11 +60,13 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K |
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
-| **Mythos Preview** (Glasswing, invite-only) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- |
+| **Mythos Preview** (retires 2026-06-30) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- |
 
-> **Mythos Preview** is a separate research-preview model for defensive cybersecurity research only, accessible to [Project Glasswing](https://anthropic.com/glasswing) partners (11 founding: AWS, Anthropic, Apple, Broadcom, Cisco, CrowdStrike, Google, JPMorganChase, Linux Foundation, Microsoft, NVIDIA, Palo Alto Networks; plus 40+ critical-infrastructure organizations and open-source maintainers). $100M of complimentary credits were committed by Anthropic during the preview. No self-serve signup. If you're not in the program, this row is for reference only.
+> **Fable 5 / Mythos 5** (GA 2026-06-09): the new Mythos-class tier above Opus, both at $10/$50. **Fable 5** is generally available on every platform (Claude API, Claude Platform on AWS, Bedrock, Vertex AI, Microsoft Foundry) and includes safety classifiers that can refuse a request (`stop_reason: "refusal"`, HTTP 200; pre-output refusals are unbilled; the beta `fallbacks` parameter retries another model server-side and fallback credit refunds the cache-switch cost). **Mythos 5** is the same model without the classifiers, limited to approved [Project Glasswing](https://anthropic.com/glasswing) customers. Both require 30-day data retention (no zero-data-retention option), have always-on adaptive thinking, and support the Batch API but not Fast Mode.
+>
+> **Mythos Preview** is superseded by Mythos 5 and **retires 2026-06-30**. It was the invite-only defensive-cybersecurity research preview for Glasswing partners (11 founding members plus 40+ critical-infrastructure organizations).
 
-> **1M context at standard rates**: Opus 4.8, Opus 4.7, Opus 4.6, and Sonnet 4.6 charge the standard per-token rate across the full 1M window — no long-context premium. Opus 4.5, Sonnet 4.5, Opus 4.1, and Haiku 4.5 are 200K-context only. (Opus 4.8 is 200K-context on Microsoft Foundry only.)
+> **1M context at standard rates**: Fable 5, Mythos 5, Opus 4.8, Opus 4.7, Opus 4.6, and Sonnet 4.6 charge the standard per-token rate across the full 1M window — no long-context premium. Opus 4.5, Sonnet 4.5, Opus 4.1, and Haiku 4.5 are 200K-context only. (Opus 4.8 is 200K-context on Microsoft Foundry only.)
 >
 > **Opus 4.7+ tokenizer**: The tokenizer introduced with Opus 4.7 (and used by Opus 4.8) uses up to **35% more tokens** for the same text. The posted $5/$25 rate is unchanged but effective cost rises proportionally. Budget accordingly.
 >
@@ -85,6 +89,8 @@ The Batch API is the single biggest discount available. For any workload that do
 
 | Model | Batch Input | Batch Output | Savings vs Standard |
 |-------|:-----------:|:------------:|:-------------------:|
+| **Fable 5** | $5.00 | $25.00 | 50% |
+| **Mythos 5** | $5.00 | $25.00 | 50% |
 | **Opus 4.8** | $2.50 | $12.50 | 50% |
 | **Opus 4.7** | $2.50 | $12.50 | 50% |
 | **Opus 4.6** | $2.50 | $12.50 | 50% |
@@ -115,7 +121,7 @@ Tokens billed at standard model rates (caching multipliers apply identically). *
 
 ## AWS Bedrock Pricing
 
-AWS Bedrock provides Claude access through two endpoint types with different pricing. As of 2026-06-06, **Opus 4.8 (the current flagship) is generally available and open to all Bedrock customers** (no waitlist), alongside Opus 4.7. Anthropic also offers two Bedrock integration paths: the new Claude in Amazon Bedrock (Mantle) endpoint, and the legacy InvokeModel/Converse API.
+AWS Bedrock provides Claude access through two endpoint types with different pricing. As of 2026-06-12, **Fable 5 (the most capable widely released model) and Opus 4.8 are generally available and open to all Bedrock customers** (no waitlist), alongside Opus 4.7. Anthropic also offers two Bedrock integration paths: the new Claude in Amazon Bedrock (Mantle) endpoint, and the legacy InvokeModel/Converse API.
 
 ### Global Endpoints
 
@@ -123,13 +129,15 @@ Global endpoints match Anthropic API pricing exactly:
 
 | Model | Input | Output | Cache Hit |
 |-------|:-----:|:------:|:---------:|
+| **Fable 5** (open access, GA) | $10.00 | $50.00 | $1.00 |
 | **Opus 4.8** (open access, GA) | $5.00 | $25.00 | $0.50 |
 | **Opus 4.7** (open access, GA) | $5.00 | $25.00 | $0.50 |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 |
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 |
-| **Mythos Preview** (invite-only, regional `us-east-1` only) | $25.00 | $125.00 | $2.50 |
+| **Mythos 5** (Glasswing allowlist) | $10.00 | $50.00 | $1.00 |
+| **Mythos Preview** (retires 2026-06-30, regional `us-east-1` only) | $25.00 | $125.00 | $2.50 |
 
 ### Regional Endpoints (us/eu/jp/apac/au inference profiles)
 
@@ -137,6 +145,7 @@ Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 
 
 | Model | Regional Input | Regional Output | Premium |
 |-------|:--------------:|:---------------:|:-------:|
+| **Fable 5** | $11.00 | $55.00 | +10% |
 | **Opus 4.8** | $5.50 | $27.50 | +10% |
 | **Opus 4.7** | $5.50 | $27.50 | +10% |
 | **Opus 4.6** | $5.50 | $27.50 | +10% |
@@ -161,6 +170,7 @@ The new **Claude in Amazon Bedrock (Mantle)** endpoint at `https://bedrock-mantl
 
 | Model | Mantle Model ID | Legacy Bedrock ID (InvokeModel/Converse) |
 |-------|-----------------|------------------------------------------|
+| Fable 5 | `anthropic.claude-fable-5` | `global.anthropic.claude-fable-5` (global inference profile; no `us.` CRIS profile exists) |
 | Opus 4.8 | `anthropic.claude-opus-4-8` | `us.anthropic.claude-opus-4-8` (cross-region inference profile) |
 | Opus 4.7 | `anthropic.claude-opus-4-7` | `us.anthropic.claude-opus-4-7` (cross-region inference profile) |
 | Opus 4.6 | `anthropic.claude-opus-4-6` | `anthropic.claude-opus-4-6-v1` |

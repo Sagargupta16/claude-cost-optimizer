@@ -3,7 +3,7 @@
 Token Estimator for Claude Code
 
 Estimates token count for a file or text input and calculates
-cost across Claude models (Opus, Sonnet, Haiku).
+cost across Claude models (Fable, Opus, Sonnet, Haiku).
 
 Usage:
     python estimate.py path/to/file.py
@@ -27,17 +27,28 @@ except ImportError:
     sys.exit(1)
 
 
-# Claude model pricing per 1M tokens (verified 2026-06-06)
-# NOTE: 1M context on Opus 4.8/4.7/4.6/Sonnet 4.6 is billed at standard rates
-# (no long-context premium). The old "2x over 200K" pricing only applied to
-# Opus 4.1 and older.
+# Claude model pricing per 1M tokens (verified 2026-06-12)
+# NOTE: 1M context on Fable 5/Opus 4.8/4.7/4.6/Sonnet 4.6 is billed at standard
+# rates (no long-context premium). The old "2x over 200K" pricing only applied
+# to Opus 4.1 and older.
 MODEL_PRICING = {
+    "fable": {
+        "input": 10.00,
+        "output": 50.00,
+        "cache_hit": 1.00,
+        "name": "Fable 5",
+        "note": (
+            "Most capable widely released model (Mythos-class tier, GA 2026-06-09). "
+            "2x Opus 4.8 pricing. Always-on adaptive thinking; no Fast Mode; "
+            "Batch supported ($5/$25). Pre-output refusals are not billed."
+        ),
+    },
     "opus": {
         "input": 5.00,
         "output": 25.00,
         "cache_hit": 0.50,
         "name": "Opus 4.8",
-        "note": "Current flagship. New tokenizer may use up to 35% more tokens than Opus 4.6.",
+        "note": "Opus-tier flagship. New tokenizer may use up to 35% more tokens than Opus 4.6.",
     },
     "opus_4_7": {
         "input": 5.00,
@@ -68,13 +79,14 @@ MODEL_PRICING = {
         "note": "Research preview. 6x standard Opus rates ($30/$150). Opus 4.6 Fast Mode deprecated as of the 4.8 launch.",
     },
     "mythos": {
-        "input": 25.00,
-        "output": 125.00,
-        "cache_hit": 2.50,
-        "name": "Mythos Preview",
+        "input": 10.00,
+        "output": 50.00,
+        "cache_hit": 1.00,
+        "name": "Mythos 5",
         "note": (
-            "Invite-only via Project Glasswing (defensive cybersecurity research). "
-            "Not available for general development. Listed for reference only."
+            "Fable 5 without safety classifiers; same specs and pricing. "
+            "Limited availability via Project Glasswing. Listed for reference only. "
+            "(Mythos Preview, $25/$125, retires 2026-06-30.)"
         ),
     },
 }
