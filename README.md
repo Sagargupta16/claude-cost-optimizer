@@ -1,11 +1,11 @@
 # Claude Cost Optimizer
 
-![GitHub stars](https://img.shields.io/github/stars/Sagargupta16/claude-cost-optimizer?style=flat-square)
-![GitHub forks](https://img.shields.io/github/forks/Sagargupta16/claude-cost-optimizer?style=flat-square)
-![License](https://img.shields.io/github/license/Sagargupta16/claude-cost-optimizer?style=flat-square)
-![Last Commit](https://img.shields.io/github/last-commit/Sagargupta16/claude-cost-optimizer?style=flat-square)
+![GitHub stars](https://img.shields.io/github/stars/Sagargupta16/claude-cost-optimizer?style=flat-square&cacheSeconds=86400)
+![GitHub forks](https://img.shields.io/github/forks/Sagargupta16/claude-cost-optimizer?style=flat-square&cacheSeconds=86400)
+![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
+![Last Commit](https://img.shields.io/github/last-commit/Sagargupta16/claude-cost-optimizer?style=flat-square&cacheSeconds=86400)
 
-> **Save 30-60% on Claude Code costs** with an installable skill, web tools, and 11 deep-dive guides.
+> **Save 30-60% on Claude Code costs** with an installable skill, CLI tools, and 11 deep-dive guides.
 
 ## Install
 
@@ -13,7 +13,7 @@
 
 ```bash
 /plugin marketplace add Sagargupta16/claude-cost-optimizer
-/plugin install cost-mode@sagargupta16-claude-cost-optimizer
+/plugin install cost-mode@claude-cost-optimizer
 ```
 
 **Multi-agent (Cursor, Cline, Codex, 40+ agents):**
@@ -57,9 +57,6 @@ Technical accuracy is never sacrificed. Code in commits and PRs is written norma
 `claude-rate` runs on your filesystem -- no signup, no GitHub upload, no network round-trip. Pick whichever runner fits your shell:
 
 ```bash
-# npx (any Node project)
-npx -y @sagargupta16/claude-rate .
-
 # curl one-shot (no Node, no install)
 curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- .
 
@@ -73,13 +70,13 @@ The local rater inspects things the web analyzer can't: real MCP server count fr
 
 ### Public repos -- web tools
 
-No install needed -- use these in your browser for any public GitHub repo:
+> **Not live yet.** These pages are built in [site/](site/) but the [deployed site](https://sagargupta16.github.io/claude-cost-optimizer/) currently serves the landing page only. Until they ship, use `claude-rate` above.
 
 | Tool | What It Does |
 |------|-------------|
-| **[Repo Analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer)** | Paste a GitHub URL to get a cost audit, grade (A+ to F), and recommendations |
-| **[Cost Calculator](https://sagargupta16.github.io/claude-cost-optimizer/calculator)** | Estimate monthly spend based on your model, sessions, and config |
-| **[Badge Checker](https://sagargupta16.github.io/claude-cost-optimizer/badge)** | Score your setup and get a shields.io badge for your repo |
+| **Repo Analyzer** | Paste a GitHub URL to get a cost audit, grade (A+ to F), and recommendations |
+| **Cost Calculator** | Estimate monthly spend based on your model, sessions, and config |
+| **Badge Checker** | Score your setup and get a shields.io badge for your repo |
 
 ---
 

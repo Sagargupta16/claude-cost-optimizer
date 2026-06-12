@@ -129,12 +129,16 @@ A 50-turn session costs 3-5x more per turn than a 10-turn session doing the same
 
 ## Verify your setup
 
-Run the [Repo Analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer) to check your score. Paste your GitHub repo URL and get:
+Run [claude-rate](../tools/claude-rate/) to check your score locally and get:
 - Cost-efficiency grade (A+ to F)
 - Estimated monthly cost per model
 - Specific recommendations
 
-Or use the CLI:
+```bash
+curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- .
+```
+
+Or use the legacy CLI:
 
 ```bash
 python tools/badge-generator/generate.py /path/to/your/project

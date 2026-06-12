@@ -4,7 +4,7 @@
 
 `claude-rate` scans your project directory and grades your Claude Code (and adjacent AI tooling) configuration for cost-efficiency. Get a 0-100 score, an A+ to F letter grade, a per-category breakdown, copy-pasteable fix suggestions, and an estimated monthly spend on every active model tier.
 
-Unlike the [deployed web analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer) (which only sees what's on GitHub), `claude-rate` runs on the actual filesystem and inspects things the web tool can't:
+Unlike the web analyzer in [../../site/](../../site/) (which only sees what's on GitHub, and isn't live on the deployed site yet), `claude-rate` runs on the actual filesystem and inspects things the web tool can't:
 
 - Real MCP server count from `.mcp.json`
 - Hook configuration in `.claude/settings.json`
@@ -16,12 +16,6 @@ Unlike the [deployed web analyzer](https://sagargupta16.github.io/claude-cost-op
 ## Quick start
 
 Pick whichever runner fits your shell:
-
-### npx (any Node project)
-
-```bash
-npx -y @sagargupta16/claude-rate .
-```
 
 ### curl one-shot (no Node, no install)
 
@@ -146,7 +140,7 @@ claude-rate . --json | jq '.grade, .cost_estimate."sonnet-4-6".per_month'
 
 ## Why a separate tool from the web analyzer?
 
-The deployed web analyzer at [sagargupta16.github.io/claude-cost-optimizer/analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer) is great for **public repos** -- paste a GitHub URL, get a grade. But it can only see what's exposed via the GitHub Contents API. It can't:
+The web analyzer (built in [../../site/](../../site/), not yet live on the deployed site) is aimed at **public repos** -- paste a GitHub URL, get a grade. But it can only see what's exposed via the GitHub Contents API. It can't:
 
 - See your local `.claude/settings.local.json` (gitignored)
 - Detect untracked secrets that haven't been pushed yet

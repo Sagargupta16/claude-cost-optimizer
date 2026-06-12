@@ -386,7 +386,7 @@ Already spending too much? Do these right now:
 | CLAUDE.md Templates | [templates/CLAUDE.md/](templates/CLAUDE.md/) |
 | Token Estimator Tool | [tools/token-estimator/](tools/token-estimator/) |
 | Usage Analyzer Tool | [tools/usage-analyzer/](tools/usage-analyzer/) |
-| Repo Analyzer (web) | [sagargupta16.github.io/claude-cost-optimizer/analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer) |
+| claude-rate (local setup rater) | [tools/claude-rate/](tools/claude-rate/) |
 | Caveman skill (output tokens) | [github.com/JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) |
 
 ---

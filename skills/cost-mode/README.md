@@ -8,7 +8,7 @@ A Claude Code skill that saves 30-60% on costs through concise responses (40-70%
 
 ```bash
 /plugin marketplace add Sagargupta16/claude-cost-optimizer
-/plugin install cost-mode@sagargupta16-claude-cost-optimizer
+/plugin install cost-mode@claude-cost-optimizer
 ```
 
 **Multi-agent (Cursor, Cline, Codex, etc.):**
