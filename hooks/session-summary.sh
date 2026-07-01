@@ -35,7 +35,7 @@ try:
 except Exception:
     data = {}
 
-session_id = data.get('session_id', '') or data.get('session', {}).get('id', 'unknown')
+session_id = data.get('session_id', '') or data.get('session', {}).get('id', '') or 'default'
 
 # Tool call count -- check the budget tracker's counter file if available
 tool_calls = data.get('tool_calls', data.get('num_tool_calls', ''))
