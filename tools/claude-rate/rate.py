@@ -91,6 +91,18 @@ MODELS: dict[str, dict[str, Any]] = {
         "fast_mode": True,
         "lifecycle": "legacy",
     },
+    "sonnet-5": {
+        "name": "Sonnet 5",
+        "input": 3.00,
+        "output": 15.00,
+        "cache_hit": 0.30,
+        "cache_5m_write": 3.75,
+        "cache_1h_write": 6.00,
+        "context_window": 1_000_000,
+        "tokenizer_overhead": 1.3,
+        "fast_mode": False,
+        "lifecycle": "active",
+    },
     "sonnet-4-6": {
         "name": "Sonnet 4.6",
         "input": 3.00,
@@ -101,7 +113,7 @@ MODELS: dict[str, dict[str, Any]] = {
         "context_window": 1_000_000,
         "tokenizer_overhead": 1.0,
         "fast_mode": False,
-        "lifecycle": "active",
+        "lifecycle": "legacy",
     },
     "haiku-4-5": {
         "name": "Haiku 4.5",
@@ -553,7 +565,7 @@ def score_settings(project: Path) -> CategoryResult:
         )
         cat.fixes.append(
             f"Create {DOT_CLAUDE}/{SETTINGS_JSON} with at minimum:\n"
-            '    {"model": "claude-sonnet-4-6", "permissions": {"allow": [], "deny": []}}'
+            '    {"model": "claude-sonnet-5", "permissions": {"allow": [], "deny": []}}'
         )
         return cat
 
@@ -566,7 +578,7 @@ def score_settings(project: Path) -> CategoryResult:
         parts.append(f"model={model_id}")
     else:
         cat.fixes.append(
-            f'Set "model" in {SETTINGS_JSON} to pin a default (e.g. "claude-sonnet-4-6"). '
+            f'Set "model" in {SETTINGS_JSON} to pin a default (e.g. "claude-sonnet-5"). '
             "Prevents accidental Opus usage on simple tasks."
         )
 

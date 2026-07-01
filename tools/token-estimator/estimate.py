@@ -27,10 +27,10 @@ except ImportError:
     sys.exit(1)
 
 
-# Claude model pricing per 1M tokens (verified 2026-06-12)
-# NOTE: 1M context on Fable 5/Opus 4.8/4.7/4.6/Sonnet 4.6 is billed at standard
-# rates (no long-context premium). The old "2x over 200K" pricing only applied
-# to Opus 4.1 and older.
+# Claude model pricing per 1M tokens (verified 2026-06-12; Sonnet 5 2026-07-01)
+# NOTE: 1M context on Fable 5/Opus 4.8/4.7/4.6/Sonnet 5/Sonnet 4.6 is billed at
+# standard rates (no long-context premium). The old "2x over 200K" pricing only
+# applied to Opus 4.1 and older.
 MODEL_PRICING = {
     "fable": {
         "input": 10.00,
@@ -62,7 +62,17 @@ MODEL_PRICING = {
         "cache_hit": 0.50,
         "name": "Opus 4.6 (legacy)",
     },
-    "sonnet": {"input": 3.00, "output": 15.00, "cache_hit": 0.30, "name": "Sonnet 4.6"},
+    "sonnet": {
+        "input": 3.00,
+        "output": 15.00,
+        "cache_hit": 0.30,
+        "name": "Sonnet 5",
+        "note": (
+            "Current Sonnet-tier flagship (GA 2026-06-30). Standard $3/$15; "
+            "introductory $2/$10 through 2026-08-31. New tokenizer (~30% more tokens)."
+        ),
+    },
+    "sonnet_4_6": {"input": 3.00, "output": 15.00, "cache_hit": 0.30, "name": "Sonnet 4.6 (legacy)"},
     "haiku": {"input": 1.00, "output": 5.00, "cache_hit": 0.10, "name": "Haiku 4.5"},
     "fast_mode": {
         "input": 10.00,

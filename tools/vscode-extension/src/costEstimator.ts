@@ -32,7 +32,7 @@ export const MODEL_LABELS: Record<string, string> = {
   opus: "Opus 4.8",
   "opus-4.7": "Opus 4.7 (legacy)",
   "opus-4.6": "Opus 4.6 (legacy)",
-  sonnet: "Sonnet 4.6",
+  sonnet: "Sonnet 5",
   haiku: "Haiku 4.5",
 };
 

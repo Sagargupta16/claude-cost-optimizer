@@ -24,6 +24,7 @@ const PRICING: Record<string, ModelPricing> = {
   opus: { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5 },
   "opus-4.7": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5 },
   "opus-4.6": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5 },
+  // "sonnet" alias maps to the current Sonnet-tier flagship (Sonnet 5); same $3/$15 tier as Sonnet 4.6
   sonnet: { inputPerMillion: 3, outputPerMillion: 15, cacheHitPerMillion: 0.3 },
   haiku: { inputPerMillion: 1, outputPerMillion: 5, cacheHitPerMillion: 0.1 },
 };

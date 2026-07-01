@@ -32,6 +32,7 @@ Most developers default to the most capable model for everything. This is like h
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1x (baseline) | 1M | 128K |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1x (baseline) | 200K | 64K |
 | **Opus 4.1** | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 3x baseline | 200K | 32K |
+| **Sonnet 5** (Sonnet flagship) | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | ~1.67x cheaper | 1M | 128K |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | ~1.67x cheaper | 1M | 64K |
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | ~1.67x cheaper | 200K | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 5x cheaper | 200K | 64K |
@@ -48,7 +49,9 @@ Most developers default to the most capable model for everything. This is like h
 >
 > **Opus 4.5 (200K-only)**: Active until at least 2026-11-24. Same price as 4.6/4.7/4.8 but smaller context window and no Fast Mode. Generally migrate to 4.8 unless your code is pinned to this snapshot.
 >
-> **Sonnet 4.5 (200K-only)**: Active until at least 2026-09-29. Same price as Sonnet 4.6 but smaller context window. Migrate to 4.6 if you need 1M.
+> **Sonnet 5** (`claude-sonnet-5`, GA 2026-06-30): the current Sonnet flagship -- best combination of speed and intelligence, adaptive thinking (`effort` defaults to high on the Claude API and Claude Code), 1M context at standard rates, 128K max output, no Fast Mode. Uses the newer tokenizer (~30% more tokens for the same text). **Introductory pricing $2/$10 per MTok through 2026-08-31**, then standard **$3/$15** (table above shows standard rates). New default for most production work; Sonnet 4.6 is now legacy.
+>
+> **Sonnet 4.5 (200K-only)**: Active until at least 2026-09-29. Same price as Sonnet 4.6 but smaller context window. Migrate to Sonnet 5 if you need 1M.
 >
 > **Opus 4.1**: Still available at older pricing ($15/$75) — **3x more expensive** than current Opus tiers. Deprecated 2026-06-05, retires 2026-08-05. No reason to use it unless you have a specific compatibility need — migrate to 4.8.
 
