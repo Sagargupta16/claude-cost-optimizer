@@ -184,6 +184,10 @@ def _extract_from_records(records: list[dict], file_path: Path) -> dict | None:
     timestamps = []
 
     for record in records:
+        # Records may be non-dict (e.g. a JSON file that is a list of lists or
+        # scalars). Skip anything we can't read as a mapping.
+        if not isinstance(record, dict):
+            continue
         # Try common field patterns for token usage
         usage = record.get("usage", {})
         if isinstance(usage, dict):
@@ -505,6 +509,10 @@ def main():
     )
 
     args = parser.parse_args()
+
+    # Validate --top
+    if args.top < 1:
+        parser.error("--top must be a positive integer")
 
     # Scan and parse
     files = scan_directory(args.directory)

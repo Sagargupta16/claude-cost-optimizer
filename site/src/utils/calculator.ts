@@ -272,7 +272,7 @@ function generateRecommendations(
     inputs.model === 'opus' || inputs.model === 'opus-4-7' || inputs.model === 'opus-4-6'
   if (isOpusTier && !inputs.fastMode) {
     recs.push({
-      text: 'Consider Sonnet 4.6 for routine development -- 40% cheaper with similar quality for most tasks',
+      text: 'Consider Sonnet 5 for routine development -- 40% cheaper with similar quality for most tasks',
       impact: 40,
     })
   }

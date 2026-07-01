@@ -109,7 +109,10 @@ function checkClaudeignore(rootPath: string): ConfigFinding {
   const content = fs.readFileSync(ignorePath, "utf-8");
   const rules = content
     .split("\n")
-    .filter((line) => line.trim() && !line.startsWith("#")).length;
+    .filter((line) => {
+      const trimmed = line.trim();
+      return trimmed && !trimmed.startsWith("#");
+    }).length;
 
   return {
     label: ".claudeignore",

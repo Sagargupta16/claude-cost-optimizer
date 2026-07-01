@@ -1,4 +1,5 @@
-// Pricing data verified against Anthropic docs on 2026-06-12:
+// Pricing data verified against Anthropic docs on 2026-06-12
+// (Sonnet 5 re-verified 2026-07-01):
 //   - https://platform.claude.com/docs/en/about-claude/pricing
 //   - https://platform.claude.com/docs/en/about-claude/models/overview
 //   - https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5
@@ -12,6 +13,7 @@ export type ModelId =
   | 'opus-4-7'
   | 'opus-4-6'
   | 'opus-4-5'
+  | 'sonnet-5'
   | 'sonnet'
   | 'sonnet-4-5'
   | 'haiku'
@@ -135,6 +137,26 @@ export const MODELS: Record<ModelId, ModelPricing> = {
       'Legacy. Extended thinking. No Fast Mode. 200K context (not 1M). ' +
       'Earliest retirement: 2026-11-24. Migrate to Opus 4.8 unless you have a workload pinned to this snapshot.',
   },
+  'sonnet-5': {
+    id: 'sonnet-5',
+    name: 'Sonnet 5',
+    inputPer1M: 3,
+    outputPer1M: 15,
+    cacheHitPer1M: 0.3,
+    cacheWrite5mPer1M: 3.75,
+    cacheWrite1hPer1M: 6,
+    contextWindow: '1M',
+    maxOutput: '128K',
+    fastModeCapable: false,
+    // New tokenizer shared with Opus 4.7+/Fable 5 -- ~30% more tokens for the same text.
+    tokenizerOverhead: 1.3,
+    lifecycle: 'active',
+    notes:
+      'Current Sonnet-tier flagship (GA 2026-06-30): best combination of speed and intelligence. ' +
+      'Adaptive thinking (effort defaults to high on the Claude API and Claude Code). No Fast Mode. ' +
+      '1M context at standard rates; Batch supported. Introductory pricing $2/$10 per MTok through ' +
+      '2026-08-31, then standard $3/$15 (numbers here use the standard rate). Knowledge cutoff Jan 2026.',
+  },
   sonnet: {
     id: 'sonnet',
     name: 'Sonnet 4.6',
@@ -146,10 +168,10 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     contextWindow: '1M',
     maxOutput: '64K',
     fastModeCapable: false,
-    lifecycle: 'active',
+    lifecycle: 'legacy',
     notes:
-      'Extended + adaptive thinking. Best general-purpose default for production workloads. ' +
-      'Earliest retirement: 2027-02-17.',
+      'Legacy. Extended + adaptive thinking. Previous general-purpose default. ' +
+      'Earliest retirement: 2027-02-17. Migrate to Sonnet 5.',
   },
   'sonnet-4-5': {
     id: 'sonnet-4-5',
