@@ -21,7 +21,7 @@ This repo is an installable Claude Code skill and a documentation/tooling projec
 - `guides/` - Deep-dive optimization guides (00-10 + visual diagrams)
 - `benchmarks/` - Real-world cost measurement data and community leaderboard
 - `templates/` - Copy-paste CLAUDE.md configs (10 stacks), settings, and commands
-- `tools/` - 7 CLI tools (token-estimator, usage-analyzer, badge-generator, mcp-cost-server, vscode-extension, optimize-command, GitHub Action)
+- `tools/` - 8 CLI tools (claude-rate, token-estimator, usage-analyzer, badge-generator, mcp-cost-server, vscode-extension, optimize-command, GitHub Action)
 - `hooks/` - Claude Code hooks for budget enforcement and cost logging
 - `site/` - React + Vite + TypeScript site (calculator, badge checker, repo analyzer) for GitHub Pages
 - `case-studies/` - Community optimization stories
@@ -68,7 +68,7 @@ Current Claude API pricing (verified 2026-06-12):
 - **Tool-use overhead** (per-model system-prompt tokens): Opus 4.8 = 290 (`auto`/`none`) / 410 (`any`/`tool`). Opus 4.7 = 675 / 804. Opus 4.6 + Sonnet 4.6 = 497 / 589. Plus the `tools` schema, `tool_use`, and `tool_result` block tokens.
 - **Claude Managed Agents**: standard token rates + **$0.08/session-hour** of `running` time. Replaces Code Execution container-hour billing.
 
-**Bedrock**: Fable 5 GA via Claude in Amazon Bedrock (Messages-API endpoint), model ID `anthropic.claude-fable-5` (legacy InvokeModel/Converse path: `global.anthropic.claude-fable-5` -- the `us.` CRIS profile does not exist for Fable 5). Opus 4.8 GA, model ID `anthropic.claude-opus-4-8`. Opus 4.7 = `anthropic.claude-opus-4-7`. Opus 4.6 = `anthropic.claude-opus-4-6` (Mantle) or `anthropic.claude-opus-4-6-v1` (legacy). Legacy InvokeModel/Converse path uses cross-region `us.anthropic.claude-opus-4-*` IDs for backward compat.
+**Bedrock**: Fable 5 GA via Claude in Amazon Bedrock (Messages-API endpoint), model ID `anthropic.claude-fable-5` (legacy InvokeModel/Converse path: cross-region `us.anthropic.claude-fable-5`). Opus 4.8 GA, model ID `anthropic.claude-opus-4-8`. Opus 4.7 = `anthropic.claude-opus-4-7`. Opus 4.6 = `anthropic.claude-opus-4-6` (Mantle) or `anthropic.claude-opus-4-6-v1` (legacy). Legacy InvokeModel/Converse path uses cross-region `us.anthropic.claude-opus-4-*` IDs for backward compat.
 
 **Subscriptions**: Pro $20/mo or **$200/yr (~$16.67/mo, 17% off)**. Max 5x $100/mo. Max 20x $200/mo.
 
@@ -76,4 +76,4 @@ Current Claude API pricing (verified 2026-06-12):
 
 **Upcoming retirement**: Sonnet 4 (`claude-sonnet-4-20250514`) and Opus 4 (`claude-opus-4-20250514`) retire **2026-06-15**. Mythos Preview (`claude-mythos-preview`) retires **2026-06-30** (migrate to Mythos 5). Opus 4.1 (`claude-opus-4-1-20250805`) retires 2026-08-05.
 
-Update pricing references across ALL files (README, guides/00-10, cheatsheet, benchmarks, site/src/utils/pricing.ts, tools/*/estimate.py) when rates change.
+Update pricing references across ALL files (README, guides/00-10, cheatsheet, benchmarks, site/src/utils/pricing.ts, and the pricing tables in tools/: estimate.py, analyze.py, rate.py, mcp-cost-server, vscode-extension) when rates change.
