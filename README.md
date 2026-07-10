@@ -68,7 +68,7 @@ curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/m
 
 Add `--fix` to print copy-pasteable fix commands, `--strict` to fail CI when the grade drops below B, or `--json` for machine-readable output. See [tools/claude-rate/README.md](tools/claude-rate/README.md) for the full breakdown.
 
-The local rater inspects things the web analyzer can't: real MCP server count from `.mcp.json`, hooks, `.claudeignore` coverage gaps vs files actually on disk, accidentally-committed secrets, and cost-mode skill installation status.
+The local rater works on private and uncommitted repos and inspects things the web analyzer can't reach: `settings.local.json`, `.claudeignore` coverage gaps vs files actually on disk, and secrets in your working tree. The [web analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer) applies the same 7-category rubric (CLAUDE.md, .claudeignore, settings, MCP, hooks, security, skills/agents/commands) to any public repo.
 
 ### Public repos -- web tools
 

@@ -464,3 +464,125 @@
   border-color: var(--accent-blue);
   background-color: var(--surface-hover);
 }
+
+/* Local CLI callout */
+
+.localCallout {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  margin-bottom: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.localText {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.localText strong {
+  color: var(--text);
+}
+
+.localText code {
+  color: var(--accent-green);
+  background-color: rgba(63, 185, 80, 0.1);
+  padding: 0.1rem 0.35rem;
+  border-radius: 3px;
+}
+
+.localCmdRow {
+  display: flex;
+  gap: 0.5rem;
+  align-items: stretch;
+}
+
+.localCmd {
+  flex: 1;
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.5rem 0.75rem;
+  font-size: 0.75rem;
+  color: var(--accent-green);
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.localCopyBtn {
+  padding: 0.5rem 1rem;
+  background-color: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  flex-shrink: 0;
+  transition: border-color 0.15s;
+}
+
+.localCopyBtn:hover {
+  border-color: var(--accent-blue);
+}
+
+/* Score breakdown */
+
+.categoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.categoryRow {
+  display: grid;
+  grid-template-columns: 130px 1fr 52px minmax(0, 1.2fr);
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.categoryName {
+  font-size: 0.82rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.categoryBar {
+  height: 8px;
+  background-color: var(--bg);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.categoryFill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.categoryScore {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  text-align: right;
+}
+
+.categoryDetail {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 700px) {
+  .categoryRow {
+    grid-template-columns: 110px 1fr 48px;
+  }
+
+  .categoryDetail {
+    display: none;
+  }
+}
