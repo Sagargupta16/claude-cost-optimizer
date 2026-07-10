@@ -12,6 +12,22 @@ type Status = 'idle' | 'loading' | 'done' | 'error'
 
 const DEMO_REPO = 'Sagargupta16/claude-cost-optimizer'
 
+const LOCAL_CMD =
+  'curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- .'
+
+function charBarColor(charCount: number, overLimit: boolean): string {
+  if (overLimit) return 'var(--error-red)'
+  if (charCount > 3000) return 'var(--warning-yellow)'
+  return 'var(--accent-green)'
+}
+
+function categoryColor(score: number, maxScore: number): string {
+  const pct = maxScore > 0 ? score / maxScore : 0
+  if (pct >= 0.8) return 'var(--accent-green)'
+  if (pct >= 0.5) return 'var(--warning-yellow)'
+  return 'var(--error-red)'
+}
+
 function RepoAnalyzer() {
   const [searchParams] = useSearchParams()
   const [url, setUrl] = useState('')
@@ -20,6 +36,7 @@ function RepoAnalyzer() {
   const [error, setError] = useState('')
   const [result, setResult] = useState<AnalysisResult | null>(null)
   const [copied, setCopied] = useState(false)
+  const [cmdCopied, setCmdCopied] = useState(false)
 
   // Auto-fill from ?repo= query param
   useEffect(() => {
@@ -79,12 +96,20 @@ function RepoAnalyzer() {
     })
   }, [result])
 
+  const handleCopyCmd = useCallback(() => {
+    navigator.clipboard.writeText(LOCAL_CMD).then(() => {
+      setCmdCopied(true)
+      setTimeout(() => setCmdCopied(false), 2000)
+    })
+  }, [])
+
   return (
     <div className={styles.analyzer}>
       <h1 className={styles.title}>Repo Analyzer</h1>
       <p className={styles.subtitle}>
         Paste a GitHub repo URL to analyze its Claude Code configuration and get
-        cost optimization recommendations.
+        cost optimization recommendations. Checks CLAUDE.md, .claudeignore,
+        settings, MCP servers, hooks, skills, agents, commands, and secrets.
       </p>
 
       <div className={styles.inputSection}>
@@ -131,10 +156,26 @@ function RepoAnalyzer() {
         </div>
       </div>
 
+      {/* Local / private repos: the CLI covers what the web analyzer can't see */}
+      <div className={styles.localCallout}>
+        <div className={styles.localText}>
+          <strong>Private or local repo?</strong> Run <code>claude-rate</code> in
+          any project directory -- same rubric, plus local-only checks
+          (.claudeignore coverage vs files on disk, settings.local.json, leaked
+          secrets):
+        </div>
+        <div className={styles.localCmdRow}>
+          <code className={styles.localCmd}>{LOCAL_CMD}</code>
+          <button onClick={handleCopyCmd} className={styles.localCopyBtn}>
+            {cmdCopied ? 'Copied' : 'Copy'}
+          </button>
+        </div>
+      </div>
+
       {status === 'loading' && (
         <div className={styles.loading}>
           <div className={styles.spinner} />
-          <span>Fetching files from GitHub...</span>
+          <span>Fetching repo tree and files from GitHub...</span>
         </div>
       )}
 
@@ -154,6 +195,31 @@ function RepoAnalyzer() {
               </span>
               <span className={styles.repoName}>{result.repo}</span>
               <span className={styles.branchName}>{result.branch}</span>
+            </div>
+          </div>
+
+          {/* Score breakdown */}
+          <div className={styles.panel}>
+            <h2 className={styles.panelTitle}>Score Breakdown</h2>
+            <div className={styles.categoryList}>
+              {result.categories.map((c) => (
+                <div key={c.name} className={styles.categoryRow}>
+                  <span className={styles.categoryName}>{c.name}</span>
+                  <div className={styles.categoryBar}>
+                    <div
+                      className={styles.categoryFill}
+                      style={{
+                        width: `${c.maxScore > 0 ? (c.score / c.maxScore) * 100 : 0}%`,
+                        backgroundColor: categoryColor(c.score, c.maxScore),
+                      }}
+                    />
+                  </div>
+                  <span className={styles.categoryScore}>
+                    {c.score}/{c.maxScore}
+                  </span>
+                  <span className={styles.categoryDetail}>{c.detail}</span>
+                </div>
+              ))}
             </div>
           </div>
 
@@ -216,11 +282,10 @@ function RepoAnalyzer() {
                       className={styles.charFill}
                       style={{
                         width: `${Math.min((result.claudeMd.charCount / 4000) * 100, 100)}%`,
-                        backgroundColor: result.claudeMd.overLimit
-                          ? 'var(--error-red)'
-                          : result.claudeMd.charCount > 3000
-                            ? 'var(--warning-yellow)'
-                            : 'var(--accent-green)',
+                        backgroundColor: charBarColor(
+                          result.claudeMd.charCount,
+                          result.claudeMd.overLimit,
+                        ),
                       }}
                     />
                   </div>
@@ -243,8 +308,8 @@ function RepoAnalyzer() {
                   </div>
                   {result.claudeIgnore.entries.length > 0 && (
                     <div className={styles.entryList}>
-                      {result.claudeIgnore.entries.slice(0, 10).map((e, i) => (
-                        <code key={i} className={styles.entry}>
+                      {result.claudeIgnore.entries.slice(0, 10).map((e) => (
+                        <code key={e} className={styles.entry}>
                           {e}
                         </code>
                       ))}
@@ -291,13 +356,87 @@ function RepoAnalyzer() {
                   <div className={styles.stat}>
                     <span className={styles.statLabel}>Hooks</span>
                     <span className={styles.statValue}>
-                      {result.settings.hasHooks ? 'Configured' : 'None'}
+                      {result.settings.hasHooks
+                        ? `${result.settings.hookCount} entries, ${result.tooling.hookScripts} scripts`
+                        : 'None'}
                     </span>
                   </div>
                 </div>
               ) : (
                 <p className={styles.notFound}>Not found</p>
               )}
+            </div>
+
+            {/* Skills, agents, commands */}
+            <div className={styles.panel}>
+              <h2 className={styles.panelTitle}>Skills, Agents, Commands</h2>
+              <div className={styles.statList}>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>cost-mode skill</span>
+                  <span
+                    className={`${styles.statValue} ${result.tooling.costModeInstalled ? styles.statGood : styles.statWarn}`}
+                  >
+                    {result.tooling.costModeInstalled ? 'Installed' : 'Not installed'}
+                  </span>
+                </div>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Skills</span>
+                  <span className={styles.statValue}>
+                    {result.tooling.skills.length}
+                  </span>
+                </div>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Subagents</span>
+                  <span className={styles.statValue}>
+                    {result.tooling.agentCount}
+                  </span>
+                </div>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Slash commands</span>
+                  <span className={styles.statValue}>
+                    {result.tooling.commandCount}
+                  </span>
+                </div>
+                {result.tooling.skills.length > 0 && (
+                  <div className={styles.entryList}>
+                    {result.tooling.skills.slice(0, 8).map((s) => (
+                      <code key={s} className={styles.entry}>
+                        {s}
+                      </code>
+                    ))}
+                    {result.tooling.skills.length > 8 && (
+                      <span className={styles.moreEntries}>
+                        +{result.tooling.skills.length - 8} more
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Security */}
+            <div className={styles.panel}>
+              <h2 className={styles.panelTitle}>Security</h2>
+              <div className={styles.statList}>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>.env committed</span>
+                  <span
+                    className={`${styles.statValue} ${result.security.envTracked ? styles.statDanger : styles.statGood}`}
+                  >
+                    {result.security.envTracked ? 'Yes -- rotate secrets' : 'No'}
+                  </span>
+                </div>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>API keys in config</span>
+                  <span
+                    className={`${styles.statValue} ${result.security.keyLeakFiles.length > 0 ? styles.statDanger : styles.statGood}`}
+                  >
+                    {result.security.keyLeakFiles.length > 0
+                      ? result.security.keyLeakFiles.join(', ')
+                      : 'None detected'}
+                  </span>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -351,8 +490,8 @@ function RepoAnalyzer() {
           <div className={styles.panel}>
             <h2 className={styles.panelTitle}>Recommendations</h2>
             <ul className={styles.recommendations}>
-              {result.recommendations.map((rec, i) => (
-                <li key={i} className={styles.recommendation}>
+              {result.recommendations.map((rec) => (
+                <li key={rec} className={styles.recommendation}>
                   {rec}
                 </li>
               ))}
