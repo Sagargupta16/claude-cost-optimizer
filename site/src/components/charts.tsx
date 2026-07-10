@@ -46,16 +46,18 @@ function money(v: number, decimals = 2): string {
 interface TooltipState {
   x: number
   y: number
-  lines: string[]
+  title: string
+  values: string[]
 }
 
-function Tooltip({ tip }: { tip: TooltipState | null }) {
+function Tooltip({ tip }: Readonly<{ tip: TooltipState | null }>) {
   if (!tip) return null
   return (
     <div className={styles.tooltip} style={{ left: tip.x, top: tip.y }}>
-      {tip.lines.map((l, i) => (
-        <div key={i} className={i === 0 ? styles.tooltipTitle : styles.tooltipValue}>
-          {l}
+      <div className={styles.tooltipTitle}>{tip.title}</div>
+      {tip.values.map((v) => (
+        <div key={v} className={styles.tooltipValue}>
+          {v}
         </div>
       ))}
     </div>
@@ -66,7 +68,7 @@ function Tooltip({ tip }: { tip: TooltipState | null }) {
  * Cost per turn across one session -- the "why sessions get expensive" curve.
  * Single series: no legend needed; the title names it.
  */
-export function CostPerTurnChart({ perTurn }: { perTurn: number[] }) {
+export function CostPerTurnChart({ perTurn }: Readonly<{ perTurn: number[] }>) {
   const [ref, width] = useContainerWidth<HTMLDivElement>()
   const [tip, setTip] = useState<TooltipState | null>(null)
   const [hoverTurn, setHoverTurn] = useState<number | null>(null)
@@ -110,7 +112,8 @@ export function CostPerTurnChart({ perTurn }: { perTurn: number[] }) {
       setTip({
         x: xFor(i),
         y: yFor(perTurn[i]) - 12,
-        lines: [`Turn ${i + 1}`, `${money(perTurn[i], 3)} this turn`],
+        title: `Turn ${i + 1}`,
+        values: [`${money(perTurn[i], 3)} this turn`],
       })
     },
     [n, perTurn, xFor, yFor],
@@ -132,17 +135,18 @@ export function CostPerTurnChart({ perTurn }: { perTurn: number[] }) {
               <g key={t}>
                 <line x1={m.left} x2={width - m.right} y1={yFor(t)} y2={yFor(t)} stroke={GRID} strokeWidth={1} />
                 <text x={m.left - 8} y={yFor(t) + 4} textAnchor="end" className={styles.axisText}>
-                  {money(t, t < 0.1 ? 2 : 2)}
+                  {money(t)}
                 </text>
               </g>
             ))}
-            {perTurn.map((_, i) =>
-              i % xTickEvery === 0 || i === n - 1 ? (
-                <text key={i} x={xFor(i)} y={height - 8} textAnchor="middle" className={styles.axisText}>
-                  {i + 1}
+            {perTurn
+              .map((_, i) => i + 1)
+              .filter((turnNo) => (turnNo - 1) % xTickEvery === 0 || turnNo === n)
+              .map((turnNo) => (
+                <text key={turnNo} x={xFor(turnNo - 1)} y={height - 8} textAnchor="middle" className={styles.axisText}>
+                  {turnNo}
                 </text>
-              ) : null,
-            )}
+              ))}
             <path d={areaPath} fill={COLOR_CURRENT} opacity={0.1} />
             <path d={linePath} fill="none" stroke={COLOR_CURRENT} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
             {/* end marker with surface ring + direct label */}
@@ -189,10 +193,10 @@ const BREAKDOWN_LABELS: { key: keyof CostBreakdown; label: string }[] = [
 export function BeforeAfterChart({
   breakdown,
   optimizedBreakdown,
-}: {
+}: Readonly<{
   breakdown: CostBreakdown
   optimizedBreakdown: CostBreakdown
-}) {
+}>) {
   const [ref, width] = useContainerWidth<HTMLDivElement>()
   const [tip, setTip] = useState<TooltipState | null>(null)
 
@@ -216,7 +220,8 @@ export function BeforeAfterChart({
     setTip({
       x: m.left + Math.min(wFor(cur), iw * 0.6),
       y,
-      lines: [label, `Current ${money(cur)} / Optimized ${money(opt)}`, `Saves ${money(Math.max(saved, 0))}/mo`],
+      title: label,
+      values: [`Current ${money(cur)} / Optimized ${money(opt)}`, `Saves ${money(Math.max(saved, 0))}/mo`],
     })
   }
 
@@ -226,11 +231,11 @@ export function BeforeAfterChart({
       <div className={styles.legendRow}>
         <span className={styles.legendItem}>
           <span className={styles.swatch} style={{ background: COLOR_CURRENT }} />
-          Current
+          <span>Current</span>
         </span>
         <span className={styles.legendItem}>
           <span className={styles.swatch} style={{ background: COLOR_OPTIMIZED }} />
-          Optimized
+          <span>Optimized</span>
         </span>
       </div>
       <div className={styles.chartCanvas} ref={ref}>
@@ -285,7 +290,7 @@ export function BeforeAfterChart({
 }
 
 /** Same settings costed on each active model; the selected one is emphasized. */
-export function ModelComparisonChart({ inputs }: { inputs: CalculatorInputs }) {
+export function ModelComparisonChart({ inputs }: Readonly<{ inputs: CalculatorInputs }>) {
   const [ref, width] = useContainerWidth<HTMLDivElement>()
   const [tip, setTip] = useState<TooltipState | null>(null)
 
@@ -332,7 +337,8 @@ export function ModelComparisonChart({ inputs }: { inputs: CalculatorInputs }) {
                     setTip({
                       x: m.left + Math.min(w, iw * 0.6),
                       y: y + barH / 2,
-                      lines: [r.name, `${money(r.cost)} per session`, `${money(r.cost * sessionsPerMonth)} per month`],
+                      title: r.name,
+                      values: [`${money(r.cost)} per session`, `${money(r.cost * sessionsPerMonth)} per month`],
                     })
                   }
                   onPointerLeave={() => setTip(null)}
