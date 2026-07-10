@@ -22,10 +22,19 @@ from pathlib import Path
 
 # -- Scoring ------------------------------------------------------------------
 
+
+def _resolve_inside(project: Path, name: str) -> Path | None:
+    """Resolve project/name and ensure it stays inside the project root."""
+    candidate = (project / name).resolve()
+    if not candidate.is_relative_to(project):
+        return None
+    return candidate
+
+
 def score_claude_md(project: Path) -> dict:
     """Score CLAUDE.md based on existence and line count."""
-    path = project / "CLAUDE.md"
-    if not path.is_file():
+    path = _resolve_inside(project, "CLAUDE.md")
+    if path is None or not path.is_file():
         return {"score": 0, "detail": "CLAUDE.md not found", "lines": None}
 
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -49,8 +58,8 @@ def score_claude_md(project: Path) -> dict:
 
 def score_claudeignore(project: Path) -> dict:
     """Score .claudeignore based on existence and entry count."""
-    path = project / ".claudeignore"
-    if not path.is_file():
+    path = _resolve_inside(project, ".claudeignore")
+    if path is None or not path.is_file():
         return {"score": 0, "detail": ".claudeignore not found", "entries": None}
 
     lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
@@ -69,8 +78,8 @@ def score_claudeignore(project: Path) -> dict:
 
 def score_settings(project: Path) -> dict:
     """Score .claude/settings.json for model and budget cap config."""
-    path = project / ".claude" / "settings.json"
-    if not path.is_file():
+    path = _resolve_inside(project, ".claude/settings.json")
+    if path is None or not path.is_file():
         return {
             "score": 0,
             "detail": "settings.json not found",
@@ -123,8 +132,8 @@ def score_settings(project: Path) -> dict:
 
 def score_mcp(project: Path) -> dict:
     """Score MCP server count from settings.json."""
-    path = project / ".claude" / "settings.json"
-    if not path.is_file():
+    path = _resolve_inside(project, ".claude/settings.json")
+    if path is None or not path.is_file():
         return {"score": 25, "detail": "0 MCP servers (no settings file)", "count": 0}
 
     try:
@@ -150,6 +159,7 @@ def score_mcp(project: Path) -> dict:
 
 
 # -- Grade mapping ------------------------------------------------------------
+
 
 def total_to_grade(total: int) -> str:
     """Map a 0-100 score to a letter grade."""
@@ -189,6 +199,7 @@ def badge_url(grade: str) -> str:
 
 # -- Main logic ---------------------------------------------------------------
 
+
 def audit(project: Path) -> dict:
     """Run the full audit and return structured results."""
     claude_md = score_claude_md(project)
@@ -196,7 +207,9 @@ def audit(project: Path) -> dict:
     settings = score_settings(project)
     mcp = score_mcp(project)
 
-    total = claude_md["score"] + claudeignore["score"] + settings["score"] + mcp["score"]
+    total = (
+        claude_md["score"] + claudeignore["score"] + settings["score"] + mcp["score"]
+    )
     grade = total_to_grade(total)
 
     return {
@@ -231,6 +244,7 @@ def main() -> None:
     if not project.is_dir():
         print(f"Error: '{sys.argv[1]}' is not a directory", file=sys.stderr)
         sys.exit(1)
+    project = project.resolve()
 
     result = audit(project)
 

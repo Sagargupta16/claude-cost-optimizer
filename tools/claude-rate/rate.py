@@ -174,6 +174,7 @@ GRADE_TABLE: tuple[tuple[float, str], ...] = (
 
 # -- ANSI colors -------------------------------------------------------------
 
+
 def _supports_color() -> bool:
     if os.environ.get("NO_COLOR"):
         return False
@@ -195,6 +196,7 @@ MAGENTA = "\033[35m" if _C else ""
 
 
 # -- Data classes ------------------------------------------------------------
+
 
 @dataclass
 class CategoryResult:
@@ -242,15 +244,21 @@ class RateResult:
 
 # -- Helpers -----------------------------------------------------------------
 
-def _read_text(path: Path) -> str | None:
+
+def _read_text(root: Path, relative: str | Path) -> str | None:
+    """Read a file under `root`, rejecting any path that escapes the project."""
+    base = root.resolve()
+    candidate = (base / relative).resolve()
+    if not candidate.is_relative_to(base):
+        return None
     try:
-        return path.read_text(encoding="utf-8", errors="replace")
+        return candidate.read_text(encoding="utf-8", errors="replace")
     except OSError:
         return None
 
 
-def _read_json(path: Path) -> dict[str, Any] | None:
-    text = _read_text(path)
+def _read_json(root: Path, relative: str | Path) -> dict[str, Any] | None:
+    text = _read_text(root, relative)
     if text is None:
         return None
     try:
@@ -294,17 +302,17 @@ _TOTAL_TIERS: tuple[tuple[int, int], ...] = (
 
 def _gather_claude_md_chars(project: Path) -> tuple[int, int, int]:
     """Return (primary_chars, total_chars, file_count) for CLAUDE.md files."""
-    primary = project / CLAUDE_MD
-    secondary = project / DOT_CLAUDE / CLAUDE_MD
+    primary = Path(CLAUDE_MD)
+    secondary = Path(DOT_CLAUDE) / CLAUDE_MD
     primary_chars = 0
     total_chars = 0
     count = 0
-    for path in (primary, secondary):
-        if path.is_file():
-            chars = _char_count(_read_text(path) or "")
+    for relative in (primary, secondary):
+        if (project / relative).is_file():
+            chars = _char_count(_read_text(project, relative) or "")
             total_chars += chars
             count += 1
-            if path == primary:
+            if relative == primary:
                 primary_chars = chars
     return primary_chars, total_chars, count
 
@@ -319,7 +327,9 @@ def _score_tier(value: int, tiers: tuple, default: tuple) -> tuple:
 
 def score_claude_md(project: Path) -> CategoryResult:
     """CLAUDE.md presence, size discipline, and total instruction budget."""
-    cat = CategoryResult(name=CLAUDE_MD, score=0, max_score=20, detail="", findings=[], fixes=[])
+    cat = CategoryResult(
+        name=CLAUDE_MD, score=0, max_score=20, detail="", findings=[], fixes=[]
+    )
     primary_chars, total_chars, file_count = _gather_claude_md_chars(project)
 
     if file_count == 0:
@@ -332,7 +342,9 @@ def score_claude_md(project: Path) -> CategoryResult:
         return cat
 
     # Score primary file (max 12 points).
-    primary_tier = _score_tier(primary_chars, _PRIMARY_TIERS, (0, 0, "massively bloated"))
+    primary_tier = _score_tier(
+        primary_chars, _PRIMARY_TIERS, (0, 0, "massively bloated")
+    )
     primary_score = primary_tier[1]
     primary_msg = primary_tier[2]
 
@@ -350,7 +362,9 @@ def score_claude_md(project: Path) -> CategoryResult:
     return cat
 
 
-def _add_claude_md_findings(cat: CategoryResult, project: Path, primary_chars: int, total_chars: int) -> None:
+def _add_claude_md_findings(
+    cat: CategoryResult, project: Path, primary_chars: int, total_chars: int
+) -> None:
     """Attach findings/fixes to a CLAUDE.md result based on size thresholds."""
     if primary_chars > CLAUDE_MD_HARD_LIMIT:
         over = primary_chars - CLAUDE_MD_HARD_LIMIT
@@ -363,7 +377,9 @@ def _add_claude_md_findings(cat: CategoryResult, project: Path, primary_chars: i
             f"guidance to {DOT_CLAUDE}/{CLAUDE_MD} or referenced docs."
         )
     elif primary_chars > 3_000:
-        cat.fixes.append(f"{CLAUDE_MD} is {primary_chars:,} chars (near 4K limit). Trim to under 3,000 to leave headroom.")
+        cat.fixes.append(
+            f"{CLAUDE_MD} is {primary_chars:,} chars (near 4K limit). Trim to under 3,000 to leave headroom."
+        )
 
     if total_chars > CLAUDE_MD_TOTAL_LIMIT:
         cat.findings.append(
@@ -385,13 +401,15 @@ def _add_claude_md_findings(cat: CategoryResult, project: Path, primary_chars: i
 
 def score_claudeignore(project: Path) -> CategoryResult:
     """`.claudeignore` presence and coverage of common bloat sources."""
-    cat = CategoryResult(name=CLAUDEIGNORE, score=0, max_score=15, detail="", findings=[], fixes=[])
+    cat = CategoryResult(
+        name=CLAUDEIGNORE, score=0, max_score=15, detail="", findings=[], fixes=[]
+    )
     path = project / CLAUDEIGNORE
 
     if not path.is_file():
         return _claudeignore_missing(cat, project)
 
-    entries = _parse_claudeignore_entries(path)
+    entries = _parse_claudeignore_entries(project)
     missing = _find_claudeignore_gaps(project, entries)
     _apply_claudeignore_score(cat, len(entries), missing)
     return cat
@@ -421,7 +439,12 @@ _DIR_SUGGESTIONS: tuple[tuple[str, str], ...] = (
     ("vendor", "vendor/"),
 )
 _DEFAULT_SUGGESTIONS: tuple[str, ...] = (
-    ".git/", "*.log", "coverage/", ".next/", "*.min.js", "*.map",
+    ".git/",
+    "*.log",
+    "coverage/",
+    ".next/",
+    "*.min.js",
+    "*.map",
 )
 
 
@@ -450,15 +473,16 @@ def _claudeignore_missing(cat: CategoryResult, project: Path) -> CategoryResult:
     )
     deduped = _suggest_claudeignore_patterns(project)
     cat.fixes.append(
-        f"Create {CLAUDEIGNORE} at repo root with these patterns:" + FIX_INDENT
+        f"Create {CLAUDEIGNORE} at repo root with these patterns:"
+        + FIX_INDENT
         + FIX_INDENT.join(deduped)
     )
     return cat
 
 
-def _parse_claudeignore_entries(path: Path) -> list[str]:
+def _parse_claudeignore_entries(project: Path) -> list[str]:
     """Read .claudeignore and return non-comment, non-blank entries."""
-    raw = _read_text(path) or ""
+    raw = _read_text(project, CLAUDEIGNORE) or ""
     return [
         line.strip()
         for line in raw.splitlines()
@@ -482,7 +506,9 @@ def _find_claudeignore_gaps(project: Path, entries: list[str]) -> list[str]:
     for pattern, dir_check in _COVERAGE_CHECKS:
         if dir_check is None:
             if _project_has_lock(project) and not _has_lock_coverage(entries):
-                missing.append(f"{LOCKFILE_NAMES[0]}  # or {LOCK_GLOB} to cover all variants")
+                missing.append(
+                    f"{LOCKFILE_NAMES[0]}  # or {LOCK_GLOB} to cover all variants"
+                )
             continue
         if not (project / dir_check).exists():
             continue
@@ -492,7 +518,9 @@ def _find_claudeignore_gaps(project: Path, entries: list[str]) -> list[str]:
     return missing
 
 
-def _apply_claudeignore_score(cat: CategoryResult, count: int, missing: list[str]) -> None:
+def _apply_claudeignore_score(
+    cat: CategoryResult, count: int, missing: list[str]
+) -> None:
     """Map (entry count, missing) to score, detail, and remediation."""
     if count == 0:
         cat.score, cat.detail = 0, "file exists but is empty"
@@ -511,7 +539,9 @@ def _apply_claudeignore_score(cat: CategoryResult, count: int, missing: list[str
             "actually present in your repo:"
         )
         cat.fixes.append(
-            f"Add these lines to {CLAUDEIGNORE}:" + FIX_INDENT + FIX_INDENT.join(missing)
+            f"Add these lines to {CLAUDEIGNORE}:"
+            + FIX_INDENT
+            + FIX_INDENT.join(missing)
         )
 
     if count < 5:
@@ -525,7 +555,12 @@ def _apply_claudeignore_score(cat: CategoryResult, count: int, missing: list[str
 
 _MODEL_KEYS: tuple[str, ...] = ("model", "defaultModel", "preferredModel")
 _BUDGET_KEYS: tuple[str, ...] = (
-    "budgetCap", "costLimit", "maxCost", "maxMonthlyCost", "maxCostPerSession", "budget",
+    "budgetCap",
+    "costLimit",
+    "maxCost",
+    "maxMonthlyCost",
+    "maxCostPerSession",
+    "budget",
 )
 
 
@@ -536,10 +571,10 @@ def _settings_category_label() -> str:
 def _load_settings(project: Path) -> tuple[dict[str, Any] | None, Path | None]:
     """Find the first readable settings.json variant under .claude/."""
     for filename in (SETTINGS_JSON, SETTINGS_LOCAL_JSON):
-        path = project / DOT_CLAUDE / filename
-        data = _read_json(path)
+        relative = Path(DOT_CLAUDE) / filename
+        data = _read_json(project, relative)
         if data is not None:
-            return data, path
+            return data, project / relative
     return None, None
 
 
@@ -549,13 +584,29 @@ def _settings_features(data: dict[str, Any]) -> tuple[bool, bool, bool, str | No
     has_model = bool(model_id)
     has_budget = any(data.get(k) for k in _BUDGET_KEYS)
     perms = data.get("permissions") or {}
-    has_perms = bool(perms.get("allow") or perms.get("deny")) if isinstance(perms, dict) else False
-    return has_model, has_budget, has_perms, model_id if isinstance(model_id, str) else None
+    has_perms = (
+        bool(perms.get("allow") or perms.get("deny"))
+        if isinstance(perms, dict)
+        else False
+    )
+    return (
+        has_model,
+        has_budget,
+        has_perms,
+        model_id if isinstance(model_id, str) else None,
+    )
 
 
 def score_settings(project: Path) -> CategoryResult:
     """`.claude/settings.json` model + budget config + permissions."""
-    cat = CategoryResult(name=_settings_category_label(), score=0, max_score=15, detail="", findings=[], fixes=[])
+    cat = CategoryResult(
+        name=_settings_category_label(),
+        score=0,
+        max_score=15,
+        detail="",
+        findings=[],
+        fixes=[],
+    )
     data, found_path = _load_settings(project)
 
     if data is None:
@@ -586,7 +637,9 @@ def score_settings(project: Path) -> CategoryResult:
         score += 5
         parts.append("budget cap configured")
     else:
-        cat.fixes.append('Add a budget cap (e.g. "maxMonthlyCost": 100) to prevent runaway costs.')
+        cat.fixes.append(
+            'Add a budget cap (e.g. "maxMonthlyCost": 100) to prevent runaway costs.'
+        )
 
     if has_perms:
         score += 4
@@ -618,11 +671,11 @@ def _count_mcp_servers(project: Path) -> tuple[dict[str, int], dict[str, Any] | 
     """Return ({source_label: count}, settings_dict_or_None)."""
     counts: dict[str, int] = {}
 
-    mcp_data = _read_json(project / MCP_JSON)
+    mcp_data = _read_json(project, MCP_JSON)
     if mcp_data is not None and isinstance(mcp_data.get("mcpServers"), dict):
         counts[MCP_JSON] = len(mcp_data["mcpServers"])
 
-    settings = _read_json(project / DOT_CLAUDE / SETTINGS_JSON)
+    settings = _read_json(project, Path(DOT_CLAUDE) / SETTINGS_JSON)
     if settings is not None:
         servers = settings.get("mcpServers", {})
         if isinstance(servers, dict) and servers:
@@ -633,7 +686,9 @@ def _count_mcp_servers(project: Path) -> tuple[dict[str, int], dict[str, Any] | 
 
 def score_mcp_servers(project: Path) -> CategoryResult:
     """Count MCP servers across .mcp.json + settings.json. Each adds ~1.5K tokens/turn."""
-    cat = CategoryResult(name="MCP servers", score=0, max_score=15, detail="", findings=[], fixes=[])
+    cat = CategoryResult(
+        name="MCP servers", score=0, max_score=15, detail="", findings=[], fixes=[]
+    )
     counts, settings = _count_mcp_servers(project)
     total = sum(counts.values())
 
@@ -671,9 +726,11 @@ def score_mcp_servers(project: Path) -> CategoryResult:
 
 def score_hooks(project: Path) -> CategoryResult:
     """Hooks for budget tracking, cost logging, or permission policy."""
-    cat = CategoryResult(name="Hooks", score=0, max_score=10, detail="", findings=[], fixes=[])
+    cat = CategoryResult(
+        name="Hooks", score=0, max_score=10, detail="", findings=[], fixes=[]
+    )
 
-    settings = _read_json(project / DOT_CLAUDE / SETTINGS_JSON)
+    settings = _read_json(project, Path(DOT_CLAUDE) / SETTINGS_JSON)
     hooks = settings.get("hooks") if settings else None
     hook_count = _count_hook_entries(hooks)
 
@@ -711,7 +768,11 @@ def _count_hook_entries(hooks: Any) -> int:
 
 
 _DANGER_FILES: tuple[str, ...] = (
-    ".env", ".env.local", ".env.production", "credentials.json", ".mcp.local.json",
+    ".env",
+    ".env.local",
+    ".env.production",
+    "credentials.json",
+    ".mcp.local.json",
 )
 _API_KEY_PATTERN = re.compile(
     r"(sk-[a-zA-Z0-9]{20,}|AKIA[0-9A-Z]{16}|ghp_[a-zA-Z0-9]{36})"
@@ -723,21 +784,25 @@ def _gitignore_lines(project: Path) -> list[str]:
     path = project / GITIGNORE
     if not path.is_file():
         return []
-    text = _read_text(path) or ""
+    text = _read_text(project, GITIGNORE) or ""
     return [line.strip() for line in text.splitlines() if line.strip()]
 
 
 def _is_gitignored(filename: str, gitignore_lines: list[str]) -> bool:
     """True if the gitignore lines plausibly cover `filename`."""
     target = filename.rstrip("/")
-    return any(filename in line or line.rstrip("/") == target for line in gitignore_lines)
+    return any(
+        filename in line or line.rstrip("/") == target for line in gitignore_lines
+    )
 
 
 def _find_leaked_files(project: Path, gitignore_lines: list[str]) -> list[str]:
     """Sensitive files that exist on disk but aren't in .gitignore."""
     leaked: list[str] = []
     for filename in _DANGER_FILES:
-        if (project / filename).is_file() and not _is_gitignored(filename, gitignore_lines):
+        if (project / filename).is_file() and not _is_gitignored(
+            filename, gitignore_lines
+        ):
             leaked.append(filename)
     return leaked
 
@@ -746,14 +811,15 @@ def _find_api_key_leaks(project: Path) -> list[str]:
     """Files in the repo that contain an obvious API key pattern."""
     suspects: list[str] = []
     targets = (
-        project / CLAUDE_MD,
-        project / DOT_CLAUDE / SETTINGS_JSON,
-        project / MCP_JSON,
+        Path(CLAUDE_MD),
+        Path(DOT_CLAUDE) / SETTINGS_JSON,
+        Path(MCP_JSON),
     )
-    for target in targets:
+    for relative in targets:
+        target = project / relative
         if not target.is_file():
             continue
-        text = _read_text(target) or ""
+        text = _read_text(project, relative) or ""
         if _API_KEY_PATTERN.search(text):
             suspects.append(str(target.relative_to(project)))
     return suspects
@@ -761,7 +827,14 @@ def _find_api_key_leaks(project: Path) -> list[str]:
 
 def score_security(project: Path) -> CategoryResult:
     """Quick check for accidentally-committed secrets and missing gitignore entries."""
-    cat = CategoryResult(name="Security & hygiene", score=0, max_score=10, detail="", findings=[], fixes=[])
+    cat = CategoryResult(
+        name="Security & hygiene",
+        score=0,
+        max_score=10,
+        detail="",
+        findings=[],
+        fixes=[],
+    )
 
     gitignore_lines = _gitignore_lines(project)
     has_gitignore = bool(gitignore_lines) or (project / GITIGNORE).is_file()
@@ -776,7 +849,8 @@ def score_security(project: Path) -> CategoryResult:
             "These will be committed unless explicitly ignored."
         )
         cat.fixes.append(
-            f"Add to {GITIGNORE} IMMEDIATELY:" + FIX_INDENT
+            f"Add to {GITIGNORE} IMMEDIATELY:"
+            + FIX_INDENT
             + FIX_INDENT.join(leaked + [".env*", "*.key", ".mcp.local.json"])
         )
 
@@ -795,8 +869,12 @@ def score_security(project: Path) -> CategoryResult:
 
     if not has_gitignore:
         score = max(0, score - 3)
-        cat.findings.append(f"No {GITIGNORE} at all -- secrets and build artifacts will be tracked.")
-        cat.fixes.append(f"Run `git init` properly or copy a starter {GITIGNORE} for your stack.")
+        cat.findings.append(
+            f"No {GITIGNORE} at all -- secrets and build artifacts will be tracked."
+        )
+        cat.fixes.append(
+            f"Run `git init` properly or copy a starter {GITIGNORE} for your stack."
+        )
 
     cat.score = max(0, score)
     if cat.score == cat.max_score:
@@ -850,7 +928,14 @@ def _score_plugin_metadata(project: Path) -> tuple[int, str | None]:
 
 def score_optimizer_tooling(project: Path) -> CategoryResult:
     """Bonus points for already-installed cost-optimization tooling."""
-    cat = CategoryResult(name="Optimizer tooling", score=0, max_score=15, detail="", findings=[], fixes=[])
+    cat = CategoryResult(
+        name="Optimizer tooling",
+        score=0,
+        max_score=15,
+        detail="",
+        findings=[],
+        fixes=[],
+    )
 
     sub_scorers = (
         _score_cost_mode,
@@ -868,7 +953,8 @@ def score_optimizer_tooling(project: Path) -> CategoryResult:
 
     cat.score = min(score, cat.max_score)
     cat.detail = (
-        ", ".join(found) if found
+        ", ".join(found)
+        if found
         else "none of: cost-mode skill, custom commands, subagents, plugin metadata"
     )
 
@@ -888,6 +974,7 @@ def score_optimizer_tooling(project: Path) -> CategoryResult:
 
 
 # -- Grade mapping -----------------------------------------------------------
+
 
 def total_to_grade(total: int, max_total: int) -> str:
     """Map (score, max) to a letter grade via GRADE_TABLE."""
@@ -930,13 +1017,14 @@ def badge_url(grade: str) -> str:
 
 # -- Cost estimation ---------------------------------------------------------
 
+
 def estimate_costs(claude_md_chars: int, mcp_count: int) -> dict[str, dict[str, float]]:
     """Estimate per-session and per-month cost for each active model.
 
     Assumes 30 turns/session, 3 sessions/day, 22 working days/month, and a
     70% cache hit rate -- mirrors the deployed analyzer's defaults.
     """
-    claude_md_tokens = (claude_md_chars / 4)  # ~4 chars per token
+    claude_md_tokens = claude_md_chars / 4  # ~4 chars per token
     mcp_tokens = mcp_count * TOKENS_PER_MCP_SERVER
     system_prompt_tokens = SYSTEM_PROMPT_TOKENS + claude_md_tokens + mcp_tokens
 
@@ -1041,7 +1129,9 @@ def _print_category_lines(categories: list[CategoryResult]) -> None:
 def _print_cost_block(result: RateResult) -> None:
     """Render total/grade and the per-model cost estimate table."""
     grade_c = grade_ansi(result.grade)
-    print(f"{BOLD}Total:{RESET} {result.score}/{result.max_score}  ({grade_c}{result.grade}{RESET})")
+    print(
+        f"{BOLD}Total:{RESET} {result.score}/{result.max_score}  ({grade_c}{result.grade}{RESET})"
+    )
     print()
     print(
         f"{BOLD}Estimated monthly cost{RESET} "
@@ -1077,7 +1167,9 @@ def print_report(result: RateResult, show_fixes: bool = False) -> None:
     print(f"{BOLD}claude-rate{RESET} {DIM}-- Claude / AI setup audit{RESET}")
     print(f"{DIM}{'=' * 60}{RESET}")
     print(f"Project: {result.project}")
-    print(f"Verified against Anthropic pricing as of: {DIM}{_PRICING_VERIFIED_DATE}{RESET}")
+    print(
+        f"Verified against Anthropic pricing as of: {DIM}{_PRICING_VERIFIED_DATE}{RESET}"
+    )
     print()
 
     _print_category_lines(result.categories)
@@ -1090,12 +1182,15 @@ def print_report(result: RateResult, show_fixes: bool = False) -> None:
         unfixed = sum(len(c.fixes) for c in result.categories)
         if unfixed:
             print()
-            print(f"{DIM}Run with --fix to see {unfixed} copy-pasteable fix suggestion(s).{RESET}")
+            print(
+                f"{DIM}Run with --fix to see {unfixed} copy-pasteable fix suggestion(s).{RESET}"
+            )
 
     print()
 
 
 # -- CLI entry point ---------------------------------------------------------
+
 
 def main() -> None:
     parser = argparse.ArgumentParser(
@@ -1103,18 +1198,32 @@ def main() -> None:
         description="Rate the cost-efficiency of a Claude / AI setup in a local project directory.",
         epilog="Source: https://github.com/Sagargupta16/claude-cost-optimizer",
     )
-    parser.add_argument("path", nargs="?", default=".", help="Project directory (default: current dir)")
-    parser.add_argument("--json", action="store_true", dest="json_output", help="Emit machine-readable JSON")
-    parser.add_argument("--fix", action="store_true", dest="show_fixes", help="Show copy-pasteable fix suggestions")
-    parser.add_argument("--strict", action="store_true", help="Exit with status 1 if grade is below B")
+    parser.add_argument(
+        "path", nargs="?", default=".", help="Project directory (default: current dir)"
+    )
+    parser.add_argument(
+        "--json",
+        action="store_true",
+        dest="json_output",
+        help="Emit machine-readable JSON",
+    )
+    parser.add_argument(
+        "--fix",
+        action="store_true",
+        dest="show_fixes",
+        help="Show copy-pasteable fix suggestions",
+    )
+    parser.add_argument(
+        "--strict", action="store_true", help="Exit with status 1 if grade is below B"
+    )
     parser.add_argument("--version", action="version", version="claude-rate 0.1.0")
 
     args = parser.parse_args()
 
-    project = Path(args.path)
-    if not project.is_dir():
+    if not Path(args.path).is_dir():
         print(f"{RED}Error:{RESET} '{args.path}' is not a directory", file=sys.stderr)
         sys.exit(2)
+    project = Path(args.path).resolve()
 
     result = rate(project)
 

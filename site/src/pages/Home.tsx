@@ -42,6 +42,37 @@ const features = [
   },
 ]
 
+const levers = [
+  {
+    title: 'Prompt caching',
+    savings: 'up to 90%',
+    description: 'Cache hits bill at 0.1x input price. Automatic in Claude Code -- keep the prefix stable and turns under 5 min apart.',
+    source: 'Anthropic',
+    link: 'https://claude.com/blog/prompt-caching',
+  },
+  {
+    title: 'Batch API',
+    savings: 'flat 50%',
+    description: 'Half price on input AND output for async work. Stacks with caching.',
+    source: 'Anthropic',
+    link: 'https://platform.claude.com/docs/en/build-with-claude/batch-processing',
+  },
+  {
+    title: 'Model routing',
+    savings: '~80%',
+    description: 'Haiku is 5x cheaper than Opus per token. Route simple tasks down.',
+    source: 'RouteLLM',
+    link: 'https://arxiv.org/pdf/2406.18665',
+  },
+  {
+    title: 'Context management',
+    savings: '84%',
+    description: 'Fewer tokens in long agentic sessions via context editing, /compact, and fresh sessions.',
+    source: 'Anthropic',
+    link: 'https://claude.com/blog/context-management',
+  },
+]
+
 const benchmarks = [
   { task: 'React re-render bug', before: 1180, after: 350 },
   { task: 'Auth middleware fix', before: 704, after: 210 },
@@ -202,6 +233,44 @@ function Home() {
             </p>
           </div>
         </div>
+      </section>
+
+      {/* Path to 90% */}
+      <section className={styles.section}>
+        <h2 className={styles.sectionTitle}>The Path to 90%</h2>
+        <p className={styles.sectionSub}>
+          The skill alone saves 30-60%. Stacking every lever against an
+          unoptimized all-Opus baseline is what reaches up to 90% -- each
+          figure below is published and sourced.
+        </p>
+        <div className={styles.leversGrid}>
+          {levers.map((l) => (
+            <a
+              key={l.title}
+              href={l.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={styles.leverCard}
+            >
+              <div className={styles.leverSavings}>{l.savings}</div>
+              <h3 className={styles.leverTitle}>{l.title}</h3>
+              <p className={styles.leverDesc}>{l.description}</p>
+              <span className={styles.leverSource}>{l.source}</span>
+            </a>
+          ))}
+        </div>
+        <p className={styles.leversFine}>
+          30-60% is the typical result for a mixed workload. Treat 90% as the
+          stacked ceiling, not a promise -- each lever applies to its
+          favorable slice of spend.{' '}
+          <a
+            href="https://github.com/Sagargupta16/claude-cost-optimizer#how-far-can-you-actually-go"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            Full evidence table
+          </a>
+        </p>
       </section>
 
       {/* Benchmarks */}
