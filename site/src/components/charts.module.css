@@ -1,0 +1,106 @@
+.chartBlock {
+  margin: 1.5rem 0;
+}
+
+.chartTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.5rem;
+}
+
+.chartCanvas {
+  position: relative;
+  width: 100%;
+}
+
+.chartCaption {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin-top: 0.4rem;
+  line-height: 1.5;
+}
+
+.legendRow {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+}
+
+.axisText {
+  font-size: 10px;
+  fill: var(--text-muted);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.rowLabel {
+  font-size: 11px;
+  fill: var(--text-muted);
+}
+
+.rowLabelStrong {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text);
+}
+
+.valueLabel {
+  font-size: 10px;
+  fill: var(--text-muted);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.endLabel {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--text);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.bar {
+  transition: opacity 120ms ease;
+}
+
+.bar:hover {
+  opacity: 0.85;
+}
+
+.tooltip {
+  position: absolute;
+  transform: translate(-50%, -100%);
+  background: var(--surface-hover);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 5;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.tooltipTitle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.tooltipValue {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}

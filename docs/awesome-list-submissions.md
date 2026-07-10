@@ -13,7 +13,7 @@ Ready-to-submit entries for popular Claude Code awesome lists. Each section incl
 **Entry to add**:
 
 ```markdown
-- [Claude Cost Optimizer](https://github.com/Sagargupta16/claude-cost-optimizer) - Strategies, benchmarks, templates, and CLI tools for reducing Claude Code costs by 30-60%.
+- [Claude Cost Optimizer](https://github.com/Sagargupta16/claude-cost-optimizer) - Strategies, benchmarks, templates, and CLI tools for reducing Claude Code costs by 30-90% (30-60% typical, up to 90% when every lever is stacked).
 ```
 
 **PR title**: `Add Claude Cost Optimizer to resources`
@@ -26,7 +26,7 @@ real-world benchmarks, CLAUDE.md templates, and Python CLI tools (token
 estimator, usage analyzer) for cutting Claude Code spending.
 
 Includes:
-- 7 optimization guides covering context, model selection, workflows, and team budgeting
+- 12 optimization guides covering context, model selection, workflows, team budgeting, caching, task routing, and speed vs cost
 - Benchmarks with reproducible methodology
 - Copy-paste CLAUDE.md templates for common stacks (React, Next.js, FastAPI, MERN, Terraform)
 - Token estimator and usage analyzer CLI tools
@@ -82,8 +82,9 @@ on reducing Claude Code costs. Relevant to this list because it provides:
 ```
 Adds Claude Cost Optimizer, which covers:
 
-- 7 guides: cost fundamentals, context optimization, model selection,
-  workflow patterns, team budgeting, access method pricing, MCP/agent costs
+- 12 guides: cost fundamentals, context optimization, model selection,
+  workflow patterns, team budgeting, access method pricing, MCP/agent costs,
+  prompt caching, subscription value, task routing, speed vs cost
 - Real-world benchmarks: task comparison, model comparison, context size impact
 - Templates: 4 CLAUDE.md templates, 5 stack-specific templates, 3 settings configs, 3 slash commands
 - Tools: token estimator (estimate cost before sending), usage analyzer (find cost hotspots)

@@ -52,8 +52,8 @@ const benchmarks = [
 
 const resources = [
   {
-    title: '11 Optimization Guides',
-    desc: 'From getting started to three-tier task routing and prompt caching deep dives.',
+    title: '12 Optimization Guides',
+    desc: 'From getting started to task routing, prompt caching, and speed-vs-cost deep dives.',
     link: 'https://github.com/Sagargupta16/claude-cost-optimizer/tree/main/guides',
   },
   {
@@ -86,12 +86,16 @@ function Home() {
       <section className={styles.hero}>
         <p className={styles.tagline}>Claude Code Skill</p>
         <h1 className={styles.title}>
-          Save <span className={styles.accent}>30-60%</span> on costs
+          Save <span className={styles.accent}>30-90%</span> on costs
         </h1>
         <p className={styles.subtitle}>
-          An installable skill that cuts Claude Code costs through concise
-          responses, model routing, and efficient workflow patterns.
-          11 guides, 14 templates, and 7 CLI tools included.
+          An installable skill plus 12 guides, 14 templates, and 7 CLI tools
+          that cut Claude Code costs through concise responses, model routing,
+          prompt caching, and efficient workflow patterns.
+        </p>
+        <p className={styles.subtitleFine}>
+          30-60% for a typical workload -- up to 90% when you stack every lever
+          against an unoptimized all-Opus baseline.
         </p>
 
         <div className={styles.installBox}>
@@ -260,7 +264,7 @@ function Home() {
       {/* Stats */}
       <section className={styles.statsBar}>
         <div className={styles.stat}>
-          <span className={styles.statNum}>11</span>
+          <span className={styles.statNum}>12</span>
           <span className={styles.statLbl}>guides</span>
         </div>
         <div className={styles.stat}>

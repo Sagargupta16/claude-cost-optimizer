@@ -3,7 +3,7 @@
   "plugins": [
     {
       "name": "cost-mode",
-      "version": "1.9.0",
+      "version": "1.10.0",
       "description": "Activate cost-conscious mode. Cuts filler, suggests cheaper models, encourages efficient patterns. 30-60% cost savings.",
       "source": {
         "source": "github",
