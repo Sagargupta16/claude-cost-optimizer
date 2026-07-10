@@ -191,6 +191,86 @@
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
 
+/* Path to 90% levers */
+
+.sectionSub {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  max-width: 640px;
+  margin: -0.75rem 0 1.5rem;
+  line-height: 1.7;
+}
+
+.leversGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .leversGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 500px) {
+  .leversGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.leverCard {
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.leverCard:hover {
+  border-color: var(--accent-green);
+  text-decoration: none;
+  transform: translateY(-2px);
+}
+
+.leverSavings {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent-green);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.leverTitle {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.leverDesc {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+  flex-grow: 1;
+}
+
+.leverSource {
+  font-size: 0.72rem;
+  color: var(--accent-blue);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.leversFine {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  margin-top: 1.25rem;
+  line-height: 1.6;
+}
+
 /* Features bento grid */
 
 .featuresGrid {

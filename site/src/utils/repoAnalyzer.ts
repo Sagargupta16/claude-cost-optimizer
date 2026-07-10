@@ -63,29 +63,33 @@ const FILES_TO_FETCH = [
   '.claudeignore',
 ]
 
+// GitHub constraints: owner is alphanumeric/hyphen (max 39), repo is
+// alphanumeric/hyphen/underscore/dot (max 100). Validating here keeps
+// user input from reaching the request URL unchecked.
+const OWNER_PATTERN = /^[a-zA-Z0-9-]{1,39}$/
+const REPO_PATTERN = /^[a-zA-Z0-9._-]{1,100}$/
+
+function validateRepoInput(owner: string, repo: string): RepoInput | null {
+  const cleanRepo = repo.replace(/\.git$/, '')
+  if (!OWNER_PATTERN.test(owner) || !REPO_PATTERN.test(cleanRepo)) {
+    return null
+  }
+  return { owner, repo: cleanRepo, branch: '' }
+}
+
 export function parseRepoUrl(input: string): RepoInput | null {
   const trimmed = input.trim().replace(/\/+$/, '')
 
   // https://github.com/owner/repo or github.com/owner/repo
-  const urlMatch = trimmed.match(
-    /(?:https?:\/\/)?github\.com\/([^/\s]+)\/([^/\s#?]+)/,
-  )
+  const urlMatch = /(?:https?:\/\/)?github\.com\/([^/\s]+)\/([^/\s#?]+)/.exec(trimmed)
   if (urlMatch) {
-    return {
-      owner: urlMatch[1],
-      repo: urlMatch[2].replace(/\.git$/, ''),
-      branch: '',
-    }
+    return validateRepoInput(urlMatch[1], urlMatch[2])
   }
 
   // owner/repo shorthand
-  const shortMatch = trimmed.match(/^([^/\s]+)\/([^/\s]+)$/)
+  const shortMatch = /^([^/\s]+)\/([^/\s]+)$/.exec(trimmed)
   if (shortMatch) {
-    return {
-      owner: shortMatch[1],
-      repo: shortMatch[2],
-      branch: '',
-    }
+    return validateRepoInput(shortMatch[1], shortMatch[2])
   }
 
   return null
@@ -98,7 +102,8 @@ async function fetchFile(
   branch: string,
 ): Promise<FetchedFile> {
   const ref = branch ? `?ref=${encodeURIComponent(branch)}` : ''
-  const url = `${GITHUB_API}/repos/${owner}/${repo}/contents/${path}${ref}`
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/')
+  const url = `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodedPath}${ref}`
 
   try {
     const res = await fetch(url)
@@ -121,7 +126,9 @@ async function fetchDefaultBranch(
   repo: string,
 ): Promise<{ branch: string; exists: boolean }> {
   try {
-    const res = await fetch(`${GITHUB_API}/repos/${owner}/${repo}`)
+    const res = await fetch(
+      `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+    )
     if (!res.ok) return { branch: 'main', exists: false }
     const data = await res.json()
     return { branch: data.default_branch || 'main', exists: true }

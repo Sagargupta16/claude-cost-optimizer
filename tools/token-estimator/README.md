@@ -91,6 +91,8 @@ python tools/token-estimator/estimate.py CLAUDE.md --per-turn 50 --json
 | `--model MODEL` | Show cost for one model: `fable` (Fable 5), `opus` (4.8), `opus_4_6`, `sonnet`, `haiku`, `fast_mode`, `mythos` (Mythos 5) | `--model haiku` |
 | `--json` | Output results as JSON | `--json` |
 
+File reads are contained to the current directory tree or your home directory; paths outside both are refused.
+
 ## Pricing
 
 The estimator uses current Claude API pricing (as of 2026-06-12):

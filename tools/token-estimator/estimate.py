@@ -20,8 +20,7 @@ try:
     import tiktoken
 except ImportError:
     print(
-        "Error: tiktoken is required. Install it with:\n"
-        "  pip install tiktoken",
+        "Error: tiktoken is required. Install it with:\n  pip install tiktoken",
         file=sys.stderr,
     )
     sys.exit(1)
@@ -72,7 +71,12 @@ MODEL_PRICING = {
             "introductory $2/$10 through 2026-08-31. New tokenizer (~30% more tokens)."
         ),
     },
-    "sonnet_4_6": {"input": 3.00, "output": 15.00, "cache_hit": 0.30, "name": "Sonnet 4.6 (legacy)"},
+    "sonnet_4_6": {
+        "input": 3.00,
+        "output": 15.00,
+        "cache_hit": 0.30,
+        "name": "Sonnet 4.6 (legacy)",
+    },
     "haiku": {"input": 1.00, "output": 5.00, "cache_hit": 0.10, "name": "Haiku 4.5"},
     "fast_mode": {
         "input": 10.00,
@@ -156,7 +160,10 @@ def calculate_cost(token_count: int, model: str, direction: str = "input") -> fl
 
 
 def read_input(source: str) -> str:
-    """Read text from a file path or stdin."""
+    """Read text from a file path or stdin.
+
+    Reads are contained to the current directory tree or home directory.
+    """
     if source == "-":
         if sys.stdin.isatty():
             print(
@@ -173,12 +180,26 @@ def read_input(source: str) -> str:
         print(f"{c(RED, 'Error:')} Not a file: {path}", file=sys.stderr)
         sys.exit(1)
 
+    resolved = os.path.realpath(path)
+    allowed_roots = (
+        os.path.realpath(os.getcwd()),
+        os.path.realpath(os.path.expanduser("~")),
+    )
+    if not any(
+        resolved == root or resolved.startswith(root + os.sep) for root in allowed_roots
+    ):
+        print(
+            f"{c(RED, 'Error:')} Refusing to read outside the current directory or home: {path}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
+
     try:
-        with open(path, "r", encoding="utf-8") as f:
+        with open(resolved, "r", encoding="utf-8") as f:
             return f.read()
     except UnicodeDecodeError:
         try:
-            with open(path, "r", encoding="latin-1") as f:
+            with open(resolved, "r", encoding="latin-1") as f:
                 return f.read()
         except Exception as e:
             print(
@@ -214,16 +235,12 @@ def print_header(source: str, token_count: int, line_count: int, char_count: int
 def print_cost_table(token_count: int, model_filter: str | None = None):
     """Print per-model cost table for a single pass."""
     models = (
-        {model_filter: MODEL_PRICING[model_filter]}
-        if model_filter
-        else MODEL_PRICING
+        {model_filter: MODEL_PRICING[model_filter]} if model_filter else MODEL_PRICING
     )
 
     print(c(BOLD, "  Cost Estimate (single input pass)"))
     print(c(DIM, "  " + "-" * 50))
-    print(
-        f"  {'Model':<14} {'Input Cost':>12} {'$/1M tokens':>14}"
-    )
+    print(f"  {'Model':<14} {'Input Cost':>12} {'$/1M tokens':>14}")
     print(f"  {'':.<14} {'':.<12} {'':.<14}")
 
     for key, info in models.items():
@@ -236,30 +253,20 @@ def print_cost_table(token_count: int, model_filter: str | None = None):
     print()
 
 
-def print_per_turn_table(
-    token_count: int, turns: int, model_filter: str | None = None
-):
+def print_per_turn_table(token_count: int, turns: int, model_filter: str | None = None):
     """Print cost projection over N turns."""
     models = (
-        {model_filter: MODEL_PRICING[model_filter]}
-        if model_filter
-        else MODEL_PRICING
+        {model_filter: MODEL_PRICING[model_filter]} if model_filter else MODEL_PRICING
     )
 
     total_tokens = token_count * turns
 
     print(c(BOLD, f"  Per-Turn Projection ({turns} turns)"))
     print(c(DIM, "  " + "-" * 50))
-    print(
-        f"  Tokens per turn:  {format_number(token_count)}"
-    )
-    print(
-        f"  Total tokens:     {c(BOLD, format_number(total_tokens))}"
-    )
+    print(f"  Tokens per turn:  {format_number(token_count)}")
+    print(f"  Total tokens:     {c(BOLD, format_number(total_tokens))}")
     print()
-    print(
-        f"  {'Model':<14} {'Total Cost':>12} {'Per Turn':>12}"
-    )
+    print(f"  {'Model':<14} {'Total Cost':>12} {'Per Turn':>12}")
     print(f"  {'':.<14} {'':.<12} {'':.<12}")
 
     for key, info in models.items():
@@ -345,9 +352,7 @@ def main():
             "costs": {},
         }
         models = (
-            {args.model: MODEL_PRICING[args.model]}
-            if args.model
-            else MODEL_PRICING
+            {args.model: MODEL_PRICING[args.model]} if args.model else MODEL_PRICING
         )
         for key, info in models.items():
             entry = {
