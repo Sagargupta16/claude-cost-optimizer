@@ -82,6 +82,15 @@ const GITHUB_API = 'https://api.github.com'
 // user input from reaching the request URL unchecked.
 const OWNER_PATTERN = /^[a-zA-Z0-9-]{1,39}$/
 const REPO_PATTERN = /^[a-zA-Z0-9._-]{1,100}$/
+// Git ref names: path-like segments of word chars, dots, dashes.
+const BRANCH_PATTERN = /^[a-zA-Z0-9._/-]{1,250}$/
+
+/** Returns the branch if it looks like a valid git ref, else the safe default. */
+export function sanitizeBranch(branch: string): string {
+  const trimmed = branch.trim()
+  if (!trimmed) return ''
+  return BRANCH_PATTERN.test(trimmed) && !trimmed.includes('..') ? trimmed : ''
+}
 
 function validateRepoInput(owner: string, repo: string): RepoInput | null {
   const cleanRepo = repo.replace(/\.git$/, '')
@@ -157,9 +166,11 @@ async function fetchTree(
   repo: string,
   branch: string,
 ): Promise<string[]> {
+  const safeBranch = sanitizeBranch(branch)
+  if (!safeBranch) return []
   try {
     const res = await fetch(
-      `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/git/trees/${encodeURIComponent(branch)}?recursive=1`,
+      `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/git/trees/${encodeURIComponent(safeBranch)}?recursive=1`,
     )
     if (!res.ok) return []
     const data = await res.json()
@@ -227,60 +238,49 @@ interface TreeDetection {
   lockFilesPresent: string[]
 }
 
+// skills/<name>/SKILL.md or .claude/skills/<name>/SKILL.md
+const SKILL_PATH = /^(?:\.claude\/)?skills\/([^/]+)\/SKILL\.md$/
+// .claude/agents/<name>.md
+const AGENT_PATH = /^\.claude\/agents\/([^/]+)\.md$/
+const COMMAND_PATH = /^\.claude\/commands\/[^/]+\.md$/
+// Only .claude/hooks/ counts -- a root hooks/ dir is usually distribution
+// content (git hooks, examples), not installed Claude Code hooks.
+const HOOK_SCRIPT_PATH = /^\.claude\/hooks\/[^/]+\.(sh|py|js|ts)$/
+const TRACKED_ENV_PATH = /^\.env\.(?!example|sample|template)[^/]*$/
+const PLUGIN_METADATA_PATHS = new Set([
+  '.claude-plugin/marketplace.json',
+  '.claude-plugin/plugin.json',
+])
+const LOCK_FILE_NAMES = new Set([
+  'package-lock.json',
+  'pnpm-lock.yaml',
+  'yarn.lock',
+  'poetry.lock',
+  'Cargo.lock',
+  'uv.lock',
+])
+
 function detectFromTree(paths: string[]): TreeDetection {
   const skills = new Set<string>()
   const agents = new Set<string>()
-  let commandCount = 0
-  let hookScripts = 0
-  let hasPluginMetadata = false
-  let hasMcpJson = false
-  let envTracked = false
-  const lockFilesPresent: string[] = []
-
-  const lockNames = new Set([
-    'package-lock.json',
-    'pnpm-lock.yaml',
-    'yarn.lock',
-    'poetry.lock',
-    'Cargo.lock',
-    'uv.lock',
-  ])
 
   for (const p of paths) {
-    // skills/<name>/SKILL.md or .claude/skills/<name>/SKILL.md
-    const skillMatch = /^(?:\.claude\/)?skills\/([^/]+)\/SKILL\.md$/.exec(p)
+    const skillMatch = SKILL_PATH.exec(p)
     if (skillMatch) skills.add(skillMatch[1])
-
-    // .claude/agents/<name>.md
-    const agentMatch = /^\.claude\/agents\/([^/]+)\.md$/.exec(p)
+    const agentMatch = AGENT_PATH.exec(p)
     if (agentMatch) agents.add(agentMatch[1])
-
-    if (/^\.claude\/commands\/[^/]+\.md$/.test(p)) commandCount += 1
-    // Only .claude/hooks/ counts -- a root hooks/ dir is usually distribution
-    // content (git hooks, examples), not installed Claude Code hooks.
-    if (/^\.claude\/hooks\/[^/]+\.(sh|py|js|ts)$/.test(p)) hookScripts += 1
-    if (p === '.claude-plugin/marketplace.json' || p === '.claude-plugin/plugin.json') {
-      hasPluginMetadata = true
-    }
-    if (p === '.mcp.json') hasMcpJson = true
-    if (p === '.env' || /^\.env\.(?!example|sample|template)[^/]*$/.test(p)) {
-      envTracked = true
-    }
-
-    const base = p.split('/').pop() ?? ''
-    if (lockNames.has(base) && !p.includes('/')) lockFilesPresent.push(base)
   }
 
   return {
     skills: [...skills].sort((a, b) => a.localeCompare(b)),
     costModeInstalled: skills.has('cost-mode'),
-    commandCount,
+    commandCount: paths.filter((p) => COMMAND_PATH.test(p)).length,
     agents: [...agents].sort((a, b) => a.localeCompare(b)),
-    hasPluginMetadata,
-    hookScripts,
-    hasMcpJson,
-    envTracked,
-    lockFilesPresent,
+    hasPluginMetadata: paths.some((p) => PLUGIN_METADATA_PATHS.has(p)),
+    hookScripts: paths.filter((p) => HOOK_SCRIPT_PATH.test(p)).length,
+    hasMcpJson: paths.includes('.mcp.json'),
+    envTracked: paths.some((p) => p === '.env' || TRACKED_ENV_PATH.test(p)),
+    lockFilesPresent: paths.filter((p) => LOCK_FILE_NAMES.has(p)),
   }
 }
 
@@ -319,13 +319,16 @@ function scoreClaudeIgnore(
     else if (entryCount >= 5) score = 10
     else if (entryCount >= 1) score = 6
 
-    // Coverage bonus: lock files exist in the repo AND are ignored.
-    const coversLocks =
-      lockFilesPresent.length === 0 ||
-      lockFilesPresent.every((lf) => entries.some((e) => e.includes(lf) || e.includes('*.lock')))
+    // Coverage bonus: every lock file in the repo is ignored (vacuously true when none exist).
+    const coversLocks = lockFilesPresent.every((lf) =>
+      entries.some((e) => e.includes(lf) || e.includes('*.lock')),
+    )
     if (coversLocks && entryCount >= 1) score += 2
     score = Math.min(score, 15)
-    detail = `${entryCount} entries${coversLocks ? '' : `; lock files not covered (${lockFilesPresent.join(', ')})`}`
+    const lockNote = coversLocks
+      ? ''
+      : `; lock files not covered (${lockFilesPresent.join(', ')})`
+    detail = `${entryCount} entries${lockNote}`
   }
   return { name: '.claudeignore', score, maxScore: 15, detail }
 }
@@ -423,8 +426,9 @@ export async function analyzeRepo(
   input: RepoInput,
 ): Promise<AnalysisResult> {
   const { owner, repo } = input
-  const repoInfo = input.branch
-    ? { branch: input.branch, exists: true }
+  const requestedBranch = sanitizeBranch(input.branch)
+  const repoInfo = requestedBranch
+    ? { branch: requestedBranch, exists: true }
     : await fetchDefaultBranch(owner, repo)
   const branch = repoInfo.branch
 
@@ -647,7 +651,7 @@ export async function analyzeRepo(
   }
 }
 
-function buildRecommendations(r: {
+interface RecommendationInput {
   claudeMd: AnalysisResult['claudeMd']
   claudeMdAll: AnalysisResult['claudeMdAll']
   claudeIgnore: AnalysisResult['claudeIgnore']
@@ -655,100 +659,115 @@ function buildRecommendations(r: {
   tooling: AnalysisResult['tooling']
   security: AnalysisResult['security']
   mcpServerCount: number
-}): string[] {
-  const recommendations: string[] = []
+}
 
+function securityRecommendations(r: RecommendationInput): string[] {
+  const recs: string[] = []
   if (r.security.envTracked) {
-    recommendations.push(
+    recs.push(
       'A .env file is committed to this repo. Remove it, rotate any credentials it contains, and add .env to .gitignore.',
     )
   }
   if (r.security.keyLeakFiles.length > 0) {
-    recommendations.push(
+    recs.push(
       `An API-key-shaped string appears in ${r.security.keyLeakFiles.join(', ')}. Move secrets to environment variables and rotate the key.`,
     )
   }
+  return recs
+}
 
+function contextRecommendations(r: RecommendationInput): string[] {
+  const recs: string[] = []
   if (!r.claudeMd.found) {
-    recommendations.push(
+    recs.push(
       'Create a CLAUDE.md file at your repo root. This gives Claude project context and reduces back-and-forth tokens.',
     )
   } else if (r.claudeMd.overLimit) {
-    recommendations.push(
+    recs.push(
       `Your CLAUDE.md is ${r.claudeMd.charCount.toLocaleString()} characters -- over the 4,000 char hard limit. Content beyond 4K is silently truncated. Trim it down.`,
     )
   } else if (r.claudeMd.charCount > 3000) {
-    recommendations.push(
+    recs.push(
       `CLAUDE.md is ${r.claudeMd.charCount.toLocaleString()} chars (limit: 4,000). Consider trimming to stay safely under the limit.`,
     )
   }
-
   if (r.claudeMdAll.overLimit) {
-    recommendations.push(
+    recs.push(
       `Total instruction files are ${r.claudeMdAll.totalChars.toLocaleString()} chars -- over the 12,000 char total limit. Split into essentials only.`,
     )
   }
-
   if (!r.claudeIgnore.found) {
-    recommendations.push(
+    recs.push(
       'Add a .claudeignore file. Exclude build outputs, node_modules, lock files, and generated code to reduce context loading.',
     )
   } else if (r.claudeIgnore.entryCount < 5) {
-    recommendations.push(
+    recs.push(
       `Only ${r.claudeIgnore.entryCount} .claudeignore entries. Aim for 5+ patterns to exclude build artifacts, vendor dirs, and large generated files.`,
     )
   }
+  return recs
+}
 
+function configRecommendations(r: RecommendationInput): string[] {
+  const recs: string[] = []
   if (!r.settings.found) {
-    recommendations.push(
-      'Create .claude/settings.json to configure default model and budget caps.',
-    )
+    recs.push('Create .claude/settings.json to configure default model and budget caps.')
   } else {
     if (!r.settings.hasModel) {
-      recommendations.push(
+      recs.push(
         'Set a default model in settings to avoid accidentally using expensive models for simple tasks.',
       )
     }
     if (!r.settings.hasBudget) {
-      recommendations.push(
+      recs.push(
         'Set a budget cap (maxCost or maxMonthlyCost) in settings to prevent runaway costs.',
       )
     }
   }
-
   if (r.mcpServerCount > 3) {
-    recommendations.push(
+    recs.push(
       `${r.mcpServerCount} MCP servers configured -- each adds ~1,500 tokens/turn to the system prompt. Disable servers you don't use every session.`,
     )
   }
-
   if (!r.settings.hasHooks) {
-    recommendations.push(
+    recs.push(
       'Consider adding hooks for budget tracking. PreToolUse hooks can warn when costs are high.',
     )
   }
+  return recs
+}
 
+function toolingRecommendations(r: RecommendationInput): string[] {
+  const recs: string[] = []
   if (!r.tooling.costModeInstalled) {
-    recommendations.push(
+    recs.push(
       'Install the cost-mode skill for 30-60% savings: npx skills add Sagargupta16/claude-cost-optimizer',
     )
   }
   if (r.tooling.commandCount === 0) {
-    recommendations.push(
+    recs.push(
       'Add reusable slash commands in .claude/commands/ (e.g. /cost-check, /quick-fix). Saves re-explaining workflows every session.',
     )
   }
   if (r.tooling.agentCount === 0) {
-    recommendations.push(
+    recs.push(
       'Define custom subagents in .claude/agents/ to isolate expensive searches from your main context window.',
     )
   }
+  return recs
+}
 
+function buildRecommendations(r: RecommendationInput): string[] {
+  const recommendations = [
+    ...securityRecommendations(r),
+    ...contextRecommendations(r),
+    ...configRecommendations(r),
+    ...toolingRecommendations(r),
+  ]
   if (recommendations.length === 0) {
     recommendations.push(
       'Your setup looks well-optimized. Keep CLAUDE.md concise and .claudeignore up to date as your project grows.',
     )
   }
-
   return recommendations
 }
