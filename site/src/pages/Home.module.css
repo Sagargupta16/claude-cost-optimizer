@@ -38,8 +38,17 @@
   font-size: 1.1rem;
   color: var(--text-muted);
   max-width: 560px;
-  margin: 0 auto 2.5rem;
+  margin: 0 auto 0.75rem;
   line-height: 1.7;
+}
+
+.subtitleFine {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  opacity: 0.8;
+  max-width: 560px;
+  margin: 0 auto 2.5rem;
+  line-height: 1.6;
 }
 
 /* Install box */

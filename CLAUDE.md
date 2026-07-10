@@ -18,7 +18,7 @@ This repo is an installable Claude Code skill and a documentation/tooling projec
 - `plugins/cost-mode/` - Plugin distribution copy with .codex-plugin metadata
 - `.claude-plugin/` - Plugin identity and marketplace registration
 - `.agents/plugins/` - Agent registry
-- `guides/` - Deep-dive optimization guides (00-10 + visual diagrams)
+- `guides/` - Deep-dive optimization guides (00-11 + visual diagrams)
 - `benchmarks/` - Real-world cost measurement data and community leaderboard
 - `templates/` - Copy-paste CLAUDE.md configs (10 stacks), settings, and commands
 - `tools/` - 8 CLI tools (claude-rate, token-estimator, usage-analyzer, badge-generator, mcp-cost-server, vscode-extension, optimize-command, GitHub Action)
@@ -76,4 +76,4 @@ Current Claude API pricing (verified 2026-06-12):
 
 **Upcoming retirement**: Sonnet 4 (`claude-sonnet-4-20250514`) and Opus 4 (`claude-opus-4-20250514`) retire **2026-06-15**. Mythos Preview (`claude-mythos-preview`) retires **2026-06-30** (migrate to Mythos 5). Opus 4.1 (`claude-opus-4-1-20250805`) retires 2026-08-05.
 
-Update pricing references across ALL files (README, guides/00-10, cheatsheet, benchmarks, site/src/utils/pricing.ts, and the pricing tables in tools/: estimate.py, analyze.py, rate.py, mcp-cost-server, vscode-extension) when rates change.
+Update pricing references across ALL files (README, guides/00-11, cheatsheet, benchmarks, site/src/utils/pricing.ts, and the pricing tables in tools/: estimate.py, analyze.py, rate.py, mcp-cost-server, vscode-extension) when rates change.

@@ -290,3 +290,4 @@ flowchart LR
 - [Workflow Patterns](04-workflow-patterns.md) -- Plan Mode, subagents, and /compact usage
 - [Team Budgeting](05-team-budgeting.md) -- Per-developer budgets and ROI tracking
 - [Access Methods and Pricing](06-access-methods-pricing.md) -- Platform comparison, endpoint premiums, Fast Mode
+- [Speed vs Cost](11-speed-vs-cost.md) -- Free latency levers first, Fast Mode economics last

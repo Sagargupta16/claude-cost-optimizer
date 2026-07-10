@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { type ModelId, MODELS, formatDollars } from '../utils/pricing'
 import { calculate, resultToMarkdown, type CalculatorInputs } from '../utils/calculator'
+import { BeforeAfterChart, CostPerTurnChart, ModelComparisonChart } from '../components/charts'
 import styles from './Calculator.module.css'
 
 const defaultInputs: CalculatorInputs = {
@@ -196,6 +197,15 @@ function Calculator() {
               </span>
             </div>
           </div>
+
+          <BeforeAfterChart
+            breakdown={result.breakdown}
+            optimizedBreakdown={result.optimizedBreakdown}
+          />
+
+          <CostPerTurnChart perTurn={result.perTurnCurrent} />
+
+          <ModelComparisonChart inputs={inputs} />
 
           <h3 className={styles.subTitle}>Cost Breakdown</h3>
           <table className={styles.table}>

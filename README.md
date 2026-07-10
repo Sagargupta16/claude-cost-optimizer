@@ -5,7 +5,9 @@
 ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
 ![Last Commit](https://img.shields.io/github/last-commit/Sagargupta16/claude-cost-optimizer?style=flat-square&cacheSeconds=86400)
 
-> **Save 30-60% on Claude Code costs** with an installable skill, CLI tools, and 11 deep-dive guides.
+> **Save 30-90% on Claude Code costs** with an installable skill, CLI tools, and 12 deep-dive guides.
+>
+> **30-60% is the typical result** for a mixed real workload. **Up to 90% is the ceiling** when you stack every lever -- prompt caching, Batch API, model routing, and context discipline -- against an unoptimized all-Opus baseline. Every number is sourced: see [How far can you actually go?](#how-far-can-you-actually-go).
 
 ## Install
 
@@ -70,13 +72,11 @@ The local rater inspects things the web analyzer can't: real MCP server count fr
 
 ### Public repos -- web tools
 
-> **Not live yet.** These pages are built in [site/](site/) but the [deployed site](https://sagargupta16.github.io/claude-cost-optimizer/) currently serves the landing page only. Until they ship, use `claude-rate` above.
-
 | Tool | What It Does |
 |------|-------------|
-| **Repo Analyzer** | Paste a GitHub URL to get a cost audit, grade (A+ to F), and recommendations |
-| **Cost Calculator** | Estimate monthly spend based on your model, sessions, and config |
-| **Badge Checker** | Score your setup and get a shields.io badge for your repo |
+| **[Repo Analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer)** | Paste a GitHub URL to get a cost audit, grade (A+ to F), and recommendations |
+| **[Cost Calculator](https://sagargupta16.github.io/claude-cost-optimizer/calculator)** | Estimate monthly spend with interactive charts: per-turn cost curve, savings breakdown, model comparison |
+| **[Badge Checker](https://sagargupta16.github.io/claude-cost-optimizer/badge)** | Score your setup and get a shields.io badge for your repo |
 
 ---
 
@@ -95,6 +95,29 @@ BEFORE (no optimization):                 AFTER (5 minutes of setup):
 
   Savings: $114.18/month (61%)
 ```
+
+---
+
+## How Far Can You Actually Go?
+
+Short answer: **30-60% is what a typical mixed workload saves. Up to ~90% is the ceiling** when every lever stacks against a naive all-Opus, no-cache, verbose baseline. The headline numbers below are each real and sourced -- but each one applies only to the *favorable slice* of your spend, so the compound rarely holds across an entire real workload. Treat 90% as a ceiling, not a promise.
+
+| Lever | Published savings | Applies to | Source |
+|-------|:-----------------:|------------|--------|
+| **Prompt caching** | **up to 90%** cost, 85% latency | cached input only (cache hit = 0.1x input price) | [Anthropic: Prompt caching](https://claude.com/blog/prompt-caching), [pricing docs](https://platform.claude.com/docs/en/about-claude/pricing) |
+| **Batch API** | flat **50%** off input **and** output, stacks with caching | any async (24h) work | [Anthropic: Message Batches API](https://claude.com/blog/message-batches-api), [batch docs](https://platform.claude.com/docs/en/build-with-claude/batch-processing) |
+| **Model routing** | **~80%** (Opus->Haiku is a flat 5x ratio); RouteLLM up to 85% at 95% quality | tasks a cheaper model handles well | [RouteLLM (arXiv 2406.18665)](https://arxiv.org/pdf/2406.18665), [LMSYS](https://lmsys.org/blog/2024-07-01-routellm/) |
+| **Context management** | **84%** fewer tokens in a 100-turn eval | long agentic sessions | [Anthropic: Context management](https://claude.com/blog/context-management) |
+| **Subscription vs API** | **~90%+** for heavy users (Pro $20 / Max $100-200 flat) | power users vs pay-as-you-go | [ksred cost tracker](https://www.ksred.com/claude-code-pricing-guide-which-plan-actually-saves-you-money/) (n=1) |
+
+### The honest read
+
+- **"up to 90%" is a ceiling, not a typical result.** Anthropic itself publishes 90% for caching *alone*, and the levers genuinely multiply against an unoptimized baseline. But each 90% is a best case on its favorable slice (cached input for caching; conversational traffic for routing), so a whole mixed workload lands well below the sum.
+- **Measured real-world totals cluster around 70-73%** when teams stack multiple levers -- e.g. a 6-person team cutting `$2,400 -> $680/mo` (72%). Those are individual case studies (n=1 each), not controlled measurements.
+- **The cost-mode skill on its own delivers 30-60%** -- it does output-token reduction and model-routing hints, not batch/caching/subscription. The 90% ceiling needs the full playbook in the [guides](#guides), not just the skill.
+- **Caching and batch are the firmest floors** (first-party Anthropic pricing; batch is a documented flat 50% that provably stacks with caching). Routing and subscription savings are the most workload-sensitive.
+
+> Prices verified against the [pricing reference](#pricing-reference-verified-2026-06-12) below (2026-06-12). Cache hit = 0.1x base input across all current models; Batch = 50% off both input and output.
 
 ---
 
@@ -120,7 +143,7 @@ cost-mode is the first skill. More are planned:
 
 | Skill | Status | What It Does | Cost Impact |
 |-------|:------:|-------------|:-----------:|
-| **cost-mode** | Live | Concise responses, model routing suggestions, session awareness | 30-60% cost savings |
+| **cost-mode** | Live | Concise responses, model routing suggestions, session awareness | 30-60% (skill alone) |
 | **claudeignore-gen** | Planned | Auto-generates .claudeignore based on your project's tech stack | 5-15% input reduction |
 | **context-compress** | Planned | Rewrites your CLAUDE.md to be shorter while keeping all essential info | 10-20% input reduction |
 | **cache-optimizer** | Planned | Detects cache-busting patterns and suggests fixes to maximize prompt cache hits | 10-25% input reduction |
@@ -132,7 +155,7 @@ Want to build one? Skills are just `SKILL.md` files -- see [CONTRIBUTING.md](CON
 
 ## Guides
 
-11 deep-dive guides covering every optimization area:
+12 deep-dive guides covering every optimization area:
 
 | Guide | What You'll Learn |
 |-------|-------------------|
@@ -147,6 +170,7 @@ Want to build one? Skills are just `SKILL.md` files -- see [CONTRIBUTING.md](CON
 | [08 - Prompt Caching Deep Dive](guides/08-prompt-caching.md) | Cache mechanics, TTL economics, maximizing hit rates, ROI math |
 | [09 - Subscription Plan Value](guides/09-subscription-value.md) | Choose the right plan, maximize allowance, upgrade/downgrade signals |
 | [10 - Three-Tier Task Routing](guides/10-task-routing.md) | Skip the LLM for Tier 0 tasks, route cheap tasks to Haiku, save Opus for complex work |
+| [11 - Speed vs Cost](guides/11-speed-vs-cost.md) | Make Claude faster without burning money -- free latency levers first, Fast Mode economics last |
 
 Also: [Visual Diagrams](guides/diagrams.md) (Mermaid flowcharts) | [One-Page Cheatsheet](cheatsheet.md)
 

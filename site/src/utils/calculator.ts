@@ -32,6 +32,8 @@ export interface CalculatorResult {
   breakdown: CostBreakdown
   optimizedBreakdown: CostBreakdown
   recommendations: string[]
+  /** Per-turn cost of one session at the current settings (session-level, not monthly). */
+  perTurnCurrent: number[]
 }
 
 function computeSessionCost(
@@ -43,7 +45,7 @@ function computeSessionCost(
     fastMode: boolean
   },
   model: ModelId,
-): { total: number; breakdown: CostBreakdown } {
+): { total: number; breakdown: CostBreakdown; perTurn: number[] } {
   const pricing = MODELS[model]
   const t = TOKEN_ESTIMATES
 
@@ -64,6 +66,8 @@ function computeSessionCost(
   let fileReadsInput = 0
   let historyInput = 0
   let outputTotal = 0
+  const perTurn: number[] = []
+  const turnMultiplier = inputs.fastMode && pricing.fastModeCapable ? fastModeMultiplier(pricing) : 1
 
   for (let turn = 0; turn < inputs.turnsPerSession; turn++) {
     const historyTokens = turn * t.historyGrowthPerTurn
@@ -86,6 +90,13 @@ function computeSessionCost(
     fileReadsInput += turnFileTokens
     historyInput += historyTokens
     outputTotal += turnOutput
+
+    perTurn.push(
+      (((stableUncached + turnFileTokens + historyTokens) / 1_000_000) * pricing.inputPer1M +
+        (stableCached / 1_000_000) * pricing.cacheHitPer1M +
+        (turnOutput / 1_000_000) * pricing.outputPer1M) *
+        turnMultiplier,
+    )
 
     // Adjust for cache pricing proportionally
     void claudeMdFraction
@@ -124,7 +135,21 @@ function computeSessionCost(
     output: outputCostFinal,
   }
 
-  return { total: sessionTotal, breakdown }
+  return { total: sessionTotal, breakdown, perTurn }
+}
+
+/** Session cost at the current settings if run on `model` (Fast Mode only applies when the model supports it). */
+export function sessionCostForModel(inputs: CalculatorInputs, model: ModelId): number {
+  return computeSessionCost(
+    {
+      claudeMdLines: inputs.claudeMdLines,
+      mcpServers: inputs.mcpServers,
+      fileReadsPerTurn: inputs.fileReadsPerTurn,
+      turnsPerSession: inputs.turnsPerSession,
+      fastMode: inputs.fastMode && MODELS[model].fastModeCapable,
+    },
+    model,
+  ).total
 }
 
 export function calculate(inputs: CalculatorInputs): CalculatorResult {
@@ -160,7 +185,11 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     inputs.model,
   )
 
-  let optimizedHaiku = { total: 0, breakdown: { claudeMd: 0, mcp: 0, fileReads: 0, history: 0, output: 0 } }
+  let optimizedHaiku = {
+    total: 0,
+    breakdown: { claudeMd: 0, mcp: 0, fileReads: 0, history: 0, output: 0 },
+    perTurn: [] as number[],
+  }
   if (haikuFraction > 0) {
     optimizedHaiku = computeSessionCost(
       {
@@ -206,6 +235,7 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
     breakdown: monthlyBreakdown,
     optimizedBreakdown,
     recommendations,
+    perTurnCurrent: current.perTurn,
   }
 }
 

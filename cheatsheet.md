@@ -394,6 +394,7 @@ Already spending too much? Do these right now:
 | Workflow Patterns | [guides/04-workflow-patterns.md](guides/04-workflow-patterns.md) |
 | Team Budgeting | [guides/05-team-budgeting.md](guides/05-team-budgeting.md) |
 | Three-Tier Task Routing | [guides/10-task-routing.md](guides/10-task-routing.md) |
+| Speed vs Cost | [guides/11-speed-vs-cost.md](guides/11-speed-vs-cost.md) |
 | CLAUDE.md Templates | [templates/CLAUDE.md/](templates/CLAUDE.md/) |
 | Token Estimator Tool | [tools/token-estimator/](tools/token-estimator/) |
 | Usage Analyzer Tool | [tools/usage-analyzer/](tools/usage-analyzer/) |

@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.10.0] - 2026-07-10
+
+### Added
+- **Guide 11: Speed vs Cost** (`guides/11-speed-vs-cost.md`) -- making Claude faster without burning money. Speed levers ranked by cost (cache warmth, shorter context, Haiku/Sonnet routing, `effort` control, then Fast Mode last), Fast Mode economics (2x on Opus 4.8 vs 6x on 4.7/4.6, the OTPS-vs-TTFT caveat, cache-pool invalidation on speed switch, compatibility matrix), deadline math for when the premium pays off, and the Batch API as the inverse lever. Every figure adversarially verified against the repo pricing block.
+- **Interactive charts on the Cost Calculator** (`site/src/components/charts.tsx`): per-turn cost curve (line + area, crosshair hover), current-vs-optimized savings breakdown (paired bars with legend), and same-settings-on-other-models comparison (emphasis bars). Hand-rolled SVG, no new dependencies; palette validated for lightness band, chroma, CVD separation, and contrast against the site surface.
+- **"How Far Can You Actually Go?" README section** -- per-lever savings table with primary sources (Anthropic prompt caching up to 90%, Batch flat 50%, RouteLLM routing, context management 84%, subscription economics) and the honest caveats separating typical results from stacked ceilings.
+- SPA fallback for GitHub Pages (`site/scripts/spa-404.mjs` copies `index.html` to `404.html` at build) so deep links like `/calculator` load directly.
+
+### Changed
+- **Headline savings claim reframed from "30-60%" to the "30-90%" band** (30-60% typical for a mixed workload; up to 90% ceiling when every lever stacks against an unoptimized all-Opus baseline) across README, site title/meta/hero, and awesome-list submission entries. Backed by a deep-research pass: 103 agents, 20 sources, 25 claims adversarially verified (2 aggressive community claims refuted and excluded). The cost-mode skill's own claim stays 30-60% -- the skill alone does output reduction and routing hints, not batch/caching/subscription.
+- **Calculator, Badge Checker, and Repo Analyzer pages are now routed and live** -- `App.tsx` previously routed every path to the landing page; added routes plus navbar links, and removed the README "Not live yet" notice.
+- Guide counts updated to 12 across README, CLAUDE.md, site copy, cheatsheet links, awesome-list PR descriptions (which were stale at 7), and diagrams.md related-guides list.
+
 ## [1.9.0] - 2026-06-12
 
 ### Added

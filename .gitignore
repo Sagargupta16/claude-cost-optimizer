@@ -38,3 +38,6 @@ tools/mcp-cost-server/dist/
 
 # Added for consistency
 .env.*.local
+
+# Local Claude Code dev-preview config
+.claude/launch.json
