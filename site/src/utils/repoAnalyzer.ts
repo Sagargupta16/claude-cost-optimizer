@@ -92,9 +92,29 @@ export function sanitizeBranch(branch: string): string {
   return BRANCH_PATTERN.test(trimmed) && !trimmed.includes('..') ? trimmed : ''
 }
 
+/**
+ * Builds a GitHub API URL, or returns null if owner/repo fail validation.
+ *
+ * `analyzeRepo` is exported and takes plain strings, so validating only inside
+ * `parseRepoUrl` leaves a path where unchecked input reaches the request URL.
+ * Re-checking here puts the gate on the URL itself: every request in this
+ * module goes through this function, and callers treat null as "not found".
+ *
+ * The `..` rejection matters because REPO_PATTERN permits dots, so a repo of
+ * ".." would otherwise walk up a segment of the API path.
+ */
+function buildApiUrl(owner: string, repo: string, suffix: string): string | null {
+  if (!OWNER_PATTERN.test(owner) || !REPO_PATTERN.test(repo)) return null
+  if (owner.includes('..') || repo.includes('..')) return null
+  return `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}${suffix}`
+}
+
 function validateRepoInput(owner: string, repo: string): RepoInput | null {
   const cleanRepo = repo.replace(/\.git$/, '')
   if (!OWNER_PATTERN.test(owner) || !REPO_PATTERN.test(cleanRepo)) {
+    return null
+  }
+  if (cleanRepo.includes('..')) {
     return null
   }
   return { owner, repo: cleanRepo, branch: '' }
@@ -126,7 +146,10 @@ async function fetchFile(
 ): Promise<FetchedFile> {
   const ref = branch ? `?ref=${encodeURIComponent(branch)}` : ''
   const encodedPath = path.split('/').map(encodeURIComponent).join('/')
-  const url = `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${encodedPath}${ref}`
+  const url = buildApiUrl(owner, repo, `/contents/${encodedPath}${ref}`)
+  if (!url) {
+    return { path, content: '', size: 0, found: false }
+  }
 
   try {
     const res = await fetch(url)
@@ -148,10 +171,10 @@ async function fetchDefaultBranch(
   owner: string,
   repo: string,
 ): Promise<{ branch: string; exists: boolean }> {
+  const url = buildApiUrl(owner, repo, '')
+  if (!url) return { branch: 'main', exists: false }
   try {
-    const res = await fetch(
-      `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
-    )
+    const res = await fetch(url)
     if (!res.ok) return { branch: 'main', exists: false }
     const data = await res.json()
     return { branch: data.default_branch || 'main', exists: true }
@@ -168,10 +191,14 @@ async function fetchTree(
 ): Promise<string[]> {
   const safeBranch = sanitizeBranch(branch)
   if (!safeBranch) return []
+  const url = buildApiUrl(
+    owner,
+    repo,
+    `/git/trees/${encodeURIComponent(safeBranch)}?recursive=1`,
+  )
+  if (!url) return []
   try {
-    const res = await fetch(
-      `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/git/trees/${encodeURIComponent(safeBranch)}?recursive=1`,
-    )
+    const res = await fetch(url)
     if (!res.ok) return []
     const data = await res.json()
     if (!Array.isArray(data.tree)) return []
@@ -427,9 +454,14 @@ export async function analyzeRepo(
 ): Promise<AnalysisResult> {
   const { owner, repo } = input
   const requestedBranch = sanitizeBranch(input.branch)
-  const repoInfo = requestedBranch
-    ? { branch: requestedBranch, exists: true }
-    : await fetchDefaultBranch(owner, repo)
+  // An explicit branch skips the repo lookup, so without this check a rejected
+  // owner/repo would report exists: true and render an empty analysis as if the
+  // repo were real. Surface it as not-found instead.
+  const inputIsValid = buildApiUrl(owner, repo, '') !== null
+  const repoInfo =
+    requestedBranch && inputIsValid
+      ? { branch: requestedBranch, exists: true }
+      : await fetchDefaultBranch(owner, repo)
   const branch = repoInfo.branch
 
   // One recursive tree call -> full file listing for deep detection.
