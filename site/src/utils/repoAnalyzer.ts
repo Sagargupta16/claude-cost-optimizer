@@ -144,7 +144,8 @@ async function fetchFile(
   path: string,
   branch: string,
 ): Promise<FetchedFile> {
-  const ref = branch ? `?ref=${encodeURIComponent(branch)}` : ''
+  const safeBranch = sanitizeBranch(branch)
+  const ref = safeBranch ? `?ref=${encodeURIComponent(safeBranch)}` : ''
   const encodedPath = path.split('/').map(encodeURIComponent).join('/')
   const url = buildApiUrl(owner, repo, `/contents/${encodedPath}${ref}`)
   if (!url) {
@@ -177,7 +178,10 @@ async function fetchDefaultBranch(
     const res = await fetch(url)
     if (!res.ok) return { branch: 'main', exists: false }
     const data = await res.json()
-    return { branch: data.default_branch || 'main', exists: true }
+    // The response is remote data, so it is a taint source in its own right --
+    // it flows straight back into the tree and contents URLs. Run it through
+    // the same ref check as user input and fall back to 'main' if it fails.
+    return { branch: sanitizeBranch(String(data.default_branch ?? '')) || 'main', exists: true }
   } catch {
     return { branch: 'main', exists: false }
   }
