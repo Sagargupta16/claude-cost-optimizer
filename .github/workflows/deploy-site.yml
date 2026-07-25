@@ -23,7 +23,10 @@ jobs:
           node-version: '24'
       - name: Install dependencies
         working-directory: site
-        run: npm ci --legacy-peer-deps
+        # --ignore-scripts blocks dependency lifecycle scripts from running in
+        # CI. Nothing in this tree needs a postinstall step, so the build is
+        # unaffected and a compromised transitive dep cannot execute here.
+        run: npm ci --legacy-peer-deps --ignore-scripts
       - name: Build site
         working-directory: site
         run: npm run build
