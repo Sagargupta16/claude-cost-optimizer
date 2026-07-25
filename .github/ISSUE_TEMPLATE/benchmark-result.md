@@ -46,9 +46,11 @@ assignees: ''
 ## Model Used
 
 <!-- Check all that apply: -->
-- [ ] Opus 4
-- [ ] Sonnet 4
-- [ ] Haiku 3.5
+- [ ] Opus 5
+- [ ] Sonnet 5
+- [ ] Opus 4.8 (legacy)
+- [ ] Sonnet 4.6
+- [ ] Haiku 4.5
 - [ ] Multiple (describe in observations)
 
 ## Observations

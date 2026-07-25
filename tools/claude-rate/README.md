@@ -45,7 +45,7 @@ No external dependencies. Pure Python 3.10+ stdlib.
 claude-rate -- Claude / AI setup audit
 ============================================================
 Project: /home/sagar/work/my-project
-Verified against Anthropic pricing as of: 2026-06-12
+Verified against Anthropic pricing as of: 2026-07-25
 
   CLAUDE.md                [###############-----]  15/20  3,648 chars primary (near hard limit); 3,648 chars total across 1 file(s)
   .claudeignore            [--------------------]   0/15  not found
@@ -60,10 +60,12 @@ Verified against Anthropic pricing as of: 2026-06-12
 Total: 48/100  (D)
 
 Estimated monthly cost (30 turns/session, 3 sessions/day, 22 days, 70% cache hit)
-  Fable 5        $ 5.04/session  ->  $ 332.55/month
+  Fable 5        $ 5.04/session  ->  $ 332.56/month
+  Opus 5         $ 2.62/session  ->  $ 172.67/month
   Opus 4.8       $ 2.62/session  ->  $ 172.67/month
   Opus 4.7       $ 2.62/session  ->  $ 172.67/month
   Opus 4.6       $ 1.94/session  ->  $ 127.91/month
+  Sonnet 5       $ 1.51/session  ->  $  99.77/month
   Sonnet 4.6     $ 1.16/session  ->  $  76.74/month
   Haiku 4.5      $ 0.39/session  ->  $  25.58/month
 
@@ -134,9 +136,9 @@ jobs:
 ### Programmatic / JSON
 
 ```bash
-claude-rate . --json | jq '.grade, .cost_estimate."sonnet-4-6".per_month'
+claude-rate . --json | jq '.grade, .cost_estimate."sonnet-5".per_month'
 # "B"
-# 76.74
+# 99.77
 ```
 
 ## Why a separate tool from the web analyzer?
@@ -152,14 +154,31 @@ The web analyzer (built in [../../site/](../../site/), not yet live on the deplo
 
 ## Pricing data
 
-All cost estimates use Anthropic's published rates **verified 2026-06-12**:
+All cost estimates use Anthropic's published rates **verified 2026-07-25**:
 
-- Fable 5: $10/$50 per 1M tokens (1M context, most capable widely released model)
-- Opus 4.8 / 4.7 / 4.6: $5/$25 per 1M tokens (1M context)
-- Sonnet 4.6: $3/$15 per 1M tokens (1M context)
+- Fable 5: $10/$50 per 1M tokens (1M context, highest-capability model)
+- Opus 5: $5/$25 per 1M tokens (1M context, GA 2026-07-24, current Opus flagship -- start here for complex agentic coding)
+- Opus 4.8 / 4.7 / 4.6: $5/$25 per 1M tokens (1M context, all legacy)
+- Sonnet 5: $3/$15 per 1M tokens (1M context). An introductory $2/$10 rate runs through 2026-08-31; estimates here use the standard $3/$15
+- Sonnet 4.6: $3/$15 per 1M tokens (1M context, legacy)
 - Haiku 4.5: $1/$5 per 1M tokens (200K context)
 - Cache hit: 0.1x base input price; 5m write: 1.25x; 1h write: 2x
-- Opus 4.8 / 4.7 cost estimates include the +35% tokenizer overhead; Fable 5 includes +30%
+- Opus 5 / 4.8 / 4.7 cost estimates include the +35% tokenizer overhead; Fable 5 and Sonnet 5 include +30%
+
+### Opus 5 cost gotchas
+
+Opus 5 posts the same $5/$25 as Opus 4.8, but the same workload can cost more until you tune it:
+
+- **Adaptive thinking is ON by default.** Reasoning tokens bill as output at the normal $25/1M output rate.
+- **`output_config.effort` defaults to `high`** (accepts `low` / `medium` / `high` / `xhigh` / `max`). Dial it down for routine work.
+- **`thinking: {type: "disabled"}` is only legal at effort `high` or below.** Pairing it with `xhigh` or `max` returns a 400.
+- **`max_tokens` caps thinking plus text combined**, so raise it (64K+) at high effort.
+- **Inherited "double-check your work" instructions double-pay**, since Opus 5 output is already longer and more self-verifying. Prune them.
+- **Minimum cacheable prompt is 512 tokens** on Opus 5 (1,024 on Opus 4.8, 2,048 on Opus 4.7, 4,096 on Opus 4.6). A `cache_control` block below the floor is silently ignored: no error, no `cache_creation_input_tokens`, full input price.
+
+### Fast Mode
+
+`speed: "fast"` (with the `fast-mode-2026-02-01` beta header) is **Opus 5 and Opus 4.8 only**, at a flat **2x** ($10/$50). The older 6x tier no longer exists. Opus 4.7 returns an error on `speed: "fast"` with no fallback, and Opus 4.6 accepts the field but silently runs at standard speed and standard rates (`usage.speed` comes back `"standard"`). Claude API and Managed Agents only; cannot combine with Batch or Priority Tier, and switching speeds invalidates the prompt cache.
 
 Sources:
 - [platform.claude.com/docs/en/about-claude/pricing](https://platform.claude.com/docs/en/about-claude/pricing)

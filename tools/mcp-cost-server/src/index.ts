@@ -8,26 +8,32 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 // -------------------------------------------------------------------
-// Pricing tables -- verified 2026-06-12
+// Pricing tables -- verified 2026-07-25
 // -------------------------------------------------------------------
 
 interface ModelPricing {
   inputPerMillion: number;
   outputPerMillion: number;
   cacheHitPerMillion: number;
+  /** Prefixes shorter than this are silently not cached (no error, full input price). */
+  minCacheTokens: number;
 }
 
 const PRICING: Record<string, ModelPricing> = {
-  // "fable" = Fable 5, the most capable widely released model (2x Opus rates)
-  fable: { inputPerMillion: 10, outputPerMillion: 50, cacheHitPerMillion: 1 },
-  // "opus" alias maps to the Opus-tier flagship (Opus 4.8)
-  opus: { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5 },
-  "opus-4.7": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5 },
-  "opus-4.6": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5 },
+  // "fable" = Fable 5, the most capable widely released model (2x Opus 5 rates)
+  fable: { inputPerMillion: 10, outputPerMillion: 50, cacheHitPerMillion: 1, minCacheTokens: 512 },
+  // "opus" alias maps to the Opus-tier flagship (Opus 5, GA 2026-07-24)
+  opus: { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 512 },
+  "opus-4.8": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 1024 },
+  "opus-4.7": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 2048 },
+  "opus-4.6": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 4096 },
   // "sonnet" alias maps to the current Sonnet-tier flagship (Sonnet 5); same $3/$15 tier as Sonnet 4.6
-  sonnet: { inputPerMillion: 3, outputPerMillion: 15, cacheHitPerMillion: 0.3 },
-  haiku: { inputPerMillion: 1, outputPerMillion: 5, cacheHitPerMillion: 0.1 },
+  sonnet: { inputPerMillion: 3, outputPerMillion: 15, cacheHitPerMillion: 0.3, minCacheTokens: 1024 },
+  haiku: { inputPerMillion: 1, outputPerMillion: 5, cacheHitPerMillion: 0.1, minCacheTokens: 4096 },
 };
+
+const MODEL_IDS = Object.keys(PRICING);
+const UNKNOWN_MODEL_HINT = `Use one of: ${MODEL_IDS.join(", ")} ("opus" is Opus 5, "sonnet" is Sonnet 5).`;
 
 // -------------------------------------------------------------------
 // Helpers
@@ -63,7 +69,7 @@ function estimateCost(args: {
   const model = (args.model ?? "sonnet").toLowerCase();
   const pricing = PRICING[model];
   if (!pricing) {
-    return { error: `Unknown model "${args.model}". Use fable (Fable 5), opus (4.8), opus-4.7, opus-4.6, sonnet, or haiku.` };
+    return { error: `Unknown model "${args.model}". ${UNKNOWN_MODEL_HINT}` };
   }
 
   const tokens = estimateTokens(args.text);
@@ -80,6 +86,10 @@ function estimateCost(args: {
     output_cost: formatUsd(outputCost),
     single_pass_total: formatUsd(singlePassCost),
   };
+
+  if (tokens < pricing.minCacheTokens) {
+    result.cache_warning = `~${tokens} tokens is below the ${pricing.minCacheTokens}-token minimum cacheable prompt for "${model}". A cache_control block on a prefix this short is silently ignored: no error, no cache_creation_input_tokens, and full input price on every turn.`;
+  }
 
   if (args.turns && args.turns > 1) {
     // Each turn re-sends conversation history, which grows cumulatively.
@@ -111,7 +121,7 @@ function sessionEstimate(args: {
   const model = (args.model ?? "sonnet").toLowerCase();
   const pricing = PRICING[model];
   if (!pricing) {
-    return { error: `Unknown model "${args.model}". Use fable (Fable 5), opus (4.8), opus-4.7, opus-4.6, sonnet, or haiku.` };
+    return { error: `Unknown model "${args.model}". ${UNKNOWN_MODEL_HINT}` };
   }
 
   const turns = args.turns;
@@ -165,12 +175,20 @@ function sessionEstimate(args: {
       "Sessions over 20 turns accumulate significant history cost. Consider starting a fresh session for new tasks."
     );
   }
+  if (stableTokens < pricing.minCacheTokens) {
+    recommendations.push(
+      `The stable prefix is only ~${stableTokens} tokens, below the ${pricing.minCacheTokens}-token minimum cacheable prompt for "${model}". Caching is silently skipped at that size, so these figures assume no cache discount is actually applied.`
+    );
+  }
   if (model === "fable") {
     recommendations.push(
-      "Fable 5 costs 2x Opus 4.8 ($10/$50 vs $5/$25). Reserve it for the hardest reasoning; route routine work to Opus or Sonnet."
+      "Fable 5 costs 2x Opus 5 ($10/$50 vs $5/$25). Reserve it for the hardest reasoning; route routine work to Opus or Sonnet."
     );
   }
   if (model === "opus") {
+    recommendations.push(
+      "Opus 5 has adaptive thinking on by default, and reasoning tokens bill as output. Lower output_config.effort for routine turns, or set thinking to disabled (legal only at effort high or below)."
+    );
     recommendations.push(
       "Switching to Sonnet for routine tasks saves ~40% with comparable quality for most coding work."
     );
@@ -273,8 +291,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           },
           model: {
             type: "string",
-            enum: ["fable", "opus", "sonnet", "haiku"],
-            description: "Claude model (default: sonnet)",
+            enum: MODEL_IDS,
+            description:
+              'Claude model (default: sonnet). "opus" is Opus 5, "sonnet" is Sonnet 5.',
           },
           turns: {
             type: "number",
@@ -298,8 +317,9 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           },
           model: {
             type: "string",
-            enum: ["fable", "opus", "sonnet", "haiku"],
-            description: "Claude model (default: sonnet)",
+            enum: MODEL_IDS,
+            description:
+              'Claude model (default: sonnet). "opus" is Opus 5, "sonnet" is Sonnet 5.',
           },
           claude_md_lines: {
             type: "number",
@@ -316,7 +336,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: "compare_models",
       description:
-        "Compare cost across Fable 5, Opus, Sonnet, and Haiku for a given token count. Shows which model is cheapest and savings percentages.",
+        "Compare cost across Fable 5, Opus 5, legacy Opus snapshots, Sonnet 5, and Haiku 4.5 for a given token count. Shows which model is cheapest and savings percentages.",
       inputSchema: {
         type: "object" as const,
         properties: {

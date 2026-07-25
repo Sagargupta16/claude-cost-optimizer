@@ -22,7 +22,7 @@ Usage:
 
 No external dependencies. Pure Python 3.10+ stdlib.
 
-Pricing data verified 2026-06-12 against:
+Pricing data verified 2026-07-25 against:
     https://platform.claude.com/docs/en/about-claude/pricing
     https://platform.claude.com/docs/en/about-claude/models/overview
 """
@@ -41,7 +41,11 @@ from typing import Any
 
 # -- Pricing data (mirrors site/src/utils/pricing.ts) ------------------------
 
-# Active models priced as of 2026-06-12. Prices are USD per 1M tokens.
+# Active models priced as of 2026-07-25. Prices are USD per 1M tokens.
+# `fast_mode` marks the models that honor `speed: "fast"` (a flat 2x on both
+# input and output). As of Opus 5's GA on 2026-07-24 that is Opus 5 and Opus 4.8
+# only: Opus 4.7 errors on `speed: "fast"`, and Opus 4.6 silently downgrades to
+# standard speed at standard rates. The old 6x tier no longer exists.
 MODELS: dict[str, dict[str, Any]] = {
     "fable-5": {
         "name": "Fable 5",
@@ -55,8 +59,8 @@ MODELS: dict[str, dict[str, Any]] = {
         "fast_mode": False,
         "lifecycle": "active",
     },
-    "opus-4-8": {
-        "name": "Opus 4.8",
+    "opus-5": {
+        "name": "Opus 5",
         "input": 5.00,
         "output": 25.00,
         "cache_hit": 0.50,
@@ -67,6 +71,18 @@ MODELS: dict[str, dict[str, Any]] = {
         "fast_mode": True,
         "lifecycle": "active",
     },
+    "opus-4-8": {
+        "name": "Opus 4.8",
+        "input": 5.00,
+        "output": 25.00,
+        "cache_hit": 0.50,
+        "cache_5m_write": 6.25,
+        "cache_1h_write": 10.00,
+        "context_window": 1_000_000,
+        "tokenizer_overhead": 1.35,
+        "fast_mode": True,
+        "lifecycle": "legacy",
+    },
     "opus-4-7": {
         "name": "Opus 4.7",
         "input": 5.00,
@@ -76,7 +92,7 @@ MODELS: dict[str, dict[str, Any]] = {
         "cache_1h_write": 10.00,
         "context_window": 1_000_000,
         "tokenizer_overhead": 1.35,
-        "fast_mode": True,
+        "fast_mode": False,
         "lifecycle": "legacy",
     },
     "opus-4-6": {
@@ -88,7 +104,7 @@ MODELS: dict[str, dict[str, Any]] = {
         "cache_1h_write": 10.00,
         "context_window": 1_000_000,
         "tokenizer_overhead": 1.0,
-        "fast_mode": True,
+        "fast_mode": False,
         "lifecycle": "legacy",
     },
     "sonnet-5": {
@@ -616,7 +632,11 @@ def score_settings(project: Path) -> CategoryResult:
         )
         cat.fixes.append(
             f"Create {DOT_CLAUDE}/{SETTINGS_JSON} with at minimum:\n"
-            '    {"model": "claude-sonnet-5", "permissions": {"allow": [], "deny": []}}'
+            '    {"model": "claude-sonnet-5", "permissions": {"allow": [], "deny": []}}\n'
+            "    Reach for claude-opus-5 only on complex agentic work -- its adaptive "
+            "thinking is ON by default and reasoning tokens bill as output, so the same "
+            "task costs more than Opus 4.8 at the identical $5/$25 rate until you tune "
+            'output_config.effort down from its "high" default.'
         )
         return cat
 
@@ -630,7 +650,9 @@ def score_settings(project: Path) -> CategoryResult:
     else:
         cat.fixes.append(
             f'Set "model" in {SETTINGS_JSON} to pin a default (e.g. "claude-sonnet-5"). '
-            "Prevents accidental Opus usage on simple tasks."
+            "Prevents accidental Opus usage on simple tasks -- and on Opus 5 that matters "
+            "more, since adaptive thinking is on by default and every reasoning token "
+            "bills at the $25/1M output rate."
         )
 
     if has_budget:
@@ -1098,7 +1120,7 @@ def rate(project: Path) -> RateResult:
 # -- Output formatters -------------------------------------------------------
 
 _BAR_WIDTH = 20
-_PRICING_VERIFIED_DATE = "2026-06-12"
+_PRICING_VERIFIED_DATE = "2026-07-25"
 
 
 def _ratio_color(ratio: float) -> str:

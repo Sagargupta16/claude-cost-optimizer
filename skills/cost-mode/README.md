@@ -32,7 +32,7 @@ Once installed, activate with:
 ## What It Does
 
 - **Cuts filler**: No pleasantries, hedging, restating questions, or trailing summaries
-- **Suggests cheaper models**: Recommends Haiku for simple tasks, Sonnet for standard work
+- **Suggests cheaper models**: Recommends Haiku for simple tasks, Sonnet for standard work, and lower thinking effort on Opus 5 (adaptive thinking is on by default there, and reasoning tokens bill as output)
 - **Suggests CLI tools**: Points to `prettier`, `eslint --fix`, `git` instead of burning LLM tokens on deterministic tasks
 - **Session awareness**: Reminds you to `/compact` after 20+ turns, start fresh sessions for new tasks
 - **Minimal code gen**: Diffs over rewrites, no obvious comments, no speculative error handling

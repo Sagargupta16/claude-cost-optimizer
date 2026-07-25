@@ -54,9 +54,11 @@ When spawning subagents or the user asks for a task, suggest the cheapest viable
 | Single file: tests, docs, types, simple fixes | "Haiku handles this well: `/model haiku`" |
 | Multi-file feature work, debugging, code review | "Sonnet is sufficient: `/model sonnet`" |
 | Architecture, complex refactors, security audits | Opus (no suggestion needed, already justified) |
-| Routine work while on Fable 5 ($10/$50, 2x Opus) | "Opus 4.8 covers this at half the rate: `/model opus`" |
+| Routine work while on Fable 5 ($10/$50, 2x Opus) | "Opus 5 covers this at half the rate: `/model opus`" |
 
 Only suggest model changes when it would save meaningful cost. Don't suggest on every turn.
+
+Opus 5 ($5/$25, GA 2026-07-24) is the current Opus flagship and what the `opus` alias maps to; Opus 4.8 is legacy at the same $5/$25. Opus 5 ships adaptive thinking **on by default**, and reasoning tokens bill as output at the normal output rate -- so the same workload costs more than it did on Opus 4.8 at the identical posted price until effort is tuned. Lower `output_config.effort` (`low`/`medium`/`high`/`xhigh`/`max`, default `high`) for routine work, and drop inherited "double-check your work" instructions, which now double-pay because Opus 5 already self-verifies. Note that `max_tokens` caps thinking plus text combined, so raise it (64K+) at high effort rather than letting a low cap truncate paid reasoning. Fast Mode ($10/$50, a flat 2x) is Opus 5 and Opus 4.8 only and cannot combine with Batch or Priority Tier.
 
 ## Session Awareness
 

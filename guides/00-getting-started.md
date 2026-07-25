@@ -76,8 +76,8 @@ You don't need Opus for everything. Quick rule:
 
 | Task | Model | Why |
 |------|-------|-----|
-| Architecture, complex refactors | Opus 4.8 | Step-change in agentic coding |
-| Feature implementation, debugging | Sonnet 4.6 | Good balance |
+| Architecture, complex refactors | Opus 5 | Anthropic's recommended start for complex agentic coding |
+| Feature implementation, debugging | Sonnet 5 | Good balance |
 | Tests, docs, formatting, renames | Haiku 4.5 | Fast, 5x cheaper than Opus |
 
 Switch models mid-session:
@@ -88,6 +88,8 @@ Switch models mid-session:
 /model opus
 # back to complex work
 ```
+
+**Opus 5 caveat** (GA 2026-07-24, same $5/$25 posted price as Opus 4.8): thinking is **on by default** when you omit the `thinking` param, and reasoning tokens bill as output at $25/1M. `max_tokens` caps thinking plus text together, so a small cap can be spent on thinking before the answer is written. Opus 5 also writes longer than Opus 4.8 and self-verifies on its own, so old "be brief" and "double-check your work" instructions are worth re-tuning. Details in [Guide 01](01-understanding-costs.md#token-pricing).
 
 **Savings: 20-40%** by matching model to task complexity.
 

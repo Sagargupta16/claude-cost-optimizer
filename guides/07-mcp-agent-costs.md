@@ -38,11 +38,13 @@ If you have 10 MCP servers connected with ~1,500 tokens average each:
 ```
 15,000 tokens of MCP schemas x 50 turns = 750,000 input tokens
 
-On Opus 4.8:  750K tokens x $5.00/1M = $3.75 just for MCP schemas (+~35% if new tokenizer inflates schema)
-On Sonnet 4.6: 750K tokens x $3.00/1M = $2.25 just for MCP schemas
+On Opus 5:    750K tokens x $5.00/1M = $3.75 just for MCP schemas (+~35% if new tokenizer inflates schema)
+On Sonnet 5:  750K tokens x $3.00/1M = $2.25 just for MCP schemas
 ```
 
-With prompt caching, the actual cost is much lower (~90% of those tokens get cached). But the first turn and any cache misses still pay full price.
+Add the tool-use system prompt on top of the schemas themselves: **286 tokens** with `tool_choice: auto` or `none`, **406 tokens** with `any` or `tool`. Individual built-in tools cost more (the bash tool adds 325 input tokens on Opus 5 / 4.8 / 4.7, 244 on Opus 4.6 and earlier; the text editor tool adds 700).
+
+With prompt caching, the actual cost is much lower (~90% of those tokens get cached). But the first turn and any cache misses still pay full price. Note that Opus 5's minimum cacheable prompt is only **512 tokens** (Opus 4.8 needed 1,024, Opus 4.7 needed 2,048, Opus 4.6 needed 4,096), so even a single small MCP server's schemas are now big enough to cache.
 
 ### Tool Search (Deferred Tools)
 
@@ -92,6 +94,18 @@ Don't connect 12 MCP servers if you only use 3 regularly. Add servers to **proje
 
 Built-in MCPs like `plugin:github:github` or `plugin:playwright:playwright` load even if you don't use them. Check `claude mcp list` and disable any that show as connected but you never invoke.
 
+### 4. Add or Remove Tools Mid-Conversation Without Busting the Cache
+
+Historically, changing your `tools` array between turns invalidated the entire prompt cache -- tool definitions sit at the very front of the prompt, so connecting one more MCP server mid-session meant paying a full cache write on everything after it. That made dynamic tool sets expensive.
+
+Opus 5 ships a beta that removes the penalty:
+
+```
+anthropic-beta: mid-conversation-tool-changes-2026-07-01
+```
+
+With that header, tool definitions can change between turns while the rest of the cached prefix stays valid. This makes it affordable to load a narrow tool set by default and attach extra MCP servers only for the turns that need them, instead of carrying every schema for the whole session.
+
 ---
 
 ## Subagent Cost Patterns
@@ -128,6 +142,8 @@ Main context savings = avoided context pollution from search results
 }
 ```
 
+On Opus 5 subagents, remember that adaptive thinking is on by default when you omit the `thinking` parameter, and reasoning tokens bill as **output** at $25/MTok. A fan-out of ten search subagents on Opus 5 pays for ten sets of reasoning tokens. Drop the effort level, or set `thinking: {type: "disabled"}` (allowed only at effort `high` or below), for subagents that just grep and summarize. Also note that `max_tokens` caps thinking plus visible text together, so a subagent with a tight `max_tokens` and high effort can burn its budget reasoning and return nothing usable.
+
 ---
 
 ## Agent SDK Cost Considerations
@@ -160,6 +176,10 @@ Use `--fallback-model` to auto-switch when the primary model is overloaded:
 claude --model opus --fallback-model sonnet "complex refactoring task"
 ```
 
+If you call the API directly, Opus 5's server-side `fallbacks` parameter (header `anthropic-beta: server-side-fallback-2026-07-01`) covers a different case: Opus 5 ships cybersecurity safety classifiers, and a cyber refusal can auto-fall-back to Opus 4.8 server-side instead of failing the request and forcing you to pay for a client-side retry.
+
+If you are billed for Managed Agents rather than raw tokens, budget the session runtime line too: **$0.08 per session-hour** while a session is `running`. That is on top of standard token rates, and it replaces Code Execution container-hour billing rather than stacking with it.
+
 ---
 
 ## Key Takeaways
@@ -170,3 +190,5 @@ claude --model opus --fallback-model sonnet "complex refactoring task"
 4. **Use `--max-budget-usd`** to prevent runaway costs in automated/SDK workflows
 5. **Deferred tool loading** (when available) reduces MCP schema overhead significantly
 6. **Haiku subagents** are ideal for search/exploration tasks at 5x lower cost
+7. **Changing tools mid-conversation no longer busts the cache** on Opus 5 with the `mid-conversation-tool-changes-2026-07-01` beta -- attach MCP servers per-turn instead of carrying every schema all session
+8. **Opus 5 thinks by default** and reasoning tokens bill as output at $25/MTok -- lower the effort level or disable thinking on subagents that only search and summarize

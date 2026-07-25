@@ -69,4 +69,4 @@
   Total estimated tokens: ~320
   Over a 30-turn session: ~9,600 tokens of CLAUDE.md overhead (pre-cache)
   Compare to a 300-line CLAUDE.md: ~63,000 tokens of overhead
-  Savings: ~53,400 tokens per session = ~$0.16/session (Sonnet 4) -->
+  Savings: ~53,400 tokens per session = ~$0.16/session (Sonnet 5 standard rates) -->

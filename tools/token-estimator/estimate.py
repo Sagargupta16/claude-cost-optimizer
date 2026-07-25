@@ -26,9 +26,9 @@ except ImportError:
     sys.exit(1)
 
 
-# Claude model pricing per 1M tokens (verified 2026-06-12; Sonnet 5 2026-07-01)
-# NOTE: 1M context on Fable 5/Opus 4.8/4.7/4.6/Sonnet 5/Sonnet 4.6 is billed at
-# standard rates (no long-context premium). The old "2x over 200K" pricing only
+# Claude model pricing per 1M tokens (verified 2026-07-25; Opus 5 GA 2026-07-24)
+# NOTE: 1M context on Fable 5/Opus 5/Opus 4.8/4.7/4.6/Sonnet 5/Sonnet 4.6 is billed
+# at standard rates (no long-context premium). The old "2x over 200K" pricing only
 # applied to Opus 4.1 and older.
 MODEL_PRICING = {
     "fable": {
@@ -38,7 +38,7 @@ MODEL_PRICING = {
         "name": "Fable 5",
         "note": (
             "Most capable widely released model (Mythos-class tier, GA 2026-06-09). "
-            "2x Opus 4.8 pricing. Always-on adaptive thinking; no Fast Mode; "
+            "2x Opus 5 pricing. Always-on adaptive thinking; no Fast Mode; "
             "Batch supported ($5/$25). Pre-output refusals are not billed."
         ),
     },
@@ -46,8 +46,24 @@ MODEL_PRICING = {
         "input": 5.00,
         "output": 25.00,
         "cache_hit": 0.50,
-        "name": "Opus 4.8",
-        "note": "Opus-tier flagship. New tokenizer may use up to 35% more tokens than Opus 4.6.",
+        "name": "Opus 5",
+        "note": (
+            "Opus-tier flagship (GA 2026-07-24). Same posted rate as Opus 4.8, but "
+            "thinking is ON by default and reasoning tokens bill as output, so the "
+            "effective cost runs higher until you lower output_config.effort. Same "
+            "tokenizer as Opus 4.7/4.8 (up to 35% more tokens than Opus 4.6). "
+            "Minimum cacheable prompt is 512 tokens."
+        ),
+    },
+    "opus_4_8": {
+        "input": 5.00,
+        "output": 25.00,
+        "cache_hit": 0.50,
+        "name": "Opus 4.8 (legacy)",
+        "note": (
+            "Same price as Opus 5. Still the server-side fallback target for Opus 5 "
+            "cyber-classifier refusals. Minimum cacheable prompt is 1,024 tokens."
+        ),
     },
     "opus_4_7": {
         "input": 5.00,
@@ -82,15 +98,13 @@ MODEL_PRICING = {
         "input": 10.00,
         "output": 50.00,
         "cache_hit": None,
-        "name": "Opus 4.8 (Fast Mode)",
-        "note": "Research preview. 2x standard Opus rates ($10/$50). Opus 4.8 on the Claude API only. Not available with Batch API.",
-    },
-    "fast_mode_legacy": {
-        "input": 30.00,
-        "output": 150.00,
-        "cache_hit": None,
-        "name": "Opus 4.7/4.6 (Fast Mode)",
-        "note": "Research preview. 6x standard Opus rates ($30/$150). Opus 4.6 Fast Mode deprecated as of the 4.8 launch.",
+        "name": "Opus 5 / 4.8 (Fast Mode)",
+        "note": (
+            "Research preview. Flat 2x standard Opus rates ($10/$50) on Opus 5 and "
+            "Opus 4.8 only, Claude API + Managed Agents. Not available with Batch API. "
+            "The old 6x tier is gone: Opus 4.7 errors on speed=fast, and Opus 4.6 "
+            "silently runs standard speed at standard rates."
+        ),
     },
     "mythos": {
         "input": 10.00,
@@ -100,7 +114,7 @@ MODEL_PRICING = {
         "note": (
             "Fable 5 without safety classifiers; same specs and pricing. "
             "Limited availability via Project Glasswing. Listed for reference only. "
-            "(Mythos Preview, $25/$125, retires 2026-06-30.)"
+            "(Mythos Preview retired 2026-06-30.)"
         ),
     },
 }
@@ -317,9 +331,9 @@ def main():
         default=None,
         help=(
             "Show cost for a specific model only (default: show all). "
-            "Use 'opus_4_7' or 'opus_4_6' for legacy Opus pricing. "
-            "Use 'fast_mode' for Opus 4.8 Fast Mode (2x rates) or "
-            "'fast_mode_legacy' for Opus 4.7/4.6 Fast Mode (6x rates)."
+            "'opus' is Opus 5, the current flagship. Use 'opus_4_8', 'opus_4_7', or "
+            "'opus_4_6' for legacy Opus pricing. Use 'fast_mode' for Opus 5 / 4.8 "
+            "Fast Mode (flat 2x rates; the old 6x tier no longer exists)."
         ),
     )
     parser.add_argument(

@@ -38,7 +38,7 @@ Estimate token count and cost for a given text input.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `text` | string | yes | The text to estimate tokens for |
-| `model` | string | no | `opus`, `sonnet`, or `haiku` (default: `sonnet`) |
+| `model` | string | no | `fable`, `opus` (Opus 5), `opus-4.8`, `opus-4.7`, `opus-4.6`, `sonnet` (Sonnet 5), or `haiku` (default: `sonnet`) |
 | `turns` | number | no | Project cost over this many conversation turns |
 
 **Example usage:**
@@ -56,7 +56,7 @@ Estimate total cost for an entire Claude Code session.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `turns` | number | yes | Number of conversation turns |
-| `model` | string | no | `opus`, `sonnet`, or `haiku` (default: `sonnet`) |
+| `model` | string | no | `fable`, `opus` (Opus 5), `opus-4.8`, `opus-4.7`, `opus-4.6`, `sonnet` (Sonnet 5), or `haiku` (default: `sonnet`) |
 | `claude_md_lines` | number | no | Lines in your CLAUDE.md (default: 0) |
 | `mcp_servers` | number | no | Number of configured MCP servers (default: 0) |
 
@@ -77,7 +77,7 @@ Returns a breakdown of cost by component (system prompt, CLAUDE.md, MCP schemas,
 
 ### compare_models
 
-Compare cost across all three models for a given workload.
+Compare cost across every model in the pricing table for a given workload.
 
 **Parameters:**
 
@@ -94,18 +94,25 @@ Returns cost for each model, identifies the cheapest option, and shows the perce
 
 ## Pricing Reference
 
-All estimates use June 2026 API pricing (verified 2026-06-12, per 1M tokens):
+All estimates use current API pricing (verified 2026-07-25, per 1M tokens):
 
-| Model | Input | Output | Cache Hit |
-|-------|-------|--------|-----------|
-| Fable 5 (alias: `fable`) | $10.00 | $50.00 | $1.00 |
-| Opus 4.8 (alias: `opus`) | $5.00 | $25.00 | $0.50 |
-| Opus 4.7 (alias: `opus-4.7`) | $5.00 | $25.00 | $0.50 |
-| Opus 4.6 (alias: `opus-4.6`) | $5.00 | $25.00 | $0.50 |
-| Sonnet 4.6 | $3.00 | $15.00 | $0.30 |
-| Haiku 4.5 | $1.00 | $5.00 | $0.10 |
+| Model | Input | Output | Cache Hit | Min cacheable prompt |
+|-------|-------|--------|-----------|---------------------:|
+| Fable 5 (alias: `fable`) | $10.00 | $50.00 | $1.00 | 512 |
+| Opus 5 (alias: `opus`) | $5.00 | $25.00 | $0.50 | 512 |
+| Opus 4.8 (alias: `opus-4.8`, legacy) | $5.00 | $25.00 | $0.50 | 1,024 |
+| Opus 4.7 (alias: `opus-4.7`, legacy) | $5.00 | $25.00 | $0.50 | 2,048 |
+| Opus 4.6 (alias: `opus-4.6`, legacy) | $5.00 | $25.00 | $0.50 | 4,096 |
+| Sonnet 5 (alias: `sonnet`) | $3.00 | $15.00 | $0.30 | 1,024 |
+| Haiku 4.5 (alias: `haiku`) | $1.00 | $5.00 | $0.10 | 4,096 |
 
 Token estimation uses a ~4 characters per token approximation. This is a reasonable average for English text and code but will vary with content type.
+
+**Minimum cacheable prompt.** A `cache_control` block on a prefix shorter than the model's floor is silently ignored: no error, no `cache_creation_input_tokens`, and full input price on every turn. Both `estimate_cost` and `session_estimate` emit a warning when your prefix falls below the floor for the selected model.
+
+**Opus 5 note.** Opus 5 (GA 2026-07-24) costs the same per token as Opus 4.8, but adaptive thinking is on by default and reasoning tokens bill as output. The ~500 output tokens per turn assumed above is a floor on Opus 5, not an average, until you lower `output_config.effort` (it defaults to `high`). Setting `thinking` to disabled is legal only at effort `high` or below; pairing it with `xhigh` or `max` returns a 400.
+
+Fast Mode is a flat 2x ($10/$50) on Opus 5 and Opus 4.8 only, and this server does not model it. The old 6x tier on Opus 4.7 / 4.6 no longer exists: Opus 4.7 errors on `speed: "fast"`, and Opus 4.6 silently runs at standard speed and standard rates.
 
 ## Development
 

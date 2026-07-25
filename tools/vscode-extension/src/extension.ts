@@ -13,6 +13,7 @@ import {
   estimatePerTurnCost,
   formatCost,
   formatTokens,
+  MIN_CACHE_TOKENS,
   MODEL_LABELS,
   PRICING,
 } from "./costEstimator";
@@ -109,17 +110,24 @@ async function estimateClaudeMdCost(): Promise<void> {
     const relativePath = vscode.workspace.asRelativePath(file);
     const breakdown = estimatePerTurnCost(text, 20, model);
 
-    results.push(
-      [
-        `--- ${relativePath} ---`,
-        `Tokens: ~${formatTokens(breakdown.tokens)}`,
-        `Model: ${MODEL_LABELS[model]}`,
-        `Input cost per turn: ${formatCost(breakdown.inputCostPerTurn)}`,
-        `Est. output per turn (500 tokens): ${formatCost(breakdown.outputEstimatePerTurn)}`,
-        `Total per turn: ${formatCost(breakdown.totalPerTurn)}`,
-        `20-turn session cost (this file only): ${formatCost(breakdown.totalForSession)}`,
-      ].join("\n")
-    );
+    const lines = [
+      `--- ${relativePath} ---`,
+      `Tokens: ~${formatTokens(breakdown.tokens)}`,
+      `Model: ${MODEL_LABELS[model]}`,
+      `Input cost per turn: ${formatCost(breakdown.inputCostPerTurn)}`,
+      `Est. output per turn (500 tokens): ${formatCost(breakdown.outputEstimatePerTurn)}`,
+      `Total per turn: ${formatCost(breakdown.totalPerTurn)}`,
+      `20-turn session cost (this file only): ${formatCost(breakdown.totalForSession)}`,
+    ];
+
+    const minCache = MIN_CACHE_TOKENS[model];
+    if (minCache !== undefined && breakdown.tokens < minCache) {
+      lines.push(
+        `Note: below the ${formatTokens(minCache)}-token minimum cacheable prompt for ${MODEL_LABELS[model]}, so a cache_control block on this file alone is silently ignored and you pay full input price every turn.`
+      );
+    }
+
+    results.push(lines.join("\n"));
   }
 
   vscode.window.showInformationMessage(results.join("\n\n"), { modal: true });

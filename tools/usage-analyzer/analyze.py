@@ -21,14 +21,19 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-# Claude model pricing per 1M tokens (verified 2026-06-12)
-# "fable" = Fable 5 (most capable, 2x Opus); "opus" = Opus-tier flagship 4.8;
-# "opus-4.7"/"opus-4.6" = legacy. Opus 4.8/4.7/4.6 share the same posted rate
-# but the 4.7+ tokenizer (also used by Fable 5) consumes up to ~35% more
-# tokens for the same source text.
+# Claude model pricing per 1M tokens (verified 2026-07-25; Opus 5 GA 2026-07-24)
+# "fable" = Fable 5 (most capable, 2x Opus 5); "opus" = Opus 5, the Opus-tier
+# flagship; "opus-4.8"/"opus-4.7"/"opus-4.6" = legacy. Opus 5 and Opus 4.8/4.7/4.6
+# share the same posted rate, but Opus 5 runs adaptive thinking ON by default and
+# reasoning tokens bill at the normal output rate, so the same workload costs more
+# than it did on Opus 4.8 until output_config.effort is lowered. The 4.7+ tokenizer
+# (also used by Opus 4.8, Opus 5, Fable 5, Sonnet 5 and Sonnet 4.6) consumes up to
+# ~35% more tokens for the same source text; Opus 5 shares it exactly, so nothing
+# needs re-baselining when moving from Opus 4.7 or 4.8.
 MODEL_PRICING = {
     "fable": {"input": 10.00, "output": 50.00, "cache_hit": 1.00},
     "opus": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
+    "opus-4.8": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     "opus-4.7": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     "opus-4.6": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     "sonnet": {"input": 3.00, "output": 15.00, "cache_hit": 0.30},
@@ -95,6 +100,11 @@ def detect_model(text: str) -> str:
     text_lower = text.lower()
     if "fable" in text_lower or "mythos" in text_lower:
         return "fable"
+    # Opus 5 is the current flagship, so it shares the plain "opus" pricing key.
+    if "opus-5" in text_lower or "opus5" in text_lower:
+        return "opus"
+    if "opus-4-8" in text_lower or "opus-4.8" in text_lower:
+        return "opus-4.8"
     if "opus-4-7" in text_lower or "opus-4.7" in text_lower:
         return "opus-4.7"
     if "opus-4-6" in text_lower or "opus-4.6" in text_lower:
@@ -313,9 +323,9 @@ def identify_hotspots(sessions: list[dict]) -> list[str]:
         total_turns = sum(s["turns"] for s in sessions)
         if total_turns > 0 and fable_turns / total_turns > 0.3:
             hotspots.append(
-                f"Fable 5 ($10/$50, 2x Opus) is used for {fable_turns}/{total_turns} "
+                f"Fable 5 ($10/$50, 2x Opus 5) is used for {fable_turns}/{total_turns} "
                 f"({fable_turns * 100 // total_turns}%) of turns. "
-                f"Reserve it for the hardest tasks; Opus 4.8 costs half as much."
+                f"Reserve it for the hardest tasks; Opus 5 costs half as much."
             )
 
     opus_sessions = [s for s in sessions if s["model"].startswith("opus")]
@@ -327,6 +337,17 @@ def identify_hotspots(sessions: list[dict]) -> list[str]:
                 f"Opus is used for {opus_turns}/{total_turns} "
                 f"({opus_turns * 100 // total_turns}%) of turns. "
                 f"Switch routine tasks to Sonnet or Haiku for major savings."
+            )
+        # Opus 5 posts the same $5/$25 as Opus 4.8, but adaptive thinking is on by
+        # default and reasoning tokens bill as output, so the same work costs more.
+        if any(s["model"] == "opus" for s in opus_sessions):
+            hotspots.append(
+                "Opus 5 turns detected. Thinking is ON by default there and "
+                "reasoning tokens bill as output at the normal $25/1M rate, so "
+                "identical work costs more than it did on Opus 4.8. Lower "
+                "output_config.effort (low/medium) for routine turns, and drop "
+                "inherited 'double-check your work' instructions -- Opus 5 already "
+                "self-verifies, so you pay for it twice."
             )
 
     # Check for long sessions
@@ -345,7 +366,9 @@ def generate_recommendations(sessions: list[dict]) -> list[str]:
     recommendations = []
 
     if not sessions:
-        return ["No session data found. Ensure the directory contains Claude session files."]
+        return [
+            "No session data found. Ensure the directory contains Claude session files."
+        ]
 
     total_cost = sum(s["cost"] for s in sessions)
     total_input = sum(s["input_tokens"] for s in sessions)
@@ -364,14 +387,17 @@ def generate_recommendations(sessions: list[dict]) -> list[str]:
     models_used = set(s["model"] for s in sessions)
     if models_used == {"fable"}:
         recommendations.append(
-            "You're using Fable 5 exclusively ($10/$50 -- 2x Opus 4.8). Route "
-            "standard work to Opus 4.8 or Sonnet 4.6 and keep Fable 5 for the "
+            "You're using Fable 5 exclusively ($10/$50 -- 2x Opus 5). Route "
+            "standard work to Opus 5 or Sonnet 5 and keep Fable 5 for the "
             "hardest reasoning to cut those turns by 50-90%."
         )
     elif models_used == {"opus"}:
         recommendations.append(
-            "You're using Opus exclusively. Consider Sonnet for standard coding "
-            "tasks and Haiku for simple lookups to save 40-80% on those turns."
+            "You're using Opus 5 exclusively. Consider Sonnet 5 for standard "
+            "coding tasks and Haiku 4.5 for simple lookups to save 40-80% on "
+            "those turns. On the Opus 5 turns you keep, lower "
+            "output_config.effort (it defaults to high) -- thinking is on by "
+            "default and those reasoning tokens bill as output."
         )
 
     avg_turns = sum(s["turns"] for s in sessions) / len(sessions)
@@ -393,8 +419,12 @@ def generate_recommendations(sessions: list[dict]) -> list[str]:
 def print_summary(sessions: list[dict], top_n: int, sort_by: str):
     """Print the full analysis report."""
     if not sessions:
-        print(f"\n{c(YELLOW, '  No valid session data found in the specified directory.')}")
-        print(f"  {c(DIM, 'Ensure the directory contains Claude Code JSON/JSONL session files.')}\n")
+        print(
+            f"\n{c(YELLOW, '  No valid session data found in the specified directory.')}"
+        )
+        print(
+            f"  {c(DIM, 'Ensure the directory contains Claude Code JSON/JSONL session files.')}\n"
+        )
         return
 
     total_input = sum(s["input_tokens"] for s in sessions)
@@ -427,7 +457,9 @@ def print_summary(sessions: list[dict], top_n: int, sort_by: str):
     if sort_by == "cost":
         sorted_sessions = sorted(sessions, key=lambda s: s["cost"], reverse=True)
     elif sort_by == "tokens":
-        sorted_sessions = sorted(sessions, key=lambda s: s["total_tokens"], reverse=True)
+        sorted_sessions = sorted(
+            sessions, key=lambda s: s["total_tokens"], reverse=True
+        )
     elif sort_by == "turns":
         sorted_sessions = sorted(sessions, key=lambda s: s["turns"], reverse=True)
     else:
@@ -437,9 +469,7 @@ def print_summary(sessions: list[dict], top_n: int, sort_by: str):
     display_sessions = sorted_sessions[:top_n]
     print(c(BOLD, f"  Top {len(display_sessions)} Sessions (by {sort_by})"))
     print(c(DIM, "  " + "-" * 56))
-    print(
-        f"  {'#':<4} {'Session':<24} {'Tokens':>10} {'Turns':>7} {'Cost':>10}"
-    )
+    print(f"  {'#':<4} {'Session':<24} {'Tokens':>10} {'Turns':>7} {'Cost':>10}")
     print(f"  {'':.<4} {'':.<24} {'':.<10} {'':.<7} {'':.<10}")
 
     for i, session in enumerate(display_sessions, 1):

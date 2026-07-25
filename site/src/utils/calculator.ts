@@ -293,13 +293,16 @@ function generateRecommendations(
 
   if (inputs.model === 'fable-5') {
     recs.push({
-      text: 'Fable 5 costs 2x Opus 4.8 ($10/$50 vs $5/$25). Reserve it for the hardest reasoning and route routine work to Opus or Sonnet -- saves 50%+ on those turns',
+      text: 'Fable 5 costs 2x Opus 5 ($10/$50 vs $5/$25). Reserve it for the hardest reasoning and route routine work to Opus 5 or Sonnet -- saves 50%+ on those turns',
       impact: 50,
     })
   }
 
   const isOpusTier =
-    inputs.model === 'opus' || inputs.model === 'opus-4-7' || inputs.model === 'opus-4-6'
+    inputs.model === 'opus-5' ||
+    inputs.model === 'opus-4-8' ||
+    inputs.model === 'opus-4-7' ||
+    inputs.model === 'opus-4-6'
   if (isOpusTier && !inputs.fastMode) {
     recs.push({
       text: 'Consider Sonnet 5 for routine development -- 40% cheaper with similar quality for most tasks',
@@ -307,10 +310,24 @@ function generateRecommendations(
     })
   }
 
-  if (inputs.model === 'opus-4-7' || inputs.model === 'opus-4-6') {
+  if (inputs.model === 'opus-4-8' || inputs.model === 'opus-4-7' || inputs.model === 'opus-4-6') {
     recs.push({
-      text: 'Opus 4.7 and 4.6 are now legacy per Anthropic. Migrate to Opus 4.8 for improved agentic coding at the same price',
-      impact: 5,
+      text: `${MODELS[inputs.model].name} is legacy since the Opus 5 launch. Opus 5 costs the same $5/$25 with better agentic coding, and its minimum cacheable prompt is 512 tokens instead of ${MODELS[inputs.model].minCacheTokens.toLocaleString()} -- more of your system prompt actually caches`,
+      impact: 10,
+    })
+  }
+
+  if (inputs.model === 'opus-5') {
+    recs.push({
+      text: 'On Opus 5 thinking is ON by default. If a task does not need it, send thinking {type:"disabled"} at effort high or below -- reasoning tokens bill as output at $25/1M',
+      impact: 15,
+    })
+  }
+
+  if (MODELS[inputs.model].minCacheTokens >= 4096) {
+    recs.push({
+      text: `${MODELS[inputs.model].name} needs ${MODELS[inputs.model].minCacheTokens.toLocaleString()}+ tokens before a prompt caches at all. Below that you pay full input price every turn -- Opus 5, Sonnet 5, and Fable 5 cache from 512-1,024 tokens`,
+      impact: 12,
     })
   }
 

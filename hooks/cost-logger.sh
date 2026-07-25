@@ -41,8 +41,32 @@ case "$TOOL" in
     ;;
 esac
 
-# Log the estimate (Opus pricing as worst-case: $5/$25 per 1M)
-COST=$(echo "scale=4; ($EST_INPUT * 5 + $EST_OUTPUT * 25) / 1000000" | bc 2>/dev/null || echo "0.01")
+# Per-model rates in dollars per 1M tokens (verified 2026-07-25).
+# Defaults to Opus rates as worst-case when the model is unknown.
+MODEL="${HOOK_MODEL_ID:-${ANTHROPIC_MODEL:-opus}}"
+case "$MODEL" in
+  *haiku*)
+    RATE_INPUT=1
+    RATE_OUTPUT=5
+    ;;
+  *sonnet*)
+    RATE_INPUT=3
+    RATE_OUTPUT=15
+    ;;
+  *fable*|*mythos*)
+    RATE_INPUT=10
+    RATE_OUTPUT=50
+    ;;
+  *)
+    # Opus 5 and Opus 4.8 both price at $5/$25.
+    RATE_INPUT=5
+    RATE_OUTPUT=25
+    ;;
+esac
+
+# Log the estimate. Opus 5 enables adaptive thinking by default and bills
+# reasoning tokens as output, so real output cost can exceed this estimate.
+COST=$(echo "scale=4; ($EST_INPUT * $RATE_INPUT + $EST_OUTPUT * $RATE_OUTPUT) / 1000000" | bc 2>/dev/null || echo "0.01")
 echo "$(date +%H:%M:%S) $TOOL input:~${EST_INPUT} output:~${EST_OUTPUT} ~\$${COST}" >> "$SESSION_LOG"
 
 # Count total calls this session

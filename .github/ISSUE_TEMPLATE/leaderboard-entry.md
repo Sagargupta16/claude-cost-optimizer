@@ -23,7 +23,9 @@ assignees: ''
 ## Model Used
 
 <!-- Select one: -->
-- [ ] Opus 4.8
+- [ ] Opus 5
+- [ ] Sonnet 5
+- [ ] Opus 4.8 (legacy)
 - [ ] Opus 4.7 (legacy)
 - [ ] Opus 4.6 (legacy)
 - [ ] Sonnet 4.6
