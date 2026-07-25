@@ -83,7 +83,9 @@ We recommend keeping CLAUDE.md under **150 lines** as an approximate guideline, 
 
 > The cost column assumes a blended rate with 80% cache hits. Actual savings from trimming are about 20% of the raw difference (since most of these tokens get cached), but the cache is not free — cached tokens still cost 10% of full price.
 
-**On Opus 4.8** (or Opus 4.7/4.6), multiply these numbers by ~1.67x (Opus input is $5/MTok vs Sonnet's $3/MTok). A 500-line CLAUDE.md on Opus costs about $60.50/month just for the CLAUDE.md itself across 110 sessions. **Opus 4.8 adds another ~20-35% on top** because its new tokenizer (Opus 4.7 and later) uses more tokens for the same text.
+**On Opus 5** (or the legacy Opus 4.8/4.7/4.6), multiply these numbers by ~1.67x (Opus input is $5/MTok vs Sonnet's $3/MTok). A 500-line CLAUDE.md on Opus costs about $60.50/month just for the CLAUDE.md itself across 110 sessions. **Opus 5 adds another ~20-35% on top** because its tokenizer (the same one shipped with Opus 4.7 and used by every Opus since) uses more tokens for the same text.
+
+One caching caveat that depends on size: a `cache_control` block is silently ignored -- no error, no discount -- if the prefix it marks is shorter than the model's minimum cacheable prompt. That floor is **512 tokens on Opus 5**, down from 1,024 on Opus 4.8, 2,048 on Opus 4.7, and 4,096 on Opus 4.6. Sonnet 5 and Sonnet 4.6 sit at 1,024; Haiku 4.5 at 4,096. Practical effect: a ~100-line CLAUDE.md (~700 tokens) that was too short to cache on Opus 4.8 does cache on Opus 5, while a 50-line one (~350 tokens) still caches on neither.
 
 ### What Belongs in CLAUDE.md
 
@@ -332,7 +334,7 @@ src/
 6. Post-deploy: verify monitoring dashboards
 ```
 
-**Token count: ~2,660 tokens per turn. Over 30 turns with 80% caching: ~$0.048 (Sonnet 4.6) / ~$0.080 (Opus 4.8)**
+**Token count: ~2,660 tokens per turn. Over 30 turns with 80% caching: ~$0.048 (Sonnet 5) / ~$0.080 (Opus 5)**
 
 ### After: 62 Lines (Optimized)
 
@@ -381,7 +383,7 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 - Squash merge, 1+ review required
 ```
 
-**Token count: ~434 tokens per turn. Over 30 turns with 80% caching: ~$0.008 (Sonnet 4.6) / ~$0.013 (Opus 4.8)**
+**Token count: ~434 tokens per turn. Over 30 turns with 80% caching: ~$0.008 (Sonnet 5) / ~$0.013 (Opus 5)**
 
 ### What Was Cut and Why
 
@@ -405,8 +407,8 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 | Lines | 380 | 62 | **84% fewer** |
 | Tokens per turn | ~2,660 | ~434 | **84% fewer** |
 | 30-turn Sonnet cost | $0.048 | $0.008 | **$0.040 saved/session** |
-| 30-turn Opus 4.8 cost | $0.080 | $0.013 | **$0.067 saved/session** |
-| Monthly Opus 4.8 cost (110 sessions) | $8.80 | $1.43 | **$7.37 saved/month** |
+| 30-turn Opus 5 cost | $0.080 | $0.013 | **$0.067 saved/session** |
+| Monthly Opus 5 cost (110 sessions) | $8.80 | $1.43 | **$7.37 saved/month** |
 
 ---
 

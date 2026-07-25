@@ -229,7 +229,7 @@ prisma/
     Monolithic:        ~2,800 tokens per turn (all packages' details loaded always)
 
   Savings per 30-turn session: (2,800 - 1,130) x 30 = 50,100 tokens
-  At Sonnet 4 rates: ~$0.15 saved per session
+  At Sonnet 5 standard rates: ~$0.15 saved per session
 
   More importantly, Claude gets ONLY the relevant context for the package
   it is working in, which improves output quality and reduces follow-up turns.

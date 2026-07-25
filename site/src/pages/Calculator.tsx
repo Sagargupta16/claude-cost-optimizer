@@ -1,11 +1,11 @@
 import { useState, useMemo, useCallback } from 'react'
-import { type ModelId, MODELS, formatDollars } from '../utils/pricing'
+import { type ModelId, MODELS, FAST_MODE_MULTIPLIER, formatDollars } from '../utils/pricing'
 import { calculate, resultToMarkdown, type CalculatorInputs } from '../utils/calculator'
 import { BeforeAfterChart, CostPerTurnChart, ModelComparisonChart } from '../components/charts'
 import styles from './Calculator.module.css'
 
 const defaultInputs: CalculatorInputs = {
-  model: 'opus',
+  model: 'opus-5',
   turnsPerSession: 30,
   claudeMdLines: 100,
   sessionsPerDay: 3,
@@ -169,7 +169,8 @@ function Calculator() {
                 className={styles.checkbox}
               />
               <span>
-                Fast Mode ({MODELS[inputs.model].fastModeMultiplier ?? 6}x cost --{' '}
+                Fast Mode ({MODELS[inputs.model].fastModeMultiplier ?? FAST_MODE_MULTIPLIER}x cost
+                --{' '}
                 {MODELS[inputs.model].name} research preview)
               </span>
             </label>

@@ -89,6 +89,29 @@ Useful for piping into other tools or dashboards.
 | `--sort FIELD` | Sort sessions by: `cost`, `tokens`, or `turns` | `cost` | `--sort tokens` |
 | `--json` | Output results as JSON | off | `--json` |
 
+## Models and Pricing
+
+Cost estimates use current Claude API pricing (as of 2026-07-25, after the Opus 5 GA on 2026-07-24). The analyzer reads the `model` field out of your session records and matches it against these keys:
+
+| Model | Detected from | Input (per 1M) | Output (per 1M) | Cache Hit (per 1M) |
+|-------|---------------|:--------------:|:---------------:|:------------------:|
+| Fable 5 (`fable`) | `fable`, `mythos` | $10.00 | $50.00 | $1.00 |
+| Opus 5 (`opus`) | `opus-5`, or any other `opus` | $5.00 | $25.00 | $0.50 |
+| Opus 4.8 (`opus-4.8`, legacy) | `opus-4-8`, `opus-4.8` | $5.00 | $25.00 | $0.50 |
+| Opus 4.7 (`opus-4.7`, legacy) | `opus-4-7`, `opus-4.7` | $5.00 | $25.00 | $0.50 |
+| Opus 4.6 (`opus-4.6`, legacy) | `opus-4-6`, `opus-4.6` | $5.00 | $25.00 | $0.50 |
+| Sonnet 5 (`sonnet`) | `sonnet` | $3.00 | $15.00 | $0.30 |
+| Haiku 4.5 (`haiku`) | `haiku` | $1.00 | $5.00 | $0.10 |
+
+Notes:
+
+- `opus` is Opus 5, the current Opus-tier flagship. Opus 4.8 is now a legacy model (same posted rate, retirement no sooner than 2027-05-28) and is still the server-side fallback target for Opus 5 cyber-classifier refusals.
+- Mythos 5 is Glasswing-only and prices identically to Fable 5, so it maps to the `fable` key. (Mythos Preview retired 2026-06-30.)
+- Sonnet 5 also has an introductory rate of $2/$10 through 2026-08-31. The table uses the standard rate so estimates stay valid past that date.
+- Sessions whose records carry no recognizable model name fall back to Sonnet pricing, which keeps unknown-model estimates conservative rather than inflated.
+
+> **Opus 5 note.** Opus 5 costs the same per token as Opus 4.8, but adaptive thinking is ON by default and reasoning tokens bill as output at the normal $25/1M rate. That means an identical workload bills higher on Opus 5 than it did on Opus 4.8 until you lower `output_config.effort` (it defaults to `high`). The analyzer reports what you actually spent, so your Opus 5 output totals may look larger than expected for the same amount of work.
+
 ## Supported File Formats
 
 The analyzer scans for `.json` and `.jsonl` files and attempts to parse them as Claude Code session data. It recognizes several formats:
@@ -111,7 +134,8 @@ The most expensive sessions ranked by your chosen sort criteria. Look here for t
 Specific patterns that are driving up costs:
 - **High per-turn token usage**: Sessions where each turn processes a large context.
 - **Heavy file reads**: Too many file read operations inflating input tokens.
-- **Expensive model overuse**: Using Opus where Sonnet or Haiku would suffice.
+- **Expensive model overuse**: Using Fable 5 or Opus where Sonnet or Haiku would suffice.
+- **Opus 5 default thinking**: Opus 5 turns detected, where reasoning tokens bill as output because thinking is on by default.
 - **Long sessions**: Conversations that accumulate excessive context over many turns.
 
 ### Recommendations

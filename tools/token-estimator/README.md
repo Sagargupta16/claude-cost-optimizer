@@ -34,8 +34,8 @@ Output:
   --------------------------------------------------
   Model          Input Cost    $/1M tokens
   ..............  ............  ..............
-  Opus 4.8         $0.0062           $5.00
-  Sonnet 4.6       $0.0037           $3.00
+  Opus 5           $0.0062           $5.00
+  Sonnet 5         $0.0037           $3.00
   Haiku 4.5        $0.0012           $1.00
 ```
 
@@ -57,8 +57,8 @@ Output includes a projection table:
 
   Model          Total Cost     Per Turn
   ..............  ............  ............
-  Opus 4.8         $0.2225       $0.0045
-  Sonnet 4.6       $0.1335       $0.0027
+  Opus 5           $0.2225       $0.0045
+  Sonnet 5         $0.1335       $0.0027
   Haiku 4.5        $0.0445       $0.0009
 ```
 
@@ -88,25 +88,33 @@ python tools/token-estimator/estimate.py CLAUDE.md --per-turn 50 --json
 |------|-------------|---------|
 | `source` | File path to analyze, or `-` for stdin | `estimate.py CLAUDE.md` |
 | `--per-turn N` | Project cost over N conversation turns | `--per-turn 50` |
-| `--model MODEL` | Show cost for one model: `fable` (Fable 5), `opus` (4.8), `opus_4_6`, `sonnet`, `haiku`, `fast_mode`, `mythos` (Mythos 5) | `--model haiku` |
+| `--model MODEL` | Show cost for one model: `fable` (Fable 5), `opus` (Opus 5), `opus_4_8`, `opus_4_7`, `opus_4_6`, `sonnet` (Sonnet 5), `sonnet_4_6`, `haiku`, `fast_mode`, `mythos` (Mythos 5) | `--model haiku` |
 | `--json` | Output results as JSON | `--json` |
 
 File reads are contained to the current directory tree or your home directory; paths outside both are refused.
 
 ## Pricing
 
-The estimator uses current Claude API pricing (as of 2026-06-12):
+The estimator uses current Claude API pricing (as of 2026-07-25):
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
 |-------|:---------------------:|:----------------------:|:-------------------------:|
 | Fable 5 (alias: `fable`) | $10.00 | $50.00 | $1.00 |
 | Mythos 5 (alias: `mythos`, Glasswing only) | $10.00 | $50.00 | $1.00 |
-| Opus 4.8 (alias: `opus`) | $5.00 | $25.00 | $0.50 |
-| Opus 4.6 (alias: `opus_4_6`) | $5.00 | $25.00 | $0.50 |
-| Sonnet 4.6 | $3.00 | $15.00 | $0.30 |
+| Opus 5 (alias: `opus`) | $5.00 | $25.00 | $0.50 |
+| Opus 4.8 (alias: `opus_4_8`, legacy) | $5.00 | $25.00 | $0.50 |
+| Opus 4.7 (alias: `opus_4_7`, legacy) | $5.00 | $25.00 | $0.50 |
+| Opus 4.6 (alias: `opus_4_6`, legacy) | $5.00 | $25.00 | $0.50 |
+| Sonnet 5 (alias: `sonnet`) | $3.00 | $15.00 | $0.30 |
+| Sonnet 4.6 (alias: `sonnet_4_6`, legacy) | $3.00 | $15.00 | $0.30 |
 | Haiku 4.5 | $1.00 | $5.00 | $0.10 |
+| Opus 5 / 4.8 Fast Mode (alias: `fast_mode`) | $10.00 | $50.00 | n/a |
 
-Batch API pricing is 50% off the standard rates above (Fable 5 batch: $5/$25).
+Batch API pricing is 50% off the standard rates above (Opus 5 batch: $2.50/$12.50; Fable 5 batch: $5/$25).
+
+Sonnet 5 also has an introductory rate of $2/$10 through 2026-08-31. The table above uses the standard rate so that projections stay valid past that date.
+
+> **Opus 5 note.** Opus 5 costs the same per token as Opus 4.8, but thinking is on by default and reasoning tokens bill as output. This tool measures input tokens, so its numbers are unaffected -- but your real output bill on Opus 5 will run higher than the same workload on Opus 4.8 until you lower `output_config.effort`.
 
 ## Tips
 
@@ -119,4 +127,4 @@ Batch API pricing is 50% off the standard rates above (Fable 5 batch: $5/$25).
 
 ## Accuracy Note
 
-This tool uses OpenAI's `cl100k_base` tokenizer as an approximation. Claude uses a different tokenizer internally, so counts may differ. Note that the newer tokenizer (Opus 4.7 and later, including Opus 4.8, plus Sonnet 4.6) may use up to 35% more tokens for the same text, so treat these estimates as a lower bound for those models. For cost planning purposes, this is accurate enough to make informed decisions.
+This tool uses OpenAI's `cl100k_base` tokenizer as an approximation. Claude uses a different tokenizer internally, so counts may differ. Note that the newer tokenizer (Opus 4.7 and later, including Opus 4.8 and Opus 5, plus Fable 5, Sonnet 5, and Sonnet 4.6) may use up to 35% more tokens for the same text, so treat these estimates as a lower bound for those models. Opus 5 shares that tokenizer exactly, so nothing needs re-baselining when moving from Opus 4.7 or 4.8. For cost planning purposes, this is accurate enough to make informed decisions.

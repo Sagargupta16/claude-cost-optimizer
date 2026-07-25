@@ -16,10 +16,11 @@ export interface CostBreakdown {
   model: string;
 }
 
-/** Per-1M-token pricing verified 2026-06-12. */
+/** Per-1M-token pricing verified 2026-07-25. */
 export const PRICING: Record<string, { input: number; output: number }> = {
   fable: { input: 10, output: 50 },
   opus: { input: 5, output: 25 },
+  "opus-4.8": { input: 5, output: 25 },
   "opus-4.7": { input: 5, output: 25 },
   "opus-4.6": { input: 5, output: 25 },
   sonnet: { input: 3, output: 15 },
@@ -29,11 +30,28 @@ export const PRICING: Record<string, { input: number; output: number }> = {
 /** Friendly display names for each model tier. */
 export const MODEL_LABELS: Record<string, string> = {
   fable: "Fable 5",
-  opus: "Opus 4.8",
+  opus: "Opus 5",
+  "opus-4.8": "Opus 4.8 (legacy)",
   "opus-4.7": "Opus 4.7 (legacy)",
   "opus-4.6": "Opus 4.6 (legacy)",
   sonnet: "Sonnet 5",
   haiku: "Haiku 4.5",
+};
+
+/**
+ * Minimum cacheable prompt length per model, in tokens.
+ *
+ * A cache_control block on a prefix shorter than this is silently ignored:
+ * no error, no cache_creation_input_tokens, and full input price every turn.
+ */
+export const MIN_CACHE_TOKENS: Record<string, number> = {
+  fable: 512,
+  opus: 512,
+  "opus-4.8": 1024,
+  "opus-4.7": 2048,
+  "opus-4.6": 4096,
+  sonnet: 1024,
+  haiku: 4096,
 };
 
 /**

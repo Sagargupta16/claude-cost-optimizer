@@ -82,7 +82,7 @@ The local rater works on private and uncommitted repos and inspects things the w
 
 ## Before vs After
 
-Real project, 30-turn session, Opus 4.8:
+Real project, 30-turn session, Opus 5 (identical math on Opus 4.8 -- same $5/$25):
 
 ```
 BEFORE (no optimization):                 AFTER (5 minutes of setup):
@@ -117,7 +117,7 @@ Short answer: **30-60% is what a typical mixed workload saves. Up to ~90% is the
 - **The cost-mode skill on its own delivers 30-60%** -- it does output-token reduction and model-routing hints, not batch/caching/subscription. The 90% ceiling needs the full playbook in the [guides](#guides), not just the skill.
 - **Caching and batch are the firmest floors** (first-party Anthropic pricing; batch is a documented flat 50% that provably stacks with caching). Routing and subscription savings are the most workload-sensitive.
 
-> Prices verified against the [pricing reference](#pricing-reference-verified-2026-06-12) below (2026-06-12). Cache hit = 0.1x base input across all current models; Batch = 50% off both input and output.
+> Prices verified against the [pricing reference](#pricing-reference-verified-2026-07-25) below (2026-07-25). Cache hit = 0.1x base input across all current models; Batch = 50% off both input and output.
 
 ---
 
@@ -206,34 +206,52 @@ Copy-paste configs that are already optimized:
 
 ---
 
-## Pricing Reference (verified 2026-06-12)
+## Pricing Reference (verified 2026-07-25)
 
-| Model | Input / 1M | Output / 1M | Cache Hit / 1M | 5m Cache Write / 1M | 1h Cache Write / 1M | Context | Max Output |
-|-------|:----------:|:-----------:|:---------------:|:-------------------:|:-------------------:|:-------:|:----------:|
-| **Fable 5** (most capable) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
-| Mythos 5 (limited, [Glasswing](https://anthropic.com/glasswing)) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
-| **Opus 4.8** (Opus flagship) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
-| Opus 4.7 | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
-| Opus 4.6 | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
-| Opus 4.5 | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K |
-| Opus 4.1 | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
-| **Sonnet 5** (Sonnet flagship) | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 128K |
-| Sonnet 4.6 | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K |
-| Sonnet 4.5 | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
-| Haiku 4.5 | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
-| Mythos Preview (retires 2026-06-30) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- |
+| Model | Input / 1M | Output / 1M | Cache Hit / 1M | 5m Cache Write / 1M | 1h Cache Write / 1M | Context | Max Output | Min cacheable prompt |
+|-------|:----------:|:-----------:|:---------------:|:-------------------:|:-------------------:|:-------:|:----------:|:--------------------:|
+| **Fable 5** (highest capability) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K | 512 |
+| Mythos 5 (limited, [Glasswing](https://anthropic.com/glasswing)) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K | 512 |
+| **Opus 5** (Opus flagship) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | **512** |
+| Opus 4.8 (legacy) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | 1,024 |
+| Opus 4.7 | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | 2,048 |
+| Opus 4.6 | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | 4,096 |
+| Opus 4.5 | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K | 4,096 |
+| Opus 4.1 | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K | 1,024 |
+| **Sonnet 5** (Sonnet flagship) | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 128K | 1,024 |
+| Sonnet 4.6 | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K | 1,024 |
+| Sonnet 4.5 | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K | 1,024 |
+| Haiku 4.5 | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K | 4,096 |
+| Mythos Preview (retired 2026-06-30) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- | 2,048 |
 
-**1M context** on Fable 5, Mythos 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5, and Sonnet 4.6 bills at **standard rates** across the full window (no long-context premium). **Sonnet 5** (`claude-sonnet-5`, GA 2026-06-30) is the current Sonnet flagship; introductory pricing of **$2/$10 per MTok runs through 2026-08-31**, then standard **$3/$15** (table above shows standard rates). **Batch API**: 50% off both input and output (up to 300K output via the `output-300k-2026-03-24` beta). **Fast Mode** (Opus 4.8, 4.7, and 4.6, research preview): Opus 4.8 is **2x** ($10/$50), Opus 4.7 and 4.6 are **6x** ($30/$150); up to 2.5x output tokens/sec. **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"` for 4.6+ models): +10%. **Subscriptions**: Pro $20/mo (or **$200/yr ≈ $16.67/mo**, ~17% off), Max 5x $100/mo, Max 20x $200/mo. **Web search**: $10 per 1,000 searches plus token costs. **Web fetch**: free beyond token costs. **Code execution**: free with web search/fetch; otherwise 1,550 free hours/month then $0.05/hour per container. **Bash tool**: +245 input tokens. **Text editor tool**: +700 input tokens.
+**Opus 5** (`claude-opus-5`, GA 2026-07-24) is the current Opus flagship and Anthropic's recommended default for complex agentic coding. It costs the **same $5/$25 as Opus 4.8**, so the upgrade is free at the posted rate -- see [what actually changes](#migrating-to-opus-5) before you flip the model string. **1M context** on Fable 5, Mythos 5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5, and Sonnet 4.6 bills at **standard rates** across the full window (no long-context premium). **Sonnet 5** (`claude-sonnet-5`, GA 2026-06-30) introductory pricing of **$2/$10 per MTok runs through 2026-08-31**, then standard **$3/$15** (table above shows standard rates). **Batch API**: 50% off both input and output -- Opus 5 batch is **$2.50/$12.50** (up to 300K output via the `output-300k-2026-03-24` beta). **Fast Mode** (research preview, **Opus 5 and Opus 4.8 only**): **2x** ($10/$50) on both, up to 2.5x output tokens/sec. **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"` for 4.6+ models): +10%. **Subscriptions**: Pro $20/mo (or **$200/yr ≈ $16.67/mo**, ~17% off), Max 5x $100/mo, Max 20x $200/mo. **Web search**: $10 per 1,000 searches plus token costs. **Web fetch**: free beyond token costs. **Code execution**: free with web search/fetch; otherwise 1,550 free hours/month then $0.05/hour per container. **Bash tool**: +325 input tokens on Opus 5 / 4.8 / 4.7 (+244 on Opus 4.6 and earlier). **Text editor tool**: +700 input tokens.
 
-> **Opus 4.8 / 4.7 tokenizer caveat**: The new tokenizer (Opus 4.7 and later) may use **up to 35% more tokens** for the same fixed text. Effective per-task cost is higher than posted pricing suggests — factor this into budgets, especially when comparing to Opus 4.6 / Sonnet 4.6.
+> **Minimum cacheable prompt is a real cost lever.** A `cache_control` block below the model's threshold is silently ignored -- you pay full input price every turn and see no error. Opus 5 halves the Opus 4.8 threshold from 1,024 to **512 tokens**, so system prompts and CLAUDE.md files that never cached on 4.8 start caching on 5. Haiku 4.5, Opus 4.6, and Opus 4.5 sit at 4,096, the worst of the current lineup.
 >
-> **Fast Mode (research preview)**: Available on **Opus 4.8, Opus 4.7, and Opus 4.6** via the `fast-mode-2026-02-01` beta header (`speed: "fast"`). Pricing is per-model: **Opus 4.8 = 2x ($10/$50 per MTok)**, **Opus 4.7 / 4.6 = 6x ($30/$150 per MTok)** (4.6 Fast Mode is deprecated as of the 4.8 launch). Up to 2.5x more output tokens/second; speed gain is on output tokens/sec, not time-to-first-token. Opus 4.8 Fast Mode is Claude API + Managed Agents only. Not available on Claude Platform on AWS, Batch API, or Priority Tier. Switching speeds invalidates prompt cache. [Join the waitlist](https://claude.com/fast-mode).
+> **Opus 5 / 4.8 / 4.7 tokenizer caveat**: The tokenizer introduced with Opus 4.7 may use **up to 35% more tokens** for the same fixed text. Effective per-task cost is higher than posted pricing suggests -- factor this into budgets, especially when comparing against Opus 4.6 / Sonnet 4.6.
 >
-> **Fable 5 / Mythos 5** (GA 2026-06-09): Anthropic's new Mythos-class tier above Opus, at **2x Opus 4.8's price** ($10/$50). Same specs for both: 1M context at standard rates, 128K max output, always-on adaptive thinking (control depth with `effort`; `thinking: disabled` not supported), 4.7-generation tokenizer. **Fable 5 is GA everywhere** (Claude API, Claude Platform on AWS, Bedrock, Vertex AI, Microsoft Foundry) and includes safety classifiers that can decline requests -- a refusal returns HTTP 200 with `stop_reason: "refusal"`, **pre-output refusals are not billed**, and the beta `fallbacks` parameter plus fallback credit make retrying on another model cheap. **Mythos 5** is the same model without the classifiers, limited to approved [Project Glasswing](https://anthropic.com/glasswing) customers. No Fast Mode on either; Batch API supported ($5/$25). Requires 30-day data retention (no zero-data-retention option).
+> **Fast Mode (research preview)**: Now **Opus 5 and Opus 4.8 only**, via the `fast-mode-2026-02-01` beta header (`speed: "fast"`). Both are **2x** ($10/$50 per MTok). Up to 2.5x more output tokens/second; the speed gain is on output tokens/sec, not time-to-first-token. **Opus 4.7 now returns an error** on `speed: "fast"` with no fallback, and **Opus 4.6 silently runs at standard speed and standard rates** (`usage.speed` comes back `"standard"`) -- if you were paying 6x for Fast Mode on either, that option is gone. Claude API + Managed Agents only: not on Claude Platform on AWS, Bedrock, Vertex AI, Microsoft Foundry, Batch API, or Priority Tier. Switching speeds invalidates prompt cache. [Join the waitlist](https://claude.com/fast-mode).
 >
-> **Mythos Preview**: superseded by Mythos 5 -- **retires 2026-06-30**. Was the invite-only defensive-cybersecurity research preview under Project Glasswing.
+> **Fable 5 / Mythos 5** (GA 2026-06-09): Anthropic's Mythos-class tier above Opus, at **2x Opus 5's price** ($10/$50). Same specs for both: 1M context at standard rates, 128K max output, always-on adaptive thinking (control depth with `effort`; `thinking: disabled` not supported), 4.7-generation tokenizer. **Fable 5 is GA everywhere** (Claude API, Claude Platform on AWS, Bedrock, Vertex AI, Microsoft Foundry) and includes safety classifiers that can decline requests -- a refusal returns HTTP 200 with `stop_reason: "refusal"`, **pre-output refusals are not billed**, and the beta `fallbacks` parameter plus fallback credit make retrying on another model cheap. **Mythos 5** is the same model without the classifiers, limited to approved [Project Glasswing](https://anthropic.com/glasswing) customers. No Fast Mode on either; Batch API supported ($5/$25). Requires 30-day data retention (no zero-data-retention option).
+>
+> **Mythos Preview**: superseded by Mythos 5 -- **retired 2026-06-30**. Was the invite-only defensive-cybersecurity research preview under Project Glasswing.
 >
 > **Looking for older model IDs and pricing?** See the [Legacy & Retired Models](#legacy--retired-models) section below for migration context.
+
+### Migrating to Opus 5
+
+Opus 5 is the same price as Opus 4.8, but it is not a drop-in swap of the model string. Four things change your bill or break your request:
+
+| Change | Why it matters for cost |
+|--------|-------------------------|
+| **Thinking is ON by default** | Omit `thinking` and Opus 5 thinks adaptively. Reasoning tokens bill as **output** at $25/1M, and `max_tokens` is a hard cap on thinking **plus** text -- an unchanged `max_tokens: 4096` now gets eaten by thinking before your answer is written. Raise it to 64K+ if you run `xhigh`/`max` effort. |
+| **`thinking: {type: "disabled"}` is effort-gated** | Legal only at effort `high` or below. Pairing it with `xhigh` or `max` returns a **400**, so a config that worked on 4.8 can hard-fail. |
+| **Min cacheable prompt drops to 512 tokens** | Prompts too short to cache on 4.8 (1,024) now cache on 5. Free savings if you re-check your `cache_control` placement. |
+| **Cybersecurity classifiers ship on Opus 5** | Security-adjacent work can hit `stop_reason: "refusal"`. Set the server-side `fallbacks` param (beta `server-side-fallback-2026-07-01`) to auto-retry on Opus 4.8 inside the same call rather than paying for a failed round-trip. |
+
+Two prompt-level cleanups worth doing at the same time: Opus 5 writes **longer** output than 4.8 by default, so re-tune your verbosity instructions; and it self-verifies, so any "double-check your work before answering" instruction you carried over from an older model is now paying twice for the same behavior. New beta `mid-conversation-tool-changes-2026-07-01` also lets you change tool definitions between turns without invalidating the prompt cache -- previously a cache-busting move.
+
+Full details: [Anthropic's Opus 5 migration guide](https://platform.claude.com/docs/en/about-claude/models/migrating-to-claude-opus-5).
 
 ---
 
@@ -245,30 +263,32 @@ Copy-paste configs that are already optimized:
 
 | Model | Retired on | Migrate to |
 |-------|:----------:|-----------|
-| Claude Opus 3 (`claude-3-opus-20240229`) | 2026-01-05 | Opus 4.8 |
-| Claude Sonnet 3.7 (`claude-3-7-sonnet-20250219`) | 2026-02-19 | Sonnet 4.6 |
+| Claude Opus 3 (`claude-3-opus-20240229`) | 2026-01-05 | Opus 5 |
+| Claude Sonnet 3.7 (`claude-3-7-sonnet-20250219`) | 2026-02-19 | Sonnet 5 |
 | Claude Haiku 3.5 (`claude-3-5-haiku-20241022`) | 2026-02-19 (still on Bedrock + Vertex AI) | Haiku 4.5 |
 | Claude Haiku 3 (`claude-3-haiku-20240307`) | 2026-04-20 | Haiku 4.5 |
+| Claude Sonnet 4 (`claude-sonnet-4-20250514`) | 2026-06-15 | Sonnet 5 |
+| Claude Opus 4 (`claude-opus-4-20250514`) | 2026-06-15 | Opus 5 |
+| Claude Mythos Preview (`claude-mythos-preview`) | 2026-06-30 | Mythos 5 (Glasswing) |
 | Claude Sonnet 3.5 v1 / v2, Sonnet 3, Claude 2.x, Claude 1.x, Instant 1.x | 2024-2025 | See deprecations page |
 
 **Deprecated, retiring soon**:
 
 | Model | Retirement date | Migrate to |
 |-------|:---------------:|-----------|
-| Claude Sonnet 4 (`claude-sonnet-4-20250514`) | **2026-06-15** | Sonnet 4.6 |
-| Claude Opus 4 (`claude-opus-4-20250514`) | **2026-06-15** | Opus 4.8 |
-| Claude Mythos Preview (`claude-mythos-preview`) | **2026-06-30** | Mythos 5 (Glasswing) |
-| Claude Opus 4.1 (`claude-opus-4-1-20250805`) | **2026-08-05** | Opus 4.8 |
+| Claude Opus 4.1 (`claude-opus-4-1-20250805`) | **2026-08-05** | Opus 5 |
 
 **Older snapshots still callable** (not retired, but not the headline tier):
 
-| Snapshot | Pricing | Context | Why use |
-|----------|:-------:|:-------:|---------|
-| Opus 4.7 | $5/$25 | 1M | Previous flagship -- pin if not yet re-tuned for 4.8 |
-| Opus 4.6 | $5/$25 | 1M | Pinned workloads / older tokenizer |
-| Opus 4.5 | $5/$25 | 200K | Pinned workloads only |
-| Opus 4.1 | $15/$75 | 200K | Compatibility only -- 3x more expensive |
-| Sonnet 4.5 | $3/$15 | 200K | Pinned workloads only |
+| Snapshot | Pricing | Context | Earliest retirement | Why use |
+|----------|:-------:|:-------:|:-------------------:|---------|
+| Opus 4.8 | $5/$25 | 1M | 2027-05-28 | Previous flagship -- pin if prompts are tuned to it, or if you need thinking off at `xhigh`/`max` (Opus 5 rejects that combination). Also the fallback target for Opus 5 cyber refusals |
+| Opus 4.7 | $5/$25 | 1M | 2027-04-16 | Pinned workloads. No Fast Mode -- `speed: "fast"` now errors |
+| Opus 4.6 | $5/$25 | 1M | 2027-02-05 | Pinned workloads / older tokenizer. `speed: "fast"` silently runs standard |
+| Opus 4.5 | $5/$25 | 200K | 2026-11-24 | Pinned workloads only |
+| Opus 4.1 | $15/$75 | 200K | 2026-08-05 | Compatibility only -- 3x more expensive, deprecated |
+| Sonnet 4.6 | $3/$15 | 1M | 2027-02-17 | Pinned workloads -- migrate to Sonnet 5 |
+| Sonnet 4.5 | $3/$15 | 200K | 2026-09-29 | Pinned workloads only |
 
 > Authoritative source: [platform.claude.com/docs/en/about-claude/model-deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations).
 >
@@ -307,7 +327,7 @@ Copy-paste configs that are already optimized:
 <details>
 <summary>How much does Claude Code actually cost?</summary>
 
-With Pro ($20/mo or $200/yr ≈ $16.67/mo with annual billing — 17% off), Max 5x ($100/mo), or Max 20x ($200/mo), you get included usage. Heavy users report $3-15/day without optimization, $1-5/day with it. Opus 4.8, 4.7, and 4.6 at $5/$25 are 3x cheaper per token than Opus 4.1 ($15/$75) — but the new tokenizer (Opus 4.7 and later) can use up to 35% more tokens, so the effective gap is closer to ~2x.
+With Pro ($20/mo or $200/yr ≈ $16.67/mo with annual billing -- 17% off), Max 5x ($100/mo), or Max 20x ($200/mo), you get included usage. Heavy users report $3-15/day without optimization, $1-5/day with it. Opus 5, 4.8, 4.7, and 4.6 at $5/$25 are 3x cheaper per token than Opus 4.1 ($15/$75) -- but the tokenizer introduced with Opus 4.7 can use up to 35% more tokens, so the effective gap is closer to ~2x.
 </details>
 
 <details>

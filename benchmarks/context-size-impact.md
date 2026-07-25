@@ -108,19 +108,19 @@ We measured the impact of reading files of different sizes during a 10-turn sess
 
 When Claude reads a file on turn 3 of a 10-turn session, that file's content stays in the conversation history for turns 3-10 (8 turns). Here is the input token overhead from that single file read:
 
-| File Size | Tokens per Turn | Turns in Context | Total Added Tokens | Added Cost (Sonnet 4.6) |
+| File Size | Tokens per Turn | Turns in Context | Total Added Tokens | Added Cost (Sonnet 5) |
 |:---------:|:---------------:|:----------------:|:------------------:|:---------------------:|
 | 1 KB | 250 | 8 | 2,000 | $0.006 |
 | 10 KB | 2,500 | 8 | 20,000 | $0.060 |
 | 100 KB | 25,000 | 8 | 200,000 | $0.600 |
 
-> A single 100 KB file read adds $0.60 to a Sonnet session. With Opus 4.8, that same read adds **$1.00** in propagated input costs.
+> A single 100 KB file read adds $0.60 to a Sonnet session. With Opus 5, that same read adds **$1.00** in propagated input costs.
 
 ### Multiple File Reads — Compounding Effect
 
 Many tasks require Claude to read several files. Here is the total overhead when multiple files are read on turn 2 of a 10-turn session (9 turns of propagation):
 
-| Files Read | Total Tokens Added to Context | Propagated Over 9 Turns | Added Cost (Sonnet 4.6) | Added Cost (Opus 4.8) |
+| Files Read | Total Tokens Added to Context | Propagated Over 9 Turns | Added Cost (Sonnet 5) | Added Cost (Opus 5) |
 |:----------:|:-----------------------------:|:-----------------------:|:---------------------:|:-------------------:|
 | 3 x 1 KB | 750 | 6,750 | $0.02 | $0.03 |
 | 3 x 10 KB | 7,500 | 67,500 | $0.20 | $0.34 |
@@ -144,8 +144,8 @@ Based on cost-efficiency data, here are guidelines for how many file reads to bu
 | Model | Small Files (1 KB) | Medium Files (10 KB) | Large Files (100 KB) |
 |-------|:------------------:|:-------------------:|:-------------------:|
 | Haiku 4.5 | 20+ (negligible cost) | 10-15 | 1-2 (delegate to subagent) |
-| Sonnet 4.6 | 15-20 | 5-10 | 1 (delegate to subagent) |
-| Opus 4.8 | 10-15 | 5-8 | 1-2 (delegate to subagent) |
+| Sonnet 5 | 15-20 | 5-10 | 1 (delegate to subagent) |
+| Opus 5 | 10-15 | 5-8 | 1-2 (delegate to subagent) |
 
 ---
 
@@ -153,7 +153,7 @@ Based on cost-efficiency data, here are guidelines for how many file reads to bu
 
 ### How Context Grows
 
-Claude Code uses the model's full context window: **1M tokens on Opus 4.8, Opus 4.7, Opus 4.6, and Sonnet 4.6**, and **200K on Haiku 4.5**. As a session progresses, the context fills with conversation history. Here is how context utilization typically grows (200K baseline shown, since most sessions stay well under the 1M cap):
+Claude Code uses the model's full context window: **1M tokens on Opus 5 (at standard rates, no long-context premium), Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5, and Sonnet 4.6**, and **200K on Haiku 4.5**. As a session progresses, the context fills with conversation history. Here is how context utilization typically grows (200K baseline shown, since most sessions stay well under the 1M cap):
 
 | Turn | Typical Context Fill | Cumulative Input Tokens Billed | Per-Turn Input Cost (Sonnet 4.6) |
 |:----:|:--------------------:|:------------------------------:|:------------------------------:|

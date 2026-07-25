@@ -35,11 +35,15 @@ Not every developer uses Claude Code the same way. Set budgets based on role and
 |------|---------------|:------------------:|-----------|
 | **Junior Developer** | High-frequency simple tasks, learning | $30-60/month | Lots of small queries; should use Haiku 4.5 heavily |
 | **Mid-Level Developer** | Mixed task complexity | $50-100/month | Component creation, bug fixes, test writing |
-| **Senior Developer** | Lower frequency, higher complexity | $60-120/month | Architecture work, complex debugging (Opus 4.8 usage) |
-| **Tech Lead** | Architecture, reviews, planning | $70-150/month | Higher Opus 4.8 usage justified for strategic decisions |
+| **Senior Developer** | Lower frequency, higher complexity | $60-120/month | Architecture work, complex debugging (Opus 5 usage) |
+| **Tech Lead** | Architecture, reviews, planning | $70-150/month | Higher Opus 5 usage justified for strategic decisions |
 | **DevOps/Platform** | Infrastructure, CI/CD, automation | $30-60/month | Mostly config generation, script writing |
 
-> **Note**: These budgets reflect 2026-Q2 pricing where Opus 4.8 / 4.7 / 4.6 / 4.5 all share the same $5/$25 per MTok rate, **3x cheaper** than Opus 4.1 at $15/$75. Budget tiers are lower across the board compared to the old Opus pricing. The new tokenizer (Opus 4.7 and later, including 4.8) uses up to 35% more tokens for the same text, so budgeting for it slightly higher than you would for 4.6 is wise.
+> **Note**: These budgets reflect current pricing where Opus 5 and the legacy Opus 4.8 / 4.7 / 4.6 / 4.5 all share the same $5/$25 per MTok rate, **3x cheaper** than the deprecated Opus 4.1 at $15/$75. Opus 5 went GA on 2026-07-24 at the identical posted rate to Opus 4.8, so the upgrade does not move these tiers. Budget tiers are lower across the board compared to the old Opus pricing. The tokenizer shared by Opus 4.7 and every Opus since (including 5) uses up to 35% more tokens for the same text, so budgeting slightly higher than you would for 4.6 is wise.
+
+> **Budget risk specific to Opus 5**: adaptive thinking is **on by default** when you omit the `thinking` parameter, and reasoning tokens bill as **output** at $25/MTok. That makes the output side of a developer's bill less predictable than it was on Opus 4.8, where thinking was opt-in. Two knock-on effects for forecasting: `max_tokens` is a hard cap on thinking **plus** visible text, so an unchanged small `max_tokens` can be spent on thinking before the answer is written (raise it to 64K+ if anyone runs `xhigh` or `max` effort), and Opus 5 writes longer by default than 4.8. If your team runs high or above, budget the complex-task tier 20-40% above the Opus 4.8 baseline until you have two weeks of real numbers. Note that `thinking: {type: "disabled"}` is only accepted at effort `high` or below; pairing it with `xhigh` or `max` returns a 400.
+
+> **Fast Mode**: if anyone on the team enables Fast Mode (`speed: "fast"`, beta header `fast-mode-2026-02-01`), their rate doubles to $10/$50 per MTok. It buys up to 2.5x output tokens per second, not faster time-to-first-token, and it is supported on **Opus 5 and Opus 4.8 only**. On Opus 4.7 the request now errors out; on Opus 4.6 it silently runs at standard speed and standard rates. Treat Fast Mode as a 2x line item on any budget tier that uses it, and keep it off routine work.
 
 ### Setting the Initial Budget
 
@@ -86,14 +90,14 @@ Monthly Cost = (Simple Tasks x Simple Cost) +
 
 Where (per developer per day):
   Simple Tasks  = ~15-25 tasks/day   x $0.01 avg (Haiku 4.5)  = $0.15-0.25/day
-  Medium Tasks  = ~8-15 tasks/day    x $0.07 avg (Sonnet 4.6)  = $0.56-1.05/day
-  Complex Tasks = ~2-5 tasks/day     x $0.13 avg (Opus 4.8)    = $0.26-0.65/day
+  Medium Tasks  = ~8-15 tasks/day    x $0.07 avg (Sonnet 5)    = $0.56-1.05/day
+  Complex Tasks = ~2-5 tasks/day     x $0.13 avg (Opus 5)      = $0.26-0.65/day
 
   Daily Total   = $0.97-1.95/day
   Monthly Total = $21-43/developer (optimized)
 ```
 
-> **Note**: The Opus average cost per complex task has dropped from ~$0.40 (at old Opus 4.1 $15/$75 pricing) to ~$0.13 (at current $5/$25 pricing for Opus 4.8, 4.7, and 4.6). This significantly reduces the cost of architecture, debugging, and multi-file work.
+> **Note**: The Opus average cost per complex task has dropped from ~$0.40 (at old Opus 4.1 $15/$75 pricing) to ~$0.13 (at current $5/$25 pricing, shared by Opus 5 and the legacy 4.8, 4.7, and 4.6). This significantly reduces the cost of architecture, debugging, and multi-file work. The ~$0.13 figure assumes thinking off or at a modest effort level; on Opus 5 thinking is on by default and its tokens bill as output at $25/MTok, so complex tasks run at `xhigh` or `max` effort land higher.
 
 ### Estimation Worksheet
 
@@ -107,8 +111,8 @@ Working days/month:           _____ (default: 22)
 
 Per Developer (daily averages):
   Simple tasks (Haiku 4.5):   _____ tasks x $0.01 = $_____ /day
-  Medium tasks (Sonnet 4.6):  _____ tasks x $0.07 = $_____ /day
-  Complex tasks (Opus 4.8):   _____ tasks x $0.13 = $_____ /day
+  Medium tasks (Sonnet 5):    _____ tasks x $0.07 = $_____ /day
+  Complex tasks (Opus 5):     _____ tasks x $0.13 = $_____ /day
 
   Daily subtotal:             $_____ /day
   Monthly subtotal:           $_____ x 22 = $_____ /month
@@ -385,20 +389,20 @@ When planning sprints, estimate Claude Code costs alongside development time:
 
 ```
 Feature: User notification preferences
-  - Frontend component (Sonnet 4.6, ~$0.10)
-  - API endpoint (Sonnet 4.6, ~$0.07)
+  - Frontend component (Sonnet 5, ~$0.10)
+  - API endpoint (Sonnet 5, ~$0.07)
   - Database migration (Haiku 4.5, ~$0.02)
-  - Unit tests (Sonnet 4.6, ~$0.10)
-  - Integration test (Sonnet 4.6, ~$0.07)
+  - Unit tests (Sonnet 5, ~$0.10)
+  - Integration test (Sonnet 5, ~$0.07)
   - Code review assist (Haiku 4.5, ~$0.03)
   Estimated Claude Code cost: ~$0.39
 
 Feature: Payment system overhaul
-  - Architecture design (Opus 4.8, ~$0.27)
-  - 5 service refactors (Sonnet 4.6, ~$0.40)
-  - Database migration (Opus 4.8 plan + Sonnet 4.6 impl, ~$0.25)
-  - Test suite (Sonnet 4.6, ~$0.25)
-  - Security review (Opus 4.8, ~$0.20)
+  - Architecture design (Opus 5, ~$0.27)
+  - 5 service refactors (Sonnet 5, ~$0.40)
+  - Database migration (Opus 5 plan + Sonnet 5 impl, ~$0.25)
+  - Test suite (Sonnet 5, ~$0.25)
+  - Security review (Opus 5, ~$0.20)
   Estimated Claude Code cost: ~$1.37
 ```
 
@@ -412,7 +416,7 @@ Feature: Payment system overhaul
 
 | Action | Impact |
 |--------|--------|
-| Set Sonnet 4.6 as the team default model | Prevents Opus overuse from day one |
+| Set Sonnet 5 as the team default model | Prevents Opus overuse from day one |
 | Share a standard CLAUDE.md template | Consistent costs across the team |
 | Create a shared command library | Standardized workflows, pre-set models |
 | Weekly informal cost review | Catch problems early |
@@ -460,7 +464,7 @@ Feature: Payment system overhaul
 
 At 50 developers, cost optimization saves **$42,000/year**.
 
-> **Note**: These numbers reflect Opus 4.8/4.7/4.6 pricing ($5/$25 per MTok). The absolute cost of "unoptimized" usage is significantly lower than it was at old Opus 4.1 pricing ($15/$75), but the percentage savings from optimization remain substantial. The new tokenizer (Opus 4.7 and later, including 4.8) pushes the absolute dollar totals ~20-35% higher vs 4.6 for identical workloads.
+> **Note**: These numbers reflect Opus 5 pricing ($5/$25 per MTok), which the legacy Opus 4.8/4.7/4.6 share. The absolute cost of "unoptimized" usage is significantly lower than it was at old Opus 4.1 pricing ($15/$75), but the percentage savings from optimization remain substantial. The tokenizer introduced with Opus 4.7 and carried into 4.8 and 5 pushes the absolute dollar totals ~20-35% higher vs 4.6 for identical workloads. Because the posted rate is identical, moving the team from Opus 4.8 to Opus 5 does not change these totals; there is no cost argument for staying on 4.8.
 
 ---
 
@@ -488,7 +492,7 @@ Day 1: Setup
   [ ] Install Claude Code and verify it works
   [ ] Copy the team's standard CLAUDE.md to your project(s)
   [ ] Copy the team's .claudeignore template
-  [ ] Set your default model to Sonnet 4.6 (not Opus)
+  [ ] Set your default model to Sonnet 5 (not Opus)
   [ ] Install the team's shared command library
 
 Day 1: Read These Guides (30 minutes total)
