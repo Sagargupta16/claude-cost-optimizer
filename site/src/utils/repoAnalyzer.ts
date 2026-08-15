@@ -76,6 +76,10 @@ export interface AnalysisResult {
 }
 
 const GITHUB_API = 'https://api.github.com'
+// The only origin this module is ever allowed to call. Every request is checked
+// against it after URL parsing, so no combination of user input can retarget a
+// fetch at another host.
+const GITHUB_ORIGIN = new URL(GITHUB_API).origin
 
 // GitHub constraints: owner is alphanumeric/hyphen (max 39), repo is
 // alphanumeric/hyphen/underscore/dot (max 100). Validating here keeps
@@ -93,20 +97,48 @@ export function sanitizeBranch(branch: string): string {
 }
 
 /**
- * Builds a GitHub API URL, or returns null if owner/repo fail validation.
+ * Builds a GitHub API URL, or returns null if any part fails validation.
  *
  * `analyzeRepo` is exported and takes plain strings, so validating only inside
  * `parseRepoUrl` leaves a path where unchecked input reaches the request URL.
  * Re-checking here puts the gate on the URL itself: every request in this
  * module goes through this function, and callers treat null as "not found".
  *
- * The `..` rejection matters because REPO_PATTERN permits dots, so a repo of
- * ".." would otherwise walk up a segment of the API path.
+ * Three layers, because string concatenation alone is easy to get wrong:
+ *   1. owner/repo must match the GitHub character rules, and no segment may be
+ *      ".." -- REPO_PATTERN permits dots, and `new URL` resolves ".." by walking
+ *      up a path segment, so a repo of ".." would otherwise escape /repos/.
+ *   2. Each segment is encoded individually, then resolved against a fixed base
+ *      so the caller supplies only a path, never a scheme or host.
+ *   3. The resulting origin must equal GITHUB_ORIGIN. This is the backstop: even
+ *      if a segment smuggled in "//evil.test" or a scheme, the parsed origin
+ *      would differ and the request is dropped before it is made.
  */
-function buildApiUrl(owner: string, repo: string, suffix: string): string | null {
+function buildApiUrl(
+  owner: string,
+  repo: string,
+  segments: string[] = [],
+  query: Record<string, string> = {},
+): URL | null {
   if (!OWNER_PATTERN.test(owner) || !REPO_PATTERN.test(repo)) return null
-  if (owner.includes('..') || repo.includes('..')) return null
-  return `${GITHUB_API}/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}${suffix}`
+
+  const allSegments = ['repos', owner, repo, ...segments]
+  if (allSegments.some((s) => s === '..' || s === '.' || s === '')) return null
+
+  const path = allSegments.map(encodeURIComponent).join('/')
+
+  let url: URL
+  try {
+    url = new URL(path, `${GITHUB_API}/`)
+  } catch {
+    return null
+  }
+  if (url.origin !== GITHUB_ORIGIN) return null
+
+  for (const [key, value] of Object.entries(query)) {
+    url.searchParams.set(key, value)
+  }
+  return url
 }
 
 function validateRepoInput(owner: string, repo: string): RepoInput | null {
@@ -145,9 +177,12 @@ async function fetchFile(
   branch: string,
 ): Promise<FetchedFile> {
   const safeBranch = sanitizeBranch(branch)
-  const ref = safeBranch ? `?ref=${encodeURIComponent(safeBranch)}` : ''
-  const encodedPath = path.split('/').map(encodeURIComponent).join('/')
-  const url = buildApiUrl(owner, repo, `/contents/${encodedPath}${ref}`)
+  const url = buildApiUrl(
+    owner,
+    repo,
+    ['contents', ...path.split('/')],
+    safeBranch ? { ref: safeBranch } : {},
+  )
   if (!url) {
     return { path, content: '', size: 0, found: false }
   }
@@ -172,7 +207,7 @@ async function fetchDefaultBranch(
   owner: string,
   repo: string,
 ): Promise<{ branch: string; exists: boolean }> {
-  const url = buildApiUrl(owner, repo, '')
+  const url = buildApiUrl(owner, repo)
   if (!url) return { branch: 'main', exists: false }
   try {
     const res = await fetch(url)
@@ -198,7 +233,8 @@ async function fetchTree(
   const url = buildApiUrl(
     owner,
     repo,
-    `/git/trees/${encodeURIComponent(safeBranch)}?recursive=1`,
+    ['git', 'trees', safeBranch],
+    { recursive: '1' },
   )
   if (!url) return []
   try {
@@ -461,7 +497,7 @@ export async function analyzeRepo(
   // An explicit branch skips the repo lookup, so without this check a rejected
   // owner/repo would report exists: true and render an empty analysis as if the
   // repo were real. Surface it as not-found instead.
-  const inputIsValid = buildApiUrl(owner, repo, '') !== null
+  const inputIsValid = buildApiUrl(owner, repo) !== null
   const repoInfo =
     requestedBranch && inputIsValid
       ? { branch: requestedBranch, exists: true }
