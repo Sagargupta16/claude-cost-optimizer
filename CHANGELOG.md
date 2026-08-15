@@ -1,5 +1,15 @@
 # Changelog
 
+## [1.11.1] - 2026-08-15
+
+### Security
+- **Cleared all 10 open Dependabot alerts.** In `tools/mcp-cost-server` (all four are transitive dependencies of `@modelcontextprotocol/sdk`): `ip-address` 10.2.0 -> 10.5.0 (three SSRF / trust-boundary bypasses -- octal decoding of leading-zero octets, IPv4-mapped/NAT64 misclassification, and a CIDR suffix suppressing special-use classification), `hono` 4.12.31 -> 4.13.2 (CORS ReDoS, language-middleware algorithmic DoS, `memo()` retaining SSR output across requests, and the proxy helper leaking `Connection`-listed headers), `@hono/node-server` 1.19.14 -> 2.1.0 (`serve-static` path traversal on Windows via encoded backslash), and `fast-uri` 3.1.4 -> 4.1.2 (host confusion via backslash authority introducer). In `site`: `react-router` / `react-router-dom` 7.18.1 -> 7.18.2 (RSC-mode CSRF bypass executing actions before the 400 response), plus `nanoid` -> 3.3.18 from an `npm audit fix` in the same pass. `pnpm audit` and `npm audit` both report zero known vulnerabilities.
+- **Fixed the root cause behind the mcp-cost-server drift: pnpm 11 silently ignores the `pnpm` field in `package.json`.** The `ip-address` and `hono` overrides added in 1.8.0 lived there, so once the toolchain reached pnpm 11 they stopped applying (pnpm only warns "the following keys were ignored") and the pinned transitive versions rolled back to vulnerable ranges. Moved them to `tools/mcp-cost-server/pnpm-workspace.yaml`, which is the supported home for the setting, raised each floor to the first patched version, and added `fast-uri` and `@hono/node-server`. Verified the overrides now take effect: pnpm rejected the old lockfile with `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` before regenerating it. Removed the dead `pnpm` block from `package.json` so it cannot mislead again.
+- **Closed SonarCloud code-scanning alert #8** (`tssecurity:S8476`, high, "Client-side requests should not be vulnerable to forging attacks") in `site/src/utils/repoAnalyzer.ts`. Request URLs are no longer assembled by string concatenation: `buildApiUrl` now encodes each path segment individually, resolves them against a fixed base with the `URL` constructor, and **drops any request whose parsed `origin` is not `https://api.github.com`** -- a backstop that holds even if a segment smuggles in a scheme or a protocol-relative `//host`. Empty, `.`, and `..` segments are rejected outright. Verified by driving `analyzeRepo` directly with hostile input (`evil.test`, `..`, `a/../../evil`, and a `../../../other` branch): zero off-origin requests were issued, hostile owner/repo values produced no request at all, and the traversal branch fell back to `main`.
+
+### Removed
+- Deleted the stray untracked `site/pnpm-lock.yaml`. The site is an npm project -- it tracks `site/package-lock.json` and CI builds it with `npm ci` -- so a second pnpm lockfile would have drifted from the one actually used on the next dependency bump.
+
 ## [1.11.0] - 2026-07-25
 
 ### Added
