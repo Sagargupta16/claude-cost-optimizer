@@ -98,12 +98,13 @@ All estimates use current API pricing (verified 2026-07-25, per 1M tokens):
 
 | Model | Input | Output | Cache Hit | Min cacheable prompt |
 |-------|-------|--------|-----------|---------------------:|
-| Fable 5 (alias: `fable`) | $10.00 | $50.00 | $1.00 | 512 |
+| Fable 5.1 (alias: `fable`) | $10.00 | $50.00 | **$0.25** | 512 |
+| Fable 5 (alias: `fable-5`) | $10.00 | $50.00 | $1.00 | 512 |
 | Opus 5 (alias: `opus`) | $5.00 | $25.00 | $0.50 | 512 |
 | Opus 4.8 (alias: `opus-4.8`, legacy) | $5.00 | $25.00 | $0.50 | 1,024 |
 | Opus 4.7 (alias: `opus-4.7`, legacy) | $5.00 | $25.00 | $0.50 | 2,048 |
 | Opus 4.6 (alias: `opus-4.6`, legacy) | $5.00 | $25.00 | $0.50 | 4,096 |
-| Sonnet 5 (alias: `sonnet`) | $3.00 | $15.00 | $0.30 | 1,024 |
+| Sonnet 5 (alias: `sonnet`) | $2.00 | $10.00 | $0.20 | 1,024 |
 | Haiku 4.5 (alias: `haiku`) | $1.00 | $5.00 | $0.10 | 4,096 |
 
 Token estimation uses a ~4 characters per token approximation. This is a reasonable average for English text and code but will vary with content type.

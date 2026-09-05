@@ -26,20 +26,33 @@ except ImportError:
     sys.exit(1)
 
 
-# Claude model pricing per 1M tokens (verified 2026-07-25; Opus 5 GA 2026-07-24)
-# NOTE: 1M context on Fable 5/Opus 5/Opus 4.8/4.7/4.6/Sonnet 5/Sonnet 4.6 is billed
-# at standard rates (no long-context premium). The old "2x over 200K" pricing only
-# applied to Opus 4.1 and older.
+# Claude model pricing per 1M tokens (verified 2026-09-05; Fable 5.1 GA 2026-09-04)
+# NOTE: 1M context on Fable 5.1/Fable 5/Opus 5/Opus 4.8/4.7/4.6/Sonnet 5/Sonnet 4.6 is
+# billed at standard rates (no long-context premium). The old "2x over 200K" pricing
+# only applied to Opus 4.1 and older.
+# NOTE: cache_hit is 0.1x input on every model EXCEPT Fable 5.1 / Mythos 5.1, which
+# read at 0.025x ($0.25/MTok). Never derive a cache rate as input * 0.1.
 MODEL_PRICING = {
     "fable": {
         "input": 10.00,
         "output": 50.00,
-        "cache_hit": 1.00,
-        "name": "Fable 5",
+        "cache_hit": 0.25,
+        "name": "Fable 5.1",
         "note": (
-            "Most capable widely released model (Mythos-class tier, GA 2026-06-09). "
-            "2x Opus 5 pricing. Always-on adaptive thinking; no Fast Mode; "
-            "Batch supported ($5/$25). Pre-output refusals are not billed."
+            "Most capable widely released model (GA 2026-09-04). 2x Opus 5 pricing, but "
+            "cache reads are $0.25/MTok -- 0.025x base input, the only exception to the "
+            "0.1x rule and a quarter of Fable 5. Always-on adaptive thinking; no Fast "
+            "Mode; no Priority Tier; Batch $5/$25. Forced tool_choice returns 400."
+        ),
+    },
+    "fable_5": {
+        "input": 10.00,
+        "output": 50.00,
+        "cache_hit": 1.00,
+        "name": "Fable 5 (legacy)",
+        "note": (
+            "Superseded by Fable 5.1 at the same $10/$50. Cache reads cost $1.00/MTok "
+            "here versus $0.25 on Fable 5.1, so migrating is strictly cheaper when cached."
         ),
     },
     "opus": {
@@ -78,13 +91,15 @@ MODEL_PRICING = {
         "name": "Opus 4.6 (legacy)",
     },
     "sonnet": {
-        "input": 3.00,
-        "output": 15.00,
-        "cache_hit": 0.30,
+        "input": 2.00,
+        "output": 10.00,
+        "cache_hit": 0.20,
         "name": "Sonnet 5",
         "note": (
-            "Current Sonnet-tier flagship (GA 2026-06-30). Standard $3/$15; "
-            "introductory $2/$10 through 2026-08-31. New tokenizer (~30% more tokens)."
+            "Current Sonnet-tier flagship (GA 2026-06-30). $2/$10 is now the permanent "
+            "standard price -- the increase to $3/$15 scheduled for 2026-09-01 was "
+            "cancelled, so Sonnet 5 is 60% cheaper than Opus 5. New tokenizer "
+            "(~30% more tokens). Batch $1/$5."
         ),
     },
     "sonnet_4_6": {
@@ -109,12 +124,13 @@ MODEL_PRICING = {
     "mythos": {
         "input": 10.00,
         "output": 50.00,
-        "cache_hit": 1.00,
-        "name": "Mythos 5",
+        "cache_hit": 0.25,
+        "name": "Mythos 5.1",
         "note": (
-            "Fable 5 without safety classifiers; same specs and pricing. "
-            "Limited availability via Project Glasswing. Listed for reference only. "
-            "(Mythos Preview retired 2026-06-30.)"
+            "Fable 5.1 under Project Glasswing: same specs and pricing, including the "
+            "$0.25/MTok (0.025x) cache read. Unlike Mythos 5 it runs access-program "
+            "safeguards, so refusals can occur. Listed for reference only. "
+            "(Mythos 5 reads at $1.00; Mythos Preview retired 2026-06-30.)"
         ),
     },
 }

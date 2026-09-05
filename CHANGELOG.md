@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.12.0] - 2026-09-05
+
+### Added
+- **Claude Fable 5.1 support** (`claude-fable-5-1`, GA 2026-09-04) across all pricing tables, guides, tools, templates, and the web calculator. Same posted rate as Fable 5 ($10/$50), 1M context (default and max), 128K max output, 512-token cache floor, Batch $5/$25, no Fast Mode, no Priority Tier, 30-day retention required. Adaptive thinking always on -- `thinking: {type: "disabled"}` and `budget_tokens` both return 400; depth comes from `effort` (`low` through `xhigh` and `max`). Documented the three breaking changes versus Fable 5: forced tool use (`tool_choice` `any`/`tool`) returns 400, thinking blocks are bound to the producing model, and editing earlier turns invalidates thinking blocks ("preserved thinking" -- accounts created on/after 2026-08-31 get a 400 on edited history). Also noted the new per-message `effort`, turn-scoped `clear_at` system messages, and `thinking.display: "updates"` betas.
+- **Claude Mythos 5.1 entry** (`claude-mythos-5-1`): same specs, pricing, and cache rate as Fable 5.1, but under Project Glasswing and running access-program safeguards (so `refusal` can occur, unlike Mythos 5). Not offered on Claude Platform on AWS. Flagged `inviteOnly`.
+- **The 0.025x cache-read tier is now modeled as a first-class exception.** `site/src/utils/pricing.ts` exports `CACHE_HIT_MULTIPLIER_DEFAULT` / `CACHE_HIT_MULTIPLIER_FABLE_5_1` plus a `cacheDiscountShare()` helper, and every tool table carries an explicit comment that the rate must be read, never derived as `input * 0.1`. The VS Code extension gained a `CACHE_HIT_PRICING` map it previously lacked entirely.
+
+### Changed
+- **Corrected a live pricing error: Sonnet 5 is $2/$10, not $3/$15.** Anthropic made the launch "introductory" rate permanent and **cancelled the increase to $3/$15** that was scheduled for 2026-09-01. Every tool in this repo was projecting Sonnet 5 at $3/$15 (cache hit $0.30, 5m-write $3.75, 1h-write $6.00), overstating Sonnet 5 cost by 50% -- fixed in the site calculator, MCP cost server, VS Code extension (+ its settings enum), token-estimator, usage-analyzer, and claude-rate, along with every guide, benchmark, cheatsheet, and tool README table. The Sonnet-vs-Opus gap is therefore a durable **2.5x (60% cheaper)**, not 1.67x/40%, and legacy Sonnet 4.6 at $3/$15 is now strictly more expensive than the current flagship.
+- **Fable 5 and Mythos 5 moved to `legacy`.** Same posted price as 5.1 but 4x costlier cache reads ($1.00 vs $0.25), so migrating up is strictly cheaper on any cached workload; the calculator now emits that as a recommendation.
+- **Opus 4.1 moved to the retired list** -- it retired **2026-08-05** on the Claude API (still served on Bedrock and Google Cloud). Sonnet 4.5 (2026-09-29) is now the next retirement due.
+- Guide 08's framing corrected throughout: the "every model is 90% off" rule no longer holds, the per-model cache table gained a Fable 5.1 row at 97.5% off, and the TTL guidance now recommends a `max_tokens: 0` keep-alive on the 5-minute TTL over the 2x 1-hour write for Fable 5.1's 5-to-60-minute gaps.
+- `usage-analyzer` model detection distinguishes Fable/Mythos 5.1 from 5.0 (they cannot share a pricing key now that cache rates diverge) and recognizes `sonnet-4.6` separately from the `sonnet` flagship alias.
+- Removed the Bedrock-specific minimum-cacheable-prompt override note for Fable 5.1 -- Anthropic dropped it, so the 512-token floor applies on every platform.
+- All pricing re-verified against Anthropic's pricing docs on 2026-09-05; "verified" dates bumped from 2026-07-25.
+
 ## [1.11.1] - 2026-08-15
 
 ### Security

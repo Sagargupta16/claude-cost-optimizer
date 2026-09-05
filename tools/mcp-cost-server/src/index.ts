@@ -8,7 +8,10 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 // -------------------------------------------------------------------
-// Pricing tables -- verified 2026-07-25
+// Pricing tables -- verified 2026-09-05
+//
+// cacheHitPerMillion is 0.1x input on every model EXCEPT Fable 5.1 / Mythos 5.1,
+// which read at 0.025x ($0.25/MTok). Always read the field; never derive it.
 // -------------------------------------------------------------------
 
 interface ModelPricing {
@@ -20,20 +23,24 @@ interface ModelPricing {
 }
 
 const PRICING: Record<string, ModelPricing> = {
-  // "fable" = Fable 5, the most capable widely released model (2x Opus 5 rates)
-  fable: { inputPerMillion: 10, outputPerMillion: 50, cacheHitPerMillion: 1, minCacheTokens: 512 },
+  // "fable" = Fable 5.1, the most capable widely released model (2x Opus 5 rates,
+  // but a 0.025x cache read -- a quarter of Fable 5's)
+  fable: { inputPerMillion: 10, outputPerMillion: 50, cacheHitPerMillion: 0.25, minCacheTokens: 512 },
+  "fable-5": { inputPerMillion: 10, outputPerMillion: 50, cacheHitPerMillion: 1, minCacheTokens: 512 },
   // "opus" alias maps to the Opus-tier flagship (Opus 5, GA 2026-07-24)
   opus: { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 512 },
   "opus-4.8": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 1024 },
   "opus-4.7": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 2048 },
   "opus-4.6": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 4096 },
-  // "sonnet" alias maps to the current Sonnet-tier flagship (Sonnet 5); same $3/$15 tier as Sonnet 4.6
-  sonnet: { inputPerMillion: 3, outputPerMillion: 15, cacheHitPerMillion: 0.3, minCacheTokens: 1024 },
+  // "sonnet" = Sonnet 5 at its permanent $2/$10 (the scheduled rise to $3/$15 on
+  // 2026-09-01 was cancelled); Sonnet 4.6 stays on the older $3/$15 tier
+  sonnet: { inputPerMillion: 2, outputPerMillion: 10, cacheHitPerMillion: 0.2, minCacheTokens: 1024 },
+  "sonnet-4.6": { inputPerMillion: 3, outputPerMillion: 15, cacheHitPerMillion: 0.3, minCacheTokens: 1024 },
   haiku: { inputPerMillion: 1, outputPerMillion: 5, cacheHitPerMillion: 0.1, minCacheTokens: 4096 },
 };
 
 const MODEL_IDS = Object.keys(PRICING);
-const UNKNOWN_MODEL_HINT = `Use one of: ${MODEL_IDS.join(", ")} ("opus" is Opus 5, "sonnet" is Sonnet 5).`;
+const UNKNOWN_MODEL_HINT = `Use one of: ${MODEL_IDS.join(", ")} ("opus" is Opus 5, "sonnet" is Sonnet 5, "fable" is Fable 5.1).`;
 
 // -------------------------------------------------------------------
 // Helpers
@@ -182,7 +189,7 @@ function sessionEstimate(args: {
   }
   if (model === "fable") {
     recommendations.push(
-      "Fable 5 costs 2x Opus 5 ($10/$50 vs $5/$25). Reserve it for the hardest reasoning; route routine work to Opus or Sonnet."
+      "Fable 5.1 costs 2x Opus 5 ($10/$50 vs $5/$25). Reserve it for the hardest reasoning; route routine work to Opus or Sonnet."
     );
   }
   if (model === "opus") {
@@ -293,7 +300,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             type: "string",
             enum: MODEL_IDS,
             description:
-              'Claude model (default: sonnet). "opus" is Opus 5, "sonnet" is Sonnet 5.',
+              'Claude model (default: sonnet). "opus" is Opus 5, "sonnet" is Sonnet 5, "fable" is Fable 5.1.',
           },
           turns: {
             type: "number",
@@ -319,7 +326,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             type: "string",
             enum: MODEL_IDS,
             description:
-              'Claude model (default: sonnet). "opus" is Opus 5, "sonnet" is Sonnet 5.',
+              'Claude model (default: sonnet). "opus" is Opus 5, "sonnet" is Sonnet 5, "fable" is Fable 5.1.',
           },
           claude_md_lines: {
             type: "number",

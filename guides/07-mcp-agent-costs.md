@@ -39,7 +39,7 @@ If you have 10 MCP servers connected with ~1,500 tokens average each:
 15,000 tokens of MCP schemas x 50 turns = 750,000 input tokens
 
 On Opus 5:    750K tokens x $5.00/1M = $3.75 just for MCP schemas (+~35% if new tokenizer inflates schema)
-On Sonnet 5:  750K tokens x $3.00/1M = $2.25 just for MCP schemas
+On Sonnet 5:  750K tokens x $2.00/1M = $1.50 just for MCP schemas
 ```
 
 Add the tool-use system prompt on top of the schemas themselves: **286 tokens** with `tool_choice: auto` or `none`, **406 tokens** with `any` or `tool`. Individual built-in tools cost more (the bash tool adds 325 input tokens on Opus 5 / 4.8 / 4.7, 244 on Opus 4.6 and earlier; the text editor tool adds 700).

@@ -1,4 +1,4 @@
-// Pricing data verified against Anthropic docs on 2026-07-25 (Opus 5 launch):
+// Pricing data verified against Anthropic docs on 2026-09-05 (Fable 5.1 launch):
 //   - https://platform.claude.com/docs/en/about-claude/pricing
 //   - https://platform.claude.com/docs/en/about-claude/models/overview
 //   - https://platform.claude.com/docs/en/about-claude/models/migrating-to-claude-opus-5
@@ -9,6 +9,7 @@
 //   - https://claude.com/pricing
 
 export type ModelId =
+  | 'fable-5-1'
   | 'fable-5'
   | 'opus-5'
   | 'opus-4-8'
@@ -19,6 +20,7 @@ export type ModelId =
   | 'sonnet'
   | 'sonnet-4-5'
   | 'haiku'
+  | 'mythos-5-1'
   | 'mythos-5'
   | 'mythos'
 
@@ -46,7 +48,46 @@ export interface ModelPricing {
   lifecycle?: 'active' | 'legacy'
 }
 
+// Cache hits are 0.1x base input on every model EXCEPT Fable 5.1 and Mythos 5.1,
+// which read at 0.025x ($0.25/MTok). Derive displays from cacheHitPer1M rather
+// than multiplying input by 0.1 -- that shortcut is now wrong on two models.
+export const CACHE_HIT_MULTIPLIER_DEFAULT = 0.1
+export const CACHE_HIT_MULTIPLIER_FABLE_5_1 = 0.025
+
+/** Cache-read discount off base input, as a share (0.9 = 90% off). */
+export function cacheDiscountShare(model: ModelPricing): number {
+  return 1 - model.cacheHitPer1M / model.inputPer1M
+}
+
 export const MODELS: Record<ModelId, ModelPricing> = {
+  'fable-5-1': {
+    id: 'fable-5-1',
+    name: 'Fable 5.1',
+    inputPer1M: 10,
+    outputPer1M: 50,
+    // 0.025x base input -- the only tier that breaks the universal 0.1x cache rule.
+    cacheHitPer1M: 0.25,
+    cacheWrite5mPer1M: 12.5,
+    cacheWrite1hPer1M: 20,
+    contextWindow: '1M',
+    maxOutput: '128K',
+    fastModeCapable: false,
+    // Same tokenizer as Fable 5 / Opus 4.7+: ~30% more tokens vs pre-4.7 models.
+    tokenizerOverhead: 1.3,
+    minCacheTokens: 512,
+    lifecycle: 'active',
+    notes:
+      "Anthropic's most capable widely released model (GA 2026-09-04). Same $10/$50 as Fable 5, " +
+      'but cache reads are $0.25/MTok -- 0.025x base input, a quarter of Fable 5 and the only ' +
+      'exception to the 0.1x cache-hit rule. That makes a cache miss expensive relative to a hit, ' +
+      'so a max_tokens:0 keep-alive on the 5-minute TTL usually beats paying the 2x 1-hour write. ' +
+      'Adaptive thinking always on (thinking disabled/budget_tokens both 400); control depth with effort. ' +
+      'Three breaking changes vs Fable 5: forced tool_choice (any/tool) returns 400, thinking blocks ' +
+      'are bound to the producing model, and editing earlier turns invalidates thinking blocks ' +
+      '(preserved thinking -- accounts created on/after 2026-08-31 get a 400 on edited history). ' +
+      'No Fast Mode, no Priority Tier. Batch $5/$25. Requires 30-day retention (ZDR returns 400). ' +
+      '1M context at standard rates. Min cacheable prompt 512 tokens.',
+  },
   'fable-5': {
     id: 'fable-5',
     name: 'Fable 5',
@@ -61,15 +102,13 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     // Docs: same tokenizer as Opus 4.7, "roughly 30% more tokens" vs pre-4.7 models.
     tokenizerOverhead: 1.3,
     minCacheTokens: 512,
-    lifecycle: 'active',
+    lifecycle: 'legacy',
     notes:
-      "Anthropic's highest-capability model (Mythos-class tier, GA 2026-06-09). " +
-      '2x Opus 5 pricing. Adaptive thinking always on; control depth with effort. ' +
-      'Safety classifiers can refuse requests (stop_reason "refusal"; pre-output refusals are free, ' +
-      'beta fallbacks param + fallback credit cover retries). No Fast Mode; Batch supported ($5/$25). ' +
-      'Requires 30-day data retention. 1M context at standard rates. Min cacheable prompt 512 tokens. ' +
-      'Earliest retirement: 2027-06-09. ' +
-      'GA on Claude API, Claude Platform on AWS, Bedrock, Vertex AI, and Microsoft Foundry.',
+      'Previous Fable-tier release (GA 2026-06-09), superseded by Fable 5.1 at the same $10/$50. ' +
+      'Still served and selectable by id. The one reason to prefer it: cache reads cost $1/MTok here ' +
+      'versus $0.25 on Fable 5.1, so migrating is strictly cheaper on any cached workload. ' +
+      'Adaptive thinking always on; control depth with effort. No Fast Mode; Batch $5/$25. ' +
+      'Requires 30-day data retention. 1M context at standard rates. Min cacheable prompt 512 tokens.',
   },
   'opus-5': {
     id: 'opus-5',
@@ -181,11 +220,13 @@ export const MODELS: Record<ModelId, ModelPricing> = {
   'sonnet-5': {
     id: 'sonnet-5',
     name: 'Sonnet 5',
-    inputPer1M: 3,
-    outputPer1M: 15,
-    cacheHitPer1M: 0.3,
-    cacheWrite5mPer1M: 3.75,
-    cacheWrite1hPer1M: 6,
+    // $2/$10 is now the STANDARD price. The launch "introductory" rate was made
+    // permanent on 2026-09-01; the scheduled rise to $3/$15 was cancelled.
+    inputPer1M: 2,
+    outputPer1M: 10,
+    cacheHitPer1M: 0.2,
+    cacheWrite5mPer1M: 2.5,
+    cacheWrite1hPer1M: 4,
     contextWindow: '1M',
     maxOutput: '128K',
     fastModeCapable: false,
@@ -195,10 +236,11 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     lifecycle: 'active',
     notes:
       'Current Sonnet-tier flagship (GA 2026-06-30): best combination of speed and intelligence. ' +
+      '$2/$10 per MTok is now the permanent standard price -- Anthropic cancelled the increase to ' +
+      '$3/$15 that was scheduled for 2026-09-01, so this is 60% cheaper than Opus 5 rather than 40%. ' +
       'Adaptive thinking (effort defaults to high on the Claude API and Claude Code). No Fast Mode. ' +
-      '1M context at standard rates; Batch supported. Min cacheable prompt 1,024 tokens. ' +
-      'Introductory pricing $2/$10 per MTok through 2026-08-31, then standard $3/$15 ' +
-      '(numbers here use the standard rate). Earliest retirement: 2027-06-30.',
+      '1M context at standard rates; Batch $1/$5. Min cacheable prompt 1,024 tokens. ' +
+      'Earliest retirement: 2027-06-30.',
   },
   sonnet: {
     id: 'sonnet',
@@ -253,6 +295,29 @@ export const MODELS: Record<ModelId, ModelPricing> = {
       'Min cacheable prompt 4,096 tokens -- the highest of any current model, so short ' +
       'system prompts get no cache discount here. Earliest retirement: 2026-10-15.',
   },
+  'mythos-5-1': {
+    id: 'mythos-5-1',
+    name: 'Mythos 5.1',
+    inputPer1M: 10,
+    outputPer1M: 50,
+    // Confirmed on the pricing page: the 0.025x rate covers Mythos 5.1 too.
+    cacheHitPer1M: 0.25,
+    cacheWrite5mPer1M: 12.5,
+    cacheWrite1hPer1M: 20,
+    contextWindow: '1M',
+    maxOutput: '128K',
+    fastModeCapable: false,
+    tokenizerOverhead: 1.3,
+    minCacheTokens: 512,
+    inviteOnly: true,
+    lifecycle: 'active',
+    notes:
+      'Fable 5.1 offered under Project Glasswing: same capabilities, limits, and pricing, ' +
+      'including the $0.25/MTok (0.025x) cache-read rate. Unlike Mythos 5 it runs safeguards ' +
+      'that depend on the access program, so stop_reason "refusal" can occur. ' +
+      'Approved Glasswing customers only; not offered on Claude Platform on AWS. ' +
+      'Min cacheable prompt 512 tokens. Successor to Mythos 5.',
+  },
   'mythos-5': {
     id: 'mythos-5',
     name: 'Mythos 5',
@@ -267,9 +332,11 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     tokenizerOverhead: 1.3,
     minCacheTokens: 512,
     inviteOnly: true,
-    lifecycle: 'active',
+    lifecycle: 'legacy',
     notes:
-      "Fable 5's capabilities without the safety classifiers. Same specs and pricing. " +
+      "Fable 5's capabilities without the safety classifiers, so stop_reason \"refusal\" never " +
+      'occurs. Same specs and pricing as Fable 5, including the $1/MTok cache read. ' +
+      'Superseded by Mythos 5.1 (which reads at $0.25/MTok). ' +
       'Limited availability to approved Project Glasswing customers only. ' +
       'Min cacheable prompt 512 tokens. Successor to Mythos Preview.',
   },

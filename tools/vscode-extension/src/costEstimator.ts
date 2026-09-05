@@ -16,25 +16,49 @@ export interface CostBreakdown {
   model: string;
 }
 
-/** Per-1M-token pricing verified 2026-07-25. */
+/** Per-1M-token pricing verified 2026-09-05. */
 export const PRICING: Record<string, { input: number; output: number }> = {
   fable: { input: 10, output: 50 },
+  "fable-5": { input: 10, output: 50 },
   opus: { input: 5, output: 25 },
   "opus-4.8": { input: 5, output: 25 },
   "opus-4.7": { input: 5, output: 25 },
   "opus-4.6": { input: 5, output: 25 },
-  sonnet: { input: 3, output: 15 },
+  // $2/$10 is Sonnet 5's permanent standard price -- the increase to $3/$15
+  // scheduled for 2026-09-01 was cancelled. Sonnet 4.6 stays at $3/$15.
+  sonnet: { input: 2, output: 10 },
+  "sonnet-4.6": { input: 3, output: 15 },
   haiku: { input: 1, output: 5 },
+};
+
+/**
+ * Cache-read price per 1M tokens.
+ *
+ * 0.1x base input on every model EXCEPT Fable 5.1, which reads at 0.025x
+ * ($0.25/MTok). Read this table rather than multiplying input by 0.1.
+ */
+export const CACHE_HIT_PRICING: Record<string, number> = {
+  fable: 0.25,
+  "fable-5": 1,
+  opus: 0.5,
+  "opus-4.8": 0.5,
+  "opus-4.7": 0.5,
+  "opus-4.6": 0.5,
+  sonnet: 0.2,
+  "sonnet-4.6": 0.3,
+  haiku: 0.1,
 };
 
 /** Friendly display names for each model tier. */
 export const MODEL_LABELS: Record<string, string> = {
-  fable: "Fable 5",
+  fable: "Fable 5.1",
+  "fable-5": "Fable 5 (legacy)",
   opus: "Opus 5",
   "opus-4.8": "Opus 4.8 (legacy)",
   "opus-4.7": "Opus 4.7 (legacy)",
   "opus-4.6": "Opus 4.6 (legacy)",
   sonnet: "Sonnet 5",
+  "sonnet-4.6": "Sonnet 4.6 (legacy)",
   haiku: "Haiku 4.5",
 };
 
@@ -46,11 +70,13 @@ export const MODEL_LABELS: Record<string, string> = {
  */
 export const MIN_CACHE_TOKENS: Record<string, number> = {
   fable: 512,
+  "fable-5": 512,
   opus: 512,
   "opus-4.8": 1024,
   "opus-4.7": 2048,
   "opus-4.6": 4096,
   sonnet: 1024,
+  "sonnet-4.6": 1024,
   haiku: 4096,
 };
 

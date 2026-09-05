@@ -30,13 +30,17 @@ from pathlib import Path
 # (also used by Opus 4.8, Opus 5, Fable 5, Sonnet 5 and Sonnet 4.6) consumes up to
 # ~35% more tokens for the same source text; Opus 5 shares it exactly, so nothing
 # needs re-baselining when moving from Opus 4.7 or 4.8.
+# cache_hit is 0.1x input on every model EXCEPT Fable 5.1 / Mythos 5.1, which read at
+# 0.025x ($0.25/MTok). Read the rate from this table; never compute input * 0.1.
 MODEL_PRICING = {
-    "fable": {"input": 10.00, "output": 50.00, "cache_hit": 1.00},
+    "fable": {"input": 10.00, "output": 50.00, "cache_hit": 0.25},
+    "fable-5": {"input": 10.00, "output": 50.00, "cache_hit": 1.00},
     "opus": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     "opus-4.8": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     "opus-4.7": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     "opus-4.6": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
-    "sonnet": {"input": 3.00, "output": 15.00, "cache_hit": 0.30},
+    "sonnet": {"input": 2.00, "output": 10.00, "cache_hit": 0.20},
+    "sonnet-4.6": {"input": 3.00, "output": 15.00, "cache_hit": 0.30},
     "haiku": {"input": 1.00, "output": 5.00, "cache_hit": 0.10},
 }
 
@@ -98,6 +102,12 @@ def calculate_cost(
 def detect_model(text: str) -> str:
     """Attempt to detect the model name from text content."""
     text_lower = text.lower()
+    # Fable/Mythos 5.1 read cache at 0.025x while 5.0 reads at 0.1x, so the two
+    # generations cannot share a pricing key -- check for 5.1 before the catch-all.
+    if "fable-5-1" in text_lower or "mythos-5-1" in text_lower:
+        return "fable"
+    if "fable-5" in text_lower or "mythos-5" in text_lower:
+        return "fable-5"
     if "fable" in text_lower or "mythos" in text_lower:
         return "fable"
     # Opus 5 is the current flagship, so it shares the plain "opus" pricing key.
@@ -113,6 +123,8 @@ def detect_model(text: str) -> str:
         return "opus"
     if "haiku" in text_lower:
         return "haiku"
+    if "sonnet-4-6" in text_lower or "sonnet-4.6" in text_lower:
+        return "sonnet-4.6"
     if "sonnet" in text_lower:
         return "sonnet"
     return DEFAULT_MODEL

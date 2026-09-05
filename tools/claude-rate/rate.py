@@ -41,12 +41,26 @@ from typing import Any
 
 # -- Pricing data (mirrors site/src/utils/pricing.ts) ------------------------
 
-# Active models priced as of 2026-07-25. Prices are USD per 1M tokens.
+# Active models priced as of 2026-09-05. Prices are USD per 1M tokens.
 # `fast_mode` marks the models that honor `speed: "fast"` (a flat 2x on both
 # input and output). As of Opus 5's GA on 2026-07-24 that is Opus 5 and Opus 4.8
 # only: Opus 4.7 errors on `speed: "fast"`, and Opus 4.6 silently downgrades to
 # standard speed at standard rates. The old 6x tier no longer exists.
+# `cache_hit` is 0.1x input everywhere EXCEPT Fable 5.1 / Mythos 5.1, which read
+# at 0.025x ($0.25/MTok) -- read the field, never recompute it as input * 0.1.
 MODELS: dict[str, dict[str, Any]] = {
+    "fable-5-1": {
+        "name": "Fable 5.1",
+        "input": 10.00,
+        "output": 50.00,
+        "cache_hit": 0.25,
+        "cache_5m_write": 12.50,
+        "cache_1h_write": 20.00,
+        "context_window": 1_000_000,
+        "tokenizer_overhead": 1.3,
+        "fast_mode": False,
+        "lifecycle": "active",
+    },
     "fable-5": {
         "name": "Fable 5",
         "input": 10.00,
@@ -57,7 +71,7 @@ MODELS: dict[str, dict[str, Any]] = {
         "context_window": 1_000_000,
         "tokenizer_overhead": 1.3,
         "fast_mode": False,
-        "lifecycle": "active",
+        "lifecycle": "legacy",
     },
     "opus-5": {
         "name": "Opus 5",
@@ -107,13 +121,15 @@ MODELS: dict[str, dict[str, Any]] = {
         "fast_mode": False,
         "lifecycle": "legacy",
     },
+    # $2/$10 became the permanent standard price on 2026-09-01; the scheduled
+    # increase to $3/$15 was cancelled.
     "sonnet-5": {
         "name": "Sonnet 5",
-        "input": 3.00,
-        "output": 15.00,
-        "cache_hit": 0.30,
-        "cache_5m_write": 3.75,
-        "cache_1h_write": 6.00,
+        "input": 2.00,
+        "output": 10.00,
+        "cache_hit": 0.20,
+        "cache_5m_write": 2.50,
+        "cache_1h_write": 4.00,
         "context_window": 1_000_000,
         "tokenizer_overhead": 1.3,
         "fast_mode": False,
