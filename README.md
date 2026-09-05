@@ -104,7 +104,7 @@ Short answer: **30-60% is what a typical mixed workload saves. Up to ~90% is the
 
 | Lever | Published savings | Applies to | Source |
 |-------|:-----------------:|------------|--------|
-| **Prompt caching** | **up to 90%** cost, 85% latency | cached input only (cache hit = 0.1x input price) | [Anthropic: Prompt caching](https://claude.com/blog/prompt-caching), [pricing docs](https://platform.claude.com/docs/en/about-claude/pricing) |
+| **Prompt caching** | **up to 90%** cost (**97.5%** on Fable 5.1), 85% latency | cached input only (0.1x input price; 0.025x on Fable 5.1 / Mythos 5.1) | [Anthropic: Prompt caching](https://claude.com/blog/prompt-caching), [pricing docs](https://platform.claude.com/docs/en/about-claude/pricing) |
 | **Batch API** | flat **50%** off input **and** output, stacks with caching | any async (24h) work | [Anthropic: Message Batches API](https://claude.com/blog/message-batches-api), [batch docs](https://platform.claude.com/docs/en/build-with-claude/batch-processing) |
 | **Model routing** | **~80%** (Opus->Haiku is a flat 5x ratio); RouteLLM up to 85% at 95% quality | tasks a cheaper model handles well | [RouteLLM (arXiv 2406.18665)](https://arxiv.org/pdf/2406.18665), [LMSYS](https://lmsys.org/blog/2024-07-01-routellm/) |
 | **Context management** | **84%** fewer tokens in a 100-turn eval | long agentic sessions | [Anthropic: Context management](https://claude.com/blog/context-management) |
@@ -117,7 +117,7 @@ Short answer: **30-60% is what a typical mixed workload saves. Up to ~90% is the
 - **The cost-mode skill on its own delivers 30-60%** -- it does output-token reduction and model-routing hints, not batch/caching/subscription. The 90% ceiling needs the full playbook in the [guides](#guides), not just the skill.
 - **Caching and batch are the firmest floors** (first-party Anthropic pricing; batch is a documented flat 50% that provably stacks with caching). Routing and subscription savings are the most workload-sensitive.
 
-> Prices verified against the [pricing reference](#pricing-reference-verified-2026-07-25) below (2026-07-25). Cache hit = 0.1x base input across all current models; Batch = 50% off both input and output.
+> Prices verified against the [pricing reference](#pricing-reference-verified-2026-09-05) below (2026-09-05). Cache hit = 0.1x base input on every model **except Fable 5.1 and Mythos 5.1, which read at 0.025x**; Batch = 50% off both input and output.
 
 ---
 
@@ -210,7 +210,8 @@ Copy-paste configs that are already optimized:
 
 | Model | Input / 1M | Output / 1M | Cache Hit / 1M | 5m Cache Write / 1M | 1h Cache Write / 1M | Context | Max Output | Min cacheable prompt |
 |-------|:----------:|:-----------:|:---------------:|:-------------------:|:-------------------:|:-------:|:----------:|:--------------------:|
-| **Fable 5** (highest capability) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K | 512 |
+| **Fable 5.1** (highest capability) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 1M | 128K | 512 |
+| **Fable 5** (legacy) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K | 512 |
 | Mythos 5 (limited, [Glasswing](https://anthropic.com/glasswing)) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K | 512 |
 | **Opus 5** (Opus flagship) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | **512** |
 | Opus 4.8 (legacy) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | 1,024 |
@@ -218,13 +219,13 @@ Copy-paste configs that are already optimized:
 | Opus 4.6 | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | 4,096 |
 | Opus 4.5 | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K | 4,096 |
 | Opus 4.1 | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K | 1,024 |
-| **Sonnet 5** (Sonnet flagship) | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 128K | 1,024 |
+| **Sonnet 5** (Sonnet flagship) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1M | 128K | 1,024 |
 | Sonnet 4.6 | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K | 1,024 |
 | Sonnet 4.5 | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K | 1,024 |
 | Haiku 4.5 | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K | 4,096 |
 | Mythos Preview (retired 2026-06-30) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- | 2,048 |
 
-**Opus 5** (`claude-opus-5`, GA 2026-07-24) is the current Opus flagship and Anthropic's recommended default for complex agentic coding. It costs the **same $5/$25 as Opus 4.8**, so the upgrade is free at the posted rate -- see [what actually changes](#migrating-to-opus-5) before you flip the model string. **1M context** on Fable 5, Mythos 5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5, and Sonnet 4.6 bills at **standard rates** across the full window (no long-context premium). **Sonnet 5** (`claude-sonnet-5`, GA 2026-06-30) introductory pricing of **$2/$10 per MTok runs through 2026-08-31**, then standard **$3/$15** (table above shows standard rates). **Batch API**: 50% off both input and output -- Opus 5 batch is **$2.50/$12.50** (up to 300K output via the `output-300k-2026-03-24` beta). **Fast Mode** (research preview, **Opus 5 and Opus 4.8 only**): **2x** ($10/$50) on both, up to 2.5x output tokens/sec. **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"` for 4.6+ models): +10%. **Subscriptions**: Pro $20/mo (or **$200/yr ≈ $16.67/mo**, ~17% off), Max 5x $100/mo, Max 20x $200/mo. **Web search**: $10 per 1,000 searches plus token costs. **Web fetch**: free beyond token costs. **Code execution**: free with web search/fetch; otherwise 1,550 free hours/month then $0.05/hour per container. **Bash tool**: +325 input tokens on Opus 5 / 4.8 / 4.7 (+244 on Opus 4.6 and earlier). **Text editor tool**: +700 input tokens.
+**Opus 5** (`claude-opus-5`, GA 2026-07-24) is the current Opus flagship and Anthropic's recommended default for complex agentic coding. It costs the **same $5/$25 as Opus 4.8**, so the upgrade is free at the posted rate -- see [what actually changes](#migrating-to-opus-5) before you flip the model string. **1M context** on Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5, and Sonnet 4.6 bills at **standard rates** across the full window (no long-context premium). **Sonnet 5** (`claude-sonnet-5`, GA 2026-06-30) is **$2/$10 per MTok permanently** -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15, so Sonnet 5 sits 60% below Opus 5. **Batch API**: 50% off both input and output -- Opus 5 batch is **$2.50/$12.50** (up to 300K output via the `output-300k-2026-03-24` beta). **Fast Mode** (research preview, **Opus 5 and Opus 4.8 only**): **2x** ($10/$50) on both, up to 2.5x output tokens/sec. **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"` for 4.6+ models): +10%. **Subscriptions**: Pro $20/mo (or **$200/yr ≈ $16.67/mo**, ~17% off), Max 5x $100/mo, Max 20x $200/mo. **Web search**: $10 per 1,000 searches plus token costs. **Web fetch**: free beyond token costs. **Code execution**: free with web search/fetch; otherwise 1,550 free hours/month then $0.05/hour per container. **Bash tool**: +325 input tokens on Opus 5 / 4.8 / 4.7 (+244 on Opus 4.6 and earlier). **Text editor tool**: +700 input tokens.
 
 > **Minimum cacheable prompt is a real cost lever.** A `cache_control` block below the model's threshold is silently ignored -- you pay full input price every turn and see no error. Opus 5 halves the Opus 4.8 threshold from 1,024 to **512 tokens**, so system prompts and CLAUDE.md files that never cached on 4.8 start caching on 5. Haiku 4.5, Opus 4.6, and Opus 4.5 sit at 4,096, the worst of the current lineup.
 >

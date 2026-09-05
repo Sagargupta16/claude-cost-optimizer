@@ -186,7 +186,7 @@ Model choice is itself a speed lever -- generally the strongest one after cachin
 | Model | Price (in/out per 1M) | Context | Max output | Latency class | Fast Mode | Speed-per-dollar takeaway |
 |-------|:---------------------:|:-------:|:----------:|---------------|:---------:|---------------------------|
 | **Haiku 4.5** | $1 / $5 | 200K | 64K | Fastest in the lineup | No | Best speed AND best price -- the default for simple tasks |
-| **Sonnet 5** | $3 / $15 (intro $2 / $10 through 2026-08-31) | 1M | 128K | Fast | No | Best speed-to-intelligence balance for standard dev work |
+| **Sonnet 5** | $2 / $10 | 1M | 128K | Fast | No | Best speed-to-intelligence balance for standard dev work |
 | **Opus 5** | $5 / $25 | 1M | 128K | Moderate, and slower out of the box than 4.8 was (thinking is on by default) | Yes (2x) | The current Fast Mode host; standard speed for most Opus work |
 | **Opus 4.8** | $5 / $25 | 1M | 128K | Moderate | Yes (2x) | Legacy. Same price and same 2x Fast Mode as Opus 5 -- no speed or cost reason to stay |
 | **Fable 5** | $10 / $50 | 1M | 128K | Slower (always-on adaptive thinking adds a pre-answer phase) | No | Maximum capability; speed levers are effort + caching only |
@@ -265,7 +265,7 @@ Work top to bottom. Stop at the first row that applies -- the levers are ordered
 | Latency regressed right after moving to Opus 5 | Thinking is on by default now | Lower `effort`, or `thinking: {type: "disabled"}` at effort high or below | Cheaper (removes billed thinking output) |
 | Slow start on Fable 5 / Opus 5 / Opus 4.8, small context | Thinking-heavy startup | Lower `effort` for routine tasks | Cheaper |
 | Task is simple (rename, boilerplate, summary, syntax) | Over-modeled | Route to Haiku 4.5 -- faster AND 5x+ cheaper than Opus | **-80% vs Opus** |
-| Task is standard dev work on Opus | Over-modeled | Route to Sonnet 5 ($2/$10 intro through 2026-08-31) | -40% to -60% vs Opus |
+| Task is standard dev work on Opus | Over-modeled | Route to Sonnet 5 ($2/$10, permanent) | **-60% vs Opus** |
 | Long output streams too slowly, task truly needs Opus, a human is blocked, deadline math clears | The one Fast Mode case | Fast Mode on **Opus 5** (4.7 errors, 4.6 silently ignores it); one speed for the whole session | **+100%** |
 | All of the above and you are on Bedrock/Vertex/Foundry | Fast Mode unavailable | Back to the free levers; consider Claude API direct if the case is chronic | -- |
 

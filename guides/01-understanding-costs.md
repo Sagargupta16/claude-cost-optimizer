@@ -28,14 +28,15 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M) | 5m Cache Write | 1h Cache Write | Context Window | Max Output |
 |-------|:---------------------:|:----------------------:|:---------------------:|:--------------:|:--------------:|:--------------:|:----------:|
-| **Fable 5** (most capable) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
+| **Fable 5.1** (most capable) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 1M | 128K |
+| **Fable 5** (legacy) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
 | **Opus 5** (Opus flagship) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.8** (legacy) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.7** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K |
 | **Opus 4.1** (deprecated, retires 2026-08-05) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
-| **Sonnet 5** | $3.00 ($2.00 intro) | $15.00 ($10.00 intro) | $0.30 | $3.75 | $6.00 | see note | see note |
+| **Sonnet 5** | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | see note | see note |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K |
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
@@ -55,7 +56,7 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 >
 > **Fable 5** (GA 2026-06-09): Anthropic's Mythos-class tier above Opus at **2x Opus 5's rates** ($10/$50). Always-on adaptive thinking, no Fast Mode, Batch supported ($5/$25), 30-day data retention required. Safety classifiers can refuse a request (`stop_reason: "refusal"`) -- pre-output refusals are not billed. From a cost standpoint, treat Fable 5 as a deliberate splurge for the hardest tasks, not a default.
 >
-> **Sonnet 5**: $3/$15 standard, with **intro pricing of $2/$10 through 2026-08-31**. Minimum cacheable prompt 1,024 tokens. Retirement not sooner than 2027-06-30. It is the current Sonnet-tier migration target, replacing Sonnet 4.6. Context window and max output are not restated here -- check the [Anthropic models overview](https://docs.claude.com/en/docs/about-claude/models/overview) before you size a request against them.
+> **Sonnet 5**: **$2/$10 permanently** -- the launch intro rate became standard and the increase to $3/$15 was cancelled. Minimum cacheable prompt 1,024 tokens. Retirement not sooner than 2027-06-30. It is the current Sonnet-tier migration target, replacing Sonnet 4.6. Context window and max output are not restated here -- check the [Anthropic models overview](https://docs.claude.com/en/docs/about-claude/models/overview) before you size a request against them.
 >
 > **1M context at standard rates**: Fable 5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, and Sonnet 4.6 bill the full 1M window at the standard per-token rate -- no long-context premium. (The earlier "2x over 200K" pricing applied to Opus 4.1 and older. Note that Opus 4.5 and Sonnet 4.5 are 200K-only.)
 >
@@ -93,14 +94,14 @@ Relative to Opus 5 (the Opus-tier flagship; Opus 4.8 / 4.7 / 4.6 / 4.5 share the
 | Comparison | Input Savings | Output Savings |
 |------------|:------------:|:--------------:|
 | Opus 5 vs Fable 5 | **2x cheaper** | **2x cheaper** |
-| Sonnet 5 vs Opus 5 | **1.67x cheaper** | **1.67x cheaper** |
+| Sonnet 5 vs Opus 5 | **2.5x cheaper** | **2.5x cheaper** |
 | Haiku 4.5 vs Opus 5 | **5x cheaper** | **5x cheaper** |
 | Haiku 4.5 vs Fable 5 | **10x cheaper** | **10x cheaper** |
 | Haiku 4.5 vs Sonnet 5 | **3x cheaper** | **3x cheaper** |
 
 Switching from Opus to Haiku for a task that costs $1.00 on Opus would cost approximately $0.20 on Haiku. The same task on Sonnet would cost about $0.60.
 
-> **Note**: Opus 5 is priced at $5/$25 -- the same as Opus 4.8 / 4.7 / 4.6 and the same level Sonnet used to be at. The gap between models is much smaller than it used to be. Model selection still saves money, but the ratios are more modest (5x Haiku-to-Opus vs the historical 19x). The new tokenizer (Opus 4.7 and later) narrows the "effective" gap slightly further -- budget ~20-35% higher for Opus 5 than the posted rate suggests. Sonnet 5's $2/$10 intro rate through 2026-08-31 makes the Sonnet-vs-Opus gap temporarily 2.5x instead of 1.67x.
+> **Note**: Opus 5 is priced at $5/$25 -- the same as Opus 4.8 / 4.7 / 4.6 and the same level Sonnet used to be at. The gap between models is much smaller than it used to be. Model selection still saves money, but the ratios are more modest (5x Haiku-to-Opus vs the historical 19x). The new tokenizer (Opus 4.7 and later) narrows the "effective" gap slightly further -- budget ~20-35% higher for Opus 5 than the posted rate suggests. Sonnet 5's $2/$10 is now permanent, so the Sonnet-vs-Opus gap is a durable **2.5x**, not 1.67x.
 
 ### Long Context Pricing (1M)
 
@@ -108,6 +109,7 @@ Fable 5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, and Sonnet 4.6 support up to 1M t
 
 | Model | Input Rate (any context size) | Output Rate (any context size) | Max Context |
 |-------|:-----------------------------:|:------------------------------:|:-----------:|
+| **Fable 5.1** | $10.00 | $50.00 | 1M |
 | **Fable 5** | $10.00 | $50.00 | 1M |
 | **Opus 5** | $5.00 | $25.00 | 1M |
 | **Opus 4.8** | $5.00 | $25.00 | 1M |
@@ -116,7 +118,7 @@ Fable 5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, and Sonnet 4.6 support up to 1M t
 | **Sonnet 4.6** | $3.00 | $15.00 | 1M |
 | **Haiku 4.5** | $1.00 | $5.00 | 200K |
 
-Sonnet 5 is priced at $3/$15 ($2/$10 intro through 2026-08-31) with no long-context premium either; its exact maximum window is not restated here.
+Sonnet 5 is priced at $2/$10 with no long-context premium either; its exact maximum window is not restated here.
 
 A 900K-token request is billed at the same per-token rate as a 9K-token request. You still pay for each token, so context growth still costs more in absolute dollars -- but there is no rate cliff at 200K anymore.
 
@@ -336,6 +338,7 @@ A prefix has to clear a per-model token floor before it can be cached at all. A 
 | **Opus 4.6** | 4,096 |
 | **Opus 4.5** | 4,096 |
 | **Opus 4.1** | 1,024 |
+| **Fable 5.1 / Mythos 5.1** | 512 |
 | **Fable 5** | 512 |
 | **Mythos 5** | 512 |
 | **Mythos Preview** (retired 2026-06-30) | 2,048 |

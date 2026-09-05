@@ -95,19 +95,20 @@ Cost estimates use current Claude API pricing (as of 2026-07-25, after the Opus 
 
 | Model | Detected from | Input (per 1M) | Output (per 1M) | Cache Hit (per 1M) |
 |-------|---------------|:--------------:|:---------------:|:------------------:|
-| Fable 5 (`fable`) | `fable`, `mythos` | $10.00 | $50.00 | $1.00 |
+| Fable 5.1 (`fable`) | `fable`, `mythos` | $10.00 | $50.00 | **$0.25** |
+| Fable 5 (`fable-5`) | `fable-5`, `mythos-5` | $10.00 | $50.00 | $1.00 |
 | Opus 5 (`opus`) | `opus-5`, or any other `opus` | $5.00 | $25.00 | $0.50 |
 | Opus 4.8 (`opus-4.8`, legacy) | `opus-4-8`, `opus-4.8` | $5.00 | $25.00 | $0.50 |
 | Opus 4.7 (`opus-4.7`, legacy) | `opus-4-7`, `opus-4.7` | $5.00 | $25.00 | $0.50 |
 | Opus 4.6 (`opus-4.6`, legacy) | `opus-4-6`, `opus-4.6` | $5.00 | $25.00 | $0.50 |
-| Sonnet 5 (`sonnet`) | `sonnet` | $3.00 | $15.00 | $0.30 |
+| Sonnet 5 (`sonnet`) | `sonnet` | $2.00 | $10.00 | $0.20 |
 | Haiku 4.5 (`haiku`) | `haiku` | $1.00 | $5.00 | $0.10 |
 
 Notes:
 
 - `opus` is Opus 5, the current Opus-tier flagship. Opus 4.8 is now a legacy model (same posted rate, retirement no sooner than 2027-05-28) and is still the server-side fallback target for Opus 5 cyber-classifier refusals.
 - Mythos 5 is Glasswing-only and prices identically to Fable 5, so it maps to the `fable` key. (Mythos Preview retired 2026-06-30.)
-- Sonnet 5 also has an introductory rate of $2/$10 through 2026-08-31. The table uses the standard rate so estimates stay valid past that date.
+- Sonnet 5 is $2/$10 permanently -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15.
 - Sessions whose records carry no recognizable model name fall back to Sonnet pricing, which keeps unknown-model estimates conservative rather than inflated.
 
 > **Opus 5 note.** Opus 5 costs the same per token as Opus 4.8, but adaptive thinking is ON by default and reasoning tokens bill as output at the normal $25/1M rate. That means an identical workload bills higher on Opus 5 than it did on Opus 4.8 until you lower `output_config.effort` (it defaults to `high`). The analyzer reports what you actually spent, so your Opus 5 output totals may look larger than expected for the same amount of work.

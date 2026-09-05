@@ -140,7 +140,7 @@ Is the task deterministic?
 └── NO → Does it need deep reasoning?
          (multi-file, architecture, debugging complex state)
          │
-         ├── NO → Tier 1: Haiku 4.5 ($1/$5) or Sonnet 5 ($3/$15)
+         ├── NO → Tier 1: Haiku 4.5 ($1/$5) or Sonnet 5 ($2/$10)
          │         Single file? Haiku.
          │         Multi-file but straightforward? Sonnet.
          │
@@ -267,7 +267,7 @@ TIER 0 -- $0 (skip the LLM)
 ├── Tests:         jest, pytest (just running them)
 └── Git:           commit, branch, rebase
 
-TIER 1 -- Haiku 4.5 $1/$5 or Sonnet 5 $3/$15
+TIER 1 -- Haiku 4.5 $1/$5 or Sonnet 5 $2/$10
 ├── Single unit test writing
 ├── Docstrings and comments
 ├── Simple component creation

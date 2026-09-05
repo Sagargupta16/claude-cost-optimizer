@@ -159,7 +159,7 @@ All cost estimates use Anthropic's published rates **verified 2026-07-25**:
 - Fable 5: $10/$50 per 1M tokens (1M context, highest-capability model)
 - Opus 5: $5/$25 per 1M tokens (1M context, GA 2026-07-24, current Opus flagship -- start here for complex agentic coding)
 - Opus 4.8 / 4.7 / 4.6: $5/$25 per 1M tokens (1M context, all legacy)
-- Sonnet 5: $3/$15 per 1M tokens (1M context). An introductory $2/$10 rate runs through 2026-08-31; estimates here use the standard $3/$15
+- Sonnet 5: $2/$10 per 1M tokens (1M context) -- now the permanent standard rate; the increase to $3/$15 was cancelled
 - Sonnet 4.6: $3/$15 per 1M tokens (1M context, legacy)
 - Haiku 4.5: $1/$5 per 1M tokens (200K context)
 - Cache hit: 0.1x base input price; 5m write: 1.25x; 1h write: 2x

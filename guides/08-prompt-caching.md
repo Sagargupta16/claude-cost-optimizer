@@ -1,6 +1,6 @@
 # Guide 08: Prompt Caching
 
-> **Prompt caching is the single largest automatic discount on your Claude Code bill.** It reduces input token costs by up to 90% on repeated content -- and it happens without any configuration. Understanding how it works, what breaks it, and how to maximize hit rates can save you hundreds of dollars per month.
+> **Prompt caching is the single largest automatic discount on your Claude Code bill.** It reduces input token costs by up to 90% on repeated content -- **97.5% on Fable 5.1 and Mythos 5.1, which read cache at 0.025x instead of the usual 0.1x** -- and it happens without any configuration. Understanding how it works, what breaks it, and how to maximize hit rates can save you hundreds of dollars per month.
 
 ---
 
@@ -55,16 +55,21 @@ This is why caching is so powerful in Claude Code specifically. The structure of
 
 | Model | Standard Input (per 1M) | Cache Hit (per 1M) | Discount | Cache Write (5-min TTL) | Cache Write (1-hour TTL) |
 |-------|:-----------------------:|:-------------------:|:--------:|:-----------------------:|:------------------------:|
+| **Fable 5.1 / Mythos 5.1** | $10.00 | **$0.25** | **97.5% off** (0.025x) | $12.50 (1.25x) | $20.00 (2x) |
 | **Opus 5** | $5.00 | $0.50 | **90% off** | $6.25 (1.25x) | $10.00 (2x) |
-| **Fable 5 / Mythos 5** | $10.00 | $1.00 | **90% off** | $12.50 (1.25x) | $20.00 (2x) |
+| **Fable 5 / Mythos 5** (legacy) | $10.00 | $1.00 | **90% off** | $12.50 (1.25x) | $20.00 (2x) |
 | **Opus 4.8 (legacy) / 4.7 / 4.6** | $5.00 | $0.50 | **90% off** | $6.25 (1.25x) | $10.00 (2x) |
-| **Sonnet 5** (standard) | $3.00 | $0.30 | **90% off** | $3.75 (1.25x) | $6.00 (2x) |
+| **Sonnet 5** | $2.00 | $0.20 | **90% off** | $2.50 (1.25x) | $4.00 (2x) |
 | **Sonnet 4.6 / 4.5** | $3.00 | $0.30 | **90% off** | $3.75 (1.25x) | $6.00 (2x) |
 | **Haiku 4.5** | $1.00 | $0.10 | **90% off** | $1.25 (1.25x) | $2.00 (2x) |
 
-> Every model offers the same 90% discount on cache hits. The absolute savings are largest on Fable 5 ($9.00 per 1M tokens saved) and Opus ($4.50), but the percentage is identical across models.
+> **The "every model is 90% off" rule ended with Fable 5.1.** Fable 5.1 and Mythos 5.1 read cache at **0.025x base input** ($0.25 per 1M), not 0.1x -- a 97.5% discount, four times deeper than every other model. Everything else is still 0.1x. If you compute a cache rate anywhere in your own tooling as `input * 0.1`, that formula is now wrong on two models; read the per-model rate instead.
+>
+> This also flips a planning default. Because a hit costs so little *relative to a miss* on Fable 5.1, losing the cache hurts far more than it does elsewhere, while a read is nearly free. For a 5-to-60-minute gap between turns, re-sending the previous request with `max_tokens: 0` to refresh the 5-minute entry is usually cheaper than paying the 2x write for the 1-hour TTL -- the keep-alive bills only a cheap cache read and no output tokens. (`max_tokens: 0` can't be combined with streaming, structured outputs, or Batches; where the request can't be reshaped, use the 1-hour TTL.)
+>
+> Absolute savings per 1M cached tokens: **$9.75 on Fable 5.1**, $9.00 on Fable 5, $4.50 on Opus, $1.80 on Sonnet 5.
 
-> Sonnet 5 is on introductory pricing of $2/$10 through 2026-08-31. While that holds, its cache rates scale down with it: $0.20 cache hit, $2.50 5-minute write, $4.00 1-hour write. The multipliers are unchanged -- only the base input price differs.
+> Sonnet 5 is $2/$10 permanently (the increase to $3/$15 was cancelled), so its cache rates are $0.20 hit, $2.50 5-minute write, $4.00 1-hour write. The multipliers are unchanged -- only the base input price differs.
 
 > Opus 5 (GA 2026-07-24) is priced identically to Opus 4.8 at $5/$25, so every cache number in this guide carries over unchanged. Anthropic has moved `claude-opus-4-8` into the Legacy list on its models overview; Opus 5 is the current default for complex agentic coding.
 
@@ -77,6 +82,7 @@ Caching does not kick in on short prompts. Each model has a minimum cacheable pr
 | Model | Minimum Cacheable Prompt (tokens) |
 |-------|:---------------------------------:|
 | **Opus 5** | **512** |
+| **Fable 5.1 / Mythos 5.1** | 512 |
 | **Fable 5** | 512 |
 | **Mythos 5** | 512 |
 | **Mythos Preview** (retired 2026-06-30) | 2,048 |
@@ -84,7 +90,7 @@ Caching does not kick in on short prompts. Each model has a minimum cacheable pr
 | **Opus 4.7** | 2,048 |
 | **Opus 4.6** | 4,096 |
 | **Opus 4.5** | 4,096 |
-| **Opus 4.1** (deprecated, retires 2026-08-05) | 1,024 |
+| **Opus 4.1** (retired 2026-08-05) | 1,024 |
 | **Sonnet 5** | 1,024 |
 | **Sonnet 4.6** | 1,024 |
 | **Sonnet 4.5** | 1,024 |

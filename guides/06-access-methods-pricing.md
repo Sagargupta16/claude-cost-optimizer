@@ -48,7 +48,8 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 
 | Model | Input | Output | Cache Hit | 5m Cache Write | 1h Cache Write | Context | Max Output |
 |-------|:-----:|:------:|:---------:|:--------------:|:--------------:|:-------:|:----------:|
-| **Fable 5** (most capable) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
+| **Fable 5.1** (most capable) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 1M | 128K |
+| **Fable 5** (legacy) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
 | **Mythos 5** (Glasswing, limited) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
 | **Opus 5** (Opus flagship) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.8** (legacy) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
@@ -58,7 +59,7 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 | **Opus 4.1** (deprecated, retires 2026-08-05) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
 | **Opus 5 Fast Mode** (beta) | $10.00 (2x) | $50.00 (2x) | -- | -- | -- | 1M (included) | 128K |
 | **Opus 4.8 Fast Mode** (beta) | $10.00 (2x) | $50.00 (2x) | -- | -- | -- | 1M (included) | 128K |
-| **Sonnet 5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 128K |
+| **Sonnet 5** | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1M | 128K |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K |
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
@@ -79,7 +80,7 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 >
 > **Mythos Preview** was superseded by Mythos 5 and **retired 2026-06-30**. It was the invite-only defensive-cybersecurity research preview for Glasswing partners (11 founding members plus 40+ critical-infrastructure organizations).
 
-> **Sonnet 5 intro pricing**: Sonnet 5's standard rate is $3/$15, but introductory pricing of **$2/$10 runs through 2026-08-31**. Budget the intro rate now and the standard rate after.
+> **Sonnet 5 pricing is settled**: $2/$10 per MTok is now the standard rate. The launch pricing was labelled introductory through 2026-08-31, but Anthropic made it permanent and cancelled the increase to $3/$15, so budget $2/$10 indefinitely.
 
 > **1M context at standard rates**: Fable 5, Mythos 5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5, and Sonnet 4.6 charge the standard per-token rate across the full 1M window -- no long-context premium. Opus 4.5, Sonnet 4.5, Opus 4.1, and Haiku 4.5 are 200K-context only. (Opus 4.8 is 200K-context on Microsoft Foundry only.)
 >
@@ -113,6 +114,7 @@ The Batch API is the single biggest discount available. For any workload that do
 
 | Model | Batch Input | Batch Output | Savings vs Standard |
 |-------|:-----------:|:------------:|:-------------------:|
+| **Fable 5.1** | $5.00 | $25.00 | 50% |
 | **Fable 5** | $5.00 | $25.00 | 50% |
 | **Mythos 5** | $5.00 | $25.00 | 50% |
 | **Opus 5** | $2.50 | $12.50 | 50% |
@@ -155,7 +157,8 @@ Global endpoints match Anthropic API pricing exactly:
 
 | Model | Input | Output | Cache Hit |
 |-------|:-----:|:------:|:---------:|
-| **Fable 5** (open access, GA) | $10.00 | $50.00 | $1.00 |
+| **Fable 5.1** (open access, GA) | $10.00 | $50.00 | **$0.25** |
+| **Fable 5** (legacy) | $10.00 | $50.00 | $1.00 |
 | **Opus 5** (open access, GA) | $5.00 | $25.00 | $0.50 |
 | **Opus 4.8** (open access, GA) | $5.00 | $25.00 | $0.50 |
 | **Opus 4.7** (open access, GA) | $5.00 | $25.00 | $0.50 |
@@ -172,6 +175,7 @@ Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 
 
 | Model | Regional Input | Regional Output | Premium |
 |-------|:--------------:|:---------------:|:-------:|
+| **Fable 5.1** | $11.00 | $55.00 | +10% |
 | **Fable 5** | $11.00 | $55.00 | +10% |
 | **Opus 5** | $5.50 | $27.50 | +10% |
 | **Opus 4.8** | $5.50 | $27.50 | +10% |

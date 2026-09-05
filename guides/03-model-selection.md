@@ -28,14 +28,14 @@ Most developers default to the most capable model for everything. This is like h
 
 | Model | Input Cost | Output Cost | Cache Hit | 5m Cache Write | 1h Cache Write | Min cacheable prompt | Relative Cost | Context Window | Max Output |
 |-------|:----------:|:-----------:|:---------:|:--------------:|:--------------:|:--------------------:|:-------------:|:--------------:|:----------:|
-| **Fable 5** (most capable) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 512 | 2x baseline | 1M | 128K |
+| **Fable 5.1** (most capable) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 512 | 2x baseline | 1M | 128K |
 | **Opus 5** (Opus flagship) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 512 | 1x (baseline) | 1M | 128K |
 | **Opus 4.8** (legacy) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1,024 | 1x (baseline) | 1M | 128K |
 | **Opus 4.7** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 2,048 | 1x (baseline) | 1M | 128K |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 4,096 | 1x (baseline) | 1M | 128K |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 4,096 | 1x (baseline) | 200K | 64K |
 | **Opus 4.1** | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 1,024 | 3x baseline | 200K | 32K |
-| **Sonnet 5** (Sonnet flagship) | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1,024 | ~1.67x cheaper | 1M | 128K |
+| **Sonnet 5** (Sonnet flagship) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1,024 | 2.5x cheaper | 1M | 128K |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1,024 | ~1.67x cheaper | 1M | 64K |
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1,024 | ~1.67x cheaper | 200K | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 4,096 | 5x cheaper | 200K | 64K |
@@ -60,7 +60,7 @@ Most developers default to the most capable model for everything. This is like h
 >
 > **Opus 4.5 (200K-only)**: Legacy until at least 2026-11-24. Same price as the rest of the Opus tier but smaller context window, no Fast Mode, and a 4,096-token cache floor. Generally migrate to Opus 5 unless your code is pinned to this snapshot.
 >
-> **Sonnet 5** (`claude-sonnet-5`, GA 2026-06-30): the current Sonnet flagship -- best combination of speed and intelligence, adaptive thinking (`effort` defaults to high on the Claude API and Claude Code), 1M context at standard rates, 128K max output, no Fast Mode, min cacheable prompt 1,024. Uses the newer tokenizer (~30% more tokens for the same text). **Introductory pricing $2/$10 per MTok through 2026-08-31**, then standard **$3/$15** (table above shows standard rates). New default for most production work; Sonnet 4.6 is now legacy.
+> **Sonnet 5** (`claude-sonnet-5`, GA 2026-06-30): the current Sonnet flagship -- best combination of speed and intelligence, adaptive thinking (`effort` defaults to high on the Claude API and Claude Code), 1M context at standard rates, 128K max output, no Fast Mode, min cacheable prompt 1,024. Uses the newer tokenizer (~30% more tokens for the same text). **$2/$10 per MTok, and that is now the permanent standard price** -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15. That puts Sonnet 5 **60% below Opus 5** and a third below legacy Sonnet 4.6. New default for most production work; Sonnet 4.6 is now legacy and strictly more expensive.
 >
 > **Sonnet 4.5 (200K-only)**: Legacy until at least 2026-09-29. Same price as Sonnet 4.6 but smaller context window. Migrate to Sonnet 5 if you need 1M.
 >
@@ -345,7 +345,7 @@ You can also configure subagent model preferences in your CLAUDE.md:
 
 These are real-world estimates based on typical token usage patterns. All costs assume prompt caching is active (not the first turn of a session).
 
-> The Opus 5 and Sonnet 5 columns use the same posted rates their predecessors did ($5/$25 and $3/$15), so these figures carry over unchanged from the Opus 4.8 / Sonnet 4.6 era. What they do **not** include is Opus 5's default-on thinking: reasoning tokens bill as output at $25/1M, so an Opus 5 turn at `high` effort can bill noticeably more than the output column shows. Treat the Opus 5 numbers as a floor for thinking-off or low-effort runs.
+> The Opus 5 column uses the same posted rate its predecessor did ($5/$25), so those figures carry over unchanged from the Opus 4.8 era. **Sonnet 5 does not**: at $2/$10 it undercuts Sonnet 4.6's $3/$15, so any Sonnet figure inherited from the 4.6 era overstates the cost by a third. What they do **not** include is Opus 5's default-on thinking: reasoning tokens bill as output at $25/1M, so an Opus 5 turn at `high` effort can bill noticeably more than the output column shows. Treat the Opus 5 numbers as a floor for thinking-off or low-effort runs.
 
 ### Example 1: Rename a Function
 
@@ -514,7 +514,7 @@ HAIKU 4.5 ($1/$5 per 1M tokens)
 ├── Simple type annotations
 └── Mechanical find-and-replace
 
-SONNET 5 ($3/$15 per 1M tokens, $2/$10 intro through 2026-08-31)
+SONNET 5 ($2/$10 per 1M tokens)
 ├── Component and module creation
 ├── Bug fixes (single file or simple multi-file)
 ├── Unit and integration test writing

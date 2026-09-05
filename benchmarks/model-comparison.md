@@ -6,12 +6,13 @@
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Relative Cost |
 |-------|:---------------------:|:----------------------:|:-------------:|
-| Fable 5 (highest capability) | $10.00 | $50.00 | 2x baseline |
+| Fable 5.1 (highest capability) | $10.00 | $50.00 | 2x baseline |
+| Fable 5 (legacy) | $10.00 | $50.00 | 2x baseline |
 | Opus 5 (Opus flagship) | $5.00 | $25.00 | 1x (baseline) |
 | Opus 4.8 (legacy) | $5.00 | $25.00 | 1x (baseline) |
 | Opus 4.7 (legacy) | $5.00 | $25.00 | 1x (baseline) |
 | Opus 4.6 (legacy) | $5.00 | $25.00 | 1x (baseline) |
-| Sonnet 5 | $3.00 | $15.00 | ~1.7x cheaper |
+| Sonnet 5 | $2.00 | $10.00 | 2.5x cheaper |
 | Sonnet 4.6 | $3.00 | $15.00 | ~1.7x cheaper |
 | Haiku 4.5 | $1.00 | $5.00 | 5x cheaper |
 

@@ -291,10 +291,24 @@ function generateRecommendations(
     })
   }
 
-  if (inputs.model === 'fable-5') {
+  const isFableTier =
+    inputs.model === 'fable-5-1' ||
+    inputs.model === 'fable-5' ||
+    inputs.model === 'mythos-5-1' ||
+    inputs.model === 'mythos-5'
+  if (isFableTier) {
     recs.push({
-      text: 'Fable 5 costs 2x Opus 5 ($10/$50 vs $5/$25). Reserve it for the hardest reasoning and route routine work to Opus 5 or Sonnet -- saves 50%+ on those turns',
+      text: 'Fable-tier costs 2x Opus 5 ($10/$50 vs $5/$25). Reserve it for the hardest reasoning and route routine work to Opus 5 or Sonnet 5 -- saves 50%+ on those turns',
       impact: 50,
+    })
+  }
+
+  // Fable 5 -> 5.1 is the same posted price with a 4x cheaper cache read, so on
+  // any cached workload it is a strict win with no quality tradeoff.
+  if (inputs.model === 'fable-5' || inputs.model === 'mythos-5') {
+    recs.push({
+      text: 'Migrate to Fable 5.1 -- same $10/$50, but cache reads drop from $1.00 to $0.25 per 1M (0.025x vs 0.1x). Free savings on every cached turn',
+      impact: 45,
     })
   }
 
@@ -305,8 +319,8 @@ function generateRecommendations(
     inputs.model === 'opus-4-6'
   if (isOpusTier && !inputs.fastMode) {
     recs.push({
-      text: 'Consider Sonnet 5 for routine development -- 40% cheaper with similar quality for most tasks',
-      impact: 40,
+      text: 'Consider Sonnet 5 for routine development -- 60% cheaper ($2/$10 vs $5/$25) with similar quality for most tasks',
+      impact: 60,
     })
   }
 

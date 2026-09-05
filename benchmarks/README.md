@@ -21,11 +21,11 @@ All cost calculations use the following rates (verified 2026-07-25):
 | Opus 4.8 (legacy) | $5.00 | $25.00 | $0.50 |
 | Opus 4.7 (legacy) | $5.00 | $25.00 | $0.50 |
 | Opus 4.6 (legacy) | $5.00 | $25.00 | $0.50 |
-| Sonnet 5 | $3.00 | $15.00 | $0.30 |
+| Sonnet 5 | $2.00 | $10.00 | $0.20 |
 | Sonnet 4.6 | $3.00 | $15.00 | $0.30 |
 | Haiku 4.5 | $1.00 | $5.00 | $0.10 |
 
-Batch API pricing is 50% off the standard rates above. The new tokenizer used by Opus 4.7 and later (including Opus 4.8, Opus 5, and Sonnet 5) can use up to 35% more tokens for the same text, so expect ~20-35% higher absolute costs vs Opus 4.6 for identical workloads. Opus 5 needs no re-baselining from Opus 4.7 or 4.8 -- they share the same tokenizer. Note that Opus 5 enables adaptive thinking by default and bills reasoning tokens as output at the normal output rate, so an untuned Opus 5 run costs more than the same work on Opus 4.8 despite the identical posted rates. Sonnet 5 is $3/$15 standard, with an introductory $2/$10 through 2026-08-31.
+Batch API pricing is 50% off the standard rates above. The new tokenizer used by Opus 4.7 and later (including Opus 4.8, Opus 5, and Sonnet 5) can use up to 35% more tokens for the same text, so expect ~20-35% higher absolute costs vs Opus 4.6 for identical workloads. Opus 5 needs no re-baselining from Opus 4.7 or 4.8 -- they share the same tokenizer. Note that Opus 5 enables adaptive thinking by default and bills reasoning tokens as output at the normal output rate, so an untuned Opus 5 run costs more than the same work on Opus 4.8 despite the identical posted rates. Sonnet 5 is $2/$10 -- permanent, after Anthropic cancelled the increase to $3/$15 that was scheduled for 2026-09-01.
 
 ### What "Estimated" Means
 

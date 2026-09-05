@@ -24,13 +24,14 @@ The current Claude model lineup, their positioning, and cost tiers. Mythos 5 is 
 flowchart TB
     subgraph GA["Generally Available"]
         direction TB
-        fable5["Fable 5 (most capable)<br/>$10 / $50 per 1M<br/>1M context · 128K output<br/>Always-on adaptive thinking · No Fast Mode"]
+        fable51["Fable 5.1 (most capable)<br/>$10 / $50 per 1M<br/>Cache reads $0.25 (0.025x)<br/>Always-on adaptive thinking · No Fast Mode"]
+        fable5["Fable 5 (legacy)<br/>$10 / $50 per 1M<br/>Cache reads $1.00 (0.1x)<br/>Superseded by Fable 5.1"]
         opus5["Opus 5 (Opus flagship)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Thinking ON by default · Fast Mode (beta)"]
         opus8["Opus 4.8 (legacy)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking · Fast Mode (beta)"]
         opus7["Opus 4.7 (legacy)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking · Fast Mode removed"]
         opus6["Opus 4.6 (legacy)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Extended + adaptive · Fast Mode removed"]
         opus45["Opus 4.5<br/>$5 / $25 per 1M<br/>200K context · 64K output<br/>Extended thinking"]
-        sonnet5["Sonnet 5 (safe default)<br/>$3 / $15 per 1M<br/>$2 / $10 intro to 2026-08-31<br/>Extended + adaptive thinking"]
+        sonnet5["Sonnet 5 (safe default)<br/>$2 / $10 per 1M<br/>60% cheaper than Opus 5<br/>Extended + adaptive thinking"]
         sonnet["Sonnet 4.6<br/>$3 / $15 per 1M<br/>1M context · 64K output<br/>Extended + adaptive thinking"]
         sonnet45["Sonnet 4.5<br/>$3 / $15 per 1M<br/>200K context · 64K output<br/>Extended thinking"]
         haiku["Haiku 4.5 (budget)<br/>$1 / $5 per 1M<br/>200K context · 64K output<br/>Extended thinking"]
@@ -48,8 +49,8 @@ flowchart TB
     classDef budget fill:#d0f4d5,stroke:#4ac96a,color:#222
     classDef preview fill:#e8d0f4,stroke:#7a4ac9,color:#222
 
-    class fable5,opus5 flagship
-    class opus8,opus7,opus6,opus45,sonnet,sonnet45 snapshot
+    class fable51,opus5 flagship
+    class fable5,opus8,opus7,opus6,opus45,sonnet,sonnet45 snapshot
     class sonnet5 default
     class haiku budget
     class mythos5,mythos preview
@@ -59,7 +60,8 @@ flowchart TB
 
 | Model | Access | Best For | Why Not |
 |-------|--------|----------|---------|
-| Fable 5 | **GA on every platform** (Anthropic API, Claude Platform on AWS, Bedrock, Vertex AI, Microsoft Foundry) | The hardest reasoning and longest agentic runs; Mythos-class capability | 2x Opus 5 pricing; always-on thinking; safety classifiers can refuse; no Fast Mode |
+| Fable 5.1 | **GA** (Anthropic API, Claude Platform on AWS, Bedrock, Vertex AI, Microsoft Foundry) | The hardest reasoning and longest agentic runs; cheapest cache reads in the lineup at 0.025x | 2x Opus 5 pricing; always-on thinking; forced tool use returns 400; no Fast Mode; no Priority Tier |
+| Fable 5 | GA (legacy) | Prompts pinned to this snapshot | Same $10/$50 as 5.1 but 4x costlier cache reads ($1.00 vs $0.25) -- migrating is strictly cheaper |
 | Opus 5 | **GA on every platform** (Anthropic API, Claude Platform on AWS, Bedrock, Vertex AI) | Complex agentic coding, multi-file refactors, long autonomous runs; the current "start here" Opus | Thinking is ON by default and bills as output, so the effective cost is higher than 4.8 at the same posted rate |
 | Opus 4.8 | GA (legacy) | Prompts already tuned to this snapshot; the fallback target for Opus 5 cyber refusals | No cost argument to stay; retires no sooner than 2027-05-28 |
 | Opus 4.7 | GA (legacy) | Pinned snapshots tuned to 4.7 | Fast Mode was removed: `speed: "fast"` now returns an error |
@@ -83,7 +85,7 @@ flowchart TD
     A[Start: evaluate task] --> B{"Complex architecture,<br/>long agentic run, or<br/>multi-file refactor?"}
     B -- Yes --> C["Use Opus 5<br/>$5 / $25 per 1M"]
     B -- No --> D{"Standard feature work,<br/>code review, or<br/>writing tests?"}
-    D -- Yes --> E["Use Sonnet 5<br/>$3 / $15 per 1M"]
+    D -- Yes --> E["Use Sonnet 5<br/>$2 / $10 per 1M"]
     D -- No --> F{"Simple fix, formatting,<br/>boilerplate, or<br/>file lookup?"}
     F -- Yes --> G["Use Haiku 4.5<br/>$1 / $5 per 1M"]
     F -- No --> H["Not sure?<br/>Start with Sonnet 5"]
@@ -106,11 +108,11 @@ flowchart TD
 
 | Complexity | Model | Cost (Input/Output per 1M) | Examples |
 |------------|-------|:--------------------------:|----------|
-| Maximum | Fable 5 | $10 / $50 | Hardest reasoning, longest autonomous agentic runs, Mythos-class workloads |
+| Maximum | Fable 5.1 | $10 / $50 | Hardest reasoning, longest autonomous agentic runs; cache reads at 0.025x |
 | High | Opus 5 | $5 / $25 | Architecture design, complex debugging, large refactors, long agentic runs |
 | High (Fast Mode) | Opus 5 or Opus 4.8 | $10 / $50 | Latency-critical urgent work (2x premium, 2.5x output tokens/sec) |
 | High (legacy) | Opus 4.7 / 4.6 | $5 / $25 | Pinned snapshots only. Fast Mode is gone: 4.7 errors, 4.6 silently runs standard |
-| Medium | Sonnet 5 | $3 / $15 | Feature implementation, code review, test writing ($2 / $10 intro through 2026-08-31) |
+| Medium | Sonnet 5 | $2 / $10 | Feature implementation, code review, test writing (permanent rate) |
 | Low | Haiku 4.5 | $1 / $5 | Formatting, renaming, boilerplate, lookups |
 
 > **Opus 5 caveat.** The posted rate matches Opus 4.8, but thinking is ON by default and reasoning tokens bill as output. Expect the same task to cost more until you tune `output_config.effort` (defaults to `high`) or set `thinking: {type: "disabled"}`, which is only legal at effort `high` or below -- pairing it with `xhigh` or `max` returns a 400. `max_tokens` caps thinking plus text combined, so raise it before running at high effort.
@@ -299,6 +301,7 @@ A `cache_control` block below the model's floor is **silently ignored**. No erro
 | Model | Minimum cacheable prompt |
 |-------|-------------------------:|
 | Opus 5 | 512 tokens |
+| Fable 5.1 / Mythos 5.1 | 512 tokens |
 | Fable 5 / Mythos 5 | 512 tokens |
 | Opus 4.8 | 1,024 tokens |
 | Opus 4.7 | 2,048 tokens |

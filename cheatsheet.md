@@ -10,7 +10,8 @@
 
 | Model | Input / 1M tokens | Output / 1M tokens | Cache Hit / 1M | 5m Cache Write | 1h Cache Write | Context | Max Output | Min cache | Relative Cost |
 |-------|:-----------------:|:-------------------:|:--------------:|:--------------:|:--------------:|:-------:|:----------:|:---------:|:-------------:|
-| **Fable 5** (highest capability) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K | 512 | 2x baseline |
+| **Fable 5.1** (highest capability) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 1M | 128K | 512 | 2x baseline
+| **Fable 5** (legacy) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K | 512 | 2x baseline |
 | **Mythos 5** (limited, Glasswing) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K | 512 | 2x baseline |
 | **Opus 5** (Opus flagship) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | **512** | 1x (baseline) |
 | **Opus 4.8** (legacy) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | 1,024 | 1x (baseline) |
@@ -18,7 +19,7 @@
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | 4,096 | 1x (baseline) |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K | 4,096 | 1x (baseline) |
 | **Opus 4.1** | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K | 1,024 | 3x baseline |
-| **Sonnet 5** (Sonnet flagship) | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 128K | 1,024 | **~1.7x cheaper** |
+| **Sonnet 5** (Sonnet flagship) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1M | 128K | 1,024 | **2.5x cheaper** |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K | 1,024 | **~1.7x cheaper** |
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K | 1,024 | **~1.7x cheaper** |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K | 4,096 | **5x cheaper** |
@@ -27,7 +28,7 @@
 
 > Output tokens cost **5x more** than input tokens across all current models. Reducing Claude's verbosity is high-leverage.
 >
-> **1M context on Opus 5 / 4.8 / 4.7 / 4.6 / Sonnet 5 / Sonnet 4.6 is at standard rates** -- no long-context premium. (Earlier "2x over 200K" pricing is obsolete.) **Haiku 4.5, Sonnet 4.5, Opus 4.5, and Opus 4.1 are 200K-context only.** **Sonnet 5** (`claude-sonnet-5`) has introductory pricing of **$2/$10 through 2026-08-31**, then standard **$3/$15**.
+> **1M context on Opus 5 / 4.8 / 4.7 / 4.6 / Sonnet 5 / Sonnet 4.6 is at standard rates** -- no long-context premium. (Earlier "2x over 200K" pricing is obsolete.) **Haiku 4.5, Sonnet 4.5, Opus 4.5, and Opus 4.1 are 200K-context only.** **Sonnet 5** (`claude-sonnet-5`) is **$2/$10 permanently** -- the launch intro rate became the standard price and the rise to $3/$15 was cancelled.
 >
 > **Cache pricing math**: 5m write = 1.25x base input; 1h write = 2x base input; cache hit/refresh = 0.1x base input. So a 5m cache pays off after 1 reuse, a 1h cache after 2 reuses. Multipliers stack with Batch (50% off) and data residency (+10%).
 >
@@ -51,6 +52,7 @@
 
 | Model | Extended thinking | Adaptive thinking | Default state |
 |-------|:-----------------:|:-----------------:|:-------------:|
+| Fable 5.1 | No | Yes (always on) | On, cannot disable |
 | Fable 5 | No | Yes (always on) | On, cannot disable |
 | Mythos 5 | No | Yes (always on) | On, cannot disable |
 | **Opus 5** | No | Yes | **On by default** |
@@ -95,7 +97,8 @@
 | Sonnet 4.6 (`claude-sonnet-4-6`) | Not before 2027-02-17 | Sonnet 5 |
 | Opus 4.7 (`claude-opus-4-7`) | Not before 2027-04-16 | Opus 5 |
 | Opus 4.8 (`claude-opus-4-8`) | Not before 2027-05-28 | Opus 5 |
-| Fable 5 (`claude-fable-5`) | Not before 2027-06-09 | (current) |
+| Fable 5.1 (`claude-fable-5-1`) | Not announced | (current) |
+| Fable 5 (`claude-fable-5`) | Not before 2027-06-09 | Fable 5.1 |
 | Sonnet 5 (`claude-sonnet-5`) | Not before 2027-06-30 | (current) |
 | **Opus 5** (`claude-opus-5`) | Not before **2027-07-24** | (current) |
 
@@ -229,7 +232,7 @@ Is the task...
 | Batch API (50% off) | Yes | No | Yes | Yes | N/A |
 | Prompt caching | Yes | Yes | Yes | Yes | Automatic |
 | Data-residency premium | +10% (`inference_geo: "us"`, 4.6+ models) | +10% (`inference_geo: "us"`) | Bedrock regional pricing | Vertex regional pricing | -- |
-| Fable 5 availability | **GA** | **GA** | **GA** | **GA** | Via `/model` (plan/API-key dependent) |
+| Fable 5.1 availability | **GA** | **GA** | **GA** | **GA** | Via `/model` (plan/API-key dependent) |
 | Mythos 5 | Glasswing only | Glasswing only | Glasswing only | Glasswing only | -- |
 
 > **Bedrock / Vertex**: Same models, same capabilities. Global (cross-region) inference matches API pricing. Regional inference profiles add ~10%. The +10% premium scope is **Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all future models**; older models retain their existing pricing.
@@ -337,7 +340,8 @@ Build: `npm run build` - must pass before PR
 
 | Fact | Number |
 |------|--------|
-| Fable 5 output is ___ per 1M tokens | **$50** (2x Opus 5) |
+| Fable 5.1 output is ___ per 1M tokens | **$50** (2x Opus 5) |
+| Fable 5.1 cache read is ___ per 1M tokens | **$0.25** (0.025x -- the only sub-0.1x model) |
 | Opus 5 output is ___ per 1M tokens | **$25** (same as 4.8) |
 | Haiku 4.5 is ___ cheaper than Opus on input | **5x** (10x vs Fable 5) |
 | Opus 5 minimum cacheable prompt | **512 tokens** (half of Opus 4.8's 1,024) |
@@ -355,7 +359,7 @@ Build: `npm run build` - must pass before PR
 | Average tool result size | **500-5,000 tokens** |
 | Compaction trigger threshold | **~10,000 tokens** of compactable content |
 | Messages preserved after /compact | **4 most recent** |
-| Fable 5 / Opus 5 / 4.8 / 4.7 / 4.6 / Sonnet 5 max output per turn | **128K tokens** |
+| Fable 5.1 / Fable 5 / Opus 5 / 4.8 / 4.7 / 4.6 / Sonnet 5 max output per turn | **128K tokens** |
 | Sonnet 4.6 / 4.5 / Haiku 4.5 max output per turn | **64K tokens** |
 
 ---

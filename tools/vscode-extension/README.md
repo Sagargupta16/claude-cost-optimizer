@@ -67,17 +67,18 @@ Costs are based on Claude API pricing as of 2026-07-25:
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Min cacheable prompt |
 |-------|:---------------------:|:----------------------:|:--------------------:|
-| Fable 5 (alias: `fable`) | $10.00 | $50.00 | 512 |
+| Fable 5.1 (alias: `fable`) | $10.00 | $50.00 | 512 |
+| Fable 5 (alias: `fable-5`) | $10.00 | $50.00 | 512 |
 | Opus 5 (alias: `opus`) | $5.00 | $25.00 | 512 |
 | Opus 4.8, legacy (alias: `opus-4.8`) | $5.00 | $25.00 | 1,024 |
 | Opus 4.7, legacy (alias: `opus-4.7`) | $5.00 | $25.00 | 2,048 |
 | Opus 4.6, legacy (alias: `opus-4.6`) | $5.00 | $25.00 | 4,096 |
-| Sonnet 5 (alias: `sonnet`) | $3.00 | $15.00 | 1,024 |
+| Sonnet 5 (alias: `sonnet`) | $2.00 | $10.00 | 1,024 |
 | Haiku 4.5 (alias: `haiku`) | $1.00 | $5.00 | 4,096 |
 
 The `opus` alias points at Opus 5 (GA 2026-07-24), which costs exactly what Opus 4.8 did. Opus 4.8, 4.7, and 4.6 stay in the table as legacy snapshots so you can price an older pinned model, not because you should pick one.
 
-Sonnet 5 also has an introductory rate of $2/$10 through 2026-08-31. The table uses the standard $3/$15 so projections stay valid past that date.
+Sonnet 5 is $2/$10 permanently -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15.
 
 **Minimum cacheable prompt.** A `cache_control` block on a prefix shorter than the listed floor is silently ignored: no error, no `cache_creation_input_tokens`, and full input price on every turn. "Estimate CLAUDE.md Per-Turn Cost" adds a note when your CLAUDE.md falls below the floor for the selected model. Watch this on Haiku 4.5 especially -- its 4,096-token floor is 8x Opus 5's, so a CLAUDE.md that caches fine on Opus quietly pays full price on Haiku.
 
