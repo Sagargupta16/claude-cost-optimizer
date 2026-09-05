@@ -32,20 +32,31 @@ from pathlib import Path
 # needs re-baselining when moving from Opus 4.7 or 4.8.
 # cache_hit is 0.1x input on every model EXCEPT Fable 5.1 / Mythos 5.1, which read at
 # 0.025x ($0.25/MTok). Read the rate from this table; never compute input * 0.1.
+# Pricing keys. Named so the detection table below and MODEL_PRICING cannot drift.
+FABLE = "fable"
+FABLE_5 = "fable-5"
+OPUS = "opus"
+OPUS_4_8 = "opus-4.8"
+OPUS_4_7 = "opus-4.7"
+OPUS_4_6 = "opus-4.6"
+SONNET = "sonnet"
+SONNET_4_6 = "sonnet-4.6"
+HAIKU = "haiku"
+
 MODEL_PRICING = {
-    "fable": {"input": 10.00, "output": 50.00, "cache_hit": 0.25},
-    "fable-5": {"input": 10.00, "output": 50.00, "cache_hit": 1.00},
-    "opus": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
-    "opus-4.8": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
-    "opus-4.7": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
-    "opus-4.6": {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
-    "sonnet": {"input": 2.00, "output": 10.00, "cache_hit": 0.20},
-    "sonnet-4.6": {"input": 3.00, "output": 15.00, "cache_hit": 0.30},
-    "haiku": {"input": 1.00, "output": 5.00, "cache_hit": 0.10},
+    FABLE: {"input": 10.00, "output": 50.00, "cache_hit": 0.25},
+    FABLE_5: {"input": 10.00, "output": 50.00, "cache_hit": 1.00},
+    OPUS: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
+    OPUS_4_8: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
+    OPUS_4_7: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
+    OPUS_4_6: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
+    SONNET: {"input": 2.00, "output": 10.00, "cache_hit": 0.20},
+    SONNET_4_6: {"input": 3.00, "output": 15.00, "cache_hit": 0.30},
+    HAIKU: {"input": 1.00, "output": 5.00, "cache_hit": 0.10},
 }
 
 # Fallback: default model for cost estimation when not specified in data
-DEFAULT_MODEL = "sonnet"
+DEFAULT_MODEL = SONNET
 
 # ANSI color codes
 BOLD = "\033[1m"
@@ -99,34 +110,33 @@ def calculate_cost(
     return input_cost + output_cost
 
 
+# (substrings, pricing key), most specific first -- the first match wins.
+#
+# Ordering carries meaning: Fable/Mythos 5.1 read cache at 0.025x while 5.0 reads at
+# 0.1x, so the two generations cannot share a pricing key and 5.1 must be tested
+# before the bare "fable"/"mythos" catch-all. Opus 5 and Sonnet 5 are the current
+# flagships, so they map to the plain "opus"/"sonnet" keys.
+_MODEL_MARKERS: tuple[tuple[tuple[str, ...], str], ...] = (
+    (("fable-5-1", "mythos-5-1"), FABLE),
+    (("fable-5", "mythos-5"), FABLE_5),
+    (("fable", "mythos"), FABLE),
+    (("opus-5", "opus5"), OPUS),
+    (("opus-4-8", "opus-4.8"), OPUS_4_8),
+    (("opus-4-7", "opus-4.7"), OPUS_4_7),
+    (("opus-4-6", "opus-4.6"), OPUS_4_6),
+    (("opus",), OPUS),
+    (("haiku",), HAIKU),
+    (("sonnet-4-6", "sonnet-4.6"), SONNET_4_6),
+    (("sonnet",), SONNET),
+)
+
+
 def detect_model(text: str) -> str:
     """Attempt to detect the model name from text content."""
     text_lower = text.lower()
-    # Fable/Mythos 5.1 read cache at 0.025x while 5.0 reads at 0.1x, so the two
-    # generations cannot share a pricing key -- check for 5.1 before the catch-all.
-    if "fable-5-1" in text_lower or "mythos-5-1" in text_lower:
-        return "fable"
-    if "fable-5" in text_lower or "mythos-5" in text_lower:
-        return "fable-5"
-    if "fable" in text_lower or "mythos" in text_lower:
-        return "fable"
-    # Opus 5 is the current flagship, so it shares the plain "opus" pricing key.
-    if "opus-5" in text_lower or "opus5" in text_lower:
-        return "opus"
-    if "opus-4-8" in text_lower or "opus-4.8" in text_lower:
-        return "opus-4.8"
-    if "opus-4-7" in text_lower or "opus-4.7" in text_lower:
-        return "opus-4.7"
-    if "opus-4-6" in text_lower or "opus-4.6" in text_lower:
-        return "opus-4.6"
-    if "opus" in text_lower:
-        return "opus"
-    if "haiku" in text_lower:
-        return "haiku"
-    if "sonnet-4-6" in text_lower or "sonnet-4.6" in text_lower:
-        return "sonnet-4.6"
-    if "sonnet" in text_lower:
-        return "sonnet"
+    for markers, key in _MODEL_MARKERS:
+        if any(marker in text_lower for marker in markers):
+            return key
     return DEFAULT_MODEL
 
 
