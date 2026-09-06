@@ -77,7 +77,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     minCacheTokens: 512,
     lifecycle: 'active',
     notes:
-      "Anthropic's most capable widely released model (GA 2026-09-04). Same $10/$50 as Fable 5, " +
+      "Anthropic's most capable widely released model (released 2026-09-01). Same $10/$50 as Fable 5, " +
       'but cache reads are $0.25/MTok -- 0.025x base input, a quarter of Fable 5 and the only ' +
       'exception to the 0.1x cache-hit rule. That makes a cache miss expensive relative to a hit, ' +
       'so a max_tokens:0 keep-alive on the 5-minute TTL usually beats paying the 2x 1-hour write. ' +
@@ -355,7 +355,8 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     inviteOnly: true,
     lifecycle: 'legacy',
     notes:
-      'Superseded by Mythos 5 -- retired 2026-06-30. Was the invitation-only ' +
+      'Superseded by Mythos 5 and deprecated: still functional, no retirement ' +
+      'date published. The invitation-only ' +
       'defensive-cybersecurity research preview under Project Glasswing.',
   },
 }

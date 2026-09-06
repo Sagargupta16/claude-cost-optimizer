@@ -232,7 +232,7 @@ Add to your `settings.json`:
     "PreToolUse": [
       {
         "matcher": ".*",
-        "hooks": ["bash hooks/cost-logger.sh"]
+        "hooks": [{ "type": "command", "command": "bash hooks/cost-logger.sh" }]
       }
     ]
   }

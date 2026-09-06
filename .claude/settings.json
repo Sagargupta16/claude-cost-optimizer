@@ -3,14 +3,13 @@
 
   "model": "claude-sonnet-5",
 
-  "maxMonthlyCost": 100,
-
   "permissions": {
     "allow": [
       "Read(**)",
       "Bash(python tools/claude-rate/rate.py:*)",
       "Bash(python tools/badge-generator/generate.py:*)",
       "Bash(python scripts/check-pricing-sync.py:*)",
+      "Bash(python scripts/check-links.py:*)",
       "Bash(python -m compileall:*)",
       "Bash(npm run build)",
       "Bash(npm run lint)",
@@ -28,17 +27,17 @@
     "PreToolUse": [
       {
         "matcher": ".*",
-        "hooks": ["bash hooks/budget-tracker.sh"]
+        "hooks": [{ "type": "command", "command": "bash hooks/budget-tracker.sh" }]
       },
       {
         "matcher": ".*",
-        "hooks": ["bash hooks/cost-logger.sh"]
+        "hooks": [{ "type": "command", "command": "bash hooks/cost-logger.sh" }]
       }
     ],
     "Stop": [
       {
         "matcher": "",
-        "hooks": ["bash hooks/session-summary.sh"]
+        "hooks": [{ "type": "command", "command": "bash hooks/session-summary.sh" }]
       }
     ]
   }

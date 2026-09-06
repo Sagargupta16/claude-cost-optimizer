@@ -28,9 +28,13 @@ from pathlib import Path
 
 # [text](target) -- skips image embeds only when they are inline `!` prefixed.
 LINK_PATTERN = re.compile(r"(?<!!)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
-ATX_HEADING = re.compile(r"^(#{1,6})\s+(.*?)\s*#*$")
+# Trailing hashes and whitespace are stripped in code rather than in the pattern:
+# a lazy group followed by optional trailing hashes backtracks super-linearly.
+ATX_HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
 
-SKIPPED_SCHEMES = ("http://", "https://", "mailto:", "tel:", "#!")
+# Any absolute URI (scheme-prefixed) plus hashbang routes. This checker is offline
+# by design, so anything with a scheme is out of scope regardless of which one.
+EXTERNAL_TARGET = re.compile(r"^(?:[A-Za-z][A-Za-z0-9+.-]*:|#!)")
 EXCLUDED_DIR_PARTS = {
     "node_modules",
     "dist",
@@ -68,7 +72,8 @@ def anchors_in(path: Path) -> set[str]:
     for line in text.splitlines():
         match = ATX_HEADING.match(line)
         if match:
-            found.add(github_anchor(match.group(2)))
+            title = match.group(2).rstrip().rstrip("#").rstrip()
+            found.add(github_anchor(title))
     for raw_id in re.findall(r"<a\s+(?:name|id)=[\"']([^\"']+)[\"']", text):
         found.add(raw_id.lower())
     for raw_id in re.findall(r"\sid=[\"']([^\"']+)[\"']", text):
@@ -87,7 +92,7 @@ def markdown_files(root: Path) -> list[Path]:
 
 def check_link(root: Path, source: Path, target: str) -> str | None:
     """Return a problem description, or None when the link resolves."""
-    if target.startswith(SKIPPED_SCHEMES):
+    if EXTERNAL_TARGET.match(target):
         return None
 
     if target.startswith("/"):
@@ -105,10 +110,10 @@ def check_link(root: Path, source: Path, target: str) -> str | None:
         try:
             resolved.relative_to(root)
         except ValueError:
-            # The repo-level CLAUDE.md is required to link the workspace files
-            # that sit above the repo root, so those are legitimately outside.
-            # Nothing else should reach out of the tree.
-            if source.name == "CLAUDE.md":
+            # The repo-root CLAUDE.md is required to link the workspace files that
+            # sit above the repo root, so those are legitimately outside. Scoped to
+            # that one path: any other CLAUDE.md in the tree gets checked normally.
+            if source == root / "CLAUDE.md":
                 return None
             return f"target escapes the repo: {target!r}"
         if not resolved.exists():
@@ -122,6 +127,26 @@ def check_link(root: Path, source: Path, target: str) -> str | None:
     return None
 
 
+def check_file(root: Path, path: Path) -> tuple[int, list[str]]:
+    """Return (internal link count, problem descriptions) for one markdown file."""
+    rel = path.relative_to(root).as_posix()
+    problems: list[str] = []
+    link_count = 0
+
+    text = path.read_text(encoding="utf-8", errors="replace")
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        for match in LINK_PATTERN.finditer(line):
+            target = match.group(1)
+            if EXTERNAL_TARGET.match(target):
+                continue
+            link_count += 1
+            problem = check_link(root, path, target)
+            if problem:
+                problems.append(f"{rel}:{lineno}: {problem}")
+
+    return link_count, problems
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("root", nargs="?", default=".", help="repo root to check")
@@ -133,17 +158,9 @@ def main() -> int:
     link_count = 0
 
     for path in files:
-        rel = path.relative_to(root).as_posix()
-        text = path.read_text(encoding="utf-8", errors="replace")
-        for lineno, line in enumerate(text.splitlines(), start=1):
-            for match in LINK_PATTERN.finditer(line):
-                target = match.group(1)
-                if target.startswith(SKIPPED_SCHEMES):
-                    continue
-                link_count += 1
-                problem = check_link(root, path, target)
-                if problem:
-                    problems.append(f"{rel}:{lineno}: {problem}")
+        found, file_problems = check_file(root, path)
+        link_count += found
+        problems.extend(file_problems)
 
     print(f"check-links: scanned {len(files)} files, {link_count} internal link(s)")
 

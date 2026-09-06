@@ -63,7 +63,7 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K |
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
-| **Mythos Preview** (retired 2026-06-30) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- |
+| **Mythos Preview** (deprecated, no retirement date) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- |
 
 > **Opus 5** (GA 2026-07-24): the current Opus flagship, at the **identical posted price to Opus 4.8** ($5/$25). The upgrade is free at the posted rate. 1M context at standard rates across the whole window, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), knowledge cutoff May 2026. Anthropic's models-overview page now says to start with Opus 5 for complex agentic coding and enterprise work; Fable 5 remains the highest-capability model overall. Earliest retirement is not sooner than 2027-07-24.
 >
@@ -78,7 +78,7 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 
 > **Fable 5 / Mythos 5** (GA 2026-06-09): the Mythos-class tier above Opus, both at $10/$50 (2x Opus 5). **Fable 5** is generally available on every platform (Claude API, Claude Platform on AWS, Bedrock, Vertex AI, Microsoft Foundry) and includes safety classifiers that can refuse a request (`stop_reason: "refusal"`, HTTP 200; pre-output refusals are unbilled; the beta `fallbacks` parameter retries another model server-side and fallback credit refunds the cache-switch cost). **Mythos 5** is the same model without the classifiers, limited to approved [Project Glasswing](https://anthropic.com/glasswing) customers. Both require 30-day data retention (no zero-data-retention option), have always-on adaptive thinking, and support the Batch API but not Fast Mode.
 >
-> **Mythos Preview** was superseded by Mythos 5 and **retired 2026-06-30**. It was the invite-only defensive-cybersecurity research preview for Glasswing partners (11 founding members plus 40+ critical-infrastructure organizations).
+> **Mythos Preview** was superseded by Mythos 5 and is **deprecated** -- still functional, no longer recommended, and Anthropic publishes no retirement date for it. It is the invite-only defensive-cybersecurity research preview for Glasswing partners (11 founding members plus 40+ critical-infrastructure organizations).
 
 > **Sonnet 5 pricing is settled**: $2/$10 per MTok is now the standard rate. The launch pricing was labelled introductory through 2026-08-31, but Anthropic made it permanent and cancelled the increase to $3/$15, so budget $2/$10 indefinitely.
 
@@ -149,7 +149,7 @@ Tokens billed at standard model rates (caching multipliers apply identically). *
 
 ## AWS Bedrock Pricing
 
-AWS Bedrock provides Claude access through two endpoint types with different pricing. As of 2026-07-25, **Fable 5 (the most capable widely released model) and Opus 5 are generally available and open to all Bedrock customers** (no waitlist), alongside Opus 4.8 and Opus 4.7. Anthropic also offers two Bedrock integration paths: the new Claude in Amazon Bedrock (Mantle) endpoint, and the legacy InvokeModel/Converse API.
+AWS Bedrock provides Claude access through two endpoint types with different pricing. **Fable 5.1 (the most capable widely released model) and Opus 5 are both available on Bedrock** as `anthropic.claude-fable-5-1` and `anthropic.claude-opus-5`, alongside Fable 5, Opus 4.8 and Opus 4.7. Anthropic also offers two Bedrock integration paths: the new Claude in Amazon Bedrock (Mantle) endpoint, and the legacy InvokeModel/Converse API.
 
 ### Global Endpoints
 
@@ -167,7 +167,7 @@ Global endpoints match Anthropic API pricing exactly:
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 |
 | **Mythos 5** (Glasswing allowlist) | $10.00 | $50.00 | $1.00 |
-| **Mythos Preview** (retired 2026-06-30, was regional `us-east-1` only) | $25.00 | $125.00 | $2.50 |
+| **Mythos Preview** (deprecated; regional `us-east-1` only) | $25.00 | $125.00 | $2.50 |
 
 ### Regional Endpoints (us/eu/jp/apac/au inference profiles)
 
@@ -212,7 +212,7 @@ The new **Claude in Amazon Bedrock (Mantle)** endpoint at `https://bedrock-mantl
 | Sonnet 4.6 | `anthropic.claude-sonnet-4-6` | `anthropic.claude-sonnet-4-6` |
 | Sonnet 4.5 | -- | `anthropic.claude-sonnet-4-5-20250929-v1:0` |
 | Haiku 4.5 | `anthropic.claude-haiku-4-5` | `anthropic.claude-haiku-4-5-20251001-v1:0` |
-| Mythos Preview (retired 2026-06-30) | `anthropic.claude-mythos-preview` | (Bedrock Marketplace allowlist required) |
+| Mythos Preview (deprecated) | `anthropic.claude-mythos-preview` | (Bedrock Marketplace allowlist required) |
 
 ### Bedrock Mantle: features supported and NOT supported
 

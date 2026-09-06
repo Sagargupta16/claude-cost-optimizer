@@ -2,7 +2,7 @@
 
 > **Most "make it faster" problems have a free or cheap fix.** Cache warmth, shorter context, model routing, and effort control cover the vast majority of latency complaints at zero or negative cost. Fast Mode is the deliberate splurge -- a flat 2x token premium that only pays off in one narrow case: when raw output-generation speed directly matters.
 
-> **Updated 2026-07-25 for the Opus 5 launch.** Fast Mode narrowed to Opus 5 and Opus 4.8 only, both at 2x. The old 6x tier on Opus 4.7 / 4.6 is gone: `speed: "fast"` now errors on Opus 4.7, and Opus 4.6 accepts it but silently runs at standard speed and standard rates. If you were budgeting for a 6x premium, that line item no longer exists.
+> **Fast Mode is Opus 5 and Opus 4.8 only, both at 2x.** The old 6x tier on Opus 4.7 / 4.6 is gone: `speed: "fast"` now errors on Opus 4.7, and Opus 4.6 accepts it but silently runs at standard speed and standard rates. If you were budgeting for a 6x premium, that line item no longer exists.
 
 ---
 

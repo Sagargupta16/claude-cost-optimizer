@@ -24,7 +24,7 @@
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K | 1,024 | **~1.7x cheaper** |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K | 4,096 | **5x cheaper** |
 | **Opus 5 / 4.8 (Fast Mode)** | $10.00 (2x) | $50.00 (2x) | N/A | -- | -- | 1M | 128K | -- | 2x baseline |
-| **Mythos Preview** (retired 2026-06-30) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- | 2,048 | 5x baseline output |
+| **Mythos Preview** (deprecated, no retirement date) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- | 2,048 | 5x baseline output |
 
 > Output tokens cost **5x more** than input tokens across all current models. Reducing Claude's verbosity is high-leverage.
 >
@@ -40,7 +40,7 @@
 >
 > **Fable 5** (GA 2026-06-09): Anthropic's highest-capability model -- a Mythos-class tier above Opus at **$10/$50 (2x Opus 5)**. Always-on adaptive thinking (no `disabled`; control depth with `effort`, `low` through `xhigh`/`max`). Safety classifiers may decline requests: HTTP 200 + `stop_reason: "refusal"`; **pre-output refusals cost $0**; the beta `fallbacks` param retries on another model server-side, and fallback credit refunds the cache-switch cost. No Fast Mode; Batch supported ($5/$25). Requires 30-day data retention. **Cost note**: for cost-sensitive work, Opus 5 at half the rate is the sweet spot -- reach for Fable 5 when the task genuinely needs the extra capability (hardest reasoning, longest agentic runs).
 >
-> **Mythos 5**: same model, specs, and price as Fable 5 but **without safety classifiers**. Limited availability via [Project Glasswing](https://anthropic.com/glasswing) only. Successor to Mythos Preview (**retired 2026-06-30**).
+> **Mythos 5**: same model, specs, and price as Fable 5 but **without safety classifiers**. Limited availability via [Project Glasswing](https://anthropic.com/glasswing) only. Successor to Mythos Preview, which is **deprecated** with no published retirement date.
 >
 > **Opus 4.8 status**: moved to **legacy** by the Opus 5 launch. Same $5/$25 price, so there is no cost reason to stay -- migrate unless your prompts are tuned to this snapshot or you need thinking off at `xhigh`/`max` (which Opus 5 rejects). Still the server-side fallback target for Opus 5 cyber refusals. Earliest retirement 2027-05-28.
 >
@@ -85,8 +85,13 @@ Verified 2026-09-05 against the [model deprecations](https://platform.claude.com
 | Haiku 3 (`claude-3-haiku-20240307`) | 2026-04-20 | Haiku 4.5 |
 | Sonnet 4 (`claude-sonnet-4-20250514`) | 2026-06-15 | Sonnet 5 |
 | Opus 4 (`claude-opus-4-20250514`) | 2026-06-15 | Opus 5 |
-| Mythos Preview (`claude-mythos-preview`) | 2026-06-30 | Mythos 5 (Glasswing) |
 | Opus 4.1 (`claude-opus-4-1-20250805`) | 2026-08-05 (still on Bedrock + Google Cloud) | Opus 5 |
+
+**Deprecated** (still working, no retirement date published):
+
+| Model | State | Migrate to |
+|-------|:-----:|-----------|
+| Mythos Preview (`claude-mythos-preview`) | Deprecated, no published retirement date | Mythos 5 (Glasswing) |
 
 **Tentative retirement dates** (every model below is still **Active** -- these are dates to plan around, not deprecations):
 
@@ -104,7 +109,7 @@ Verified 2026-09-05 against the [model deprecations](https://platform.claude.com
 | Sonnet 5 (`claude-sonnet-5`) | Not before 2027-06-30 | (current) |
 | **Opus 5** (`claude-opus-5`) | Not before **2027-07-24** | (current) |
 
-> **Nothing is currently deprecated.** Opus 4.1, the last forced migration, retired on 2026-08-05. Every remaining model reads **Active** on the deprecations page, so no request is on a countdown. The nearest tentative retirements are Sonnet 4.5 on 2026-09-29 and Haiku 4.5 on 2026-10-15 -- dates to plan around, not deadlines Anthropic has committed to.
+> **One model is deprecated: Mythos Preview.** It is still functional and Anthropic publishes no retirement date for it; migrate to Mythos 5. Opus 4.1, the last dated forced migration, retired on 2026-08-05. Every other model reads **Active** on the deprecations page, so no request is on a countdown. The nearest tentative retirements are Sonnet 4.5 on 2026-09-29 and Haiku 4.5 on 2026-10-15 -- dates to plan around, not deadlines Anthropic has committed to.
 >
 > **Off-Peak 2x Usage**: Anthropic periodically runs promotional events that double usage limits outside peak hours (typically 8 AM - 2 PM ET) and on all weekends. If you're outside the US, your entire workday likely falls in the 2x window. Watch the [Anthropic blog](https://www.anthropic.com/news) for announcements.
 >
@@ -126,7 +131,6 @@ Verified 2026-09-05 against the [model deprecations](https://platform.claude.com
 | Claude Haiku 3 (`claude-3-haiku-20240307`) | 2026-04-20 | $0.25 / $1.25 | Haiku 4.5 |
 | Claude Sonnet 4 (`claude-sonnet-4-20250514`) | 2026-06-15 | $3 / $15 | Sonnet 5 |
 | Claude Opus 4 (`claude-opus-4-20250514`) | 2026-06-15 | $15 / $75 | Opus 5 |
-| Claude Mythos Preview (`claude-mythos-preview`) | 2026-06-30 | $25 / $125 | Mythos 5 (Glasswing) |
 | Claude Opus 4.1 (`claude-opus-4-1-20250805`) | 2026-08-05 (still on Bedrock + Google Cloud) | $15 / $75 | Opus 5 |
 | Claude Sonnet 3.5 v1 (`claude-3-5-sonnet-20240620`) | 2025-10-28 | $3 / $15 | Sonnet 5 |
 | Claude Sonnet 3.5 v2 (`claude-3-5-sonnet-20241022`) | 2025-10-28 | $3 / $15 | Sonnet 5 |
@@ -135,9 +139,13 @@ Verified 2026-09-05 against the [model deprecations](https://platform.claude.com
 | Claude Instant 1.x | 2024-11-06 | $0.80 / $2.40 | Haiku 4.5 |
 | Claude 1.x | 2024-11-06 | $8 / $24 | Haiku 4.5 |
 
-### Deprecated (still working, retiring soon)
+### Deprecated (still working)
 
-None. Opus 4.1, deprecated 2026-06-05, retired on 2026-08-05 and is listed under "Recently retired" above. Every model Anthropic still serves reads **Active**.
+| Model | State | Priced at (input / output per 1M) | Migrate to |
+|-------|:-----:|:--------------------------------:|-----------|
+| Claude Mythos Preview (`claude-mythos-preview`) | Deprecated, no published retirement date | $25 / $125 | Mythos 5 (Glasswing) |
+
+Opus 4.1, deprecated 2026-06-05, retired on 2026-08-05 and is listed under "Recently retired" above. Every other model Anthropic still serves reads **Active**.
 
 ### Historical pricing patterns (no longer in effect)
 

@@ -107,7 +107,7 @@ Cost estimates use current Claude API pricing (as of 2026-09-05, after the Opus 
 Notes:
 
 - `opus` is Opus 5, the current Opus-tier flagship. Opus 4.8 is now a legacy model (same posted rate, retirement no sooner than 2027-05-28) and is still the server-side fallback target for Opus 5 cyber-classifier refusals.
-- Mythos 5 is Glasswing-only and prices identically to Fable 5, so it maps to the `fable` key. (Mythos Preview retired 2026-06-30.)
+- Mythos 5 is Glasswing-only and prices identically to Fable 5, so it maps to the `fable` key. (Mythos Preview is deprecated.)
 - Sonnet 5 is $2/$10 permanently -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15.
 - Sessions whose records carry no recognizable model name fall back to Sonnet pricing, which keeps unknown-model estimates conservative rather than inflated.
 

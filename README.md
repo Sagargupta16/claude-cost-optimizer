@@ -82,7 +82,7 @@ The local rater works on private and uncommitted repos and inspects things the w
 
 ## Before vs After
 
-Real project, 30-turn session, Opus 5 (identical math on Opus 4.8 -- same $5/$25):
+Worked example, 30-turn session, Opus 5 (identical math on Opus 4.8 -- same $5/$25). The dollar figures are arithmetic from the posted rates, not a metered bill:
 
 ```
 BEFORE (no optimization):                 AFTER (5 minutes of setup):
@@ -113,7 +113,7 @@ Short answer: **30-60% is what a typical mixed workload saves. Up to ~90% is the
 ### The honest read
 
 - **"up to 90%" is a ceiling, not a typical result.** Anthropic itself publishes 90% for caching *alone*, and the levers genuinely multiply against an unoptimized baseline. But each 90% is a best case on its favorable slice (cached input for caching; conversational traffic for routing), so a whole mixed workload lands well below the sum.
-- **The stacked total is the least evidenced number on this page.** Each lever above has a first-party or peer-reviewed source; the *combined* figure has none. This repo holds no controlled multi-lever measurement, so treat any single "we cut X%" claim as an individual report (n=1), including the [Before vs After](#before-vs-after) example above -- that 61% is arithmetic from the posted rates on one 30-turn session, not a metered result. For a number that applies to your workload, run [claude-rate](#rate-your-setup) on your own repo and price only the levers you can actually apply.
+- **The stacked total has no source.** Each lever above is individually sourced; the combined figure is not, and this repo holds no controlled multi-lever measurement. For a number that applies to your workload, run [claude-rate](#rate-your-setup) on your own repo and price only the levers you can apply.
 - **The cost-mode skill on its own delivers 30-60%** -- it does output-token reduction and model-routing hints, not batch/caching/subscription. The 90% ceiling needs the full playbook in the [guides](#guides), not just the skill.
 - **Caching and batch are the firmest floors** (first-party Anthropic pricing; batch is a documented flat 50% that provably stacks with caching). Routing and subscription savings are the most workload-sensitive.
 
@@ -192,7 +192,7 @@ Copy-paste configs that are already optimized:
 
 ## CLI Tools
 
-8 tools for measuring, tracking, and reducing costs. [Full tools documentation](tools/README.md)
+The 8 tools in `tools/`, plus the budget hooks in `hooks/`. [Full tools documentation](tools/README.md)
 
 | Tool | What It Does |
 |------|-------------|
@@ -203,6 +203,7 @@ Copy-paste configs that are already optimized:
 | [MCP Cost Server](tools/mcp-cost-server/) | In-session cost estimation via MCP |
 | [VS Code Extension](tools/vscode-extension/) | Token count and cost in the status bar |
 | [GitHub Action](tools/actions/claude-cost-audit/) | Automated cost audit on PRs |
+| [/optimize Command](tools/optimize-command/) | Claude Code custom command that audits the current project |
 | [Budget Hooks](hooks/) | Track tool calls, log costs, warn at thresholds |
 
 ---
@@ -227,7 +228,9 @@ Verified 2026-09-05 against Anthropic's [pricing](https://platform.claude.com/do
 | Sonnet 4.6 | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K | 1,024 |
 | Sonnet 4.5 | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K | 1,024 |
 | Haiku 4.5 | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K | 4,096 |
-| Mythos Preview (retired 2026-06-30) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- | 2,048 |
+| Mythos Preview (deprecated, no retirement date) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- | 2,048 |
+
+Mythos 5.1's rates come from the pricing page; its context window, max output and cache floor are not listed there. The [Fable 5.1 model page](https://platform.claude.com/docs/en/models/fable-5-1/overview) states Mythos 5.1 "shares Claude Fable 5.1's specifications and pricing", and the [prompt-caching page](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) lists it at the 512-token floor.
 
 **Opus 5** (`claude-opus-5`, GA 2026-07-24) is the current Opus flagship and Anthropic's recommended default for complex agentic coding. It costs the **same $5/$25 as Opus 4.8**, so the upgrade is free at the posted rate -- see [what actually changes](#migrating-to-opus-5) before you flip the model string. **1M context** on Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5, and Sonnet 4.6 bills at **standard rates** across the full window (no long-context premium). **Sonnet 5** (`claude-sonnet-5`, GA 2026-06-30) is **$2/$10 per MTok permanently** -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15, so Sonnet 5 sits 60% below Opus 5. **Batch API**: 50% off both input and output -- Opus 5 batch is **$2.50/$12.50** (up to 300K output via the `output-300k-2026-03-24` beta). **Fast Mode** (research preview, **Opus 5 and Opus 4.8 only**): **2x** ($10/$50) on both, up to 2.5x output tokens/sec. **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"` for 4.6+ models): +10%. **Subscriptions**: Pro $20/mo (or **$200/yr ≈ $16.67/mo**, ~17% off), Max 5x $100/mo, Max 20x $200/mo. **Web search**: $10 per 1,000 searches plus token costs. **Web fetch**: free beyond token costs. **Code execution**: free with web search/fetch; otherwise 1,550 free hours/month then $0.05/hour per container. **Bash tool**: +325 input tokens on Opus 5 / 4.8 / 4.7 (+244 on Opus 4.6 and earlier). **Text editor tool**: +700 input tokens.
 
@@ -239,7 +242,7 @@ Verified 2026-09-05 against Anthropic's [pricing](https://platform.claude.com/do
 >
 > **Fable 5 / Mythos 5** (GA 2026-06-09): Anthropic's Mythos-class tier above Opus, at **2x Opus 5's price** ($10/$50). Same specs for both: 1M context at standard rates, 128K max output, always-on adaptive thinking (control depth with `effort`; `thinking: disabled` not supported), 4.7-generation tokenizer. **Fable 5 is GA everywhere** (Claude API, Claude Platform on AWS, Bedrock, Vertex AI, Microsoft Foundry) and includes safety classifiers that can decline requests -- a refusal returns HTTP 200 with `stop_reason: "refusal"`, **pre-output refusals are not billed**, and the beta `fallbacks` parameter plus fallback credit make retrying on another model cheap. **Mythos 5** is the same model without the classifiers, limited to approved [Project Glasswing](https://anthropic.com/glasswing) customers. No Fast Mode on either; Batch API supported ($5/$25). Requires 30-day data retention (no zero-data-retention option).
 >
-> **Mythos Preview**: superseded by Mythos 5 -- **retired 2026-06-30**. Was the invite-only defensive-cybersecurity research preview under Project Glasswing.
+> **Mythos Preview**: superseded by Mythos 5 and **deprecated** -- still functional, no longer recommended, and no retirement date is published. The invite-only defensive-cybersecurity research preview under Project Glasswing.
 >
 > **Looking for older model IDs and pricing?** See the [Legacy & Retired Models](#legacy--retired-models) section below for migration context.
 
@@ -274,11 +277,10 @@ Full details: [Anthropic's Opus 5 migration guide](https://platform.claude.com/d
 | Claude Haiku 3 (`claude-3-haiku-20240307`) | 2026-04-20 | Haiku 4.5 |
 | Claude Sonnet 4 (`claude-sonnet-4-20250514`) | 2026-06-15 | Sonnet 5 |
 | Claude Opus 4 (`claude-opus-4-20250514`) | 2026-06-15 | Opus 5 |
-| Claude Mythos Preview (`claude-mythos-preview`) | 2026-06-30 | Mythos 5 (Glasswing) |
 | Claude Opus 4.1 (`claude-opus-4-1-20250805`) | 2026-08-05 (still on Bedrock + Google Cloud) | Opus 5 |
 | Claude Sonnet 3.5 v1 / v2, Sonnet 3, Claude 2.x, Claude 1.x, Instant 1.x | 2024-2025 | See deprecations page |
 
-**Nothing is currently deprecated.** Every model that has not retired reads **Active** on Anthropic's deprecations page, so there is no forced migration outstanding. The nearest tentative retirement is Sonnet 4.5 on 2026-09-29.
+**Deprecated**: Claude Mythos Preview (`claude-mythos-preview`) is the one model in **Deprecated** state -- still functional, no longer recommended, and Anthropic publishes **no retirement date** for it. Migrate to Mythos 5 (Glasswing). Every other model that has not retired reads **Active**, so no dated forced migration is outstanding. The nearest tentative retirement is Sonnet 4.5 on 2026-09-29.
 
 **Older snapshots still callable** (not retired, but not the headline tier):
 

@@ -8,7 +8,7 @@ every rate on 2026-09-05 but left 16 provenance stamps reading 2026-07-25, and
 moved Opus 4.1 to the retired list in 2 files while 8 others still called it
 "retiring soon".
 
-Three checks, each mapped to a defect that actually shipped:
+Four checks, each mapped to a defect that actually shipped:
 
   1. verified-date consistency -- every "verified <date>" / "pricing as of
      <date>" stamp must equal the canonical date in tools/claude-rate/rate.py.
@@ -16,6 +16,14 @@ Three checks, each mapped to a defect that actually shipped:
      has already passed.
   3. relative dates -- no "N days out" style countdowns, which are correct only
      on the day they are written.
+  4. doc freshness dates -- an "Updated <date>" / "As of <date>" banner must not
+     be older than the canonical verified date. Check 1 alone missed five of
+     these, because they are not phrased as pricing stamps.
+
+What this does NOT do: check 1 enforces *agreement* with rate.py, not
+correctness. Bump _PRICING_VERIFIED_DATE only after re-reading Anthropic's
+pricing pages; a clean run means the tree is internally consistent with whatever
+date that constant holds, nothing more.
 
 Exit 0 when clean, 1 with a per-file report otherwise. Run from the repo root.
 """
@@ -90,6 +98,16 @@ RELATIVE_DATE_PATTERN = re.compile(
     re.IGNORECASE,
 )
 
+# Check 4. Doc-freshness banners of the "Updated <date>" and "As of <date>" shape.
+# Check 1 deliberately refuses a sentence break between "pricing" and "as of",
+# which is what let five of these survive a release that re-verified everything.
+# The date must follow the phrase immediately, so a historical clause such as
+# "As of Opus 5's GA on <date>" is left alone.
+FRESHNESS_PATTERN = re.compile(
+    r"\b(?:updated|as of|at the time of writing)\b[:\s]*\(?(\d{4}-\d{2}-\d{2})",
+    re.IGNORECASE,
+)
+
 
 def parse_date(raw: str) -> dt.date:
     """Parse either 2026-08-05 or 'August 5, 2026' into a calendar date."""
@@ -121,34 +139,64 @@ def scanned_files(root: Path) -> list[Path]:
     return files
 
 
+def _stamp_problems(line: str, expected: str) -> list[str]:
+    problems: list[str] = []
+    for pattern in STAMP_PATTERNS:
+        for match in pattern.finditer(line):
+            found = match.group(1)
+            if found != expected:
+                problems.append(
+                    f"verified date {found} does not match the canonical "
+                    f"{expected} (from {CANONICAL_SOURCE})"
+                )
+    return problems
+
+
+def _retirement_problems(line: str, today: dt.date) -> list[str]:
+    problems: list[str] = []
+    for match in RETIRE_PATTERN.finditer(line):
+        when = parse_date(match.group(1))
+        if when <= today:
+            problems.append(
+                f'says a model "retires" on {when}, which has already passed '
+                f"-- use past tense and move it to the retired list"
+            )
+    return problems
+
+
+def _countdown_problems(line: str) -> list[str]:
+    return [
+        f"relative date {match.group(0).strip()!r} -- state an absolute date "
+        f"instead, it cannot stay correct"
+        for match in RELATIVE_DATE_PATTERN.finditer(line)
+    ]
+
+
+def _freshness_problems(line: str, expected: str) -> list[str]:
+    problems: list[str] = []
+    for match in FRESHNESS_PATTERN.finditer(line):
+        found = match.group(1)
+        if found < expected:
+            problems.append(
+                f"doc freshness date {found} is older than the canonical verified "
+                f"date {expected} -- re-check the claim and restate it, or drop it"
+            )
+    return problems
+
+
 def check_file(path: Path, rel: str, expected: str, today: dt.date) -> list[str]:
     """Return one problem string per defect found in this file."""
     problems: list[str] = []
     text = path.read_text(encoding="utf-8", errors="replace")
 
     for lineno, line in enumerate(text.splitlines(), start=1):
-        for pattern in STAMP_PATTERNS:
-            for match in pattern.finditer(line):
-                found = match.group(1)
-                if found != expected:
-                    problems.append(
-                        f"{rel}:{lineno}: verified date {found} does not match the "
-                        f"canonical {expected} (from {CANONICAL_SOURCE})"
-                    )
-
-        for match in RETIRE_PATTERN.finditer(line):
-            when = parse_date(match.group(1))
-            if when <= today:
-                problems.append(
-                    f'{rel}:{lineno}: says a model "retires" on {when}, which has '
-                    f"already passed -- use past tense and move it to the retired list"
-                )
-
-        for match in RELATIVE_DATE_PATTERN.finditer(line):
-            problems.append(
-                f"{rel}:{lineno}: relative date {match.group(0).strip()!r} -- "
-                f"state an absolute date instead, it cannot stay correct"
-            )
+        found = (
+            _stamp_problems(line, expected)
+            + _retirement_problems(line, today)
+            + _countdown_problems(line)
+            + _freshness_problems(line, expected)
+        )
+        problems.extend(f"{rel}:{lineno}: {problem}" for problem in found)
 
     return problems
 

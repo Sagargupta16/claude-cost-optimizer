@@ -341,7 +341,7 @@ A prefix has to clear a per-model token floor before it can be cached at all. A 
 | **Fable 5.1 / Mythos 5.1** | 512 |
 | **Fable 5** | 512 |
 | **Mythos 5** | 512 |
-| **Mythos Preview** (retired 2026-06-30) | 2,048 |
+| **Mythos Preview** (deprecated) | 2,048 |
 | **Sonnet 5** | 1,024 |
 | **Sonnet 4.6** | 1,024 |
 | **Sonnet 4.5** | 1,024 |

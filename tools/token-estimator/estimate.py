@@ -26,7 +26,7 @@ except ImportError:
     sys.exit(1)
 
 
-# Claude model pricing per 1M tokens (verified 2026-09-05; Fable 5.1 GA 2026-09-04)
+# Claude model pricing per 1M tokens (verified 2026-09-05; Fable 5.1 released 2026-09-01)
 # NOTE: 1M context on Fable 5.1/Fable 5/Opus 5/Opus 4.8/4.7/4.6/Sonnet 5/Sonnet 4.6 is
 # billed at standard rates (no long-context premium). The old "2x over 200K" pricing
 # only applied to Opus 4.1 and older.
@@ -39,7 +39,7 @@ MODEL_PRICING = {
         "cache_hit": 0.25,
         "name": "Fable 5.1",
         "note": (
-            "Most capable widely released model (GA 2026-09-04). 2x Opus 5 pricing, but "
+            "Most capable widely released model (released 2026-09-01). 2x Opus 5 pricing, but "
             "cache reads are $0.25/MTok -- 0.025x base input, the only exception to the "
             "0.1x rule and a quarter of Fable 5. Always-on adaptive thinking; no Fast "
             "Mode; no Priority Tier; Batch $5/$25. Forced tool_choice returns 400."
@@ -130,7 +130,7 @@ MODEL_PRICING = {
             "Fable 5.1 under Project Glasswing: same specs and pricing, including the "
             "$0.25/MTok (0.025x) cache read. Unlike Mythos 5 it runs access-program "
             "safeguards, so refusals can occur. Listed for reference only. "
-            "(Mythos 5 reads at $1.00; Mythos Preview retired 2026-06-30.)"
+            "(Mythos 5 reads at $1.00; Mythos Preview is deprecated.)"
         ),
     },
 }
