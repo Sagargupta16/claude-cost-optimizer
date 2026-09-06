@@ -2,7 +2,7 @@
 
 > **Not all paths to Claude cost the same.** Understanding the pricing differences between Anthropic API, AWS Bedrock, Google Vertex AI, and Claude Code subscriptions can save you 10-50% depending on your use case.
 
-Most teams pick a Claude access method based on convenience or existing cloud contracts — not cost. This is a mistake. The same workload can cost 10% more on a regional endpoint than a global one, or 50% less through the Batch API. This guide breaks down every access path, its exact pricing, and when to use each one.
+Most teams pick a Claude access method based on convenience or existing cloud contracts -- not cost. This is a mistake. The same workload can cost 10% more on a regional endpoint than a global one, or 50% less through the Batch API. This guide breaks down every access path, its exact pricing, and when to use each one.
 
 ---
 

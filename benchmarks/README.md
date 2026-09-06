@@ -6,10 +6,10 @@
 
 Each benchmark file compares costs along a specific dimension: task type, model choice, or context size. Every table entry includes:
 
-- **Input tokens** — tokens sent to Claude (system prompt + CLAUDE.md + conversation history + file contents + tool results). You pay for these every turn.
-- **Output tokens** — tokens Claude generates (responses, tool calls, code). These cost 5x more per token than input.
-- **Estimated cost** — calculated from the token counts using published pricing (see below).
-- **Quality notes** — subjective assessment of output correctness, completeness, and adherence to project conventions.
+- **Input tokens** -- tokens sent to Claude (system prompt + CLAUDE.md + conversation history + file contents + tool results). You pay for these every turn.
+- **Output tokens** -- tokens Claude generates (responses, tool calls, code). These cost 5x more per token than input.
+- **Estimated cost** -- calculated from the token counts using published pricing (see below).
+- **Quality notes** -- subjective assessment of output correctness, completeness, and adherence to project conventions.
 
 ### Pricing Reference
 
@@ -44,7 +44,7 @@ We report ranges where possible. The numbers are designed to show **relative dif
 Claude Code automatically caches stable content (system prompt, CLAUDE.md, earlier conversation turns) between turns. This means:
 
 - **First turn** of a session is always the most expensive because nothing is cached yet.
-- **Subsequent turns** benefit from caching — input tokens for unchanged content cost ~90% less.
+- **Subsequent turns** benefit from caching -- input tokens for unchanged content cost ~90% less.
 - The benchmarks below show **pre-cache** token counts (worst case). Your actual costs will often be lower due to caching, especially in longer sessions.
 - Strategies that keep content stable between turns (like a well-structured CLAUDE.md) benefit more from caching than strategies that change context frequently.
 
@@ -54,12 +54,12 @@ Claude Code automatically caches stable content (system prompt, CLAUDE.md, earli
 
 ### How Benchmarks Were Collected
 
-1. **Task definition** — Each benchmark scenario starts with a clearly described development task (e.g., "Add a React button component with tests").
-2. **Environment setup** — A representative codebase is used (React + TypeScript for frontend tasks, Node.js for backend tasks, Python for ML tasks).
-3. **Controlled runs** — The task is performed multiple times with different configurations (e.g., with/without CLAUDE.md optimization, with different models) to isolate the variable being measured.
-4. **Token counting** — Input and output tokens are recorded from Claude Code's `/usage` output or the API response metadata.
-5. **Cost calculation** — Total cost = (input_tokens / 1M * input_rate) + (output_tokens / 1M * output_rate).
-6. **Quality assessment** — Output is reviewed for correctness, completeness, style adherence, and whether follow-up turns were needed to fix issues.
+1. **Task definition** -- Each benchmark scenario starts with a clearly described development task (e.g., "Add a React button component with tests").
+2. **Environment setup** -- A representative codebase is used (React + TypeScript for frontend tasks, Node.js for backend tasks, Python for ML tasks).
+3. **Controlled runs** -- The task is performed multiple times with different configurations (e.g., with/without CLAUDE.md optimization, with different models) to isolate the variable being measured.
+4. **Token counting** -- Input and output tokens are recorded from Claude Code's `/usage` output or the API response metadata.
+5. **Cost calculation** -- Total cost = (input_tokens / 1M * input_rate) + (output_tokens / 1M * output_rate).
+6. **Quality assessment** -- Output is reviewed for correctness, completeness, style adherence, and whether follow-up turns were needed to fix issues.
 
 ### Assumptions
 
@@ -72,7 +72,7 @@ Claude Code automatically caches stable content (system prompt, CLAUDE.md, earli
 
 - Results vary across codebases, prompt styles, and Claude model versions.
 - Token counts can shift as Anthropic updates models and Claude Code internals.
-- Quality ratings are subjective — your team's standards may differ.
+- Quality ratings are subjective -- your team's standards may differ.
 - Prompt caching makes real-world costs lower than raw token counts suggest, but caching behavior is not fully deterministic.
 
 ---
@@ -93,14 +93,14 @@ We welcome community benchmark submissions. Your real-world data makes these est
 
 ### How to Contribute
 
-1. **Pick a scenario** — either reproduce an existing benchmark or define a new one.
-2. **Record your data** — run the task and capture:
+1. **Pick a scenario** -- either reproduce an existing benchmark or define a new one.
+2. **Record your data** -- run the task and capture:
    - Token counts (use `/usage` in Claude Code or check the API response)
    - Model used
    - CLAUDE.md size (line count and approximate token count)
    - Number of turns to complete the task
    - Brief quality assessment
-3. **Submit a PR or issue** — use the [Benchmark Result](../.github/ISSUE_TEMPLATE/benchmark-result.md) issue template, or open a PR adding your data to the relevant benchmark file.
+3. **Submit a PR or issue** -- use the [Benchmark Result](../.github/ISSUE_TEMPLATE/benchmark-result.md) issue template, or open a PR adding your data to the relevant benchmark file.
 
 ### Benchmark Submission Format
 
@@ -125,16 +125,16 @@ When submitting results, please include:
 | Quality (1-5) | X |
 
 **Notes:**
-[Any observations about the run — retries needed, quality issues, caching effects, etc.]
+[Any observations about the run -- retries needed, quality issues, caching effects, etc.]
 ```
 
 ### Guidelines for Good Benchmarks
 
-- **Be specific** — "Add a React form with validation" is better than "build a feature."
-- **Report failures** — if the task required retries or manual correction, note that. Failed attempts are still valuable data.
-- **Include your CLAUDE.md** — or at least its line count and a summary of its sections. This is a major variable.
-- **Run multiple times if possible** — variance between runs helps calibrate estimates.
-- **Note your Claude Code version** — found via `claude --version`. Model behavior can change between releases.
+- **Be specific** -- "Add a React form with validation" is better than "build a feature."
+- **Report failures** -- if the task required retries or manual correction, note that. Failed attempts are still valuable data.
+- **Include your CLAUDE.md** -- or at least its line count and a summary of its sections. This is a major variable.
+- **Run multiple times if possible** -- variance between runs helps calibrate estimates.
+- **Note your Claude Code version** -- found via `claude --version`. Model behavior can change between releases.
 
 ---
 
@@ -142,7 +142,7 @@ When submitting results, please include:
 
 ### Cost Estimates Are Directional
 
-The primary value of these benchmarks is **relative comparison**, not absolute cost prediction. If benchmark A costs $0.12 and benchmark B costs $0.04, the takeaway is that B's approach is roughly 3x cheaper — not that you will pay exactly $0.12 or $0.04.
+The primary value of these benchmarks is **relative comparison**, not absolute cost prediction. If benchmark A costs $0.12 and benchmark B costs $0.04, the takeaway is that B's approach is roughly 3x cheaper -- not that you will pay exactly $0.12 or $0.04.
 
 ### When to Optimize
 

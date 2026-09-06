@@ -227,7 +227,7 @@ Reserve Opus for tasks where deep reasoning, multi-file coordination, or archite
 - **Opus 4.6** uses **extended thinking** -- you can configure a reasoning token budget.
 - If you have prompts or harnesses tuned against extended thinking's explicit budget knobs, they will not carry over to 4.8 or 5. And if you are moving from 4.8 to 5, the same request now costs more unless you explicitly manage thinking: budget the difference before rolling out, and raise `max_tokens` to 64K+ if you run `xhigh` or `max`.
 
-**Benchmarks published by Anthropic for Opus 4.6** (the numbers were even higher for Mythos Preview, the tier that Fable 5 / Mythos 5 now succeed — included below for reference):
+**Benchmarks published by Anthropic for Opus 4.6** (the numbers were even higher for Mythos Preview, the tier that Fable 5 / Mythos 5 now succeed -- included below for reference):
 
 | Benchmark | Opus 4.6 | Mythos Preview (deprecated tier) |
 |-----------|:--------:|:----------------------------:|
@@ -441,7 +441,7 @@ Annual difference: $876
 Team of 5 annual difference: $4,380
 ```
 
-While the savings are more modest than they were at old Opus pricing, $4,380/year for a 5-person team is still worth capturing — especially since it requires no loss in output quality.
+While the savings are more modest than they were at old Opus pricing, $4,380/year for a 5-person team is still worth capturing -- especially since it requires no loss in output quality.
 
 **3. More expensive does not mean faster for simple tasks.**
 

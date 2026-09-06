@@ -374,7 +374,7 @@ export const BATCH_DISCOUNT = 0.5
 export const REGIONAL_ENDPOINT_PREMIUM = 1.1
 export const DATA_RESIDENCY_PREMIUM = 1.1
 
-// Subscription pricing — monthly vs annual.
+// Subscription pricing -- monthly vs annual.
 // Pro annual = $200 up front, billed yearly (effective ~$16.67/mo, ~17% off).
 export const SUBSCRIPTION_PRICING = {
   proMonthly: 20,
