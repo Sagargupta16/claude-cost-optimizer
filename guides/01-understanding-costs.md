@@ -22,7 +22,7 @@
 
 ## Token Pricing
 
-Every interaction with Claude Code consumes tokens. Tokens are the fundamental billing unit — roughly 1 token per 4 characters of English text, or about 0.75 words per token. Code tends to be slightly less dense: a typical line of code is around 8-12 tokens.
+Every interaction with Claude Code consumes tokens. Tokens are the fundamental billing unit -- roughly 1 token per 4 characters of English text, or about 0.75 words per token. Code tends to be slightly less dense: a typical line of code is around 8-12 tokens.
 
 ### Current Model Pricing (verified 2026-09-05)
 
@@ -62,7 +62,7 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 >
 > **New tokenizer caveat**: Opus 4.7 and later (including Opus 4.8 and Opus 5) use the same Opus-4.7-generation tokenizer, which may use up to **35% more tokens** for the same source text. Posted pricing is unchanged ($5/$25), but effective per-task cost is 20-35% higher than it would have been on Opus 4.6.
 >
-> **Subscriptions**: Pro **$20/mo** (or **$200/yr ≈ $16.67/mo** with annual billing — ~17% off). Max 5x $100/mo. Max 20x $200/mo. **Batch API**: 50% discount on both input and output. **Cache write**: 1.25x base input price (5-min TTL), 2x base input price (1-hour TTL). **Cache hit/refresh**: 0.1x base input price. **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"`, scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all future models): +10%.
+> **Subscriptions**: Pro **$20/mo** (or **$200/yr ≈ $16.67/mo** with annual billing -- ~17% off). Max 5x $100/mo. Max 20x $200/mo. **Batch API**: 50% discount on both input and output. **Cache write**: 1.25x base input price (5-min TTL), 2x base input price (1-hour TTL). **Cache hit/refresh**: 0.1x base input price. **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"`, scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all future models): +10%.
 
 ### Off-Peak 2x Usage Events
 
@@ -140,7 +140,7 @@ Fast Mode is a beta (research preview) feature available for **Claude Opus 5 and
 
 Key details about Fast Mode:
 
-- **Same model, faster output**: Fast Mode runs the same model with a faster inference configuration. Same weights, same behavior — only the runtime is different.
+- **Same model, faster output**: Fast Mode runs the same model with a faster inference configuration. Same weights, same behavior -- only the runtime is different.
 - **Up to 2.5x output tokens/second**: The speed gain is on output tokens per second (OTPS), **not** time-to-first-token (TTFT). If you're optimizing for TTFT, Fast Mode does not help.
 - **1M context included**: Fast Mode is priced at the 2x multiplier across the full context window, including requests over 200K input tokens. No additional 2x long-context multiplier stacked on top.
 - **Cache stacks on top**: Prompt-caching multipliers (1.25x 5m write, 2x 1h write, 0.1x hit) apply to Fast Mode rates. So a Fast Mode Opus 5 5m cache write costs $10 × 1.25 = $12.50 / MTok, and a Fast Mode Opus 5 cache hit costs $10 × 0.1 = $1.00 / MTok.
@@ -153,7 +153,7 @@ Key details about Fast Mode:
 - **Not available on Claude Platform on AWS**: First-party API only.
 - **Activation**: Set `speed: "fast"` in your request and include the `anthropic-beta: fast-mode-2026-02-01` header.
 - **Dedicated rate limits**: Fast Mode has its own rate limit pool separate from Standard Opus. Headers like `anthropic-fast-output-tokens-remaining` track it.
-- **Use case**: Time-sensitive tasks where latency directly impacts revenue or user experience — urgent debugging, live demos, real-time agentic loops. Almost never worth it for routine interactive coding.
+- **Use case**: Time-sensitive tasks where latency directly impacts revenue or user experience -- urgent debugging, live demos, real-time agentic loops. Almost never worth it for routine interactive coding.
 
 On Opus 5 at 2x the standard rate, a session that would cost $2.33 on standard Opus would cost roughly **$4.66** on Fast Mode. Use it deliberately and sparingly.
 
@@ -206,7 +206,7 @@ Output Token Composition Per Turn
    └── Explanations, analysis, questions back to you
 
 2. Tool Calls                             ~50-200 tokens each
-   └── Read, Edit, Bash, Write, Glob, Grep — each tool call
+   └── Read, Edit, Bash, Write, Glob, Grep -- each tool call
        includes the tool name and all parameters
 
 3. Code Generation                        ~10 tokens/line
@@ -229,14 +229,14 @@ Output Token Composition Per Turn
 
 This is the most important concept in Claude Code cost optimization.
 
-**Conversation history is cumulative.** Every message — yours and Claude's — becomes part of the input for the next turn. This means:
+**Conversation history is cumulative.** Every message -- yours and Claude's -- becomes part of the input for the next turn. This means:
 
 - **Turn 1**: You send your prompt + system context. Claude responds.
 - **Turn 2**: You send your prompt + system context + Turn 1's full exchange. Claude responds.
 - **Turn 3**: You send your prompt + system context + Turn 1 + Turn 2. Claude responds.
 - **Turn N**: You send your prompt + system context + all previous N-1 turns.
 
-The cost **accelerates** with each turn. A 30-turn session does not cost 30x a single turn — it costs far more because each turn includes all previous turns as input.
+The cost **accelerates** with each turn. A 30-turn session does not cost 30x a single turn -- it costs far more because each turn includes all previous turns as input.
 
 ---
 
@@ -289,7 +289,7 @@ What it costs to fill the context window on a single turn:
 | 0-25% (~0-50K) | Healthy | Normal operation |
 | 25-50% (~50-100K) | Monitor | Consider `/compact` if conversation is growing |
 | 50-75% (~100-150K) | Warning | Run `/compact` or start a new session |
-| 75-100% (~150-200K) | Critical | Start a new session — cost per turn is very high |
+| 75-100% (~150-200K) | Critical | Start a new session -- cost per turn is very high |
 
 ---
 
@@ -303,7 +303,7 @@ When you send a request to Claude, the API checks if the beginning of your input
 
 ```
 Normal input cost:   $3.00 / 1M tokens (Sonnet 4.6)
-Cached input cost:   $0.30 / 1M tokens (Sonnet 4.6) — 90% cheaper
+Cached input cost:   $0.30 / 1M tokens (Sonnet 4.6) -- 90% cheaper
 ```
 
 ### What Gets Cached
@@ -362,7 +362,7 @@ For a 30-turn session on Sonnet 4.6 with a 150-line CLAUDE.md:
 
 ### What Breaks the Cache
 
-The cache is prefix-based — it works from the beginning of the prompt forward. If anything changes in the cached prefix, **everything after the change point loses its cache**. Common cache-breakers:
+The cache is prefix-based -- it works from the beginning of the prompt forward. If anything changes in the cached prefix, **everything after the change point loses its cache**. Common cache-breakers:
 
 | Action | Cache Impact | Severity |
 |--------|-------------|:--------:|
@@ -381,7 +381,7 @@ The cache is prefix-based — it works from the beginning of the prompt forward.
 2. **Keep sessions focused.** Linear conversations cache better than branching ones.
 3. **Avoid switching models mid-session** unless the savings from a cheaper model outweigh the cache loss.
 4. **Maintain a steady pace.** Very long pauses (5+ minutes) between turns can cause cache expiration.
-5. **Use `/compact` strategically.** It resets conversation history, which means the cache restarts — but the reduced context often makes this worthwhile for very long sessions.
+5. **Use `/compact` strategically.** It resets conversation history, which means the cache restarts -- but the reduced context often makes this worthwhile for very long sessions.
 6. **Check your prefix clears the model's floor.** Below the minimum cacheable length there is no discount and no warning. Opus 5's 512-token floor is the most forgiving in the Opus tier.
 
 ---
@@ -408,7 +408,7 @@ Session Usage:
   Turns:         15
 ```
 
-Use `/usage` as a habit check — run it every 10-15 turns to see if your session is staying within expected bounds.
+Use `/usage` as a habit check -- run it every 10-15 turns to see if your session is staying within expected bounds.
 
 ### The `--max-budget-usd` Flag
 
@@ -425,7 +425,7 @@ claude --max-budget-usd 1
 claude --max-budget-usd 20
 ```
 
-When the budget limit is reached, Claude Code will stop processing and notify you. This prevents runaway sessions — especially important when:
+When the budget limit is reached, Claude Code will stop processing and notify you. This prevents runaway sessions -- especially important when:
 
 - Learning or experimenting
 - Running automated workflows
@@ -570,7 +570,7 @@ Without prompt caching, every input token is charged at full price:
 | Turns 21-30 | $0.60 | $2.15 |
 | **Total** | **$1.40** | **$4.16** |
 
-> Prompt caching saved **~$2.76** on this session — a **66% reduction**. This is why preserving the cache is so important.
+> Prompt caching saved **~$2.76** on this session -- a **66% reduction**. This is why preserving the cache is so important.
 
 ### What This Session Would Cost on Different Models
 
@@ -590,7 +590,7 @@ Without prompt caching, every input token is charged at full price:
 
 ### The Exponential Growth Problem
 
-Session cost does not grow linearly — it grows quadratically with the number of turns, because each turn includes all previous turns as input.
+Session cost does not grow linearly -- it grows quadratically with the number of turns, because each turn includes all previous turns as input.
 
 ```
 Cost per turn over a session (illustrative, Sonnet 4.6):
@@ -606,19 +606,19 @@ Turn 40: $0.12  ▎▎▎▎▎▎▎▎▎
 Turn 50: $0.16  ▎▎▎▎▎▎▎▎▎▎▎▎
 ```
 
-The first 10 turns might cost $0.27 total. The last 10 turns (41-50) might cost $1.40 total — **5x more** for the same number of turns.
+The first 10 turns might cost $0.27 total. The last 10 turns (41-50) might cost $1.40 total -- **5x more** for the same number of turns.
 
 ### The Top 5 Cost Drivers
 
-1. **Long sessions without `/compact`** — The #1 cost driver. A 50-turn session costs dramatically more per-turn than five 10-turn sessions doing the same work.
+1. **Long sessions without `/compact`** -- The #1 cost driver. A 50-turn session costs dramatically more per-turn than five 10-turn sessions doing the same work.
 
-2. **Large file reads accumulating in history** — When Claude reads a 1,000-line file (10,000 tokens), that content stays in conversation history for every subsequent turn. Reading 3 large files adds ~30,000 tokens of permanent context.
+2. **Large file reads accumulating in history** -- When Claude reads a 1,000-line file (10,000 tokens), that content stays in conversation history for every subsequent turn. Reading 3 large files adds ~30,000 tokens of permanent context.
 
-3. **Bloated CLAUDE.md** — A 500-line CLAUDE.md adds ~3,500 tokens to every single turn. Over 30 turns, that is 105,000 extra input tokens — $0.32 on Sonnet, $0.53 on Opus.
+3. **Bloated CLAUDE.md** -- A 500-line CLAUDE.md adds ~3,500 tokens to every single turn. Over 30 turns, that is 105,000 extra input tokens -- $0.32 on Sonnet, $0.53 on Opus.
 
-4. **Using Opus for routine tasks** — If 60% of your turns are simple (formatting, small fixes, lookups), using Opus for all of them costs 5x more than Haiku for those turns. The gap is narrower than it used to be, but still adds up across many turns.
+4. **Using Opus for routine tasks** -- If 60% of your turns are simple (formatting, small fixes, lookups), using Opus for all of them costs 5x more than Haiku for those turns. The gap is narrower than it used to be, but still adds up across many turns.
 
-5. **Trial-and-error coding instead of planning first** — Without Plan Mode, Claude might write code, find it does not work, rewrite it, and iterate 4-5 times. Each iteration adds both input history and output tokens. Planning first typically reduces total turns by 30-50%.
+5. **Trial-and-error coding instead of planning first** -- Without Plan Mode, Claude might write code, find it does not work, rewrite it, and iterate 4-5 times. Each iteration adds both input history and output tokens. Planning first typically reduces total turns by 30-50%.
 
 ---
 
@@ -701,4 +701,4 @@ For a rough rule of thumb: if you have more than 3-4 turns left in a session, sw
 
 ---
 
-*Next: [Guide 02 - Context Optimization](02-context-optimization.md) — practical strategies to reduce input tokens on every turn.*
+*Next: [Guide 02 - Context Optimization](02-context-optimization.md) -- practical strategies to reduce input tokens on every turn.*
