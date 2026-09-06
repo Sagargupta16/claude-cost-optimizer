@@ -10,7 +10,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "sourceMap": true,
-    "declaration": true
+    "declaration": true,
+    "types": ["node", "vscode"]
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "out"]

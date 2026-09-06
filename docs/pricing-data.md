@@ -59,7 +59,7 @@ Update pricing references across ALL files when rates change: README, `guides/00
 **The list above is necessary but not sufficient, and it has failed twice.** v1.11.0 and v1.12.0 both shipped with the checklist followed only partway. Two automated checks now catch the failure modes it misses, and CI runs both on every pull request:
 
 ```bash
-python scripts/check-pricing-sync.py .   # verified-date drift, stale "retires <past date>", relative countdowns
+python scripts/check-pricing-sync.py .   # verified-date drift, stale "retires <past date>", relative countdowns, doc freshness
 python scripts/check-links.py .          # broken relative links and heading anchors
 ```
 

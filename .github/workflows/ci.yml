@@ -111,8 +111,9 @@ jobs:
           python-version: '3.14'
 
       # Fails the PR when a "verified" date drifts between files, when a model
-      # is still described as "retiring" on a date that has passed, or when a
-      # relative countdown ("about 11 days out") is introduced.
+      # is still described as "retiring" on a date that has passed, when a
+      # relative countdown ("about 11 days out") is introduced, or when a
+      # pricing doc goes stale against the canonical verification date.
       - name: Check pricing stamps and retirement wording
         run: python scripts/check-pricing-sync.py .
 

@@ -45,7 +45,11 @@ export interface ModelPricing {
   minCacheTokens: number
   notes?: string
   inviteOnly?: boolean
-  lifecycle?: 'active' | 'legacy'
+  // 'deprecated' mirrors the state Anthropic's deprecations page publishes:
+  // still served, no longer recommended, replacement named. It is distinct from
+  // 'legacy', which only means superseded. Chart selection filters on
+  // 'active', so a deprecated model is excluded the same way a legacy one is.
+  lifecycle?: 'active' | 'legacy' | 'deprecated'
 }
 
 // Cache hits are 0.1x base input on every model EXCEPT Fable 5.1 and Mythos 5.1,
@@ -353,7 +357,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     fastModeCapable: false,
     minCacheTokens: 2048,
     inviteOnly: true,
-    lifecycle: 'legacy',
+    lifecycle: 'deprecated',
     notes:
       'Superseded by Mythos 5 and deprecated: still functional, no retirement ' +
       'date published. The invitation-only ' +
