@@ -18,10 +18,9 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime, timezone
 from pathlib import Path
 
-# Claude model pricing per 1M tokens (verified 2026-07-25; Opus 5 GA 2026-07-24)
+# Claude model pricing per 1M tokens (verified 2026-09-05; Opus 5 GA 2026-07-24)
 # "fable" = Fable 5 (most capable, 2x Opus 5); "opus" = Opus 5, the Opus-tier
 # flagship; "opus-4.8"/"opus-4.7"/"opus-4.6" = legacy. Opus 5 and Opus 4.8/4.7/4.6
 # share the same posted rate, but Opus 5 runs adaptive thinking ON by default and

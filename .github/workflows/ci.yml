@@ -1,0 +1,124 @@
+name: CI
+
+# PR-time verification. Before this existed the first build of a site change
+# happened after merge, on main, where a failure meant a broken Pages deploy
+# instead of a red PR -- and nothing checked the markdown links or the Python
+# tools at all, which is how a dead Anthropic doc URL and four broken internal
+# links shipped in v1.12.0.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  site:
+    name: Site typecheck and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      # Only build when the site actually changed, so docs-only PRs stay fast.
+      # Fetching the base branch explicitly mirrors cost-audit.yml rather than
+      # assuming a remote-tracking ref already exists in the checkout.
+      - name: Check whether site/ changed
+        id: changed
+        run: |
+          git fetch origin "${{ github.base_ref }}" --depth=1
+          if git diff --name-only "origin/${{ github.base_ref }}...HEAD" \
+            | grep -qE '^(site/|\.github/workflows/ci\.yml$)'; then
+            echo "site=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "site=false" >> "$GITHUB_OUTPUT"
+            echo "No site/ changes -- skipping build."
+          fi
+
+      - uses: actions/setup-node@v7
+        if: steps.changed.outputs.site == 'true'
+        with:
+          node-version: '24'
+
+      - name: Install dependencies
+        if: steps.changed.outputs.site == 'true'
+        working-directory: site
+        # Same flags as deploy-site.yml so CI and the deploy build match.
+        run: npm ci --legacy-peer-deps --ignore-scripts
+
+      # `npm run build` is `tsc -b && vite build && node scripts/spa-404.mjs`,
+      # so this covers the typecheck, the bundle, and the route entry points.
+      - name: Build site
+        if: steps.changed.outputs.site == 'true'
+        working-directory: site
+        run: npm run build
+
+      - name: Verify every advertised route has a real entry point
+        if: steps.changed.outputs.site == 'true'
+        working-directory: site
+        # These three URLs are promoted in the README. Without a real
+        # index.html each one returns HTTP 404 from Pages even though the SPA
+        # renders correctly, which de-indexes them and trips link checkers.
+        run: |
+          for route in calculator badge analyzer; do
+            test -f "dist/$route/index.html" || {
+              echo "::error::dist/$route/index.html missing -- add the route to ROUTES in site/scripts/spa-404.mjs"
+              exit 1
+            }
+            echo "ok: dist/$route/index.html"
+          done
+          test -f dist/404.html || { echo "::error::dist/404.html missing"; exit 1; }
+
+  python-tools:
+    name: Python tools
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      - name: Byte-compile every tool
+        run: python -m compileall -q tools/ scripts/
+
+      - name: Lint for real errors (syntax, undefined and unused names)
+        # Scoped to E9 + F rather than ruff's full default set: those two
+        # families are genuine bugs, and gating on the whole default set would
+        # fail on pre-existing style findings unrelated to the change at hand.
+        run: |
+          pipx install ruff
+          ruff check --select E9,F tools/ scripts/
+
+      - name: Smoke-test the graders that CI and the README depend on
+        run: |
+          python tools/claude-rate/rate.py . --json > /tmp/rate.json
+          python -c "import json; d=json.load(open('/tmp/rate.json')); print('claude-rate', d['grade'], d['score'])"
+          python tools/badge-generator/generate.py . --json > /tmp/badge.json
+          python -c "import json; d=json.load(open('/tmp/badge.json')); print('badge-generator', d['grade'], d['score'])"
+
+  docs-consistency:
+    name: Docs consistency
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      # Fails the PR when a "verified" date drifts between files, when a model
+      # is still described as "retiring" on a date that has passed, or when a
+      # relative countdown ("about 11 days out") is introduced.
+      - name: Check pricing stamps and retirement wording
+        run: python scripts/check-pricing-sync.py .
+
+      # Offline by design. Relative links and heading anchors are fully
+      # determined by the tree, so this is a deterministic gate. External URLs
+      # are not checked here: they rot for reasons outside this repo's control,
+      # which makes them a flaky gate rather than a useful one.
+      - name: Check internal markdown links and anchors
+        run: python scripts/check-links.py .

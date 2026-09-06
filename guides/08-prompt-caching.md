@@ -85,7 +85,7 @@ Caching does not kick in on short prompts. Each model has a minimum cacheable pr
 | **Fable 5.1 / Mythos 5.1** | 512 |
 | **Fable 5** | 512 |
 | **Mythos 5** | 512 |
-| **Mythos Preview** (retired 2026-06-30) | 2,048 |
+| **Mythos Preview** (deprecated) | 2,048 |
 | **Opus 4.8** (legacy) | 1,024 |
 | **Opus 4.7** | 2,048 |
 | **Opus 4.6** | 4,096 |

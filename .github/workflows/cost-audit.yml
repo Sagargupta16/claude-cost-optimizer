@@ -20,10 +20,14 @@ jobs:
         with:
           python-version: '3.14'
 
+      # claude-rate is the authoritative grader: it scores all 7 categories the
+      # README advertises, while badge-generator scores 4 and so returns a
+      # different number for the same repo. Publishing the 7-category score
+      # keeps this job's summary consistent with what the docs promise.
       - name: Run cost audit
         id: audit
         run: |
-          result=$(python tools/badge-generator/generate.py . --json)
+          result=$(python tools/claude-rate/rate.py . --json)
           echo "$result"
 
           grade=$(echo "$result" | python -c "import sys, json; print(json.load(sys.stdin)['grade'])")
@@ -47,7 +51,7 @@ jobs:
           <summary>Full report</summary>
 
           \`\`\`
-          $(python tools/badge-generator/generate.py .)
+          $(python tools/claude-rate/rate.py .)
           \`\`\`
 
           </details>

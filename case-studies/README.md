@@ -26,14 +26,14 @@ There are two ways to contribute:
 
 ### Option 1: Open an Issue
 
-Use the [Case Study Submission](/.github/ISSUE_TEMPLATE/case-study.md) issue template. Fill in the prompted fields with your data. The maintainers will review it and, if accepted, convert it into a published case study file.
+Use the [Case Study Submission](../.github/ISSUE_TEMPLATE/case-study.md) issue template. Fill in the prompted fields with your data. The maintainers will review it and, if accepted, convert it into a published case study file.
 
 ### Option 2: Submit a Pull Request
 
 1. Copy the [TEMPLATE.md](TEMPLATE.md) file in this directory.
 2. Rename it to something descriptive (e.g., `react-saas-app.md` or `monorepo-migration.md`).
 3. Fill in all sections with your data.
-4. Open a PR targeting `main`. See [CONTRIBUTING.md](/CONTRIBUTING.md) for general PR guidelines.
+4. Open a PR targeting `main`. See [CONTRIBUTING.md](../CONTRIBUTING.md) for general PR guidelines.
 
 ### What Makes a Good Submission
 

@@ -94,7 +94,7 @@ Returns cost for each model, identifies the cheapest option, and shows the perce
 
 ## Pricing Reference
 
-All estimates use current API pricing (verified 2026-07-25, per 1M tokens):
+All estimates use current API pricing (verified 2026-09-05, per 1M tokens):
 
 | Model | Input | Output | Cache Hit | Min cacheable prompt |
 |-------|-------|--------|-----------|---------------------:|

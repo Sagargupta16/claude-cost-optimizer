@@ -6,7 +6,7 @@ Mermaid flowcharts for key cost optimization decisions. These render natively on
 
 ## Table of Contents
 
-- [Claude Model Family (July 2026)](#claude-model-family-july-2026)
+- [Claude Model Family](#claude-model-family)
 - [Model Selection Decision Tree](#model-selection-decision-tree)
 - [Session Cost Optimization Flowchart](#session-cost-optimization-flowchart)
 - [Cost Tier Strategy Map](#cost-tier-strategy-map)
@@ -14,11 +14,11 @@ Mermaid flowcharts for key cost optimization decisions. These render natively on
 
 ---
 
-## Claude Model Family (July 2026)
+## Claude Model Family
 
 The current Claude model lineup, their positioning, and cost tiers. Mythos 5 is the limited-availability sibling of Fable 5 under [Project Glasswing](https://anthropic.com/glasswing) -- same specs and price, no safety classifiers.
 
-> **Updated 2026-07-25 for the Opus 5 launch.** Opus 5 (`claude-opus-5`, GA 2026-07-24) is the new Opus flagship at the same $5 / $25 as Opus 4.8, which moved into the Legacy accordion. Fast Mode narrowed to Opus 5 and Opus 4.8 only, both at a flat 2x. Mythos Preview retired on 2026-06-30.
+> **Opus 5** (`claude-opus-5`, GA 2026-07-24) is the Opus flagship at the same $5 / $25 as Opus 4.8, which moved into the Legacy accordion. Fast Mode is Opus 5 and Opus 4.8 only, both at a flat 2x. Mythos Preview is **deprecated** -- Anthropic publishes no retirement date for it.
 
 ```mermaid
 flowchart TB
@@ -40,7 +40,7 @@ flowchart TB
     subgraph RP["Limited Availability (Project Glasswing)"]
         direction TB
         mythos5["Mythos 5<br/>$10 / $50 per 1M<br/>Fable 5 without safety classifiers<br/>Approved Glasswing customers only"]
-        mythos["Mythos Preview<br/>Retired 2026-06-30<br/>Migrate to Mythos 5"]
+        mythos["Mythos Preview<br/>Deprecated, no retirement date<br/>Migrate to Mythos 5"]
     end
 
     classDef flagship fill:#f4d0e0,stroke:#c94a7a,stroke-width:2px,color:#222
@@ -72,7 +72,7 @@ flowchart TB
 | Sonnet 4.5 | GA | Pinned snapshots only | 200K context (not 1M); retires 2026-09-29 |
 | Haiku 4.5 | GA | Formatting, renaming, simple edits, file lookups | Lacks reasoning depth for multi-file work; 200K context; 4,096-token cache floor |
 | Mythos 5 | Glasswing only | Fable 5's capabilities without safety classifiers (approved customers) | No self-serve access; use Fable 5 instead |
-| Mythos Preview | **Retired 2026-06-30** | (superseded by Mythos 5) | No longer callable; migrate to Mythos 5 |
+| Mythos Preview | **Deprecated** (no published retirement date) | (superseded by Mythos 5) | Still functional but no longer recommended; migrate to Mythos 5 |
 
 ---
 

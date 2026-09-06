@@ -45,7 +45,7 @@ No external dependencies. Pure Python 3.10+ stdlib.
 claude-rate -- Claude / AI setup audit
 ============================================================
 Project: /home/sagar/work/my-project
-Verified against Anthropic pricing as of: 2026-07-25
+Verified against Anthropic pricing as of: 2026-09-05
 
   CLAUDE.md                [###############-----]  15/20  3,648 chars primary (near hard limit); 3,648 chars total across 1 file(s)
   .claudeignore            [--------------------]   0/15  not found
@@ -154,7 +154,7 @@ The web analyzer (built in [../../site/](../../site/), not yet live on the deplo
 
 ## Pricing data
 
-All cost estimates use Anthropic's published rates **verified 2026-07-25**:
+All cost estimates use Anthropic's published rates **verified 2026-09-05**:
 
 - Fable 5: $10/$50 per 1M tokens (1M context, highest-capability model)
 - Opus 5: $5/$25 per 1M tokens (1M context, GA 2026-07-24, current Opus flagship -- start here for complex agentic coding)

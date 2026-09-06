@@ -13,7 +13,7 @@ Each benchmark file compares costs along a specific dimension: task type, model 
 
 ### Pricing Reference
 
-All cost calculations use the following rates (verified 2026-07-25):
+All cost calculations use the following rates (verified 2026-09-05):
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
 |-------|:---------------------:|:----------------------:|:-------------------------:|

@@ -24,7 +24,7 @@
 
 Every interaction with Claude Code consumes tokens. Tokens are the fundamental billing unit — roughly 1 token per 4 characters of English text, or about 0.75 words per token. Code tends to be slightly less dense: a typical line of code is around 8-12 tokens.
 
-### Current Model Pricing (verified 2026-07-25)
+### Current Model Pricing (verified 2026-09-05)
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M) | 5m Cache Write | 1h Cache Write | Context Window | Max Output |
 |-------|:---------------------:|:----------------------:|:---------------------:|:--------------:|:--------------:|:--------------:|:----------:|
@@ -35,7 +35,7 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 | **Opus 4.7** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K |
-| **Opus 4.1** (deprecated, retires 2026-08-05) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
+| Opus 4.1 (retired 2026-08-05, still on Bedrock + Google Cloud) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
 | **Sonnet 5** | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | see note | see note |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K |
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
@@ -58,7 +58,7 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 >
 > **Sonnet 5**: **$2/$10 permanently** -- the launch intro rate became standard and the increase to $3/$15 was cancelled. Minimum cacheable prompt 1,024 tokens. Retirement not sooner than 2027-06-30. It is the current Sonnet-tier migration target, replacing Sonnet 4.6. Context window and max output are not restated here -- check the [Anthropic models overview](https://docs.claude.com/en/docs/about-claude/models/overview) before you size a request against them.
 >
-> **1M context at standard rates**: Fable 5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, and Sonnet 4.6 bill the full 1M window at the standard per-token rate -- no long-context premium. (The earlier "2x over 200K" pricing applied to Opus 4.1 and older. Note that Opus 4.5 and Sonnet 4.5 are 200K-only.)
+> **1M context at standard rates**: Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5, and Sonnet 4.6 bill the full 1M window at the standard per-token rate -- no long-context premium. **Sonnet 5 at $2/$10 is the cheapest 1M-context option**, so reach for it before an Opus tier on long-context work. (The earlier "2x over 200K" pricing applied to Opus 4.1 and older. Note that Opus 4.5, Sonnet 4.5, and Haiku 4.5 are 200K-only.)
 >
 > **New tokenizer caveat**: Opus 4.7 and later (including Opus 4.8 and Opus 5) use the same Opus-4.7-generation tokenizer, which may use up to **35% more tokens** for the same source text. Posted pricing is unchanged ($5/$25), but effective per-task cost is 20-35% higher than it would have been on Opus 4.6.
 >
@@ -105,7 +105,7 @@ Switching from Opus to Haiku for a task that costs $1.00 on Opus would cost appr
 
 ### Long Context Pricing (1M)
 
-Fable 5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, and Sonnet 4.6 support up to 1M tokens of context at **standard rates** across the full window. There is no longer a "2x over 200K" premium -- that pricing applied to Opus 4.1 and older.
+Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5, and Sonnet 4.6 support up to 1M tokens of context at **standard rates** across the full window. There is no longer a "2x over 200K" premium -- that pricing applied to Opus 4.1 and older. Sonnet 5 ($2/$10) is the cheapest model on that list by a wide margin.
 
 | Model | Input Rate (any context size) | Output Rate (any context size) | Max Context |
 |-------|:-----------------------------:|:------------------------------:|:-----------:|
@@ -341,7 +341,7 @@ A prefix has to clear a per-model token floor before it can be cached at all. A 
 | **Fable 5.1 / Mythos 5.1** | 512 |
 | **Fable 5** | 512 |
 | **Mythos 5** | 512 |
-| **Mythos Preview** (retired 2026-06-30) | 2,048 |
+| **Mythos Preview** (deprecated) | 2,048 |
 | **Sonnet 5** | 1,024 |
 | **Sonnet 4.6** | 1,024 |
 | **Sonnet 4.5** | 1,024 |

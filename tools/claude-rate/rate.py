@@ -22,7 +22,7 @@ Usage:
 
 No external dependencies. Pure Python 3.10+ stdlib.
 
-Pricing data verified 2026-07-25 against:
+Pricing data verified 2026-09-05 against:
     https://platform.claude.com/docs/en/about-claude/pricing
     https://platform.claude.com/docs/en/about-claude/models/overview
 """
@@ -1136,7 +1136,7 @@ def rate(project: Path) -> RateResult:
 # -- Output formatters -------------------------------------------------------
 
 _BAR_WIDTH = 20
-_PRICING_VERIFIED_DATE = "2026-07-25"
+_PRICING_VERIFIED_DATE = "2026-09-05"
 
 
 def _ratio_color(ratio: float) -> str:

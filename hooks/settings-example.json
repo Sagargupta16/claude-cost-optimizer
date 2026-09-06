@@ -16,7 +16,10 @@
       {
         "matcher": ".*",
         "hooks": [
-          "bash /path/to/claude-cost-optimizer/hooks/budget-tracker.sh"
+          {
+            "type": "command",
+            "command": "bash /path/to/claude-cost-optimizer/hooks/budget-tracker.sh"
+          }
         ]
       }
     ],
@@ -24,7 +27,10 @@
       {
         "matcher": "",
         "hooks": [
-          "bash /path/to/claude-cost-optimizer/hooks/session-summary.sh"
+          {
+            "type": "command",
+            "command": "bash /path/to/claude-cost-optimizer/hooks/session-summary.sh"
+          }
         ]
       }
     ]
