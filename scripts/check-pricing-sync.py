@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
-"""Guard the repo against the three pricing-drift failures that shipped in v1.12.0.
+"""Guard the repo against the four pricing-drift failures that shipped in v1.12.0.
 
 This repo's product is being a trustworthy pricing reference, so drift between
 files is the core product risk. A hand-followed sync checklist lives at the end
 of docs/pricing-data.md and it has already failed twice: v1.12.0 re-verified
 every rate on 2026-09-05 but left 16 provenance stamps reading 2026-07-25, and
-moved Opus 4.1 to the retired list in 2 files while 8 others still called it
+moved Opus 4.1 to the retired list in 2 files while 4 others still called it
 "retiring soon".
+
+Both counts are measured, not estimated, and the basis matters because a bare
+count here would be the same defect this script exists to catch. Against
+3e3a975 (the v1.12.0 tree), the two stamp patterns below match 16 occurrences
+of 2026-07-25. For Opus 4.1, counting files whose Opus 4.1 line uses
+"retired" versus "retires"/"retiring" and excluding CHANGELOG.md, which
+narrates both states by design, gives 2 and 4.
 
 Four checks, each mapped to a defect that actually shipped:
 
