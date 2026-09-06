@@ -2,7 +2,7 @@
 
 > One-page quick reference. Print it, bookmark it, pin it. Every strategy links to a detailed guide.
 >
-> **Pricing verified: 2026-07-25.** Sources: [platform pricing](https://platform.claude.com/docs/en/about-claude/pricing), [models overview](https://platform.claude.com/docs/en/about-claude/models/overview), [model deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations), [migrating to Opus 5](https://platform.claude.com/docs/en/about-claude/models/migrating-to-claude-opus-5), [fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), [prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching), [introducing Fable 5 / Mythos 5](https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5).
+> **Pricing verified: 2026-09-05.** Sources: [platform pricing](https://platform.claude.com/docs/en/about-claude/pricing), [models overview](https://platform.claude.com/docs/en/about-claude/models/overview), [model deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations), [migrating to Opus 5](https://platform.claude.com/docs/en/models/opus-5/migration-guide), [fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), [prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching), [introducing Fable 5 / Mythos 5](https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5).
 
 ---
 
@@ -18,7 +18,7 @@
 | **Opus 4.7** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | 2,048 | 1x (baseline) |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | 4,096 | 1x (baseline) |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K | 4,096 | 1x (baseline) |
-| **Opus 4.1** | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K | 1,024 | 3x baseline |
+| Opus 4.1 (retired 2026-08-05, still on Bedrock + Google Cloud) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K | 1,024 | 3x baseline |
 | **Sonnet 5** (Sonnet flagship) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1M | 128K | 1,024 | **2.5x cheaper** |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K | 1,024 | **~1.7x cheaper** |
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K | 1,024 | **~1.7x cheaper** |
@@ -71,7 +71,9 @@
 >
 > On **Fable 5 / Mythos 5** thinking is always on -- omit the `thinking` param (an explicit `disabled` returns a 400) and control depth purely with `effort`.
 
-### Model Lifecycle (verified 2026-07-25)
+### Model Lifecycle
+
+Verified 2026-09-05 against the [model deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations) page.
 
 **Recently retired** (requests will fail):
 
@@ -84,12 +86,12 @@
 | Sonnet 4 (`claude-sonnet-4-20250514`) | 2026-06-15 | Sonnet 5 |
 | Opus 4 (`claude-opus-4-20250514`) | 2026-06-15 | Opus 5 |
 | Mythos Preview (`claude-mythos-preview`) | 2026-06-30 | Mythos 5 (Glasswing) |
+| Opus 4.1 (`claude-opus-4-1-20250805`) | 2026-08-05 (still on Bedrock + Google Cloud) | Opus 5 |
 
-**Upcoming retirements**:
+**Tentative retirement dates** (every model below is still **Active** -- these are dates to plan around, not deprecations):
 
 | Model | Retirement date | Migration target |
 |-------|:--------------:|-----------------|
-| Opus 4.1 (`claude-opus-4-1-20250805`) | **August 5, 2026** | Opus 5 |
 | Sonnet 4.5 (`claude-sonnet-4-5-20250929`) | Not before 2026-09-29 | Sonnet 5 |
 | Haiku 4.5 (`claude-haiku-4-5-20251001`) | Not before 2026-10-15 | (current) |
 | Opus 4.5 (`claude-opus-4-5-20251101`) | Not before 2026-11-24 | Opus 5 |
@@ -97,12 +99,12 @@
 | Sonnet 4.6 (`claude-sonnet-4-6`) | Not before 2027-02-17 | Sonnet 5 |
 | Opus 4.7 (`claude-opus-4-7`) | Not before 2027-04-16 | Opus 5 |
 | Opus 4.8 (`claude-opus-4-8`) | Not before 2027-05-28 | Opus 5 |
-| Fable 5.1 (`claude-fable-5-1`) | Not announced | (current) |
+| Fable 5.1 (`claude-fable-5-1`) | Not before 2027-09-01 | (current) |
 | Fable 5 (`claude-fable-5`) | Not before 2027-06-09 | Fable 5.1 |
 | Sonnet 5 (`claude-sonnet-5`) | Not before 2027-06-30 | (current) |
 | **Opus 5** (`claude-opus-5`) | Not before **2027-07-24** | (current) |
 
-> **Opus 4.1 is the only near-term forced migration left** -- it retires August 5, 2026 (about 11 days out) and costs 3x current Opus rates until then. Everything else on this list is a year or more away.
+> **Nothing is currently deprecated.** Opus 4.1, the last forced migration, retired on 2026-08-05. Every remaining model reads **Active** on the deprecations page, so no request is on a countdown. The nearest tentative retirements are Sonnet 4.5 on 2026-09-29 and Haiku 4.5 on 2026-10-15 -- dates to plan around, not deadlines Anthropic has committed to.
 >
 > **Off-Peak 2x Usage**: Anthropic periodically runs promotional events that double usage limits outside peak hours (typically 8 AM - 2 PM ET) and on all weekends. If you're outside the US, your entire workday likely falls in the 2x window. Watch the [Anthropic blog](https://www.anthropic.com/news) for announcements.
 >
@@ -125,6 +127,7 @@
 | Claude Sonnet 4 (`claude-sonnet-4-20250514`) | 2026-06-15 | $3 / $15 | Sonnet 5 |
 | Claude Opus 4 (`claude-opus-4-20250514`) | 2026-06-15 | $15 / $75 | Opus 5 |
 | Claude Mythos Preview (`claude-mythos-preview`) | 2026-06-30 | $25 / $125 | Mythos 5 (Glasswing) |
+| Claude Opus 4.1 (`claude-opus-4-1-20250805`) | 2026-08-05 (still on Bedrock + Google Cloud) | $15 / $75 | Opus 5 |
 | Claude Sonnet 3.5 v1 (`claude-3-5-sonnet-20240620`) | 2025-10-28 | $3 / $15 | Sonnet 5 |
 | Claude Sonnet 3.5 v2 (`claude-3-5-sonnet-20241022`) | 2025-10-28 | $3 / $15 | Sonnet 5 |
 | Claude Sonnet 3 (`claude-3-sonnet-20240229`) | 2025-07-21 | $3 / $15 | Sonnet 5 |
@@ -134,16 +137,14 @@
 
 ### Deprecated (still working, retiring soon)
 
-| Model | Deprecated on | Retirement date | Last priced at (input / output per 1M) | Migrate to |
-|-------|:------------:|:---------------:|:--------------------------------------:|-----------|
-| Claude Opus 4.1 (`claude-opus-4-1-20250805`) | 2026-06-05 | **2026-08-05** | $15 / $75 | Opus 5 |
+None. Opus 4.1, deprecated 2026-06-05, retired on 2026-08-05 and is listed under "Recently retired" above. Every model Anthropic still serves reads **Active**.
 
 ### Historical pricing patterns (no longer in effect)
 
 The following pricing constructs were real but have since been retired or restructured. Listed here for migration context if you're reading older guides:
 
 - **"2x input, 1.5x output above 200K"** long-context premium -- applied to Opus 4.1 and older. Obsolete on Opus 5 / 4.8 / 4.7 / 4.6, Sonnet 5, and Sonnet 4.6, which bill 1M context at standard rates.
-- **Opus 4.1 ($15/$75)** -- original "Opus 4.x" pricing. Deprecated (retires 2026-08-05) and priced at 3x current Opus rates. Migrate to Opus 5 unless you have a specific compatibility need.
+- **Opus 4.1 ($15/$75)** -- original "Opus 4.x" pricing, 3x current Opus rates. **Retired 2026-08-05** on the Claude API (still served on Bedrock and Google Cloud). Migrate to Opus 5.
 - **6x Fast Mode on Opus 4.7 / 4.6 ($30/$150)** -- removed at the Opus 5 launch. Opus 4.7 now errors on `speed: "fast"`; Opus 4.6 silently serves standard speed at standard rates. Fast Mode is Opus 5 / 4.8 only, both at 2x.
 - **Bedrock-only ARN-versioned IDs** like `anthropic.claude-opus-4-20250514-v1:0` -- still resolve via the legacy InvokeModel/Converse path, but the new Mantle endpoint uses cleaner provider-prefixed IDs (`anthropic.claude-opus-5`).
 - **Single endpoint type on Bedrock** -- pre-Sonnet-4.5, all Bedrock traffic was effectively "global". The +10% regional premium is a 4.5+ generation construct.
@@ -158,7 +159,6 @@ These models are GA and priced but generally not the recommended target for new 
 | Opus 4.7 | $5 / $25 | 1M | 2027-04-16 | Pinned workloads. Fast Mode removed (errors) |
 | Opus 4.6 | $5 / $25 | 1M | 2027-02-05 | Stable snapshot of the previous-tokenizer Opus. Fast Mode silently downgrades |
 | Opus 4.5 | $5 / $25 | 200K | 2026-11-24 | Pinned workloads only |
-| Opus 4.1 | $15 / $75 | 200K | 2026-08-05 | Compatibility only -- 3x more expensive, deprecated |
 | Sonnet 4.6 | $3 / $15 | 1M | 2027-02-17 | Pinned workloads -- migrate to Sonnet 5 |
 | Sonnet 4.5 | $3 / $15 | 200K | 2026-09-29 | Pinned workloads only |
 

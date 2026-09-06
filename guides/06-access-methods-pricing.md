@@ -44,7 +44,7 @@ All platforms provide access to the same Claude models with the same intelligenc
 
 The Anthropic API is the baseline. All other platforms price relative to it.
 
-### Standard Pricing (per 1M tokens, verified 2026-07-25)
+### Standard Pricing (per 1M tokens, verified 2026-09-05)
 
 | Model | Input | Output | Cache Hit | 5m Cache Write | 1h Cache Write | Context | Max Output |
 |-------|:-----:|:------:|:---------:|:--------------:|:--------------:|:-------:|:----------:|
@@ -56,7 +56,7 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 | **Opus 4.7** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K |
-| **Opus 4.1** (deprecated, retires 2026-08-05) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
+| Opus 4.1 (retired 2026-08-05, still on Bedrock + Google Cloud) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
 | **Opus 5 Fast Mode** (beta) | $10.00 (2x) | $50.00 (2x) | -- | -- | -- | 1M (included) | 128K |
 | **Opus 4.8 Fast Mode** (beta) | $10.00 (2x) | $50.00 (2x) | -- | -- | -- | 1M (included) | 128K |
 | **Sonnet 5** | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1M | 128K |
@@ -720,7 +720,7 @@ These discounts are not available through the Anthropic API directly or Claude C
 
 ### Off-Peak 2x Usage Events
 
-Anthropic periodically runs promotional events that double usage limits during off-peak hours (see [Off-Peak 2x in README](../README.md#off-peak-2x-usage-promotional-events)). During these events, developers outside the US get the most benefit since their entire workday falls outside US peak hours (8 AM - 2 PM ET).
+Anthropic periodically runs promotional events that double usage limits during off-peak hours (see [Off-Peak 2x in the cheatsheet](../cheatsheet.md#model-lifecycle)). During these events, developers outside the US get the most benefit since their entire workday falls outside US peak hours (8 AM - 2 PM ET).
 
 ---
 

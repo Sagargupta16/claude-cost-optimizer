@@ -24,7 +24,7 @@ Most developers default to the most capable model for everything. This is like h
 
 ## Model Lineup and Pricing
 
-### Current Pricing (verified 2026-07-25, per 1M tokens)
+### Current Pricing (verified 2026-09-05, per 1M tokens)
 
 | Model | Input Cost | Output Cost | Cache Hit | 5m Cache Write | 1h Cache Write | Min cacheable prompt | Relative Cost | Context Window | Max Output |
 |-------|:----------:|:-----------:|:---------:|:--------------:|:--------------:|:--------------------:|:-------------:|:--------------:|:----------:|
@@ -64,9 +64,9 @@ Most developers default to the most capable model for everything. This is like h
 >
 > **Sonnet 4.5 (200K-only)**: Legacy until at least 2026-09-29. Same price as Sonnet 4.6 but smaller context window. Migrate to Sonnet 5 if you need 1M.
 >
-> **Opus 4.1**: Still available at older pricing ($15/$75) -- **3x more expensive** than current Opus tiers. Deprecated 2026-06-05, **retires 2026-08-05**. No reason to use it unless you have a specific compatibility need -- migrate to Opus 5.
+> **Opus 4.1**: **Retired 2026-08-05** on the Claude API -- requests now fail. It is still served on Bedrock and Google Cloud, which set their own schedules, at the old $15/$75 (3x current Opus rates). Migrate to Opus 5.
 
-> **Claude Mythos Preview** ([Project Glasswing](https://anthropic.com/glasswing)): superseded by Mythos 5 -- **retires 2026-06-30**. It was the invitation-only research preview ($25/$125) for defensive cybersecurity through Glasswing partners. Its successor Mythos 5 drops to $10/$50 (same as Fable 5) and remains Glasswing-only; the prediction that Mythos-class capabilities would reach a widely released model came true as **Fable 5**, which is GA for everyone.
+> **Claude Mythos Preview** ([Project Glasswing](https://anthropic.com/glasswing)): superseded by Mythos 5 -- **retired 2026-06-30**. It was the invitation-only research preview ($25/$125) for defensive cybersecurity through Glasswing partners. Its successor Mythos 5 drops to $10/$50 (same as Fable 5) and remains Glasswing-only; the prediction that Mythos-class capabilities would reach a widely released model came true as **Fable 5**, which is GA for everyone.
 
 ### What These Numbers Mean in Practice
 
@@ -262,7 +262,7 @@ claude --model opus "design a plugin architecture for our CLI tool"
 - Opus 4.7: `--model claude-opus-4-7` (Claude API), `anthropic.claude-opus-4-7` (Bedrock)
 - Opus 4.6: `--model claude-opus-4-6` (Claude API), `anthropic.claude-opus-4-6-v1` (Bedrock legacy InvokeModel/Converse)
 - Opus 4.5: `--model claude-opus-4-5-20251101`
-- Opus 4.1: `--model claude-opus-4-1-20250805` (retires 2026-08-05)
+- Opus 4.1: `--model claude-opus-4-1-20250805` -- **retired 2026-08-05 on the Claude API; this ID now fails there.** Still resolvable on Bedrock and Google Cloud
 
 The `opus` alias maps to Opus 5 on current Claude Code releases. If you need a pinned snapshot, name it explicitly rather than relying on the alias -- the alias moves with each Opus launch.
 

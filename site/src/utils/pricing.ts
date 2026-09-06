@@ -1,7 +1,7 @@
 // Pricing data verified against Anthropic docs on 2026-09-05 (Fable 5.1 launch):
 //   - https://platform.claude.com/docs/en/about-claude/pricing
 //   - https://platform.claude.com/docs/en/about-claude/models/overview
-//   - https://platform.claude.com/docs/en/about-claude/models/migrating-to-claude-opus-5
+//   - https://platform.claude.com/docs/en/models/opus-5/migration-guide
 //   - https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5
 //   - https://platform.claude.com/docs/en/build-with-claude/fast-mode
 //   - https://platform.claude.com/docs/en/build-with-claude/prompt-caching

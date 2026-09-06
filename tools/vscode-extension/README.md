@@ -63,7 +63,7 @@ This is fast and dependency-free, with roughly 10-15% variance compared to the a
 
 ## Pricing Data
 
-Costs are based on Claude API pricing as of 2026-07-25:
+Costs are based on Claude API pricing as of 2026-09-05:
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Min cacheable prompt |
 |-------|:---------------------:|:----------------------:|:--------------------:|

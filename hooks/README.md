@@ -70,6 +70,8 @@ Copy the hooks configuration into your Claude Code settings file. You have two o
 
 Edit `settings-example.json` in this directory -- replace `/path/to/claude-cost-optimizer` with the actual path -- then merge the `hooks` block into your existing settings file.
 
+This repo now runs these hooks on itself: [`.claude/settings.json`](../.claude/settings.json) wires all three with repo-relative paths, so it doubles as a working reference you can copy rather than a template with placeholders to fill in. Repo-relative paths work when the hooks live in the same repo you are working in; use absolute paths for a global install.
+
 Example (using the provided `settings-example.json` as a reference):
 
 ```json

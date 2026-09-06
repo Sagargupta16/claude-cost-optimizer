@@ -113,11 +113,11 @@ Short answer: **30-60% is what a typical mixed workload saves. Up to ~90% is the
 ### The honest read
 
 - **"up to 90%" is a ceiling, not a typical result.** Anthropic itself publishes 90% for caching *alone*, and the levers genuinely multiply against an unoptimized baseline. But each 90% is a best case on its favorable slice (cached input for caching; conversational traffic for routing), so a whole mixed workload lands well below the sum.
-- **Measured real-world totals cluster around 70-73%** when teams stack multiple levers -- e.g. a 6-person team cutting `$2,400 -> $680/mo` (72%). Those are individual case studies (n=1 each), not controlled measurements.
+- **The stacked total is the least evidenced number on this page.** Each lever above has a first-party or peer-reviewed source; the *combined* figure has none. This repo holds no controlled multi-lever measurement, so treat any single "we cut X%" claim as an individual report (n=1), including the [Before vs After](#before-vs-after) example above -- that 61% is arithmetic from the posted rates on one 30-turn session, not a metered result. For a number that applies to your workload, run [claude-rate](#rate-your-setup) on your own repo and price only the levers you can actually apply.
 - **The cost-mode skill on its own delivers 30-60%** -- it does output-token reduction and model-routing hints, not batch/caching/subscription. The 90% ceiling needs the full playbook in the [guides](#guides), not just the skill.
 - **Caching and batch are the firmest floors** (first-party Anthropic pricing; batch is a documented flat 50% that provably stacks with caching). Routing and subscription savings are the most workload-sensitive.
 
-> Prices verified against the [pricing reference](#pricing-reference-verified-2026-09-05) below (2026-09-05). Cache hit = 0.1x base input on every model **except Fable 5.1 and Mythos 5.1, which read at 0.025x**; Batch = 50% off both input and output.
+> Prices verified against the [pricing reference](#pricing-reference) below (2026-09-05). Cache hit = 0.1x base input on every model **except Fable 5.1 and Mythos 5.1, which read at 0.025x**; Batch = 50% off both input and output.
 
 ---
 
@@ -192,10 +192,11 @@ Copy-paste configs that are already optimized:
 
 ## CLI Tools
 
-7 tools for measuring, tracking, and reducing costs. [Full tools documentation](tools/README.md)
+8 tools for measuring, tracking, and reducing costs. [Full tools documentation](tools/README.md)
 
 | Tool | What It Does |
 |------|-------------|
+| [claude-rate](tools/claude-rate/) | Grade your local setup on the 7-category rubric (recommended entry point) |
 | [Token Estimator](tools/token-estimator/) | Estimate token count and cost for any file |
 | [Usage Analyzer](tools/usage-analyzer/) | Find cost hotspots across your sessions |
 | [Badge Generator](tools/badge-generator/) | Grade your project config (A+ to F) from the CLI |
@@ -206,11 +207,14 @@ Copy-paste configs that are already optimized:
 
 ---
 
-## Pricing Reference (verified 2026-07-25)
+## Pricing Reference
+
+Verified 2026-09-05 against Anthropic's [pricing](https://platform.claude.com/docs/en/about-claude/pricing), [models overview](https://platform.claude.com/docs/en/about-claude/models/overview), and [model deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations) pages.
 
 | Model | Input / 1M | Output / 1M | Cache Hit / 1M | 5m Cache Write / 1M | 1h Cache Write / 1M | Context | Max Output | Min cacheable prompt |
 |-------|:----------:|:-----------:|:---------------:|:-------------------:|:-------------------:|:-------:|:----------:|:--------------------:|
 | **Fable 5.1** (highest capability) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 1M | 128K | 512 |
+| Mythos 5.1 (limited, [Glasswing](https://anthropic.com/glasswing)) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 1M | 128K | 512 |
 | **Fable 5** (legacy) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K | 512 |
 | Mythos 5 (limited, [Glasswing](https://anthropic.com/glasswing)) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K | 512 |
 | **Opus 5** (Opus flagship) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | **512** |
@@ -218,7 +222,7 @@ Copy-paste configs that are already optimized:
 | Opus 4.7 | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | 2,048 |
 | Opus 4.6 | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K | 4,096 |
 | Opus 4.5 | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K | 4,096 |
-| Opus 4.1 | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K | 1,024 |
+| Opus 4.1 (retired 2026-08-05, still on Bedrock + Google Cloud) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K | 1,024 |
 | **Sonnet 5** (Sonnet flagship) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1M | 128K | 1,024 |
 | Sonnet 4.6 | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K | 1,024 |
 | Sonnet 4.5 | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K | 1,024 |
@@ -252,7 +256,7 @@ Opus 5 is the same price as Opus 4.8, but it is not a drop-in swap of the model 
 
 Two prompt-level cleanups worth doing at the same time: Opus 5 writes **longer** output than 4.8 by default, so re-tune your verbosity instructions; and it self-verifies, so any "double-check your work before answering" instruction you carried over from an older model is now paying twice for the same behavior. New beta `mid-conversation-tool-changes-2026-07-01` also lets you change tool definitions between turns without invalidating the prompt cache -- previously a cache-busting move.
 
-Full details: [Anthropic's Opus 5 migration guide](https://platform.claude.com/docs/en/about-claude/models/migrating-to-claude-opus-5).
+Full details: [Anthropic's Opus 5 migration guide](https://platform.claude.com/docs/en/models/opus-5/migration-guide).
 
 ---
 
@@ -271,13 +275,10 @@ Full details: [Anthropic's Opus 5 migration guide](https://platform.claude.com/d
 | Claude Sonnet 4 (`claude-sonnet-4-20250514`) | 2026-06-15 | Sonnet 5 |
 | Claude Opus 4 (`claude-opus-4-20250514`) | 2026-06-15 | Opus 5 |
 | Claude Mythos Preview (`claude-mythos-preview`) | 2026-06-30 | Mythos 5 (Glasswing) |
+| Claude Opus 4.1 (`claude-opus-4-1-20250805`) | 2026-08-05 (still on Bedrock + Google Cloud) | Opus 5 |
 | Claude Sonnet 3.5 v1 / v2, Sonnet 3, Claude 2.x, Claude 1.x, Instant 1.x | 2024-2025 | See deprecations page |
 
-**Deprecated, retiring soon**:
-
-| Model | Retirement date | Migrate to |
-|-------|:---------------:|-----------|
-| Claude Opus 4.1 (`claude-opus-4-1-20250805`) | **2026-08-05** | Opus 5 |
+**Nothing is currently deprecated.** Every model that has not retired reads **Active** on Anthropic's deprecations page, so there is no forced migration outstanding. The nearest tentative retirement is Sonnet 4.5 on 2026-09-29.
 
 **Older snapshots still callable** (not retired, but not the headline tier):
 
@@ -287,7 +288,6 @@ Full details: [Anthropic's Opus 5 migration guide](https://platform.claude.com/d
 | Opus 4.7 | $5/$25 | 1M | 2027-04-16 | Pinned workloads. No Fast Mode -- `speed: "fast"` now errors |
 | Opus 4.6 | $5/$25 | 1M | 2027-02-05 | Pinned workloads / older tokenizer. `speed: "fast"` silently runs standard |
 | Opus 4.5 | $5/$25 | 200K | 2026-11-24 | Pinned workloads only |
-| Opus 4.1 | $15/$75 | 200K | 2026-08-05 | Compatibility only -- 3x more expensive, deprecated |
 | Sonnet 4.6 | $3/$15 | 1M | 2027-02-17 | Pinned workloads -- migrate to Sonnet 5 |
 | Sonnet 4.5 | $3/$15 | 200K | 2026-09-29 | Pinned workloads only |
 
@@ -303,7 +303,7 @@ Full details: [Anthropic's Opus 5 migration guide](https://platform.claude.com/d
 - [Model Comparison](benchmarks/model-comparison.md) -- Opus vs Sonnet vs Haiku
 - [Context Size Impact](benchmarks/context-size-impact.md) -- how CLAUDE.md size affects cost
 - [Community Leaderboard](benchmarks/leaderboard.md) -- crowdsourced cost-per-task data
-- [Case Studies](case-studies/README.md) -- real-world optimization stories
+- [Case Studies](case-studies/README.md) -- submission template and format; no stories published yet, contributions welcome
 
 ---
 
@@ -371,7 +371,7 @@ If you found this useful, check out my other AI/Claude tools:
 
 | Project | Description |
 |---------|-------------|
-| [claude-code-recipes](https://github.com/Sagargupta16/claude-code-recipes) | 50+ copy-paste recipes for Claude Code - commands, subagents, hooks, skills |
+| [claude-code-recipes](https://github.com/Sagargupta16/claude-code-recipes) | 47 copy-paste recipes for Claude Code - commands, subagents, hooks, skills |
 | [claude-skills](https://github.com/Sagargupta16/claude-skills) | Custom Claude Code plugin marketplace with dev-workflow, FARM stack, and more |
 | [agent-recipes](https://github.com/Sagargupta16/agent-recipes) | AI agent workflows for real-world dev tasks - code review, testing, security |
 | [ai-git-hooks](https://github.com/Sagargupta16/ai-git-hooks) | AI-powered git hooks - auto-review diffs, generate commit messages, security scanning |

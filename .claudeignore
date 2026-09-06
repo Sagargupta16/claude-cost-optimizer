@@ -1,0 +1,51 @@
+# .claudeignore for claude-cost-optimizer
+#
+# This is the working example for the practice the README recommends in Quick Start
+# item #4. Everything below is generated, vendored, or a lock file: large, low-signal,
+# and re-derivable from source. Keeping it out of context is the cheapest input-token
+# saving available, because these paths are the biggest files in the tree.
+#
+# See guides/02-context-optimization.md for the reasoning, and run
+# `python tools/claude-rate/rate.py .` to score your own coverage.
+
+# Node dependencies (site + both TypeScript tools)
+node_modules/
+site/node_modules/
+tools/vscode-extension/node_modules/
+tools/mcp-cost-server/node_modules/
+
+# Build output
+dist/
+build/
+site/dist/
+tools/vscode-extension/out/
+tools/vscode-extension/*.vsix
+tools/mcp-cost-server/dist/
+*.tsbuildinfo
+
+# Lock files -- huge, machine-generated, never useful as context
+*.lock
+package-lock.json
+
+# Python bytecode and tool caches
+__pycache__/
+*.pyc
+.ruff_cache/
+.pytest_cache/
+
+# Coverage and logs
+coverage/
+htmlcov/
+.coverage
+*.log
+
+# Local environment and editor state
+.venv/
+venv/
+.env
+.env.*
+.vscode/
+.idea/
+
+# VCS internals
+.git/

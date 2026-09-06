@@ -91,7 +91,7 @@ Useful for piping into other tools or dashboards.
 
 ## Models and Pricing
 
-Cost estimates use current Claude API pricing (as of 2026-07-25, after the Opus 5 GA on 2026-07-24). The analyzer reads the `model` field out of your session records and matches it against these keys:
+Cost estimates use current Claude API pricing (as of 2026-09-05, after the Opus 5 GA on 2026-07-24). The analyzer reads the `model` field out of your session records and matches it against these keys:
 
 | Model | Detected from | Input (per 1M) | Output (per 1M) | Cache Hit (per 1M) |
 |-------|---------------|:--------------:|:---------------:|:------------------:|

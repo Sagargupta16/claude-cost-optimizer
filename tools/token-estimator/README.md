@@ -95,7 +95,7 @@ File reads are contained to the current directory tree or your home directory; p
 
 ## Pricing
 
-The estimator uses current Claude API pricing (as of 2026-07-25):
+The estimator uses current Claude API pricing (as of 2026-09-05):
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
 |-------|:---------------------:|:----------------------:|:-------------------------:|
