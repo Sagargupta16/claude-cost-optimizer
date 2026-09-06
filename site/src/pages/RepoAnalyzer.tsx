@@ -340,11 +340,11 @@ function RepoAnalyzer() {
                     </span>
                   </div>
                   <div className={styles.stat}>
-                    <span className={styles.statLabel}>Budget cap</span>
+                    <span className={styles.statLabel}>Cost controls</span>
                     <span
-                      className={`${styles.statValue} ${result.settings.hasBudget ? styles.statGood : styles.statWarn}`}
+                      className={`${styles.statValue} ${result.settings.hasCostControls ? styles.statGood : styles.statWarn}`}
                     >
-                      {result.settings.hasBudget ? 'Set' : 'Not set'}
+                      {result.settings.hasCostControls ? 'Set' : 'Not set'}
                     </span>
                   </div>
                   <div className={styles.stat}>

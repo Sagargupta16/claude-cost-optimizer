@@ -6,7 +6,7 @@ const defaultInputs: BadgeInputs = {
   claudeMdLines: 100,
   claudeIgnoreEntries: 0,
   hasModelConfigured: false,
-  hasBudgetCap: false,
+  hasCostControls: false,
   mcpServers: 2,
 }
 
@@ -103,11 +103,11 @@ function BadgeChecker() {
             <label className={styles.checkboxLabel}>
               <input
                 type="checkbox"
-                checked={inputs.hasBudgetCap}
-                onChange={(e) => updateField('hasBudgetCap', e.target.checked)}
+                checked={inputs.hasCostControls}
+                onChange={(e) => updateField('hasCostControls', e.target.checked)}
                 className={styles.checkbox}
               />
-              <span>Budget cap set</span>
+              <span>Cost controls set (effortLevel, fastMode: false, autoCompactEnabled, or enforceAvailableModels)</span>
             </label>
           </div>
         </div>

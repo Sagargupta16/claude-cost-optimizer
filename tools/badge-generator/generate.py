@@ -8,7 +8,7 @@ and generates a shields.io badge with a letter grade.
 Checks:
   - CLAUDE.md: exists, line count (concise = cheaper context)
   - .claudeignore: exists, number of entries (fewer indexed files)
-  - .claude/settings.json: model config, budget cap
+  - .claude/settings.json: model config, real cost controls
   - MCP servers: count (fewer = less overhead per turn)
 
 Usage:
@@ -105,15 +105,52 @@ def score_claudeignore(project: Path) -> dict:
     return {"score": score, "detail": f"{count} entries", "entries": count}
 
 
+def has_cost_controls(data: dict) -> bool:
+    """Whether settings.json configures a real spend-bounding setting.
+
+    One of four implementations that must agree: `_cost_control_signals` in
+    tools/claude-rate/rate.py, `has_cost_controls` in
+    tools/actions/claude-cost-audit/audit.py, and `computeCostControls` in
+    site/src/utils/repoAnalyzer.ts are the others. All four used to test for
+    budgetCap / costLimit / maxCost / maxMonthlyCost / maxCostPerSession /
+    budget, with a different subset in each file, so they already disagreed
+    with each other. None of those six is in the Claude Code
+    settings schema (checked 2026-09-06 against
+    https://www.schemastore.org/claude-code-settings.json, 142 top-level
+    properties, no spend cap among them), so the check rewarded a key the
+    product ignores.
+
+    Value-aware on purpose: "fastMode": true doubles the bill and
+    "effortLevel": "max" raises it, so presence of the key is not enough.
+    """
+    effort = data.get("effortLevel")
+    if isinstance(effort, str) and effort.strip().lower() in ("low", "medium"):
+        return True
+    if data.get("fastMode") is False:
+        return True
+    if data.get("alwaysThinkingEnabled") is False:
+        return True
+    models = data.get("availableModels")
+    if (
+        data.get("enforceAvailableModels") is True
+        and isinstance(models, list)
+        and models
+    ):
+        return True
+    if data.get("autoCompactEnabled") is True:
+        return True
+    return False
+
+
 def score_settings(project: Path) -> dict:
-    """Score .claude/settings.json for model and budget cap config."""
+    """Score .claude/settings.json for model pin and real cost controls."""
     path = _resolve_inside(project, ".claude/settings.json")
     if path is None or not path.is_file():
         return {
             "score": 0,
             "detail": "settings.json not found",
             "has_model": False,
-            "has_budget": False,
+            "has_cost_controls": False,
         }
 
     try:
@@ -123,18 +160,13 @@ def score_settings(project: Path) -> dict:
             "score": 0,
             "detail": "settings.json is invalid JSON",
             "has_model": False,
-            "has_budget": False,
+            "has_cost_controls": False,
         }
 
     has_model = bool(data.get("model") or data.get("defaultModel"))
-    has_budget = bool(
-        data.get("budgetCap")
-        or data.get("costLimit")
-        or data.get("maxCostPerSession")
-        or data.get("budget")
-    )
+    has_controls = has_cost_controls(data)
 
-    if has_model and has_budget:
+    if has_model and has_controls:
         score = 25
     elif has_model:
         score = 15
@@ -146,16 +178,16 @@ def score_settings(project: Path) -> dict:
     parts: list[str] = []
     if has_model:
         parts.append("model configured")
-    if has_budget:
-        parts.append("budget cap set")
+    if has_controls:
+        parts.append("cost controls set")
     if not parts:
-        parts.append("no model or budget config")
+        parts.append("no model pin or cost controls")
 
     return {
         "score": score,
         "detail": ", ".join(parts),
         "has_model": has_model,
-        "has_budget": has_budget,
+        "has_cost_controls": has_controls,
     }
 
 
