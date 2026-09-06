@@ -29,8 +29,10 @@ from pathlib import Path
 # [text](target) -- skips image embeds only when they are inline `!` prefixed.
 LINK_PATTERN = re.compile(r"(?<!!)\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 # Trailing hashes and whitespace are stripped in code rather than in the pattern:
-# a lazy group followed by optional trailing hashes backtracks super-linearly.
-ATX_HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
+# a lazy group followed by optional trailing hashes backtracks super-linearly. The
+# trailing `$` is left off for the same reason, and the greedy `.*` reaches the end
+# of the line regardless. Input is always one line, so `[ \t]` covers the separator.
+ATX_HEADING = re.compile(r"^(#{1,6})[ \t]+(.*)")
 
 # Any absolute URI (scheme-prefixed) plus hashbang routes. This checker is offline
 # by design, so anything with a scheme is out of scope regardless of which one.
