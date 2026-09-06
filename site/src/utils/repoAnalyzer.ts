@@ -44,7 +44,7 @@ export interface AnalysisResult {
   settings: {
     found: boolean
     hasModel: boolean
-    hasBudget: boolean
+    hasCostControls: boolean
     mcpServerCount: number
     hasHooks: boolean
     hookCount: number
@@ -400,13 +400,47 @@ function scoreClaudeIgnore(
   return { name: '.claudeignore', score, maxScore: 15, detail }
 }
 
-function scoreSettings(found: boolean, hasModel: boolean, hasBudget: boolean): CategoryScore {
+/**
+ * Whether settings.json configures a real spend-bounding setting.
+ *
+ * Mirrors `_cost_control_signals` in tools/claude-rate/rate.py and
+ * `has_cost_controls` in tools/badge-generator/generate.py. Change all three
+ * together or the CLI, the badge and the web analyzer will disagree.
+ */
+export function computeCostControls(s: Record<string, unknown>): boolean {
+  // Reasoning tokens bill at the output rate and effort defaults to "high", so
+  // pinning below that is the biggest lever here after model choice.
+  const effort = s.effortLevel
+  if (typeof effort === 'string' && ['low', 'medium'].includes(effort.trim().toLowerCase())) {
+    return true
+  }
+  // Fast Mode is a flat 2x on input and output.
+  if (s.fastMode === false) return true
+  if (s.alwaysThinkingEnabled === false) return true
+  // The closest real analogue of a spend cap: an enforced allowlist can keep
+  // Opus- and Fable-tier models out of a project entirely.
+  if (s.enforceAvailableModels === true && Array.isArray(s.availableModels) && s.availableModels.length > 0) {
+    return true
+  }
+  // Bounds the context growth that drives per-turn input cost.
+  if (s.autoCompactEnabled === true) return true
+  return false
+}
+
+function scoreSettings(
+  found: boolean,
+  hasModel: boolean,
+  hasCostControls: boolean,
+): CategoryScore {
   let score = 0
   if (found) score += 5
   if (hasModel) score += 5
-  if (hasBudget) score += 5
+  if (hasCostControls) score += 5
   const parts = found
-    ? [`model ${hasModel ? 'set' : 'not set'}`, `budget ${hasBudget ? 'set' : 'not set'}`]
+    ? [
+        `model ${hasModel ? 'set' : 'not set'}`,
+        `cost controls ${hasCostControls ? 'set' : 'not set'}`,
+      ]
     : ['not found']
   return { name: 'Settings', score, maxScore: 15, detail: parts.join(', ') }
 }
@@ -581,9 +615,14 @@ export async function analyzeRepo(
     ? !!(settingsRaw.model || settingsRaw.preferredModel)
     : false
 
-  const hasBudget = settingsRaw
-    ? !!(settingsRaw.maxCost || settingsRaw.costLimit || settingsRaw.maxMonthlyCost)
-    : false
+  // Kept in step with `_cost_control_signals` in tools/claude-rate/rate.py and
+  // `has_cost_controls` in tools/badge-generator/generate.py. This used to test
+  // maxCost / costLimit / maxMonthlyCost; none of those is in the Claude Code
+  // settings schema (checked 2026-09-06 against schemastore, 142 top-level
+  // properties, no spend cap among them), so it scored a key the product
+  // ignores. Value-aware on purpose: fastMode true doubles the bill and
+  // effortLevel "max" raises it, so the key being present is not enough.
+  const hasCostControls = settingsRaw ? computeCostControls(settingsRaw) : false
 
   // MCP servers: .mcp.json is the canonical location; settings.json is legacy.
   const mcpFile = fileMap.get('.mcp.json')
@@ -604,7 +643,7 @@ export async function analyzeRepo(
   const settings = {
     found: !!settingsRaw,
     hasModel,
-    hasBudget,
+    hasCostControls,
     mcpServerCount,
     hasHooks,
     hookCount,
@@ -640,7 +679,7 @@ export async function analyzeRepo(
       ignoreEntries,
       detection.lockFilesPresent,
     ),
-    scoreSettings(settings.found, hasModel, hasBudget),
+    scoreSettings(settings.found, hasModel, hasCostControls),
     scoreMcp(mcpServerCount),
     scoreHooks(hookCount, detection.hookScripts),
     scoreSecurity(detection.envTracked, keyLeakFiles),
@@ -783,16 +822,16 @@ function contextRecommendations(r: RecommendationInput): string[] {
 function configRecommendations(r: RecommendationInput): string[] {
   const recs: string[] = []
   if (!r.settings.found) {
-    recs.push('Create .claude/settings.json to configure default model and budget caps.')
+    recs.push('Create .claude/settings.json to pin a default model and set cost controls.')
   } else {
     if (!r.settings.hasModel) {
       recs.push(
         'Set a default model in settings to avoid accidentally using expensive models for simple tasks.',
       )
     }
-    if (!r.settings.hasBudget) {
+    if (!r.settings.hasCostControls) {
       recs.push(
-        'Set a budget cap (maxCost or maxMonthlyCost) in settings to prevent runaway costs.',
+        'Add cost controls Claude Code actually reads. There is no spend-cap setting, so maxMonthlyCost and budgetCap are silently ignored: use "effortLevel": "medium" (reasoning tokens bill as output), "fastMode": false (declines the flat 2x), "autoCompactEnabled": true, or "enforceAvailableModels" with "availableModels" to keep Opus- and Fable-tier models out. A real spend ceiling needs a PreToolUse hook, not a setting.',
       )
     }
   }

@@ -2,7 +2,7 @@ export interface BadgeInputs {
   claudeMdLines: number
   claudeIgnoreEntries: number
   hasModelConfigured: boolean
-  hasBudgetCap: boolean
+  hasCostControls: boolean
   mcpServers: number
 }
 
@@ -55,17 +55,18 @@ function scoreClaudeIgnore(entries: number): CategoryScore {
   return { name: '.claudeignore', score, maxScore: 25, recommendation }
 }
 
-function scoreSettings(hasModel: boolean, hasBudget: boolean): CategoryScore {
+function scoreSettings(hasModel: boolean, hasCostControls: boolean): CategoryScore {
   let score: number
-  if (hasModel && hasBudget) score = 25
+  if (hasModel && hasCostControls) score = 25
   else if (hasModel) score = 15
   else score = 0
 
   let recommendation = ''
   if (!hasModel) {
     recommendation = 'Configure a default model in .claude/settings.json to avoid accidentally using expensive models.'
-  } else if (!hasBudget) {
-    recommendation = 'Set a monthly budget cap to prevent runaway costs. Use --max-cost or configure in settings.'
+  } else if (!hasCostControls) {
+    recommendation =
+      'Add a cost control Claude Code actually reads: "effortLevel": "medium", "fastMode": false, "autoCompactEnabled": true, or "enforceAvailableModels" with "availableModels". There is no spend-cap setting, so maxMonthlyCost and budgetCap are silently ignored.'
   }
 
   return { name: 'Settings', score, maxScore: 25, recommendation }
@@ -100,7 +101,7 @@ export function scoreBadge(inputs: BadgeInputs): BadgeResult {
   const categories = [
     scoreClaudeMd(inputs.claudeMdLines),
     scoreClaudeIgnore(inputs.claudeIgnoreEntries),
-    scoreSettings(inputs.hasModelConfigured, inputs.hasBudgetCap),
+    scoreSettings(inputs.hasModelConfigured, inputs.hasCostControls),
     scoreMcp(inputs.mcpServers),
   ]
 

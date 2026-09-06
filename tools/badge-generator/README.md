@@ -109,7 +109,7 @@ Markdown:
   "breakdown": {
     "claude_md": {"score": 20, "detail": "95 lines", "lines": 95},
     "claudeignore": {"score": 25, "detail": "7 entries", "entries": 7},
-    "settings": {"score": 15, "detail": "model configured", "has_model": true, "has_budget": false},
+    "settings": {"score": 15, "detail": "model configured", "has_model": true, "has_cost_controls": false},
     "mcp_servers": {"score": 25, "detail": "2 MCP servers", "count": 2}
   }
 }

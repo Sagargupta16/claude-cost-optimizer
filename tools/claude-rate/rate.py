@@ -586,14 +586,53 @@ def _apply_claudeignore_score(
 
 
 _MODEL_KEYS: tuple[str, ...] = ("model", "defaultModel", "preferredModel")
-_BUDGET_KEYS: tuple[str, ...] = (
-    "budgetCap",
-    "costLimit",
-    "maxCost",
-    "maxMonthlyCost",
-    "maxCostPerSession",
-    "budget",
-)
+
+# This sub-score used to award 5 of this category's 15 points for any of
+# budgetCap / costLimit / maxCost / maxMonthlyCost / maxCostPerSession / budget.
+# All six were checked against https://www.schemastore.org/claude-code-settings.json
+# on 2026-09-06: none of them appears among the schema's 142 top-level
+# properties. Claude Code has no monthly spend cap setting at all, so a third of
+# the category was going to keys the product silently ignores, and the fix text
+# told users to add one.
+#
+# The points now go to settings Claude Code really reads that bound spend. Each
+# entry is value-aware on purpose: the key being present is not enough, because
+# "fastMode": true doubles the bill and "effortLevel": "max" raises it.
+
+
+def _cost_control_signals(data: dict[str, Any]) -> list[str]:
+    """Real settings whose configured value reduces or bounds spend."""
+    signals: list[str] = []
+
+    # Reasoning tokens bill at the output rate, and effort defaults to "high",
+    # so pinning it below that is the largest lever here after model choice.
+    effort = data.get("effortLevel")
+    if isinstance(effort, str) and effort.strip().lower() in ("low", "medium"):
+        signals.append(f'effortLevel="{effort}"')
+
+    # Fast Mode is a flat 2x on input and output. Declining it explicitly is a
+    # real saving; leaving it on is the thing to warn about.
+    if data.get("fastMode") is False:
+        signals.append("fastMode=false")
+
+    if data.get("alwaysThinkingEnabled") is False:
+        signals.append("alwaysThinkingEnabled=false")
+
+    # The closest real analogue of a spend cap: an enforced allowlist can keep
+    # Opus- and Fable-tier models out of a project entirely.
+    models = data.get("availableModels")
+    if (
+        data.get("enforceAvailableModels") is True
+        and isinstance(models, list)
+        and models
+    ):
+        signals.append(f"enforceAvailableModels over {len(models)} model(s)")
+
+    # Bounds context growth, which is what actually drives per-turn input cost.
+    if data.get("autoCompactEnabled") is True:
+        signals.append("autoCompactEnabled=true")
+
+    return signals
 
 
 def _settings_category_label() -> str:
@@ -610,11 +649,13 @@ def _load_settings(project: Path) -> tuple[dict[str, Any] | None, Path | None]:
     return None, None
 
 
-def _settings_features(data: dict[str, Any]) -> tuple[bool, bool, bool, str | None]:
-    """Return (has_model, has_budget, has_perms, model_id) for a settings dict."""
+def _settings_features(
+    data: dict[str, Any],
+) -> tuple[bool, list[str], bool, str | None]:
+    """Return (has_model, cost_control_signals, has_perms, model_id)."""
     model_id = next((data.get(k) for k in _MODEL_KEYS if data.get(k)), None)
     has_model = bool(model_id)
-    has_budget = any(data.get(k) for k in _BUDGET_KEYS)
+    cost_signals = _cost_control_signals(data)
     perms = data.get("permissions") or {}
     has_perms = (
         bool(perms.get("allow") or perms.get("deny"))
@@ -623,14 +664,14 @@ def _settings_features(data: dict[str, Any]) -> tuple[bool, bool, bool, str | No
     )
     return (
         has_model,
-        has_budget,
+        cost_signals,
         has_perms,
         model_id if isinstance(model_id, str) else None,
     )
 
 
 def score_settings(project: Path) -> CategoryResult:
-    """`.claude/settings.json` model + budget config + permissions."""
+    """`.claude/settings.json` model pin + real cost controls + permissions."""
     cat = CategoryResult(
         name=_settings_category_label(),
         score=0,
@@ -656,7 +697,7 @@ def score_settings(project: Path) -> CategoryResult:
         )
         return cat
 
-    has_model, has_budget, has_perms, model_id = _settings_features(data)
+    has_model, cost_signals, has_perms, model_id = _settings_features(data)
     score = 0
     parts: list[str] = []
 
@@ -671,12 +712,25 @@ def score_settings(project: Path) -> CategoryResult:
             "bills at the $25/1M output rate."
         )
 
-    if has_budget:
+    if cost_signals:
         score += 5
-        parts.append("budget cap configured")
+        parts.append("cost controls: " + ", ".join(cost_signals))
     else:
         cat.fixes.append(
-            'Add a budget cap (e.g. "maxMonthlyCost": 100) to prevent runaway costs.'
+            "No cost controls in settings.json. Claude Code has no monthly spend "
+            "cap setting -- keys like maxMonthlyCost or budgetCap are not in the "
+            "settings schema and are silently ignored, so adding one buys nothing. "
+            "Use settings it actually reads:\n"
+            '    "effortLevel": "medium"          reasoning tokens bill as output, '
+            'and effort defaults to "high"\n'
+            '    "fastMode": false                declines the flat 2x Fast Mode '
+            "multiplier\n"
+            '    "autoCompactEnabled": true       bounds the context growth that '
+            "drives input cost\n"
+            '    "enforceAvailableModels": true with "availableModels": '
+            '["claude-sonnet-5"]  keeps Opus- and Fable-tier models out entirely\n'
+            "    For an actual spend ceiling you need a PreToolUse hook, not a "
+            "setting -- see hooks/budget-tracker.sh in this repo."
         )
 
     if has_perms:
