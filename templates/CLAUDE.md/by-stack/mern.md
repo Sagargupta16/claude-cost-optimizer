@@ -76,7 +76,7 @@ client/
 - Validation: {Zod/Joi} schemas in middleware, validated before controller
 - Error responses: `{ success: false, error: { code, message } }`
 - Success responses: `{ success: true, data: {...}, meta?: {pagination} }`
-- Pagination: `?page=1&limit=20` — default limit 20, max 100
+- Pagination: `?page=1&limit=20` -- default limit 20, max 100
 
 ```typescript
 // Standard route pattern
@@ -103,7 +103,7 @@ router.delete('/:id', userController.delete);
 - Timestamps: always enable `{ timestamps: true }`
 - Indexes: define in schema for frequent query fields
 - Virtuals for computed fields, pre-hooks for hashing/sanitization
-- Never expose `__v` or sensitive fields — use `toJSON` transform
+- Never expose `__v` or sensitive fields -- use `toJSON` transform
 
 ```typescript
 // Standard Mongoose model
@@ -122,7 +122,7 @@ export const User = model<IUser>('User', userSchema);
 
 - Functional components with `const` arrow syntax, named exports
 - API calls in `client/src/services/` via axios instance with interceptors
-- Auth state in context/store — token refresh handled by axios interceptor
+- Auth state in context/store -- token refresh handled by axios interceptor
 - Styling: {Tailwind CSS} utility classes
 - Forms: {React Hook Form} + {Zod} for validation
 - Routing: {React Router v6} with protected route wrapper
@@ -132,14 +132,14 @@ export const User = model<IUser>('User', userSchema);
 - TypeScript strict mode on both server and client
 - Named exports only (except Mongoose models)
 - `interface` for object shapes, `type` for unions
-- No `any` — use `unknown` and narrow
-- Server logging via structured logger — no `console.log` in production
+- No `any` -- use `unknown` and narrow
+- Server logging via structured logger -- no `console.log` in production
 
 ## Do Not
 
-- Do not put business logic in controllers — delegate to services
-- Do not query MongoDB directly in routes or controllers — use service/model layer
-- Do not store JWT secrets or DB credentials in code — use env vars
+- Do not put business logic in controllers -- delegate to services
+- Do not query MongoDB directly in routes or controllers -- use service/model layer
+- Do not store JWT secrets or DB credentials in code -- use env vars
 - Do not install new dependencies without asking first
 - Do not modify shared types without checking both server and client usage
 

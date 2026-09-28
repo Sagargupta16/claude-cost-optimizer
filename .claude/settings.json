@@ -19,7 +19,29 @@
     ],
     "deny": [
       "Read(.env)",
-      "Read(.env.*)"
+      "Read(.env.*)",
+      "Read(./node_modules/**)",
+      "Read(./dist/**)",
+      "Read(./build/**)",
+      "Read(./tools/vscode-extension/out/**)",
+      "Read(*.vsix)",
+      "Read(*.tsbuildinfo)",
+      "Read(*.lock)",
+      "Read(package-lock.json)",
+      "Read(pnpm-lock.yaml)",
+      "Read(./__pycache__/**)",
+      "Read(*.pyc)",
+      "Read(./.ruff_cache/**)",
+      "Read(./.pytest_cache/**)",
+      "Read(./coverage/**)",
+      "Read(./htmlcov/**)",
+      "Read(.coverage)",
+      "Read(*.log)",
+      "Read(./.venv/**)",
+      "Read(./venv/**)",
+      "Read(./.vscode/**)",
+      "Read(./.idea/**)",
+      "Read(./.git/**)"
     ]
   },
 

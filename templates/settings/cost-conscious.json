@@ -6,6 +6,7 @@
     "Defaults to Haiku for most tasks. Restricts expensive operations.",
     "Best for: solo devs on tight budgets, routine maintenance, simple tasks.",
     "Trade-off: lower quality on complex reasoning, more turns for hard problems.",
+    "Read(...) deny rules keep Claude's file tools out of deps, build output and secrets (.claudeignore is not a Claude Code feature).",
     "Copy this file to ~/.claude/settings.json or .claude/settings.json"
   ],
 
@@ -24,6 +25,14 @@
       "Bash(npm run build*)"
     ],
     "deny": [
+      "Read(./node_modules/**)",
+      "Read(./dist/**)",
+      "Read(./build/**)",
+      "Read(./coverage/**)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(*.min.js)",
+      "Read(./package-lock.json)",
       "WebFetch",
       "Bash(npm install*)",
       "Bash(npx*)",

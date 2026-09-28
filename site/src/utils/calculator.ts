@@ -272,7 +272,7 @@ function generateRecommendations(
 
   if (inputs.fileReadsPerTurn > 1) {
     recs.push({
-      text: `Add .claudeignore to reduce file reads from ${inputs.fileReadsPerTurn} per turn -- saves 5-15%`,
+      text: `Add permissions.deny Read(...) rules for build output, lock files and vendored code so Claude's file tools skip them (${inputs.fileReadsPerTurn} reads per turn now). Note: Claude Code does not read a .claudeignore file`,
       impact: 10,
     })
   }
@@ -286,10 +286,27 @@ function generateRecommendations(
 
   if (inputs.mcpServers > 3) {
     recs.push({
-      text: `Reduce MCP servers from ${inputs.mcpServers} to 3 or fewer -- each adds ${TOKEN_ESTIMATES.tokensPerMcpServer} tokens/turn`,
+      text: `Disable unused MCP servers with /mcp (${inputs.mcpServers} configured). With tool search on, the default, each adds its tool names and instructions; full schemas load only when tool search is off. CLI tools like gh add nothing`,
       impact: 8,
     })
   }
+
+  recs.push(...modelRecommendations(inputs))
+
+  recs.sort((a, b) => b.impact - a.impact)
+  return recs.slice(0, 3).map((r) => r.text)
+}
+
+/** Recommendations that depend on which model is selected. */
+function modelRecommendations(inputs: CalculatorInputs): { text: string; impact: number }[] {
+  const recs: { text: string; impact: number }[] = []
+
+  // Ratios are computed from MODELS, never hardcoded: the Opus flagship price
+  // moved on 2026-09-22, and every literal "60%" in this file went stale with it.
+  const model = MODELS[inputs.model]
+  const opusFlagship = MODELS['opus-5-5']
+  const sonnetFlagship = MODELS['sonnet-5']
+  const pctBelow = (cheaper: number, dearer: number) => Math.round((1 - cheaper / dearer) * 100)
 
   const isFableTier =
     inputs.model === 'fable-5-1' ||
@@ -297,8 +314,9 @@ function generateRecommendations(
     inputs.model === 'mythos-5-1' ||
     inputs.model === 'mythos-5'
   if (isFableTier) {
+    const ratio = (model.inputPer1M / opusFlagship.inputPer1M).toFixed(1).replace(/\.0$/, '')
     recs.push({
-      text: 'Fable-tier costs 2x Opus 5 ($10/$50 vs $5/$25). Reserve it for the hardest reasoning and route routine work to Opus 5 or Sonnet 5 -- saves 50%+ on those turns',
+      text: `Fable-tier costs ${ratio}x Opus 5.5 ($${model.inputPer1M}/$${model.outputPer1M} vs $${opusFlagship.inputPer1M}/$${opusFlagship.outputPer1M}). Reserve it for the hardest reasoning and route routine work to Opus 5.5 or Sonnet 5 -- saves ${pctBelow(opusFlagship.inputPer1M, model.inputPer1M)}%+ on those turns`,
       impact: 50,
     })
   }
@@ -313,21 +331,33 @@ function generateRecommendations(
   }
 
   const isOpusTier =
+    inputs.model === 'opus-5-5' ||
     inputs.model === 'opus-5' ||
     inputs.model === 'opus-4-8' ||
     inputs.model === 'opus-4-7' ||
     inputs.model === 'opus-4-6'
   if (isOpusTier && !inputs.fastMode) {
     recs.push({
-      text: 'Consider Sonnet 5 for routine development -- 60% cheaper ($2/$10 vs $5/$25) with similar quality for most tasks',
-      impact: 60,
+      text: `Consider Sonnet 5 for routine development -- ${pctBelow(sonnetFlagship.inputPer1M, model.inputPer1M)}% cheaper ($${sonnetFlagship.inputPer1M}/$${sonnetFlagship.outputPer1M} vs $${model.inputPer1M}/$${model.outputPer1M}) with similar quality for most tasks`,
+      impact: pctBelow(sonnetFlagship.inputPer1M, model.inputPer1M),
     })
   }
 
-  if (inputs.model === 'opus-4-8' || inputs.model === 'opus-4-7' || inputs.model === 'opus-4-6') {
+  // Every legacy Opus snapshot is on $5/$25; Opus 5.5 is $4/$20 with a 0.05x cache
+  // read, so upgrading is a price cut on both input and every cached turn.
+  const legacyOpus =
+    inputs.model === 'opus-5' ||
+    inputs.model === 'opus-4-8' ||
+    inputs.model === 'opus-4-7' ||
+    inputs.model === 'opus-4-6'
+  if (legacyOpus) {
+    const cacheFloorNote =
+      model.minCacheTokens > opusFlagship.minCacheTokens
+        ? `, and its minimum cacheable prompt is ${opusFlagship.minCacheTokens} tokens instead of ${model.minCacheTokens.toLocaleString()}`
+        : ''
     recs.push({
-      text: `${MODELS[inputs.model].name} is legacy since the Opus 5 launch. Opus 5 costs the same $5/$25 with better agentic coding, and its minimum cacheable prompt is 512 tokens instead of ${MODELS[inputs.model].minCacheTokens.toLocaleString()} -- more of your system prompt actually caches`,
-      impact: 10,
+      text: `Migrate to Opus 5.5 -- ${pctBelow(opusFlagship.inputPer1M, model.inputPer1M)}% cheaper ($${opusFlagship.inputPer1M}/$${opusFlagship.outputPer1M} vs $${model.inputPer1M}/$${model.outputPer1M}), cache reads drop from $${model.cacheHitPer1M.toFixed(2)} to $${opusFlagship.cacheHitPer1M.toFixed(2)} per 1M${cacheFloorNote}. Check first: thinking cannot be disabled and forced tool_choice returns 400`,
+      impact: 30,
     })
   }
 
@@ -338,15 +368,21 @@ function generateRecommendations(
     })
   }
 
-  if (MODELS[inputs.model].minCacheTokens >= 4096) {
+  if (inputs.model === 'opus-5-5') {
     recs.push({
-      text: `${MODELS[inputs.model].name} needs ${MODELS[inputs.model].minCacheTokens.toLocaleString()}+ tokens before a prompt caches at all. Below that you pay full input price every turn -- Opus 5, Sonnet 5, and Fable 5 cache from 512-1,024 tokens`,
+      text: `On Opus 5.5 thinking cannot be turned off -- effort is the only dial. It defaults to medium; set effort low for routine turns, since reasoning tokens bill as output at $${model.outputPer1M}/1M`,
+      impact: 15,
+    })
+  }
+
+  if (model.minCacheTokens >= 4096) {
+    recs.push({
+      text: `${model.name} needs ${model.minCacheTokens.toLocaleString()}+ tokens before a prompt caches at all. Below that you pay full input price every turn -- Opus 5.5, Sonnet 5, and Fable 5.1 cache from 512-1,024 tokens`,
       impact: 12,
     })
   }
 
-  recs.sort((a, b) => b.impact - a.impact)
-  return recs.slice(0, 3).map((r) => r.text)
+  return recs
 }
 
 export function resultToMarkdown(inputs: CalculatorInputs, result: CalculatorResult): string {

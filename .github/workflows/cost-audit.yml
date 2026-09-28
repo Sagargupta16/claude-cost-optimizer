@@ -7,8 +7,12 @@ on:
     branches: [main]
     paths:
       - 'CLAUDE.md'
-      - '.claudeignore'
       - '.claude/**'
+
+# The job only reads the repo and writes a step summary, so the token needs
+# nothing beyond read access (code-scanning actions/missing-workflow-permissions).
+permissions:
+  contents: read
 
 jobs:
   audit:

@@ -6,8 +6,8 @@
 
 Each scenario shows the **same task** done two ways:
 
-- **Unoptimized** — default Claude Code behavior, large CLAUDE.md (~300 lines), no workflow strategies, single model.
-- **Optimized** — using strategies from this repo: trimmed CLAUDE.md (~100 lines), plan mode, subagents, model selection, custom commands.
+- **Unoptimized** -- default Claude Code behavior, large CLAUDE.md (~300 lines), no workflow strategies, single model.
+- **Optimized** -- using strategies from this repo: trimmed CLAUDE.md (~100 lines), plan mode, subagents, model selection, custom commands.
 
 Token counts are per-session totals (all turns combined). Costs are calculated from published pricing. See [benchmarks/README.md](README.md) for full methodology.
 
@@ -48,7 +48,7 @@ CLAUDE.md (~100 lines) includes a "Component Patterns" section specifying CSS mo
 | CLAUDE.md tokens loaded per turn | ~700 |
 | Files read by Claude | 2 (types file, one example component for reference) |
 | **Estimated cost (Sonnet 4.6)** | **$0.22** |
-| Quality | Correct on first execution — plan caught the CSS naming question upfront |
+| Quality | Correct on first execution -- plan caught the CSS naming question upfront |
 
 ### Comparison
 
@@ -90,7 +90,7 @@ Developer tells Claude: "The search filter resets when users navigate between pa
 
 ### Optimized Approach (Plan Mode First)
 
-Developer uses plan mode: "Investigate why the search filter resets when navigating between pages. The state is managed with Zustand. Do not edit any files — just identify the root cause and propose a fix." After receiving the plan, developer confirms the correct hypothesis and says: "Execute option 2 from your plan."
+Developer uses plan mode: "Investigate why the search filter resets when navigating between pages. The state is managed with Zustand. Do not edit any files -- just identify the root cause and propose a fix." After receiving the plan, developer confirms the correct hypothesis and says: "Execute option 2 from your plan."
 
 | Metric | Value |
 |--------|-------|
@@ -132,13 +132,13 @@ Developer tells Claude in the main session: "Write comprehensive unit tests for 
 | CLAUDE.md tokens loaded per turn | ~2,100 |
 | Files read by Claude | 9 (PaymentProcessor, Stripe types, 3 existing test files for patterns, jest config, tsconfig, mock helpers, error types) |
 | **Estimated cost (Sonnet 4.6)** | **$0.65** |
-| Quality | Tests pass but mock structure differs from project convention — 2 turns spent on revision |
+| Quality | Tests pass but mock structure differs from project convention -- 2 turns spent on revision |
 
 **What went wrong:**
 - Reading 3 existing test files for pattern learning consumed 8,700 tokens
 - Each subsequent turn re-loaded all that context (conversation history grows)
 - 2 revision turns at the end were expensive because the full conversation history was in context
-- Main context became bloated — by turn 8, input was ~25,000 tokens per turn
+- Main context became bloated -- by turn 8, input was ~25,000 tokens per turn
 
 ### Optimized Approach (Subagent Delegation)
 
@@ -154,7 +154,7 @@ Developer uses a subagent command for test generation. The `/test` custom comman
 | CLAUDE.md tokens loaded per turn (main) | ~700 |
 | Files read by Claude | 4 (PaymentProcessor, Stripe types, 1 example test, mock helpers) |
 | **Estimated cost (Sonnet 4.6)** | **$0.42** |
-| Quality | Tests pass and follow project conventions — mock pattern was specified in the delegation prompt |
+| Quality | Tests pass and follow project conventions -- mock pattern was specified in the delegation prompt |
 
 ### Comparison
 
@@ -176,7 +176,7 @@ Developer uses a subagent command for test generation. The `/test` custom comman
 
 ### Unoptimized Approach (Ad-Hoc)
 
-Developer tells Claude: "Refactor src/services/user-service.ts. It's too big. Split it into repository, validator, notifier, and service layers." Claude reads the file, starts editing, discovers dependencies, reads more files, makes changes, runs tests, fixes failures — all in one long session.
+Developer tells Claude: "Refactor src/services/user-service.ts. It's too big. Split it into repository, validator, notifier, and service layers." Claude reads the file, starts editing, discovers dependencies, reads more files, makes changes, runs tests, fixes failures -- all in one long session.
 
 | Metric | Value |
 |--------|-------|
@@ -220,7 +220,7 @@ Developer uses plan mode: "Analyze src/services/user-service.ts and plan a refac
 | Estimated cost | $1.46 | $0.85 | **42%** |
 | Post-hoc fixes needed | 4 | 0 | -- |
 
-**Key savings driver**: Plan mode caught the circular dependency before any code was written, saving 4 fix-up turns. Subagent delegation kept each module extraction in a fresh context window — no accumulated bloat. The main context stayed under 15,000 tokens per turn throughout.
+**Key savings driver**: Plan mode caught the circular dependency before any code was written, saving 4 fix-up turns. Subagent delegation kept each module extraction in a fresh context window -- no accumulated bloat. The main context stayed under 15,000 tokens per turn throughout.
 
 ---
 

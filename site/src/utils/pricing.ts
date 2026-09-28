@@ -1,6 +1,8 @@
-// Pricing data verified against Anthropic docs on 2026-09-05 (Fable 5.1 launch):
+// Pricing data verified against Anthropic docs on 2026-09-28 (Opus 5.5 launch):
 //   - https://platform.claude.com/docs/en/about-claude/pricing
 //   - https://platform.claude.com/docs/en/about-claude/models/overview
+//   - https://platform.claude.com/docs/en/models/opus-5-5/overview
+//   - https://platform.claude.com/docs/en/models/opus-5-5/migration-guide
 //   - https://platform.claude.com/docs/en/models/opus-5/migration-guide
 //   - https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5
 //   - https://platform.claude.com/docs/en/build-with-claude/fast-mode
@@ -11,6 +13,7 @@
 export type ModelId =
   | 'fable-5-1'
   | 'fable-5'
+  | 'opus-5-5'
   | 'opus-5'
   | 'opus-4-8'
   | 'opus-4-7'
@@ -35,9 +38,9 @@ export interface ModelPricing {
   contextWindow: string
   maxOutput: string
   fastModeCapable: boolean
-  // Fast Mode premium relative to standard rates. Opus 5 and Opus 4.8 are the
-  // only supported models, both at 2x ($10/$50). Undefined when
-  // fastModeCapable is false.
+  // Fast Mode premium relative to standard rates. Opus 5.5, Opus 5 and Opus 4.8
+  // are the only supported models, all at 2x of their own base rate: $8/$40 on
+  // Opus 5.5, $10/$50 on the other two. Undefined when fastModeCapable is false.
   fastModeMultiplier?: number
   tokenizerOverhead?: number
   // Minimum prompt length (tokens) before a cache_control block does anything.
@@ -52,11 +55,13 @@ export interface ModelPricing {
   lifecycle?: 'active' | 'legacy' | 'deprecated'
 }
 
-// Cache hits are 0.1x base input on every model EXCEPT Fable 5.1 and Mythos 5.1,
-// which read at 0.025x ($0.25/MTok). Derive displays from cacheHitPer1M rather
-// than multiplying input by 0.1 -- that shortcut is now wrong on two models.
+// Cache hits are 0.1x base input on every model EXCEPT three: Fable 5.1 and
+// Mythos 5.1 read at 0.025x ($0.25/MTok) and Opus 5.5 reads at 0.05x
+// ($0.20/MTok). Derive displays from cacheHitPer1M rather than multiplying input
+// by 0.1 -- that shortcut is now wrong on three models.
 export const CACHE_HIT_MULTIPLIER_DEFAULT = 0.1
 export const CACHE_HIT_MULTIPLIER_FABLE_5_1 = 0.025
+export const CACHE_HIT_MULTIPLIER_OPUS_5_5 = 0.05
 
 /** Cache-read discount off base input, as a share (0.9 = 90% off). */
 export function cacheDiscountShare(model: ModelPricing): number {
@@ -69,7 +74,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     name: 'Fable 5.1',
     inputPer1M: 10,
     outputPer1M: 50,
-    // 0.025x base input -- the only tier that breaks the universal 0.1x cache rule.
+    // 0.025x base input -- the deepest cache discount in the lineup (Opus 5.5 is 0.05x).
     cacheHitPer1M: 0.25,
     cacheWrite5mPer1M: 12.5,
     cacheWrite1hPer1M: 20,
@@ -82,8 +87,8 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     lifecycle: 'active',
     notes:
       "Anthropic's most capable widely released model (released 2026-09-01). Same $10/$50 as Fable 5, " +
-      'but cache reads are $0.25/MTok -- 0.025x base input, a quarter of Fable 5 and the only ' +
-      'exception to the 0.1x cache-hit rule. That makes a cache miss expensive relative to a hit, ' +
+      'but cache reads are $0.25/MTok -- 0.025x base input, a quarter of Fable 5 and the deepest ' +
+      'cache discount in the lineup. That makes a cache miss expensive relative to a hit, ' +
       'so a max_tokens:0 keep-alive on the 5-minute TTL usually beats paying the 2x 1-hour write. ' +
       'Adaptive thinking always on (thinking disabled/budget_tokens both 400); control depth with effort. ' +
       'Three breaking changes vs Fable 5: forced tool_choice (any/tool) returns 400, thinking blocks ' +
@@ -114,6 +119,38 @@ export const MODELS: Record<ModelId, ModelPricing> = {
       'Adaptive thinking always on; control depth with effort. No Fast Mode; Batch $5/$25. ' +
       'Requires 30-day data retention. 1M context at standard rates. Min cacheable prompt 512 tokens.',
   },
+  'opus-5-5': {
+    id: 'opus-5-5',
+    name: 'Opus 5.5',
+    // $4/$20 -- a 20% cut from Opus 5's $5/$25, the first Opus release to lower the rate.
+    inputPer1M: 4,
+    outputPer1M: 20,
+    // 0.05x base input -- the second model family to break the 0.1x cache rule.
+    cacheHitPer1M: 0.2,
+    cacheWrite5mPer1M: 5,
+    cacheWrite1hPer1M: 8,
+    contextWindow: '1M',
+    maxOutput: '128K',
+    fastModeCapable: true,
+    // 2x of its own base: $8/$40, which undercuts the $10/$50 Fast rate of Opus 5 and 4.8.
+    fastModeMultiplier: 2,
+    tokenizerOverhead: 1.35,
+    minCacheTokens: 512,
+    lifecycle: 'active',
+    notes:
+      "Anthropic's recommended starting model for most workloads (released 2026-09-22). $4/$20 -- 20% " +
+      'below Opus 5 -- with cache reads at $0.20/MTok, 0.05x base input (95% off, versus 90% on Opus 5). ' +
+      'Adaptive thinking is ALWAYS ON: thinking {type:"disabled"} and budget_tokens both return 400, so ' +
+      'code that disabled thinking on Opus 5 now pays for thinking tokens it did not before. ' +
+      'Default effort drops to medium (Opus 5 defaulted to high), so a request that omits effort thinks ' +
+      'less than it did. Forced tool_choice (any/tool) returns 400; sampling params and prefill 400; ' +
+      'the computer_20251124 tool is rejected on the Claude API and Google Cloud (use ' +
+      'computer_toolset_20260801). No Priority Tier. Fast Mode 2x ($8/$40). Batch $2/$10. ' +
+      '1M context at standard rates; 128K max output (300K on Batch via beta). Min cacheable prompt 512. ' +
+      'Refusal classifiers cover bio and reasoning_extraction as well as cyber. Knowledge cutoff Jun 2026. ' +
+      'Earliest retirement: 2027-09-22. On the Claude API, Bedrock (anthropic.claude-opus-5-5), Google ' +
+      'Cloud, Microsoft Foundry, and Claude Platform on AWS.',
+  },
   'opus-5': {
     id: 'opus-5',
     name: 'Opus 5',
@@ -128,10 +165,12 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     fastModeMultiplier: 2,
     tokenizerOverhead: 1.35,
     minCacheTokens: 512,
-    lifecycle: 'active',
+    lifecycle: 'legacy',
     notes:
-      'Opus-tier flagship and the recommended default for complex agentic coding (GA 2026-07-24). ' +
-      'Same $5/$25 as Opus 4.8, so the upgrade is free at the posted rate. ' +
+      'Previous Opus-tier flagship (GA 2026-07-24), moved to legacy by the Opus 5.5 launch. ' +
+      'Opus 5.5 costs 20% less ($4/$20) and reads cache at half the rate, so there is no cost reason ' +
+      'to stay unless you need thinking disabled or forced tool_choice, both of which Opus 5.5 rejects. ' +
+      'Same $5/$25 as Opus 4.8. ' +
       'Adaptive thinking is ON by default when you omit the thinking param -- max_tokens is a hard cap ' +
       'on thinking plus text, so budget it (64K+ if you run xhigh/max effort). ' +
       'thinking {type:"disabled"} is only legal at effort high or below; pairing it with xhigh/max returns a 400. ' +
@@ -158,9 +197,10 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     minCacheTokens: 1024,
     lifecycle: 'legacy',
     notes:
-      'Previous Opus-tier flagship, moved to legacy by the Opus 5 launch. Same $5/$25 price as Opus 5, ' +
-      'so there is no cost reason to stay -- migrate unless your prompts are tuned to this snapshot ' +
-      '(or you need thinking off at xhigh/max, which Opus 5 rejects). ' +
+      'Legacy Opus-tier release (superseded by Opus 5, then Opus 5.5). Opus 5.5 costs 20% less ($4/$20), ' +
+      'so there is no cost reason to stay -- migrate unless your prompts are tuned to this snapshot, ' +
+      'or you need thinking fully off or forced tool_choice, both of which Opus 5.5 rejects. ' +
+      'Keeps Priority Tier, which Opus 5.5 does not offer. ' +
       'Adaptive thinking, off by default; effort defaults to high. Fast Mode supported at 2x ($10/$50). ' +
       '1M context at standard rates. Min cacheable prompt 1,024 tokens. Knowledge cutoff Jan 2026. ' +
       'Still the server-side fallback target for Opus 5 cyber refusals. Earliest retirement: 2027-05-28.',
@@ -184,7 +224,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
       'Adaptive thinking only with xhigh effort level. ' +
       'Fast Mode has been removed: speed "fast" now returns an error here, with no fallback to standard. ' +
       'Min cacheable prompt 2,048 tokens. Earliest retirement: 2027-04-16. ' +
-      'Migrate to Opus 5 for the same price.',
+      'Migrate to Opus 5.5, which costs 20% less ($4/$20).',
   },
   'opus-4-6': {
     id: 'opus-4-6',
@@ -202,7 +242,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     notes:
       'Legacy. Extended + adaptive thinking. Fast Mode has been removed: speed "fast" is accepted ' +
       'but silently runs at standard speed and standard rates (usage.speed comes back "standard"). ' +
-      'Min cacheable prompt 4,096 tokens. Earliest retirement: 2027-02-05. Migrate to Opus 5.',
+      'Min cacheable prompt 4,096 tokens. Earliest retirement: 2027-02-05. Migrate to Opus 5.5.',
   },
   'opus-4-5': {
     id: 'opus-4-5',
@@ -219,7 +259,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     lifecycle: 'legacy',
     notes:
       'Legacy. Extended thinking. No Fast Mode. 200K context (not 1M). Min cacheable prompt 4,096 tokens. ' +
-      'Earliest retirement: 2026-11-24. Migrate to Opus 5 unless you have a workload pinned to this snapshot.',
+      'Earliest retirement: 2026-11-24. Migrate to Opus 5.5 unless you have a workload pinned to this snapshot.',
   },
   'sonnet-5': {
     id: 'sonnet-5',
@@ -241,7 +281,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     notes:
       'Current Sonnet-tier flagship (GA 2026-06-30): best combination of speed and intelligence. ' +
       '$2/$10 per MTok is now the permanent standard price -- Anthropic cancelled the increase to ' +
-      '$3/$15 that was scheduled for 2026-09-01, so this is 60% cheaper than Opus 5 rather than 40%. ' +
+      '$3/$15 that was scheduled for 2026-09-01. Half the price of Opus 5.5 ($4/$20); 60% below legacy Opus 5. ' +
       'Adaptive thinking (effort defaults to high on the Claude API and Claude Code). No Fast Mode. ' +
       '1M context at standard rates; Batch $1/$5. Min cacheable prompt 1,024 tokens. ' +
       'Earliest retirement: 2027-06-30.',
@@ -366,8 +406,9 @@ export const MODELS: Record<ModelId, ModelPricing> = {
 }
 
 // Default Fast Mode premium for models without an explicit fastModeMultiplier.
-// Prefer ModelPricing.fastModeMultiplier. Only Opus 5 and Opus 4.8 support Fast
-// Mode, and both are 2x ($10/$50), so 2 is the only sensible default.
+// Prefer ModelPricing.fastModeMultiplier. Only Opus 5.5, Opus 5 and Opus 4.8
+// support Fast Mode, and all three are 2x of their own base rate ($8/$40 on
+// Opus 5.5, $10/$50 on the other two), so 2 is the only sensible default.
 export const FAST_MODE_MULTIPLIER = 2
 export const FAST_MODE_OTPS_GAIN = 2.5 // up to 2.5x output tokens per second
 export const BATCH_DISCOUNT = 0.5
@@ -387,6 +428,10 @@ export const SUBSCRIPTION_PRICING = {
 export const TOKEN_ESTIMATES = {
   tokensPerClaudeMdLine: 7,
   systemPromptTokens: 3500,
+  // Worst case: full tool schemas loaded up front, which only happens when MCP
+  // tool search is OFF (ENABLE_TOOL_SEARCH=false, a custom ANTHROPIC_BASE_URL).
+  // With tool search on -- the default -- a server adds only its tool names and
+  // instructions, and Anthropic publishes no per-server figure for that case.
   tokensPerMcpServer: 1500,
   tokensPerFileRead: 2000,
   outputTokensPerTurn: 500,

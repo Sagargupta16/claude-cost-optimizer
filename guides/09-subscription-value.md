@@ -31,9 +31,9 @@ Claude Code offers three subscription tiers. These are for interactive use of Cl
 
 | Plan | Monthly Price | Annual Price (effective monthly) | Usage Relative to Pro | Per-Day Equivalent | Models Included |
 |------|:------------:|:--------------------------------:|:---------------------:|:------------------:|:---------------:|
-| **Pro** | $20/mo | **$200/yr (~$16.67/mo, 17% off)** | 1x (baseline) | ~$0.67/day (annual) | Opus 5, Sonnet 5, Haiku 4.5 |
-| **Max 5x** | $100/mo | (no annual rate currently published) | 5x Pro usage | ~$3.33/day | Opus 5, Sonnet 5, Haiku 4.5 |
-| **Max 20x** | $200/mo | (no annual rate currently published) | 20x Pro usage | ~$6.67/day | Opus 5, Sonnet 5, Haiku 4.5 |
+| **Pro** | $20/mo | **$200/yr (~$16.67/mo, 17% off)** | 1x (baseline) | ~$0.67/day (annual) | Opus 5.5, Sonnet 5, Haiku 4.5 |
+| **Max 5x** | $100/mo | (no annual rate currently published) | 5x Pro usage | ~$3.33/day | Opus 5.5, Sonnet 5, Haiku 4.5 |
+| **Max 20x** | $200/mo | (no annual rate currently published) | 20x Pro usage | ~$6.67/day | Opus 5.5, Sonnet 5, Haiku 4.5 |
 
 > **Annual Pro saves $40/year (17%)** -- $200 up front vs $240 paid monthly. If you'll use Claude Code for more than ~10 months in a year, annual is the cheaper choice.
 
@@ -42,15 +42,15 @@ Claude Code offers three subscription tiers. These are for interactive use of Cl
 - CLI access (Claude Code terminal interface)
 - Desktop app access (macOS, Windows, Linux)
 - Mobile app access (iOS, Android)
-- Access to all current model tiers (Opus 5, Sonnet 5, Haiku 4.5, plus legacy Opus 4.8/4.7/4.6 and Sonnet 4.6)
-- Automatic prompt caching
+- Access to all current model tiers (Opus 5.5, Sonnet 5, Haiku 4.5, plus legacy Opus 5/4.8/4.7/4.6 and Sonnet 4.6)
+- Automatic prompt caching, with a **one-hour cache TTL on the main conversation** while you are within plan usage (API-key users, and subscribers once they draw on usage credits, get five minutes), so a long break costs a subscriber less -- see [Guide 08](08-prompt-caching.md#how-claude-code-picks-the-cache-ttl)
 - All Claude Code features (tool use, file editing, subagents, MCP servers, plugins, agent skills)
 
 ### What Plans Do NOT Include
 
 - Anthropic API access (separate billing, pay-per-token)
 - Batch API (50% discount, API-only)
-- Fast Mode (Opus 5 and Opus 4.8 only, beta, both at 2x pricing = $10/$50; API and Managed Agents only. Opus 4.7 errors on `speed: "fast"`, Opus 4.6 silently runs standard; the old 6x tier no longer exists)
+- Fast Mode (Opus 5.5 at $8/$40, Opus 5 and Opus 4.8 at $10/$50 -- each 2x its own base; research preview on the API. Opus 4.7 errors on `speed: "fast"`, Opus 4.6 silently runs standard; the old 6x tier no longer exists)
 - Server-side tools billed separately (web search $10/1k, code execution $0.05/hour beyond 1,550 free hours)
 - Claude Managed Agents session runtime ($0.08/session-hour, API-only)
 - Provisioned throughput or committed-use discounts (Bedrock/Vertex only)
@@ -65,23 +65,23 @@ Each plan has a usage allowance measured in tokens consumed. The 5x and 20x mult
 
 - **Usage is measured in tokens** -- both input and output tokens count toward your allowance
 - **Model choice affects burn rate** -- Opus consumes more of your allowance per turn than Haiku
-- **When you hit your limit, you get rate-limited** -- responses slow down, you may be queued, but you are not charged overage fees
-- **Allowances reset monthly** on your billing date
+- **When you hit a limit, you stop until the window resets** -- Claude Code shows "You've hit your session limit" or "You've hit your weekly limit" with the reset time. Those two are shared across all models, so `/model` does not get you back in; after a model-specific "You've hit your Opus limit", switching to another model family does
+- **Allowances reset on a rolling 5-hour session window plus a weekly window**, not monthly on your billing date
 
 > **Important caveat**: Exact token allocations per plan are not publicly documented by Anthropic. The 5x and 20x multipliers are relative to Pro, but the absolute token counts are not disclosed. What we know is based on observed usage patterns and community reports.
 
 ### Rate Limiting vs. Overage
 
-Unlike API billing, where every token has a price, subscription plans use a rate-limiting model:
+Unlike API billing, where every token has a price, subscription plans meter usage in windows ([Claude Code costs docs](https://code.claude.com/docs/en/costs), checked 2026-09-28):
 
 | Situation | What Happens |
 |-----------|--------------|
-| Within allowance | Full speed, no restrictions |
-| Approaching limit | May see slower responses during peak hours |
-| At limit | Rate-limited: longer wait times, potential queuing |
-| Over limit | Continued rate-limiting until reset, not billed extra |
+| Within allowance | Full speed, no per-token charge |
+| Session or weekly limit reached | Requests stop until that window resets; the message shows when |
+| Model-specific limit reached (e.g. "Opus limit") | Switch to a model outside that family with `/model` and keep working |
+| Usage credits turned on | Work continues past the limit, billed from usage credits up to the monthly spend limit you set (`/usage-credits`) |
 
-This means your subscription cost is predictable -- you will never get a surprise bill at the end of the month. The trade-off is that heavy usage near the end of a billing cycle may result in degraded performance rather than extra charges.
+Your subscription cost stays fixed unless you turn on usage credits, and you set their spend limit yourself. The trade-off is that a heavy day hits the 5-hour or weekly window and stops you until it resets. On Claude Code v2.1.234 or later, Claude Code can wait out the reset and continue the interrupted task automatically.
 
 ### How Model Choice Affects Allowance Consumption
 
@@ -91,19 +91,20 @@ Not all tokens are equal when it comes to your plan allowance. More capable mode
 |-------|:-----------------------:|-----------------|
 | **Haiku 4.5** | Lowest | Stretches your plan the furthest |
 | **Sonnet 5** | Medium | Good balance of capability and allowance efficiency |
-| **Opus 5** | Highest | Burns through allowance fastest (Opus-4.7-generation tokenizer, up to ~35% more tokens than pre-4.7 models for the same text, plus thinking is on by default) |
+| **Opus 5.5** | Highest | Burns through allowance fastest (Opus-4.7-generation tokenizer, up to ~35% more tokens than pre-4.7 models for the same text, plus thinking is always on and cannot be disabled) |
 
 > **Key insight**: A Pro plan user who defaults to Haiku for routine tasks and only switches to Opus for complex work can get significantly more done than one who runs Opus for everything. This is the single highest-leverage optimization for subscription plans.
 
-### The Opus 5 Default-Thinking Effect
+### The Opus 5.5 Thinking Effect
 
-Opus 5 (GA 2026-07-24) changed the burn-rate picture in a way that matters more on a subscription than on the API, because you cannot see the bill move:
+Opus 5.5 (released 2026-09-22) changes the burn-rate picture in a way that matters more on a subscription than on the API, because you cannot see the bill move:
 
-- **Thinking is on by default.** Omit the `thinking` parameter and Opus 5 reasons adaptively. Those reasoning tokens are billed and counted as **output**. On an Opus 4.8 baseline where you never explicitly enabled thinking, the same task now consumes noticeably more allowance.
-- **Output runs longer by default.** Opus 5 writes more than 4.8 for the same prompt, and it self-verifies. Any carried-over "double-check your work" instruction in your CLAUDE.md now pays twice -- delete those lines.
-- **Effort level is the throttle.** Effort runs low/medium/high/xhigh/max and defaults to `high`. Dropping to low or medium for routine work is the cheapest lever you have on Opus 5. Note that `thinking: {type: "disabled"}` is only accepted at effort `high` or below -- pairing it with `xhigh` or `max` returns a 400 error.
+- **Thinking is always on.** Anthropic's costs page says it plainly: "You can't turn off thinking on Opus 5.5 or the Fable models." Those reasoning tokens are billed and counted as **output**. If you had thinking disabled on Opus 5, the same task now consumes more allowance on Opus 5.5.
+- **Effort level is the only throttle, and its default dropped.** Effort runs low/medium/high/xhigh/max and defaults to `medium` on Opus 5.5 (Opus 5 defaulted to `high`), so a request that omits effort thinks less than it did on Opus 5. Use `/effort` to go lower for routine work. `MAX_THINKING_TOKENS` does not help here: it only affects fixed-budget models, and adaptive models ignore it.
+- **Changing effort is cache-safe on Opus 5.5.** On a subscription (or an API key), effort changes on Opus 5.5 and Fable 5.1 keep the prompt cache, so dropping to `low` mid-session does not cost a cache rebuild.
+- **Output runs longer on Opus 5 than on 4.8.** If you are still on legacy Opus 5: it writes more than 4.8 for the same prompt and self-verifies, so any carried-over "double-check your work" instruction in your CLAUDE.md pays twice -- delete those lines.
 
-> **Practical impact on a subscription**: if you moved from Opus 4.8 to Opus 5 and started hitting rate limits sooner without changing your habits, default-on thinking is the likely cause. Lower the effort level before you upgrade your plan.
+> **Practical impact on a subscription**: re-baseline after migrating. If you moved to Opus 5.5 and started hitting rate limits sooner without changing your habits, thinking you used to switch off is the likely cause. Lower the effort level before you upgrade your plan.
 
 ---
 
@@ -183,14 +184,14 @@ This alone can stretch your Pro allowance 3-5x further than defaulting to Opus.
 
 **2. Use Plan Mode to reduce wasted output tokens**
 
-Plan Mode (`shift+tab` or `--plan`) analyzes before implementing. This prevents the costly trial-and-error cycle where Claude writes code, finds it does not work, and rewrites it multiple times.
+Plan Mode (Shift+Tab, or start in it with `--permission-mode plan`) analyzes before implementing. This prevents the costly trial-and-error cycle where Claude writes code, finds it does not work, and rewrites it multiple times.
 
 ```bash
 # Without plan mode: 10 turns, 3 false starts, lots of wasted output
 claude "refactor the auth module"
 
 # With plan mode: 2 turns to plan + 4 turns to implement
-claude --plan "refactor the auth module"
+claude --permission-mode plan "refactor the auth module"
 ```
 
 **3. Keep CLAUDE.md lean**
@@ -231,7 +232,7 @@ The optimization strategies that matter most at this tier:
 - Plan Mode before implementation (saves turns, not just tokens)
 - Batch related changes into single prompts
 - Use custom commands for repetitive workflows
-- Keep `.claudeignore` up to date
+- Keep your `permissions.deny` `Read(...)` rules up to date (`.claudeignore` is not a Claude Code feature; see [Guide 02](02-context-optimization.md))
 
 **5. Invest in CLAUDE.md quality**
 
@@ -245,7 +246,7 @@ At this tier, your time is more expensive than your tokens. Optimize for product
 
 If you are working on a large codebase, multi-service architecture, or anything requiring deep reasoning, Opus as the default model is justified. Switch to Sonnet only for clearly routine work (formatting, simple renames, boilerplate).
 
-**2. Invest heavily in CLAUDE.md and `.claudeignore` quality**
+**2. Invest heavily in CLAUDE.md and file-read exclusion (`permissions.deny` `Read(...)` rules) quality**
 
 The compounding effect over 20x usage is significant. If a well-tuned CLAUDE.md saves 2 turns per session, and you run 15 sessions per day, that is 30 saved turns daily -- roughly 660 per month. Each saved turn means less allowance consumed and less time waiting.
 
@@ -362,9 +363,10 @@ The Batch API offers 50% off standard rates for non-time-sensitive workloads. Th
 
 | Model | Standard API | Batch API | Savings |
 |-------|:-----------:|:---------:|:-------:|
-| Opus 5 (output) | $25.00/MTok | $12.50/MTok | 50% |
-| Opus 4.8 / 4.7 / 4.6 (output) | $25.00/MTok | $12.50/MTok | 50% |
-| Sonnet 5 / 4.6 (output) | $15.00/MTok | $7.50/MTok | 50% |
+| Opus 5.5 (output) | $20.00/MTok | $10.00/MTok | 50% |
+| Opus 5 / 4.8 / 4.7 / 4.6, legacy (output) | $25.00/MTok | $12.50/MTok | 50% |
+| Sonnet 5 (output) | $10.00/MTok | $5.00/MTok | 50% |
+| Sonnet 4.6 (output) | $15.00/MTok | $7.50/MTok | 50% |
 | Haiku 4.5 (output) | $5.00/MTok | $2.50/MTok | 50% |
 
 **5. Your usage is extremely light**
@@ -393,7 +395,7 @@ These are rough estimates -- actual break-even depends on your model mix, sessio
 
 > **Note**: Claude Code adds overhead beyond raw token costs (system prompts, tool schemas, conversation management). The subscription absorbs this overhead, so the effective break-even is lower than raw token math suggests. Most interactive developers get better value from subscriptions.
 
-> **Opus 5 shifts this break-even toward subscriptions.** Opus 5 has the same posted price as Opus 4.8 ($5/$25), but thinking is on by default and reasoning tokens bill as output at $25/MTok. If your API-side estimate was built on an Opus 4.8 baseline with thinking off, your real per-session output spend on Opus 5 is higher than that estimate -- so you cross the subscription break-even at fewer sessions per day than the table above implies. Re-measure against actual Opus 5 usage before concluding that API billing is cheaper for you. On the API you can claw this back by lowering the effort level; on a subscription the same lever stretches your allowance instead.
+> **Opus 5.5 moves this break-even in both directions -- re-measure.** Its posted price is $4/$20, 20% below Opus 5's $5/$25, which pulls API-side cost down. But thinking is always on (it cannot be disabled) and reasoning tokens bill as output at $20/MTok. If your API-side estimate was built with thinking off, your real per-session output spend on Opus 5.5 is higher than that estimate -- so you cross the subscription break-even at fewer sessions per day than the table above implies. If you simply omitted effort on Opus 5, the new `medium` default thinks less than Opus 5's `high` did. Re-measure against actual Opus 5.5 usage before concluding that API billing is cheaper for you. On the API you can claw cost back by lowering the effort level; on a subscription the same lever stretches your allowance instead.
 
 ---
 
@@ -615,7 +617,7 @@ How often did you hit rate limits this month?
 
 ### 2. Review Your Model Usage Mix
 
-Check what percentage of your usage went to each model. Use `/usage` in Claude Code.
+Check what percentage of your usage went to each model. Use `/usage` in Claude Code: its plan usage breakdown attributes usage to skills, subagents, plugins and MCP servers, so you can see which one is eating the allowance.
 
 | Current Mix | Optimization Opportunity |
 |-------------|------------------------|
@@ -630,7 +632,7 @@ Look for sessions with unusually high token consumption. Common culprits:
 - Sessions over 40 turns without using `/compact`
 - Large file reads that inflated context unnecessarily
 - Trial-and-error coding without Plan Mode
-- MCP servers adding unnecessary tool schemas
+- Unused MCP servers (with default tool search only their tool names and server instructions load, but full schemas load when tool search is off; disable unused ones with `/mcp`, and check `/context` for what is consuming space)
 
 Use the [Usage Analyzer](../tools/usage-analyzer/README.md) tool for detailed session breakdowns.
 
@@ -663,7 +665,7 @@ If rate limits are trending up but productivity is flat, you need better optimiz
 
 2. **Model selection is the highest-leverage optimization for subscription plans.** Defaulting to Haiku for routine tasks and reserving Opus for complex work stretches your allowance dramatically -- regardless of which plan you are on.
 
-   On Opus 5, effort level is the second lever: thinking is on by default and reasoning tokens count as output, so dropping to low or medium effort for routine work meaningfully slows your burn rate.
+   On Opus 5.5, effort level is the second lever: thinking is always on (you can't turn it off) and reasoning tokens count as output. The default is already `medium`, so drop to `low` for routine work to slow your burn rate -- and on Opus 5.5 the change keeps your prompt cache.
 
 3. **Rate-limit cost is measured in your time, not in dollars.** If rate limits cost you more productive time per month than the upgrade price, upgrade. For most professional developers, the threshold is surprisingly low -- around 1-2 hours of lost time per month justifies moving up a tier.
 

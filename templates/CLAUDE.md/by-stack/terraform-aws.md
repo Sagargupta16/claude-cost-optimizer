@@ -13,7 +13,7 @@
 
 <!-- COPY BELOW THIS LINE INTO YOUR PROJECT'S CLAUDE.md -->
 
-# {Project Name} — Infrastructure
+# {Project Name} -- Infrastructure
 
 {One-sentence description. Example: "AWS infrastructure for the Acme SaaS platform."}
 IaC: Terraform {1.6+} | Cloud: AWS ({us-east-1})
@@ -99,7 +99,7 @@ module "vpc" {
 - One state file per environment (dev/staging/prod are isolated)
 - Never run `terraform state` write commands without team approval
 - Use `terraform import` to bring existing resources under management
-- State is source of truth — never modify AWS resources manually in console
+- State is source of truth -- never modify AWS resources manually in console
 
 ## Naming Conventions
 
@@ -112,18 +112,18 @@ module "vpc" {
 
 ## Security Rules
 
-- **No hardcoded secrets** — use AWS Secrets Manager or SSM Parameter Store
-- **No inline IAM policies** — use `aws_iam_policy` resources with JSON documents
-- **Least privilege** — IAM policies grant minimum required permissions
+- **No hardcoded secrets** -- use AWS Secrets Manager or SSM Parameter Store
+- **No inline IAM policies** -- use `aws_iam_policy` resources with JSON documents
+- **Least privilege** -- IAM policies grant minimum required permissions
 - **No public S3 buckets** unless explicitly justified and documented
 - **Encryption at rest** on all storage: S3, RDS, EBS, EFS
 - **Security groups**: deny all by default, allow specific CIDRs and ports only
-- **No `0.0.0.0/0` ingress** on SSH/RDP — use bastion or SSM Session Manager
+- **No `0.0.0.0/0` ingress** on SSH/RDP -- use bastion or SSM Session Manager
 - All RDS instances: `publicly_accessible = false`, inside private subnets
 
 ## Common Patterns
 
-- Data lookups: use `data` sources for AMIs, AZs, account ID — do not hardcode
+- Data lookups: use `data` sources for AMIs, AZs, account ID -- do not hardcode
 - Conditional resources: `count = var.enable_feature ? 1 : 0`
 - Multiple instances: `for_each` with maps for named resources
 - Dependencies: use `depends_on` only when implicit deps are insufficient
@@ -132,9 +132,9 @@ module "vpc" {
 ## Do Not
 
 - Do not `apply` without reviewing `plan` output first
-- Do not modify `.terraform.lock.hcl` manually — run `terraform init -upgrade`
-- Do not store `*.tfvars` with secrets in git — use env vars or secrets manager
-- Do not edit state files manually — use `terraform state mv/rm` commands
+- Do not modify `.terraform.lock.hcl` manually -- run `terraform init -upgrade`
+- Do not store `*.tfvars` with secrets in git -- use env vars or secrets manager
+- Do not edit state files manually -- use `terraform state mv/rm` commands
 - Do not create resources outside of Terraform for managed infrastructure
 - Do not run `terraform destroy` on staging/prod without explicit approval
 

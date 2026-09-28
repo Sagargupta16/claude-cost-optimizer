@@ -2,7 +2,7 @@
 
 > **How you use Claude Code matters more than which model you use.** A disciplined workflow with Sonnet can be cheaper than a sloppy workflow with Haiku.
 
-The biggest hidden cost in Claude Code is not the model — it is wasted turns. Every unnecessary clarification, every "actually, I meant...", every exploratory read of a file Claude did not need — these compound into real money. This guide covers workflow patterns that minimize waste.
+The biggest hidden cost in Claude Code is not the model -- it is wasted turns. Every unnecessary clarification, every "actually, I meant...", every exploratory read of a file Claude did not need -- these compound into real money. This guide covers workflow patterns that minimize waste.
 
 ---
 
@@ -36,15 +36,15 @@ Each iteration consumes tokens. A task that should take 3 turns takes 10.
 
 ### The Solution: Plan Mode
 
-Use Claude Code's plan mode (`--plan` or shift+tab to toggle in interactive mode) to analyze before implementing:
+Use Claude Code's plan mode to analyze before implementing. In an interactive session, press **Shift+Tab** to cycle to plan mode before implementation starts (Anthropic's costs page lists this as a cost lever). To start a session already in plan mode, pass `--permission-mode plan` (there is no `--plan` flag):
 
 ```bash
 # Bad: Jump straight to implementation
 claude "refactor the auth module to use JWT instead of sessions"
 # Result: 12 turns, multiple false starts, $1.80
 
-# Good: Plan first, then implement
-claude --plan "refactor the auth module to use JWT instead of sessions"
+# Good: Plan first, then implement (or press Shift+Tab inside a running session)
+claude --permission-mode plan "refactor the auth module to use JWT instead of sessions"
 # Result: Plan in 2 turns ($0.30), implementation in 4 turns ($0.60), total $0.90
 ```
 
@@ -91,7 +91,7 @@ Step 3: Execute (Claude implements the refined plan)
 
 ### What Are Subagents?
 
-When Claude Code uses the Task tool, it spawns a **subagent** — an independent Claude instance with its own context window. The subagent does its work, returns a result, and its context is discarded. Only the result is added to the main conversation.
+When Claude Code uses the Task tool, it spawns a **subagent** -- an independent Claude instance with its own context window. The subagent does its work, returns a result, and its context is discarded. Only the result is added to the main conversation.
 
 This is powerful for cost optimization because:
 1. **Isolated context**: The subagent does not carry the full conversation history
@@ -114,7 +114,7 @@ Subagent (Haiku):
   - Context discarded after returning results
 ```
 
-**Why this saves money**: The Grep results (potentially thousands of lines) load into the cheap subagent's context, not the expensive Opus 5 context. The main context only receives the summarized result.
+**Why this saves money**: The Grep results (potentially thousands of lines) load into the cheap subagent's context, not the expensive Opus 5.5 context. The main context only receives the summarized result.
 
 ### Pattern 2: Parallel Implementation
 
@@ -148,7 +148,7 @@ Main context (Opus): "Given the project structure, dependency list, API surface,
 and data model summary, design a caching strategy."
 ```
 
-**Why this saves money**: Opus 5 only processes the summaries, not the raw files. The heavy reading is done by Haiku 4.5 at 1/5th the cost.
+**Why this saves money**: Opus 5.5 only processes the summaries, not the raw files. The heavy reading is done by Haiku 4.5 at 1/4 the cost (1/5 of legacy Opus 5).
 
 ### CLAUDE.md Subagent Guidelines
 
@@ -161,6 +161,8 @@ Add this to your CLAUDE.md to encourage cost-efficient delegation:
 - Prefer parallel subagents over sequential work in the main context
 - Subagents should return concise summaries, not raw file contents
 ```
+
+To pin the cheap model rather than asking for it, set `model: haiku` in the subagent's definition frontmatter -- Anthropic's costs page (code.claude.com/docs/en/costs) recommends exactly that for simple subagent tasks. The same page warns about the opposite end: agent teams use about **7x the tokens** of a standard session when teammates run in plan mode, so fan out deliberately.
 
 **Estimated savings**: 20-40% for sessions involving multi-file work.
 
@@ -268,6 +270,10 @@ Do not add tests unless I ask.
 
 **Estimated savings**: 10-15% by eliminating prompt interpretation overhead.
 
+### Hooks: Filter Output Before Claude Reads It
+
+A command controls what Claude is asked; a hook controls what Claude reads back. Anthropic's costs page gives the example of a `PreToolUse` hook that filters test output down to the failures, which it says cuts tens of thousands of tokens to hundreds. The same idea applies to any noisy command (builds, linters, installs): let the hook strip the passing lines so only the signal enters context. Anthropic publishes the token range, not a session-level percentage, so measure your own before and after with `/usage`.
+
 ---
 
 ## Batch Operations vs One-at-a-Time
@@ -278,7 +284,7 @@ Each Claude Code turn includes fixed overhead:
 - System prompt (~1,500 tokens)
 - CLAUDE.md content
 - Conversation history
-- Tool definitions
+- Tool definitions (MCP tools are deferred by default under tool search: only their names and server instructions load until Claude uses one)
 
 If you send 10 separate requests to rename 10 functions, you pay this overhead 10 times. If you send one request to rename all 10, you pay it once.
 
@@ -527,6 +533,18 @@ Based on community research into Claude Code's observed behavior, here are the s
 - **What the summary contains**: The generated summary includes tool mentions from the session, up to 3 recent user requests, up to 8 key files that were referenced, and an inference of the current work being done. This is designed to retain enough context for Claude to continue working without losing track of the task.
 - **Manual /compact is still valuable**: Even though auto-compaction exists, running `/compact` manually before the threshold gives you more control over the timing. You can also provide a focus hint (e.g., `/compact Focus on the auth refactor`) to influence what the summary prioritizes.
 
+### What /clear, /compact and /rewind Cost
+
+From Anthropic's prompt-caching page for Claude Code (code.claude.com/docs/en/prompt-caching):
+
+| Command | What it costs | Cache effect |
+|---------|---------------|--------------|
+| `/clear` | Nothing | Starts fresh; the next turn builds a new cache |
+| `/compact` | A summarization request that reads the prefix from cache while it is warm, so a fraction of the context size. After a break longer than the cache TTL it reprocesses the full history uncached | Compaction rebuilds the conversation layer, so later turns re-cache it |
+| `/rewind` | Returns to an already-cached prefix | Keeps the cache |
+
+So compact **before** a break, not after one. The TTL is one hour for the main conversation on a Claude subscription within plan usage, and five minutes on an API key, a cloud provider, or once you draw on usage credits (set it with `promptCacheTtl` or `CLAUDE_CODE_PROMPT_CACHE_TTL`, Claude Code v2.1.242+). `/usage` shows a `Prompt cache (main)` line with hit share and whether the cache is warm (v2.1.251+).
+
 ### When to Compact
 
 Think of `/compact` like saving your game and starting a new chapter. Use it at **natural breakpoints**:
@@ -701,7 +719,7 @@ Here is what a cost-optimized Claude Code session looks like in practice:
 ### Phase 1: Setup (1 turn)
 - Start with Sonnet as default model
 - CLAUDE.md is lean (<150 lines) and includes model routing guidelines
-- .claudeignore excludes unnecessary files
+- `permissions.deny` `Read(...)` rules in `.claude/settings.json` keep Claude out of build output, dependencies and lock files (`.claudeignore` is not a Claude Code feature -- move any patterns you have there into Read rules)
 
 ### Phase 2: Plan (2-3 turns)
 - Use plan mode or explicit "analyze and plan" instructions
@@ -729,13 +747,13 @@ Here is what a cost-optimized Claude Code session looks like in practice:
 
 | Approach | Turns | Avg Cost/Turn | Total |
 |----------|:-----:|:-------------:|:-----:|
-| Unoptimized (all Opus 5, no planning, no batching) | 25 | $0.12 | $3.00 |
+| Unoptimized (all Opus 5.5, no planning, no batching) | 25 | $0.096 | $2.40 |
 | Partially optimized (Sonnet 5 default, some planning) | 18 | $0.08 | $1.44 |
 | Fully optimized (right models, planning, batching, /compact) | 12 | $0.06 | $0.72 |
 
-**Fully optimized is 76% cheaper** than the unoptimized approach, for the same end result. Even with Opus 5's lower pricing (vs the $15/$75 of the old Opus 4.1), disciplined workflows yield significant savings.
+**Fully optimized is 70% cheaper** than the unoptimized approach, for the same end result. ($0.096 is the old $0.12 Opus 5 per-turn figure at Opus 5.5's 20% lower rate; on legacy Opus 5 the unoptimized session is $3.00 and the gap is 76%.) Even with Opus 5.5's $4/$20 pricing (vs the $15/$75 of the old Opus 4.1), disciplined workflows yield significant savings.
 
-One Opus 5 specific caveat for the per-turn numbers above: adaptive thinking is on by default when you omit the `thinking` parameter, and reasoning tokens bill as output at $25/MTok. Opus 5 also writes longer answers than Opus 4.8 did and self-verifies on its own, so a carried-over "double-check your work" instruction pays twice for the same behavior. Re-tune verbosity instructions and drop the redundant self-review lines from CLAUDE.md, or your $0.06-$0.12 per turn drifts upward on its own.
+One Opus-specific caveat for the per-turn numbers above: on Opus 5.5 adaptive thinking is always on and reasoning tokens bill as output at $20/MTok; effort (default `medium`) is the only control. And prompts written for an older model make the new one over-work: in Anthropic's published run, prompts written for Opus 4.8 cost 36% more per ticket on Opus 5 for no accuracy gain, and audited they were 14% cheaper and more accurate. Opus 5 also self-verifies on its own, so a carried-over "double-check your work" instruction pays twice. Re-audit CLAUDE.md when you change models, or your $0.06-$0.10 per turn drifts upward on its own.
 
 ---
 

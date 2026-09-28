@@ -14,13 +14,17 @@ Usage (in a composite action step):
 from __future__ import annotations
 
 import json
+import math
 import os
+import re
 import sys
 import urllib.parse
 from pathlib import Path
 
 
 # -- Scoring ------------------------------------------------------------------
+
+SETTINGS_JSON = ".claude/settings.json"
 
 
 def _resolve_inside(project: Path, name: str) -> Path | None:
@@ -31,49 +35,154 @@ def _resolve_inside(project: Path, name: str) -> Path | None:
     return candidate
 
 
+def _read_inside(project: Path, name: str) -> str | None:
+    """Text of project/name, or None if it is missing or outside the project."""
+    path = _resolve_inside(project, name)
+    if path is None or not path.is_file():
+        return None
+    return path.read_text(encoding="utf-8", errors="replace")
+
+
+def _scale_to_25(points: int, rubric_max: int) -> int:
+    """Rescale a shared-rubric score to a 25-point category, rounding half up."""
+    return (points * 50 + rubric_max) // (rubric_max * 2)
+
+
+# Shared rubric (same tiers as tools/claude-rate/rate.py). Primary line count:
+# <=100 -> 12, <=200 -> 10, <=300 -> 6, <=500 -> 3, else 1. Estimated tokens
+# across both files: <=2,000 -> 8, <=4,000 -> 6, <=8,000 -> 4, <=16,000 -> 2, else 0.
+CLAUDE_MD_LINE_TIERS = ((100, 12), (200, 10), (300, 6), (500, 3))
+CLAUDE_MD_TOKEN_TIERS = ((2_000, 8), (4_000, 6), (8_000, 4), (16_000, 2))
+CLAUDE_MD_RUBRIC_MAX = 20
+
+
 def score_claude_md(project: Path) -> dict:
-    """Score CLAUDE.md based on existence and line count."""
-    path = _resolve_inside(project, "CLAUDE.md")
-    if path is None or not path.is_file():
-        return {"score": 0, "detail": "CLAUDE.md not found", "lines": None}
+    """Score CLAUDE.md on primary line count and estimated tokens across files."""
+    texts = [
+        text
+        for text in (
+            _read_inside(project, "CLAUDE.md"),
+            _read_inside(project, ".claude/CLAUDE.md"),
+        )
+        if text is not None
+    ]
+    if not texts:
+        return {
+            "score": 0,
+            "detail": "CLAUDE.md not found",
+            "lines": None,
+            "tokens": None,
+            "rubric_score": 0,
+            "rubric_max": CLAUDE_MD_RUBRIC_MAX,
+            "findings": [],
+        }
 
-    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-    count = len(lines)
+    # Primary is the root CLAUDE.md, or .claude/CLAUDE.md when the root has none.
+    lines = len(texts[0].splitlines())
+    tokens = math.ceil(sum(len(text) for text in texts) / 4)
+    points = next((p for limit, p in CLAUDE_MD_LINE_TIERS if lines <= limit), 1)
+    points += next((p for limit, p in CLAUDE_MD_TOKEN_TIERS if tokens <= limit), 0)
 
-    if count <= 80:
-        score = 25
-    elif count <= 100:
-        score = 20
-    elif count <= 150:
-        score = 15
-    elif count <= 200:
-        score = 10
-    elif count <= 300:
-        score = 5
+    findings: list[str] = []
+    if lines > 200:
+        findings.append(
+            f"{lines} lines -- over Anthropic's 200-line guidance for CLAUDE.md. "
+            "Longer files consume more context and reduce adherence. Move "
+            "workflow-specific instructions into skills or path-scoped .claude/rules/ "
+            "so they load on demand."
+        )
+
+    return {
+        "score": _scale_to_25(points, CLAUDE_MD_RUBRIC_MAX),
+        "detail": f"{lines} lines, ~{tokens:,} tokens across {len(texts)} file(s)",
+        "lines": lines,
+        "tokens": tokens,
+        "rubric_score": points,
+        "rubric_max": CLAUDE_MD_RUBRIC_MAX,
+        "findings": findings,
+    }
+
+
+# Shared rubric: Read(...) rules in permissions.deny, >=10 -> 13, >=5 -> 10,
+# >=1 -> 6, 0 -> 0; +2 when every lock file at the root is covered; cap 15.
+READ_RULE = re.compile(r"Read\(.+\)")
+READ_RULE_TIERS = ((10, 13), (5, 10), (1, 6))
+LOCK_FILES = (
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "poetry.lock",
+    "Cargo.lock",
+    "uv.lock",
+)
+FILE_READ_RUBRIC_MAX = 15
+# Claude Code does not read this file; it is detected only to say so.
+IGNORE_FILE = ".claudeignore"
+IGNORE_FILE_FINDING = (
+    "`.claudeignore` is not read by Claude Code -- it appears nowhere in Claude "
+    "Code's documentation. Move its patterns into permissions.deny as Read(...) rules."
+)
+
+
+def _load_settings(project: Path) -> dict | None:
+    """First of .claude/settings.json, .claude/settings.local.json that is a JSON object."""
+    for name in (SETTINGS_JSON, ".claude/settings.local.json"):
+        text = _read_inside(project, name)
+        if text is None:
+            continue
+        try:
+            data = json.loads(text)
+        except json.JSONDecodeError:
+            continue
+        if isinstance(data, dict):
+            return data
+    return None
+
+
+def score_file_read_exclusions(project: Path) -> dict:
+    """Score Read(...) rules in permissions.deny, plus lock-file coverage."""
+    perms = (_load_settings(project) or {}).get("permissions")
+    deny = perms.get("deny") if isinstance(perms, dict) else None
+    rules = [
+        r
+        for r in (deny if isinstance(deny, list) else [])
+        if isinstance(r, str) and READ_RULE.fullmatch(r)
+    ]
+    count = len(rules)
+    locks = [name for name in LOCK_FILES if (project / name).is_file()]
+    uncovered = [
+        lock
+        for lock in locks
+        if not any(lock in r or "*.lock" in r or "*lock*" in r for r in rules)
+    ]
+
+    points = next((p for minimum, p in READ_RULE_TIERS if count >= minimum), 0)
+    if count >= 1 and not uncovered:
+        points = min(points + 2, FILE_READ_RUBRIC_MAX)
+
+    if count == 0:
+        detail = "no Read deny rules in permissions.deny"
+    elif not locks:
+        detail = f"{count} Read deny rule(s); no lock files at root"
+    elif uncovered:
+        detail = (
+            f"{count} Read deny rule(s); lock files not covered: {', '.join(uncovered)}"
+        )
     else:
-        score = 0
+        detail = f"{count} Read deny rule(s); lock files covered"
 
-    return {"score": score, "detail": f"{count} lines", "lines": count}
+    ignore_file = _resolve_inside(project, IGNORE_FILE)
+    findings = [IGNORE_FILE_FINDING] if ignore_file and ignore_file.is_file() else []
 
-
-def score_claudeignore(project: Path) -> dict:
-    """Score .claudeignore based on existence and entry count."""
-    path = _resolve_inside(project, ".claudeignore")
-    if path is None or not path.is_file():
-        return {"score": 0, "detail": ".claudeignore not found", "entries": None}
-
-    lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
-    entries = [l.strip() for l in lines if l.strip() and not l.strip().startswith("#")]
-    count = len(entries)
-
-    if count >= 5:
-        score = 25
-    elif count > 0:
-        score = 15
-    else:
-        score = 0
-
-    return {"score": score, "detail": f"{count} entries", "entries": count}
+    return {
+        "score": _scale_to_25(points, FILE_READ_RUBRIC_MAX),
+        "detail": detail,
+        "rules": count,
+        "lock_files_uncovered": uncovered,
+        "rubric_score": points,
+        "rubric_max": FILE_READ_RUBRIC_MAX,
+        "findings": findings,
+    }
 
 
 def has_cost_controls(data: dict) -> bool:
@@ -112,7 +221,7 @@ def has_cost_controls(data: dict) -> bool:
 
 def score_settings(project: Path) -> dict:
     """Score .claude/settings.json for model pin and real cost controls."""
-    path = _resolve_inside(project, ".claude/settings.json")
+    path = _resolve_inside(project, SETTINGS_JSON)
     if path is None or not path.is_file():
         return {
             "score": 0,
@@ -161,7 +270,7 @@ def score_settings(project: Path) -> dict:
 
 def score_mcp(project: Path) -> dict:
     """Score MCP server count from settings.json."""
-    path = _resolve_inside(project, ".claude/settings.json")
+    path = _resolve_inside(project, SETTINGS_JSON)
     if path is None or not path.is_file():
         return {"score": 25, "detail": "0 MCP servers (no settings file)", "count": 0}
 
@@ -232,13 +341,11 @@ def badge_url(grade: str) -> str:
 def audit(project: Path) -> dict:
     """Run the full audit and return structured results."""
     claude_md = score_claude_md(project)
-    claudeignore = score_claudeignore(project)
+    file_read = score_file_read_exclusions(project)
     settings = score_settings(project)
     mcp = score_mcp(project)
 
-    total = (
-        claude_md["score"] + claudeignore["score"] + settings["score"] + mcp["score"]
-    )
+    total = claude_md["score"] + file_read["score"] + settings["score"] + mcp["score"]
     grade = total_to_grade(total)
 
     return {
@@ -249,7 +356,7 @@ def audit(project: Path) -> dict:
         "badge_markdown": f"![Claude Cost Grade]({badge_url(grade)})",
         "breakdown": {
             "claude_md": claude_md,
-            "claudeignore": claudeignore,
+            "file_read_exclusions": file_read,
             "settings": settings,
             "mcp_servers": mcp,
         },

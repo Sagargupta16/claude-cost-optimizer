@@ -8,7 +8,7 @@ assignees: ''
 
 ## Strategy Name
 
-<!-- A short, descriptive name for this tip (e.g., "Use .claudeignore for lock files") -->
+<!-- A short, descriptive name for this tip (e.g., "Deny Read on lock files in permissions.deny") -->
 
 ## Expected Savings
 
@@ -37,7 +37,7 @@ assignees: ''
 - Cost comparison data
 - Session screenshots or logs
 - Link to relevant documentation
-- "Anecdotal" is fine too — just note it
+- "Anecdotal" is fine too -- just note it
 -->
 
 ## Which Models / Plans Does This Apply To?

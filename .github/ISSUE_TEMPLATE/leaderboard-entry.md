@@ -23,13 +23,15 @@ assignees: ''
 ## Model Used
 
 <!-- Select one: -->
-- [ ] Opus 5
+- [ ] Opus 5.5
 - [ ] Sonnet 5
+- [ ] Haiku 4.5
+- [ ] Fable 5.1
+- [ ] Opus 5 (legacy)
 - [ ] Opus 4.8 (legacy)
 - [ ] Opus 4.7 (legacy)
 - [ ] Opus 4.6 (legacy)
-- [ ] Sonnet 4.6
-- [ ] Haiku 4.5
+- [ ] Sonnet 4.6 (legacy)
 
 ## Benchmark Data
 

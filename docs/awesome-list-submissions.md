@@ -28,7 +28,7 @@ estimator, usage analyzer) for cutting Claude Code spending.
 Includes:
 - 12 optimization guides covering context, model selection, workflows, team budgeting, caching, task routing, and speed vs cost
 - Benchmarks with reproducible methodology
-- Copy-paste CLAUDE.md templates for common stacks (React, Next.js, FastAPI, MERN, Terraform)
+- Copy-paste CLAUDE.md templates for common stacks (React, Next.js, FastAPI, Django, MERN, Rails, Go, Rust, Java Spring, Terraform)
 - Token estimator and usage analyzer CLI tools
 ```
 
@@ -86,11 +86,12 @@ Adds Claude Cost Optimizer, which covers:
   workflow patterns, team budgeting, access method pricing, MCP/agent costs,
   prompt caching, subscription value, task routing, speed vs cost
 - Real-world benchmarks: task comparison, model comparison, context size impact
-- Templates: 4 CLAUDE.md templates, 5 stack-specific templates, 3 settings configs, 3 slash commands
+- Templates: 4 CLAUDE.md templates, 10 stack-specific templates, 3 settings configs, 3 slash commands
 - Tools: token estimator (estimate cost before sending), usage analyzer (find cost hotspots)
 - Cheatsheet: one-page quick reference
 
-All cost claims include expected savings percentages backed by benchmark data.
+Cost claims carry a savings percentage and its source, or say plainly when no
+published measurement exists.
 MIT licensed.
 ```
 

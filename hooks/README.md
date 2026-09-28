@@ -48,6 +48,10 @@ Runs when the session ends. Produces a summary and appends it to a persistent lo
 - Writes a timestamped entry to `sessions.log` for historical tracking
 - Cleans up the per-session counter file
 
+### Going further: hooks that cut tokens
+
+These three hooks count and log; they do not shrink anything Claude reads. Anthropic's [costs page](https://code.claude.com/docs/en/costs) describes the bigger lever: a hook that preprocesses output, such as a PreToolUse hook that filters test output down to the failures, can cut tens of thousands of tokens to hundreds. [rtk](https://github.com/rtk-ai/rtk) packages the same idea as a CLI proxy that compresses common dev-command output; its own claim is 60-90% on those commands, not measured by this repo.
+
 ## Installation
 
 ### 1. Copy the hook scripts

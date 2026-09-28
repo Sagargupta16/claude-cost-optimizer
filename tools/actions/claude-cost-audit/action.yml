@@ -1,5 +1,5 @@
 name: 'Claude Cost Audit'
-description: 'Audit Claude Code configuration for cost efficiency and generate a grade badge'
+description: 'Grade Claude Code config for cost (CLAUDE.md size, file-read exclusions, settings, MCP servers) and generate a badge'
 
 inputs:
   path:

@@ -4,7 +4,10 @@ import styles from './BadgeChecker.module.css'
 
 const defaultInputs: BadgeInputs = {
   claudeMdLines: 100,
-  claudeIgnoreEntries: 0,
+  claudeMdTokens: 1000,
+  readDenyRules: 0,
+  lockFilesCovered: false,
+  hasIgnoreFile: false,
   hasModelConfigured: false,
   hasCostControls: false,
   mcpServers: 2,
@@ -54,7 +57,7 @@ function BadgeChecker() {
           <h2 className={styles.panelTitle}>Your Setup</h2>
 
           <label className={styles.inputLabel}>
-            <span>CLAUDE.md line count</span>
+            <span>CLAUDE.md line count (0 = none)</span>
             <input
               type="number"
               min={0}
@@ -66,13 +69,25 @@ function BadgeChecker() {
           </label>
 
           <label className={styles.inputLabel}>
-            <span>.claudeignore entry count</span>
+            <span>CLAUDE.md tokens, root + .claude/ (about chars / 4)</span>
+            <input
+              type="number"
+              min={0}
+              max={100000}
+              value={inputs.claudeMdTokens}
+              onChange={handleNumberChange('claudeMdTokens')}
+              className={styles.numberInput}
+            />
+          </label>
+
+          <label className={styles.inputLabel}>
+            <span>File-read exclusions: Read(...) rules in permissions.deny</span>
             <input
               type="number"
               min={0}
               max={100}
-              value={inputs.claudeIgnoreEntries}
-              onChange={handleNumberChange('claudeIgnoreEntries')}
+              value={inputs.readDenyRules}
+              onChange={handleNumberChange('readDenyRules')}
               className={styles.numberInput}
             />
           </label>
@@ -90,6 +105,29 @@ function BadgeChecker() {
           </label>
 
           <div className={styles.checkboxGroup}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={inputs.lockFilesCovered}
+                onChange={(e) => updateField('lockFilesCovered', e.target.checked)}
+                className={styles.checkbox}
+              />
+              <span>Every lock file at the repo root has a Read deny rule (or there are none)</span>
+            </label>
+
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={inputs.hasIgnoreFile}
+                onChange={(e) => updateField('hasIgnoreFile', e.target.checked)}
+                className={styles.checkbox}
+              />
+              <span>
+                Project has a .claudeignore
+                {inputs.hasIgnoreFile && ' -- not read by Claude Code, scores nothing. Move its patterns into permissions.deny as Read(...) rules.'}
+              </span>
+            </label>
+
             <label className={styles.checkboxLabel}>
               <input
                 type="checkbox"

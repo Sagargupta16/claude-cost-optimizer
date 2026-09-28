@@ -9,7 +9,7 @@
 - [Why Input Tokens Matter](#why-input-tokens-matter)
 - [CLAUDE.md: The Line Budget](#claudemd-the-line-budget)
 - [Before and After: CLAUDE.md Optimization](#before-and-after-claudemd-optimization)
-- [.claudeignore: Stop Indexing Junk](#claudeignore-stop-indexing-junk)
+- [Read Deny Rules: Stop Reading Junk](#read-deny-rules-stop-reading-junk)
 - [File Read Strategies](#file-read-strategies)
 - [Using /compact to Reset Context](#using-compact-to-reset-context)
 - [Subagents: Isolating Context-Heavy Work](#subagents-isolating-context-heavy-work)
@@ -23,7 +23,7 @@
 
 Input tokens are the tokens sent *to* Claude on each turn. They include everything: the system prompt, your CLAUDE.md, the full conversation history, tool results, and your current message.
 
-The critical insight is that **input tokens are cumulative and recurring**. Unlike output tokens (which are generated once), input tokens include all previous conversation history — so they grow with every turn and you pay for them repeatedly.
+The critical insight is that **input tokens are cumulative and recurring**. Unlike output tokens (which are generated once), input tokens include all previous conversation history -- so they grow with every turn and you pay for them repeatedly.
 
 ```
 Turn  1 input:   4,500 tokens   (system + CLAUDE.md + your message)
@@ -31,9 +31,9 @@ Turn 10 input:  35,000 tokens   (all of the above + 9 turns of history)
 Turn 30 input: 100,000 tokens   (all of the above + 29 turns of history)
 ```
 
-Every token you can keep out of the input — by trimming CLAUDE.md, ignoring irrelevant files, avoiding unnecessary file reads, and compacting history — saves you money on *every subsequent turn*.
+Every token you can keep out of the input -- by trimming CLAUDE.md, ignoring irrelevant files, avoiding unnecessary file reads, and compacting history -- saves you money on *every subsequent turn*.
 
-The math is straightforward: remove 1,000 tokens of recurring input, and over a 30-turn session you save 30,000 input tokens. At Sonnet pricing with 80% cache rate, that is about $0.03 per session. Do that across 5 sessions a day for a month, and it adds up to $3.30 from just that one cut. Now multiply by the 10-20 cuts this guide will show you.
+The math is straightforward: remove 1,000 tokens of recurring input, and over a 30-turn session you save 30,000 input tokens. At Sonnet 4.6 pricing with 80% cache rate, that is about $0.03 per session. Do that across 5 sessions a day for a month, and it adds up to $3.30 from just that one cut. Now multiply by the 10-20 cuts this guide will show you.
 
 ---
 
@@ -41,7 +41,7 @@ The math is straightforward: remove 1,000 tokens of recurring input, and over a 
 
 ### Why Every Line Costs You Money
 
-Your project's `CLAUDE.md` file is loaded in its entirety as part of the input on **every single turn**. It does not matter whether the current turn is about database schemas or CSS styling — the whole file is always there.
+Your project's `CLAUDE.md` file is loaded in its entirety as part of the input on **every single turn**. It does not matter whether the current turn is about database schemas or CSS styling -- the whole file is always there.
 
 This makes CLAUDE.md the highest-leverage optimization target because:
 
@@ -49,31 +49,31 @@ This makes CLAUDE.md the highest-leverage optimization target because:
 2. It is under your direct control
 3. Most CLAUDE.md files contain 2-3x more content than Claude actually needs
 
-### Hard Limits: 4,000 Characters Per File, 12,000 Total
+### What Actually Loads (No Character Cap)
 
-Based on community research into Claude Code's internals, there are precise limits on instruction files that make the "keep it short" advice more concrete:
+Claude Code does not truncate CLAUDE.md, and there is no per-file or total character cap. What loads, per Anthropic's memory docs:
 
-- **Per-file limit**: Each instruction file (CLAUDE.md, CLAUDE.local.md, .claude/CLAUDE.md, .claude/instructions.md) is truncated at **4,000 characters**. Content beyond this limit is silently dropped -- Claude never sees it.
-- **Total budget**: The combined content across **all** instruction files loaded for a session is capped at **12,000 characters**. This budget is shared across every instruction file discovered by walking from the filesystem root to your current working directory.
-- **Discovery order**: Claude Code walks from the filesystem root to your cwd, checking each directory level for: `CLAUDE.md`, `CLAUDE.local.md`, `.claude/CLAUDE.md`, and `.claude/instructions.md`. Files with identical content across scopes are deduplicated automatically.
+- **In full, at launch**: every CLAUDE.md and CLAUDE.local.md in the directory hierarchy above your working directory.
+- **On demand**: CLAUDE.md files in subdirectories load when Claude reads files there. Rules in `.claude/rules/` with `paths:` frontmatter load when Claude reads a matching file. Skills load when invoked.
+- **The one real truncation**: auto memory. Only the first 200 lines or 25KB of `MEMORY.md`, whichever comes first, load at session start.
+
+Anthropic's size guidance, verbatim: "target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence." So the reason to stay small is token cost in every session plus adherence, not a cutoff. `@path` imports help organize a long file, but imported files still load at launch, so they do not reduce tokens.
 
 What this means in practice:
 
-| Scenario | Per-File Budget | Total Budget | Risk |
+| Scenario | Loads at Launch | Loads on Demand | Risk |
 |----------|:--------------:|:------------:|------|
-| Single project, one CLAUDE.md | 4,000 chars | 12,000 chars | Plenty of room |
-| Monorepo with root + 2 workspace CLAUDE.md files | 4,000 chars each | 12,000 chars shared | Must keep all three under 12K combined |
-| Nested dirs with parent CLAUDE.md files (e.g., `~/CLAUDE.md` + `~/code/CLAUDE.md` + project) | 4,000 chars each | 12,000 chars shared | Parent files eat into your budget silently |
+| Single project, one CLAUDE.md | Root CLAUDE.md, in full | -- | Low while it stays under 200 lines |
+| Monorepo with root + 2 workspace CLAUDE.md files | Root file, plus the workspace file if you launch from inside that workspace | Workspace files when Claude reads files there | Every loaded file adds tokens to every turn |
+| Nested dirs with parent CLAUDE.md files (e.g., `~/CLAUDE.md` + `~/code/CLAUDE.md` + project) | Every file above your working directory, in full | Subdirectory files | Parent files add tokens to every session in every child project |
 
-At roughly 7 characters per word and 10 words per line, 4,000 characters is approximately **57 lines** of typical CLAUDE.md content. The old advice of "keep under 150 lines" assumed shorter lines -- with the 4,000-character hard cap, the real constraint is character count, not line count.
-
-**For monorepos**: If your root CLAUDE.md is 3,500 characters, each workspace CLAUDE.md only has ~2,833 characters of headroom before hitting the 12,000-character combined limit across three files. Plan your instruction hierarchy accordingly.
+**For monorepos**: keep the root file to what every workspace needs, and put workspace rules in that workspace's CLAUDE.md or in path-scoped `.claude/rules/` files so they load only when Claude touches that code.
 
 ### The 150-Line Budget (Approximate Guideline)
 
-We recommend keeping CLAUDE.md under **150 lines** as an approximate guideline, but the hard limit is **4,000 characters per file**. Here is the cost breakdown by size:
+Anthropic's target is under **200 lines** per CLAUDE.md file; this guide aims for about **150 lines** to leave headroom. Nothing is cut off past either number -- every extra line just costs tokens on every turn. Here is the cost breakdown by size:
 
-| CLAUDE.md Size | Tokens Per Turn | Cost Per Turn (Sonnet) | 30-Turn Session Cost | Monthly (110 sessions) |
+| CLAUDE.md Size | Tokens Per Turn | Cost Per Turn (Sonnet 4.6) | 30-Turn Session Cost | Monthly (110 sessions) |
 |:--------------:|:---------------:|:---------------------:|:--------------------:|:---------------------:|
 | 50 lines | ~350 | $0.001 | $0.03 | $3.30 |
 | 100 lines | ~700 | $0.002 | $0.06 | $6.60 |
@@ -81,11 +81,11 @@ We recommend keeping CLAUDE.md under **150 lines** as an approximate guideline, 
 | 300 lines | ~2,100 | $0.006 | $0.18 | $19.80 |
 | 500 lines | ~3,500 | $0.011 | $0.33 | $36.30 |
 
-> The cost column assumes a blended rate with 80% cache hits. Actual savings from trimming are about 20% of the raw difference (since most of these tokens get cached), but the cache is not free — cached tokens still cost 10% of full price.
+> The cost columns use the **uncached** input rate ($3/MTok on Sonnet 4.6) -- the worst case, as on a cold cache. With 80% cache hits the blended rate is $0.84/MTok (80% at $0.30, 20% at $3), so real costs and real savings from trimming are about 28% of these figures. The cache is not free: cached tokens still cost 10% of full price on Sonnet 4.6 (5% on Opus 5.5, 2.5% on Fable 5.1).
 
-**On Opus 5** (or the legacy Opus 4.8/4.7/4.6), multiply these numbers by ~1.67x (Opus input is $5/MTok vs Sonnet's $3/MTok). A 500-line CLAUDE.md on Opus costs about $60.50/month just for the CLAUDE.md itself across 110 sessions. **Opus 5 adds another ~20-35% on top** because its tokenizer (the same one shipped with Opus 4.7 and used by every Opus since) uses more tokens for the same text.
+**On Opus 5.5**, multiply these numbers by ~1.33x (Opus 5.5 input is $4/MTok vs Sonnet 4.6's $3/MTok; legacy Opus 5 / 4.8 / 4.7 / 4.6 at $5/MTok is ~1.67x). A 500-line CLAUDE.md on Opus 5.5 costs about $48.40/month just for the CLAUDE.md itself across 110 sessions ($60.50 on legacy Opus 5). **Opus 5.5 adds another ~20-35% on top** because its tokenizer (the same one shipped with Opus 4.7 and used by every Opus since) uses more tokens for the same text.
 
-One caching caveat that depends on size: a `cache_control` block is silently ignored -- no error, no discount -- if the prefix it marks is shorter than the model's minimum cacheable prompt. That floor is **512 tokens on Opus 5**, down from 1,024 on Opus 4.8, 2,048 on Opus 4.7, and 4,096 on Opus 4.6. Sonnet 5 and Sonnet 4.6 sit at 1,024; Haiku 4.5 at 4,096. Practical effect: a ~100-line CLAUDE.md (~700 tokens) that was too short to cache on Opus 4.8 does cache on Opus 5, while a 50-line one (~350 tokens) still caches on neither.
+One caching caveat that depends on size: a `cache_control` block is silently ignored -- no error, no discount -- if the prefix it marks is shorter than the model's minimum cacheable prompt. That floor is **512 tokens on Opus 5.5 and Opus 5**, down from 1,024 on Opus 4.8, 2,048 on Opus 4.7, and 4,096 on Opus 4.6. Sonnet 5 and Sonnet 4.6 sit at 1,024; Haiku 4.5 at 4,096. Practical effect: a ~100-line CLAUDE.md (~700 tokens) that was too short to cache on Opus 4.8 does cache on Opus 5.5 and Opus 5, while a 50-line one (~350 tokens) still caches on neither.
 
 ### What Belongs in CLAUDE.md
 
@@ -109,6 +109,7 @@ Include only information Claude needs on **most turns**:
 | Team member names/roles | Irrelevant to coding | Project wiki |
 | Changelog/history | Never needed for code generation | CHANGELOG.md |
 | Deployment procedures | Only relevant during deploy | docs/deployment.md |
+| Workflow-specific instructions (PR reviews, DB migrations) | Only relevant when running that workflow | A skill, which loads on demand |
 | Commented-out alternatives | Adds tokens for no active benefit | Delete them |
 | Aspirational rules not yet enforced | Confuses Claude | Add when enforced |
 
@@ -117,7 +118,7 @@ Include only information Claude needs on **most turns**:
 Go through your CLAUDE.md and ask for each line: **"Does Claude need this on EVERY turn?"**
 
 - If yes, keep it.
-- If "only sometimes," move it to a separate file or a custom command.
+- If "only sometimes," move it to a skill, a path-scoped `.claude/rules/` file, a nested CLAUDE.md, or a custom command.
 - If "rarely," delete it.
 
 ---
@@ -136,10 +137,10 @@ and processes approximately $2M in transactions monthly. We migrated from a lega
 PHP application in Q3 2023 and have been iterating on the platform since then.
 
 ## Team
-- Alice (Tech Lead) — alice@acme.com
-- Bob (Frontend) — bob@acme.com
-- Carol (Backend) — carol@acme.com
-- Dave (DevOps) — dave@acme.com
+- Alice (Tech Lead) -- alice@acme.com
+- Bob (Frontend) -- bob@acme.com
+- Carol (Backend) -- carol@acme.com
+- Dave (DevOps) -- dave@acme.com
 
 ## Tech Stack
 - Frontend: React 18.2.0 with TypeScript 5.3
@@ -210,7 +211,7 @@ src/
 
 ### General Rules
 - Use TypeScript strict mode everywhere
-- No `any` types allowed — use `unknown` if type is truly unknown
+- No `any` types allowed -- use `unknown` if type is truly unknown
 - Prefer `const` over `let`, never use `var`
 - Use early returns to reduce nesting
 - Maximum function length: 50 lines
@@ -219,7 +220,7 @@ src/
 - All functions must have JSDoc comments
 - All exported functions must have unit tests
 - Use absolute imports with path aliases (@client/, @server/, @shared/)
-- Handle all errors explicitly — no empty catch blocks
+- Handle all errors explicitly -- no empty catch blocks
 - Log errors with structured logging (winston)
 - Use enums for fixed sets of values
 - Prefer composition over inheritance
@@ -241,7 +242,7 @@ src/
 ### Backend Conventions
 - All routes must have input validation using zod
 - Use middleware for auth, logging, error handling
-- Controller functions should be thin — delegate to services
+- Controller functions should be thin -- delegate to services
 - Services contain business logic
 - Models define database schema and relationships
 - Use transactions for multi-table operations
@@ -277,32 +278,32 @@ src/
 - Run CI checks before merge
 
 ## Build Commands
-- npm run dev — Start development server (Vite + Express)
-- npm run build — Production build
-- npm test — Run unit tests
-- npm run test:e2e — Run Playwright e2e tests
-- npm run lint — ESLint + Prettier check
-- npm run lint:fix — Auto-fix linting issues
-- npm run type-check — TypeScript type checking
-- npm run db:migrate — Run Prisma migrations
-- npm run db:seed — Seed database with test data
-- npm run db:studio — Open Prisma Studio
-- npm run storybook — Open Storybook
-- npm run analyze — Bundle size analysis
+- npm run dev -- Start development server (Vite + Express)
+- npm run build -- Production build
+- npm test -- Run unit tests
+- npm run test:e2e -- Run Playwright e2e tests
+- npm run lint -- ESLint + Prettier check
+- npm run lint:fix -- Auto-fix linting issues
+- npm run type-check -- TypeScript type checking
+- npm run db:migrate -- Run Prisma migrations
+- npm run db:seed -- Seed database with test data
+- npm run db:studio -- Open Prisma Studio
+- npm run storybook -- Open Storybook
+- npm run analyze -- Bundle size analysis
 
 ## API Endpoints (Current)
-- POST /api/auth/login — User login
-- POST /api/auth/register — User registration
-- GET /api/products — List products (paginated)
-- GET /api/products/:id — Product detail
-- POST /api/cart — Add to cart
-- GET /api/cart — Get cart
-- PUT /api/cart/:itemId — Update cart item
-- DELETE /api/cart/:itemId — Remove from cart
-- POST /api/orders — Create order
-- GET /api/orders — List user orders
-- GET /api/orders/:id — Order detail
-- GET /api/admin/dashboard — Admin dashboard stats
+- POST /api/auth/login -- User login
+- POST /api/auth/register -- User registration
+- GET /api/products -- List products (paginated)
+- GET /api/products/:id -- Product detail
+- POST /api/cart -- Add to cart
+- GET /api/cart -- Get cart
+- PUT /api/cart/:itemId -- Update cart item
+- DELETE /api/cart/:itemId -- Remove from cart
+- POST /api/orders -- Create order
+- GET /api/orders -- List user orders
+- GET /api/orders/:id -- Order detail
+- GET /api/admin/dashboard -- Admin dashboard stats
 - ... (20 more endpoints)
 
 ## Recent Changes
@@ -334,33 +335,33 @@ src/
 6. Post-deploy: verify monitoring dashboards
 ```
 
-**Token count: ~2,660 tokens per turn. Over 30 turns with 80% caching: ~$0.048 (Sonnet 5) / ~$0.080 (Opus 5)**
+**Token count: ~2,660 tokens per turn. Over 30 turns with 80% caching: ~$0.045 (Sonnet 5) / ~$0.077 (Opus 5.5)**
 
 ### After: 62 Lines (Optimized)
 
 ```markdown
-# MyApp — E-commerce Platform
+# MyApp -- E-commerce Platform
 
 Tech: TypeScript strict, React 18, Redux Toolkit, Tailwind, Vite 5
 Backend: Node 20, Express, PostgreSQL 16 + Prisma, Redis, RabbitMQ
 Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 
 ## Commands
-- `npm run dev` — Dev server (Vite + Express)
-- `npm run build` — Production build
-- `npm test` — Unit tests (Vitest + RTL)
-- `npm run test:e2e` — E2E tests (Playwright)
-- `npm run lint:fix` — ESLint + Prettier autofix
-- `npm run type-check` — TypeScript checks
-- `npm run db:migrate` — Prisma migrations
+- `npm run dev` -- Dev server (Vite + Express)
+- `npm run build` -- Production build
+- `npm test` -- Unit tests (Vitest + RTL)
+- `npm run test:e2e` -- E2E tests (Playwright)
+- `npm run lint:fix` -- ESLint + Prettier autofix
+- `npm run type-check` -- TypeScript checks
+- `npm run db:migrate` -- Prisma migrations
 
 ## Structure
-- `src/client/` — React frontend (components/, hooks/, store/, services/)
-- `src/server/` — Express backend (routes/, controllers/, models/, services/)
-- `src/shared/` — Shared types and constants
+- `src/client/` -- React frontend (components/, hooks/, store/, services/)
+- `src/server/` -- Express backend (routes/, controllers/, models/, services/)
+- `src/shared/` -- Shared types and constants
 
 ## Code Rules
-- No `any` — use `unknown` if needed
+- No `any` -- use `unknown` if needed
 - Functional components only, use custom hooks for shared logic
 - Props: export interface ComponentNameProps
 - Early returns, max 50-line functions, max 300-line files
@@ -383,7 +384,7 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 - Squash merge, 1+ review required
 ```
 
-**Token count: ~434 tokens per turn. Over 30 turns with 80% caching: ~$0.008 (Sonnet 5) / ~$0.013 (Opus 5)**
+**Token count: ~434 tokens per turn. Over 30 turns with 80% caching: ~$0.007 (Sonnet 5) / ~$0.012 (Opus 5.5)**
 
 ### What Was Cut and Why
 
@@ -406,118 +407,69 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 |--------|:------:|:-----:|:-----------:|
 | Lines | 380 | 62 | **84% fewer** |
 | Tokens per turn | ~2,660 | ~434 | **84% fewer** |
-| 30-turn Sonnet cost | $0.048 | $0.008 | **$0.040 saved/session** |
-| 30-turn Opus 5 cost | $0.080 | $0.013 | **$0.067 saved/session** |
-| Monthly Opus 5 cost (110 sessions) | $8.80 | $1.43 | **$7.37 saved/month** |
+| 30-turn Sonnet 5 cost | $0.045 | $0.007 | **$0.037 saved/session** |
+| 30-turn Opus 5.5 cost | $0.077 | $0.012 | **$0.064 saved/session** |
+| Monthly Opus 5.5 cost (110 sessions) | $8.43 | $1.37 | **$7.05 saved/month** |
+
+> Costs use the blended rate from [Guide 01](01-understanding-costs.md#key-formulas): 80% of tokens at the cache-hit price ($0.20/MTok on both Sonnet 5 and Opus 5.5) and 20% at full input price ($2 and $4/MTok).
 
 ---
 
-## .claudeignore: Stop Indexing Junk
+## Read Deny Rules: Stop Reading Junk
 
-### What .claudeignore Does
+> `.claudeignore` is not a Claude Code feature. It appears nowhere in Claude Code's documentation, and Claude Code does not read it. If you created one from an earlier version of this guide, convert it with the rule [below](#converting-an-existing-claudeignore).
 
-When Claude Code searches your project (via Glob or Grep), it can discover and read files that add tokens to your context but provide no value. The `.claudeignore` file (placed at your project root) tells Claude Code to skip these paths entirely.
+### What Read Deny Rules Do
 
-This works the same way as `.gitignore` — same glob pattern syntax.
+The documented way to keep Claude's file tools out of paths is `permissions.deny` with `Read(...)` rules in `.claude/settings.json`. Read deny rules apply to Claude's built-in file tools, to the file commands Claude Code recognizes in Bash (`cat`, `head`, `tail`, `sed`, `tee`), and to redirection targets.
+
+Patterns use gitignore syntax:
+
+- `./path` is relative to the project, `//path` is absolute from the filesystem root, `~/path` is your home directory
+- `*` matches within one path segment, `**` across directories
+- A bare filename matches at any depth: `Read(.env)` equals `Read(**/.env)`
+- A pattern starting with `!` is a negation that carves paths out of earlier rules in the same file
 
 ### Why It Matters
 
-Without `.claudeignore`, a Glob search for `**/*.js` in a Node.js project might return thousands of results from `node_modules/`. Even if Claude does not read them all, the search results themselves consume tokens, and Claude may waste turns exploring irrelevant files.
+Dependency folders, build output and lock files add tokens to your context but provide no value, and a file Claude reads stays in history for every remaining turn. Deny rules take those paths off the table. Scoped rules such as `Read(./dist/**)` do not change which tools Claude sees, so adding them does not invalidate the prompt cache.
 
-### Recommended .claudeignore
+### Recommended Read Deny Rules
 
-```gitignore
-# Dependencies — thousands of files Claude never needs to read
-node_modules/
-vendor/
-bower_components/
-.pnpm-store/
-
-# Build output — generated files, not source code
-dist/
-build/
-out/
-.next/
-.nuxt/
-.svelte-kit/
-.vercel/
-.netlify/
-target/
-bin/
-obj/
-
-# Lock files — huge, machine-generated, not useful for Claude
-package-lock.json
-yarn.lock
-pnpm-lock.yaml
-Gemfile.lock
-poetry.lock
-composer.lock
-Cargo.lock
-go.sum
-
-# Generated / compiled assets
-*.min.js
-*.min.css
-*.bundle.js
-*.chunk.js
-*.map
-*.d.ts
-
-# Test artifacts
-coverage/
-.nyc_output/
-test-results/
-playwright-report/
-__snapshots__/
-
-# Caches
-.cache/
-.parcel-cache/
-.eslintcache
-.tsbuildinfo
-*.pyc
-__pycache__/
-.pytest_cache/
-
-# Version control internals
-.git/
-
-# Environment and secrets
-.env
-.env.*
-*.pem
-*.key
-
-# IDE files (usually not needed)
-.idea/
-.vscode/settings.json
-*.swp
-*.swo
-
-# Large data files
-*.sqlite
-*.db
-*.sql.gz
-*.csv
-*.parquet
-
-# OS files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Logs
-*.log
-logs/
+```json
+{
+  "permissions": {
+    "deny": [
+      "Read(./node_modules/**)",
+      "Read(./dist/**)",
+      "Read(./build/**)",
+      "Read(./coverage/**)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(*.min.js)",
+      "Read(./package-lock.json)"
+    ]
+  }
+}
 ```
+
+Extend it for your stack with the same patterns, for example `Read(./vendor/**)`, `Read(./.next/**)`, `Read(./target/**)`, `Read(*.map)`, `Read(*.pem)`, and one rule per lock file you have: `Read(pnpm-lock.yaml)`, `Read(yarn.lock)`, `Read(poetry.lock)`, `Read(Cargo.lock)`, `Read(uv.lock)`.
+
+### Converting an Existing `.claudeignore`
+
+| Ignore-file line | Read rule |
+|------------------|-----------|
+| `dir/` (e.g. `node_modules/`) | `Read(./node_modules/**)` |
+| A path with a `/` elsewhere (e.g. `.vscode/settings.json`, `/config/local.json`) | `Read(./.vscode/settings.json)`, `Read(./config/local.json)` (strip a leading `/`) |
+| A bare name or glob with no `/` (e.g. `.env`, `*.min.js`) | `Read(.env)`, `Read(*.min.js)` (matches at any depth) |
+| Blank lines, `#` comments, `!` negations | Skip |
 
 ### Measuring the Impact
 
-You can estimate how much `.claudeignore` saves by checking what Claude would otherwise find:
+There is no published measurement of what Read deny rules save. The effect depends on how often Claude would otherwise open those files. To gauge your exposure, count what sits in the paths you deny, and run `/context` in a session to see what is consuming space:
 
 ```bash
-# Count how many files Claude would index without .claudeignore
+# Count every file in the project
 find . -type f | wc -l
 
 # Count how many are in node_modules alone
@@ -526,21 +478,19 @@ find ./node_modules -type f 2>/dev/null | wc -l
 # A typical React project: 30,000+ files in node_modules vs ~200 source files
 ```
 
-In a project with `node_modules/` containing 30,000 files, a single Glob search returning even 100 results from dependencies adds ~500-2,000 tokens of useless context per search. Over a 30-turn session with multiple searches, this adds up to 5,000-20,000 wasted tokens.
-
 ---
 
 ## File Read Strategies
 
 ### The Problem with Full File Reads
 
-When Claude uses the Read tool on a file, the entire file content becomes part of the conversation history. A 500-line file is approximately 5,000 tokens — and those tokens persist for every remaining turn.
+When Claude uses the Read tool on a file, the entire file content becomes part of the conversation history. A 500-line file is approximately 5,000 tokens -- and those tokens persist for every remaining turn.
 
 ```
 Reading a 500-line file on turn 5 of a 30-turn session:
 = 5,000 tokens x 25 remaining turns
 = 125,000 extra input tokens
-= $0.375 on Sonnet (uncached) or ~$0.075 (with 80% caching)
+= $0.375 on Sonnet 4.6 (uncached) or ~$0.105 (with 80% caching: 100K cached at $0.30/1M + 25K fresh at $3/1M)
 ```
 
 Reading three large files carelessly can add more cost than your entire CLAUDE.md.
@@ -556,7 +506,7 @@ Look at the user service and fix the bug
 
 Use:
 ```
-Fix the null pointer in src/services/userService.ts — the getUserById function around line 45
+Fix the null pointer in src/services/userService.ts -- the getUserById function around line 45
 ```
 
 Claude will read only the relevant section instead of the entire file.
@@ -574,7 +524,7 @@ Claude can use Grep to find the function and read only the surrounding lines rat
 If you know where the relevant code is, tell Claude:
 
 ```
-Read lines 120-180 of src/models/Order.ts — that's the calculateTotal method
+Read lines 120-180 of src/models/Order.ts -- that's the calculateTotal method
 ```
 
 **4. Let Claude search instead of read**
@@ -601,18 +551,30 @@ What routes are defined in src/config/routes.ts? Just list the paths and HTTP me
 
 This signals Claude to scan efficiently rather than ingest the whole file into a detailed analysis.
 
+**6. Use code intelligence instead of grep-then-read**
+
+Anthropic's costs page notes that code intelligence plugins replace grep-then-read-many-files with one go-to-definition call. If a plugin exists for your language, it is the cheapest way for Claude to find a symbol.
+
 ### File Read Cost Reference
 
-| File Size | Tokens | Per-Turn Cost (Sonnet) | 30-Turn Carry Cost |
+| File Size | Tokens | Per-Turn Cost (Sonnet 4.6) | 30-Turn Carry Cost |
 |:---------:|:------:|:---------------------:|:------------------:|
-| 50 lines | ~500 | $0.0015 | ~$0.009 |
-| 100 lines | ~1,000 | $0.003 | ~$0.018 |
-| 300 lines | ~3,000 | $0.009 | ~$0.054 |
-| 500 lines | ~5,000 | $0.015 | ~$0.090 |
-| 1,000 lines | ~10,000 | $0.030 | ~$0.180 |
-| 2,000 lines | ~20,000 | $0.060 | ~$0.360 |
+| 50 lines | ~500 | $0.0015 | ~$0.013 |
+| 100 lines | ~1,000 | $0.003 | ~$0.025 |
+| 300 lines | ~3,000 | $0.009 | ~$0.076 |
+| 500 lines | ~5,000 | $0.015 | ~$0.126 |
+| 1,000 lines | ~10,000 | $0.030 | ~$0.252 |
+| 2,000 lines | ~20,000 | $0.060 | ~$0.504 |
 
-> "30-turn carry cost" = the total extra input cost of having that file in history for the remaining 30 turns at blended cache rate. Actual cost is lower with higher cache rates but these are useful upper-bound estimates.
+> "Per-turn cost" is the uncached input rate ($3/MTok on Sonnet 4.6). "30-turn carry cost" is the extra input cost of keeping that file in history for 30 more turns at an 80% cache-hit blend: 80% at $0.30/MTok plus 20% at $3/MTok, which is $0.84/MTok. A higher cache-hit rate lowers it; a cold cache raises it toward the uncached rate.
+
+### Keep Tool Output Small
+
+File reads are not the only tool results that pile up in history:
+
+- **Filter verbose output with a hook.** Hooks can preprocess output before Claude sees it. Anthropic's example is a PreToolUse hook that filters test output down to failures, which cuts tens of thousands of tokens to hundreds.
+- **Prefer CLI tools to MCP servers where one exists** (`gh`, `aws`, `gcloud`, `sentry-cli`). They add no per-tool listing. MCP tool search is on by default, so only tool names and server instructions enter context until Claude uses a specific tool; full schemas load up front only when tool search is off (`ENABLE_TOOL_SEARCH=false`, a custom `ANTHROPIC_BASE_URL`, or models older than the Claude 4.5 generation on Google Cloud). Disable unused servers with `/mcp`.
+- **Watch MCP output size.** Claude Code warns when an MCP tool result exceeds 10,000 tokens and caps it at 25,000 by default (`MAX_MCP_OUTPUT_TOKENS`).
 
 ---
 
@@ -638,9 +600,9 @@ Savings: 70,000-75,000 tokens of input per turn going forward
 |--------|--------|
 | Session exceeds 20 turns | Run `/compact` |
 | `/usage` shows input tokens > 60K per turn | Run `/compact` |
-| Claude seems slow to respond | Context may be large — run `/compact` |
+| Claude seems slow to respond | Context may be large -- run `/compact` |
 | You are switching to a different area of the codebase | Run `/compact` (or start a new session) |
-| Claude is "forgetting" earlier instructions | Context may be truncating — `/compact` + restate key context |
+| Claude is "forgetting" earlier instructions | Context may have been auto-compacted (older history summarized) -- restate key context, or `/compact` with instructions on what to keep |
 
 ### When NOT to Use /compact
 
@@ -654,9 +616,11 @@ Savings: 70,000-75,000 tokens of input per turn going forward
 
 `/compact` is not free:
 
-1. **It costs tokens to generate the summary** — Claude produces output tokens for the summary (an output cost)
-2. **It breaks the prompt cache** — the conversation structure changes, so cached content needs to be re-cached
-3. **It loses detail** — the summary is lossy; specific code snippets and exact phrasings may be lost
+1. **It costs tokens to generate the summary** -- Claude produces output tokens for the summary (an output cost). While the cache is warm, the summarization request reads the prefix from cache, so it costs a fraction of the context size; after a break longer than the cache TTL it reprocesses the full history uncached
+2. **It rebuilds the conversation layer of the cache** -- the summary replaces the history, so that part needs to be re-cached
+3. **It loses detail** -- the summary is lossy; specific code snippets and exact phrasings may be lost
+
+Two cheaper alternatives: `/clear` costs nothing when you no longer need the old context, and `/rewind` returns to an already-cached prefix when you want to back out of a wrong turn.
 
 The rule of thumb: **`/compact` pays for itself after 3-5 turns** following the compaction. If you have fewer turns left, it may not be worth it. If you have 10+ turns left, it is almost always worth it.
 
@@ -665,7 +629,7 @@ The rule of thumb: **`/compact` pays for itself after 3-5 turns** following the 
 You can provide a focus hint when compacting:
 
 ```
-/compact Focus on the authentication refactor — keep all decisions about JWT token structure and middleware changes.
+/compact Focus on the authentication refactor -- keep all decisions about JWT token structure and middleware changes.
 ```
 
 This helps Claude prioritize what to preserve in the summary, reducing the risk of losing important context.
@@ -691,7 +655,7 @@ With subagents:
 
 ### What Comes Back to Main Context
 
-When a subagent completes, only its **final result** is added to your main conversation. Not the files it read, not the searches it ran — just the answer. This is typically 100-500 tokens vs the 10,000-50,000 tokens the subagent consumed internally.
+When a subagent completes, only its **final result** is added to your main conversation. Not the files it read, not the searches it ran -- just the answer. This is typically 100-500 tokens vs the 10,000-50,000 tokens the subagent consumed internally.
 
 ### Best Use Cases for Subagents
 
@@ -710,16 +674,19 @@ Claude Code automatically uses subagents for certain complex tasks, but you can 
 ```
 Search the entire src/ directory for all usages of the deprecated
 calculateTotal function, and give me a summary of which files need updating.
-Don't read the full files — just tell me file names and line numbers.
+Don't read the full files -- just tell me file names and line numbers.
 ```
 
 By asking for a summary, you signal Claude to delegate the heavy search to a subagent and return only the distilled result.
 
+For simple subagent tasks, set `model: haiku` in the subagent definition, as Anthropic's costs page suggests.
+
 ### When Subagents Are Not Worth It
 
-- **Very short tasks** — The overhead of spawning a subagent (separate context initialization) may cost more than just doing it inline for simple lookups
-- **Tasks requiring tight interaction** — If the subagent's result determines your next 5 prompts, the back-and-forth negates the isolation benefit
-- **Already-small context** — If your main context is under 20K tokens, isolation savings are minimal
+- **Very short tasks** -- The overhead of spawning a subagent (separate context initialization) may cost more than just doing it inline for simple lookups
+- **Tasks requiring tight interaction** -- If the subagent's result determines your next 5 prompts, the back-and-forth negates the isolation benefit
+- **Already-small context** -- If your main context is under 20K tokens, isolation savings are minimal
+- **Agent teams by default** -- Anthropic's costs page says agent teams use about 7x the tokens of a standard session when teammates run in plan mode
 
 ---
 
@@ -729,7 +696,7 @@ By asking for a summary, you signal Claude to delegate the heavy search to a sub
 
 Your prompts are typically 20-200 tokens, which seems small compared to system prompts and history. But concise prompts have a second-order benefit: **they produce shorter conversations**, which means less history accumulation.
 
-A vague prompt leads to clarification questions, false starts, and iteration — each adding to history. A precise prompt often gets the right result in one turn.
+A vague prompt leads to clarification questions, false starts, and iteration -- each adding to history. A precise prompt often gets the right result in one turn.
 
 ### Bad vs Good Prompts (With Token Impact)
 
@@ -744,11 +711,11 @@ but I'm not sure. Can you take a look and see what might be going on?
 
 Good (28 tokens):
 ```
-Fix the null reference crash in src/middleware/auth.ts — req.user is
+Fix the null reference crash in src/middleware/auth.ts -- req.user is
 undefined when the JWT token is expired. Add a null check before line 23.
 ```
 
-The bad prompt will trigger Claude to: search for auth files, read multiple files, ask clarifying questions, and guess at the issue — costing 3-5 turns. The good prompt leads to a 1-turn fix.
+The bad prompt will trigger Claude to: search for auth files, read multiple files, ask clarifying questions, and guess at the issue -- costing 3-5 turns. The good prompt leads to a 1-turn fix.
 
 **Estimated cost difference: $0.08 vs $0.02 (Sonnet) for the same outcome.**
 
@@ -775,12 +742,12 @@ The good prompt is actually fewer tokens *and* more specific. Claude can impleme
 
 ### Prompt Conciseness Rules
 
-1. **Name exact files and paths** — "in `src/services/auth.ts`" not "in the auth service"
-2. **Reference line numbers when possible** — "around line 45" saves a file search
-3. **Specify the expected pattern** — "return `{ error, code }` format" not "handle errors properly"
-4. **Batch related changes** — one prompt for 5 related edits beats 5 separate prompts
-5. **Skip pleasantries** — "Fix X" not "Hey, could you possibly help me fix X?"
-6. **Use structured formats** — bullet points and specs are more token-efficient than prose
+1. **Name exact files and paths** -- "in `src/services/auth.ts`" not "in the auth service"
+2. **Reference line numbers when possible** -- "around line 45" saves a file search
+3. **Specify the expected pattern** -- "return `{ error, code }` format" not "handle errors properly"
+4. **Batch related changes** -- one prompt for 5 related edits beats 5 separate prompts
+5. **Skip pleasantries** -- "Fix X" not "Hey, could you possibly help me fix X?"
+6. **Use structured formats** -- bullet points and specs are more token-efficient than prose
 
 ---
 
@@ -819,7 +786,9 @@ Three lines in CLAUDE.md (~21 tokens) that are loaded once per turn via cache, r
 |-----------------|-------|-----|
 | Universal rules (applies to every task) | CLAUDE.md | Loaded every turn, always available |
 | Module-specific patterns | Nested CLAUDE.md in that directory | Only loaded when working in that area |
-| Rare/specialized workflows | Custom slash command | Only loaded when explicitly invoked |
+| Rules for one file type or path | `.claude/rules/` file with `paths:` frontmatter | Only loaded when Claude reads a matching file |
+| Workflow-specific instructions (PR reviews, DB migrations) | Skill | Loads on demand |
+| Rare/specialized workflows | Skill or custom slash command | Only loaded when explicitly invoked |
 | One-off task context | Your prompt | Does not persist beyond this session |
 
 ### Nested CLAUDE.md Files
@@ -840,7 +809,7 @@ project/
 
 This lets you move domain-specific instructions out of the root CLAUDE.md (reducing its size) while still having them available when relevant.
 
-> **Important**: All loaded instruction files share the **12,000-character total budget**. If your root CLAUDE.md is 3,000 characters and your `src/client/CLAUDE.md` is 2,500 characters, that is 5,500 characters of budget consumed when working in `src/client/`. Plan your hierarchy so that the files loaded for any given working directory stay well under 12K combined.
+> **Important**: There is no shared character budget and nothing is truncated. What you pay is tokens: once `src/client/CLAUDE.md` loads, its tokens sit in context alongside the root file. Keep each file lean -- Anthropic's target is under 200 lines per CLAUDE.md file.
 
 **Example: moving frontend rules to `src/client/CLAUDE.md`**
 
@@ -852,7 +821,7 @@ Savings: 40 fewer lines in root CLAUDE.md = ~280 fewer tokens on every non-front
 
 ### Custom Slash Commands for Specialized Workflows
 
-For workflows you run occasionally (deploying, database migrations, performance audits), create custom commands instead of putting instructions in CLAUDE.md:
+For workflows you run occasionally (deploying, database migrations, performance audits), keep the instructions out of CLAUDE.md. Anthropic's costs page recommends moving workflow-specific instructions into skills, which load on demand. A custom command does the same job for a checklist you trigger yourself:
 
 ```
 .claude/commands/deploy.md:
@@ -876,23 +845,24 @@ Invoke with `/deploy` when needed. This keeps 20+ lines out of CLAUDE.md and onl
 
 Apply these in order of impact:
 
-- [ ] **Audit CLAUDE.md** — keep each file under 4,000 characters (hard limit), total under 12,000 characters across all instruction files; move extras to nested files or commands
-- [ ] **Create `.claudeignore`** — copy the recommended file from this guide and customize
-- [ ] **Set budget caps** — `claude --max-budget-usd 5` as your default launch command
-- [ ] **Use `/compact` after 20 turns** — or sooner if `/usage` shows high input token counts
-- [ ] **Reference specific files and lines** in prompts — avoid triggering full-file reads
-- [ ] **Batch related changes** into single prompts — fewer turns = less history growth
-- [ ] **Use subagents for search-heavy tasks** — keep search results out of main context
-- [ ] **Move domain rules to nested CLAUDE.md files** — reduce root file size
-- [ ] **Create commands for rare workflows** — deploy, migrate, audit procedures
-- [ ] **Start new sessions for new tasks** — do not carry stale context
+- [ ] **Audit CLAUDE.md** -- target under 200 lines per file (Anthropic's guidance); move workflow instructions to skills and area-specific rules to path-scoped `.claude/rules/` or nested CLAUDE.md files
+- [ ] **Add Read deny rules** -- copy the `permissions.deny` block from this guide into `.claude/settings.json` and customize
+- [ ] **Set budget caps** -- `claude -p --max-budget-usd 5 "..."` on scripted runs (print mode only), and a budget hook such as [hooks/budget-tracker.sh](../hooks/budget-tracker.sh) for interactive sessions
+- [ ] **Use `/compact` after 20 turns** -- or sooner if `/usage` shows high input token counts
+- [ ] **Reference specific files and lines** in prompts -- avoid triggering full-file reads
+- [ ] **Batch related changes** into single prompts -- fewer turns = less history growth
+- [ ] **Use subagents for search-heavy tasks** -- keep search results out of main context
+- [ ] **Filter verbose tool output** -- e.g. a PreToolUse hook that keeps only failing tests
+- [ ] **Move domain rules to nested CLAUDE.md files** -- reduce root file size
+- [ ] **Create commands for rare workflows** -- deploy, migrate, audit procedures
+- [ ] **Start new sessions for new tasks** -- do not carry stale context
 
 ### Expected Savings When Fully Applied
 
 | Strategy | Savings on Input | Effort to Implement |
 |----------|:----------------:|:-------------------:|
 | CLAUDE.md under 150 lines | 10-20% | One-time, 15 minutes |
-| .claudeignore configured | 5-15% | One-time, 2 minutes |
+| Read deny rules configured | Not measured (no published figure; depends on how often Claude would open those files) | One-time, 2 minutes |
 | /compact usage | 10-20% per long session | Ongoing habit |
 | Precise file references | 5-15% | Ongoing habit |
 | Subagent delegation | 10-25% on search-heavy sessions | Ongoing habit |
@@ -901,8 +871,8 @@ Apply these in order of impact:
 | New sessions for new tasks | 10-20% | Ongoing habit |
 | **Combined** | **30-50% reduction** | |
 
-These percentages compound. A developer who was spending $15/day on Sonnet can realistically drop to $7-10/day by applying all of these strategies — saving $110-176/month.
+These percentages compound. A developer who was spending $15/day on Sonnet can realistically drop to $7-10/day by applying all of these strategies -- saving $110-176/month.
 
 ---
 
-*Next: [Guide 03 - Model Selection](03-model-selection.md) — when to use Opus vs Sonnet vs Haiku, with a decision tree and cost comparisons for every task type.*
+*Next: [Guide 03 - Model Selection](03-model-selection.md) -- when to use Opus vs Sonnet vs Haiku, with a decision tree and cost comparisons for every task type.*

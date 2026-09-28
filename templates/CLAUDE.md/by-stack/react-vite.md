@@ -99,7 +99,7 @@ export const Button = ({ variant = 'primary', children, onClick }: ButtonProps) 
 
 ## Styling (Tailwind CSS)
 
-- Utility-first — use Tailwind classes directly in JSX
+- Utility-first -- use Tailwind classes directly in JSX
 - No inline `style` props or CSS-in-JS
 - Custom design tokens in `tailwind.config.{js/ts}`
 - Use `cn()` utility (clsx + tailwind-merge) for conditional classes
@@ -107,17 +107,17 @@ export const Button = ({ variant = 'primary', children, onClick }: ButtonProps) 
 
 ## Code Rules
 
-- Named exports only — no default exports
+- Named exports only -- no default exports
 - `interface` for object shapes, `type` for unions/intersections
-- No `any` — use `unknown` and narrow with type guards
+- No `any` -- use `unknown` and narrow with type guards
 - Files: `kebab-case.ts` for utils, `PascalCase.tsx` for components
 - Tests: `{name}.test.tsx` co-located or in `tests/` mirror
 
 ## Do Not
 
 - Do not use class components
-- Do not import from `src/` using relative paths deeper than two levels — use `@/` alias
-- Do not add global CSS — use Tailwind utilities or component-scoped styles
+- Do not import from `src/` using relative paths deeper than two levels -- use `@/` alias
+- Do not add global CSS -- use Tailwind utilities or component-scoped styles
 - Do not install new dependencies without asking first
 - Do not modify `vite.config.ts` without discussing impact on build
 

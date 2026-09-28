@@ -15,10 +15,19 @@ const DEMO_REPO = 'Sagargupta16/claude-cost-optimizer'
 const LOCAL_CMD =
   'curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- .'
 
-function charBarColor(charCount: number, overLimit: boolean): string {
-  if (overLimit) return 'var(--error-red)'
-  if (charCount > 3000) return 'var(--warning-yellow)'
+// Anthropic's guidance: "target under 200 lines per CLAUDE.md file".
+const CLAUDE_MD_LINE_GUIDANCE = 200
+
+function lineBarColor(lineCount: number): string {
+  if (lineCount > CLAUDE_MD_LINE_GUIDANCE) return 'var(--error-red)'
+  if (lineCount > 100) return 'var(--warning-yellow)'
   return 'var(--accent-green)'
+}
+
+function lockFilesLabel(present: string[], uncovered: string[]): string {
+  if (present.length === 0) return 'None at root'
+  if (uncovered.length > 0) return `Not covered: ${uncovered.join(', ')}`
+  return 'Covered'
 }
 
 function categoryColor(score: number, maxScore: number): string {
@@ -108,8 +117,9 @@ function RepoAnalyzer() {
       <h1 className={styles.title}>Repo Analyzer</h1>
       <p className={styles.subtitle}>
         Paste a GitHub repo URL to analyze its Claude Code configuration and get
-        cost optimization recommendations. Checks CLAUDE.md, .claudeignore,
-        settings, MCP servers, hooks, skills, agents, commands, and secrets.
+        cost optimization recommendations. Checks CLAUDE.md, file-read
+        exclusions (Read rules in permissions.deny), settings, MCP servers,
+        hooks, skills, agents, commands, and secrets.
       </p>
 
       <div className={styles.inputSection}>
@@ -161,8 +171,8 @@ function RepoAnalyzer() {
         <div className={styles.localText}>
           <strong>Private or local repo?</strong> Run <code>claude-rate</code> in
           any project directory -- same rubric, plus local-only checks
-          (.claudeignore coverage vs files on disk, settings.local.json, leaked
-          secrets):
+          (gitignored settings.local.json, leaked secrets, files you have not
+          pushed):
         </div>
         <div className={styles.localCmdRow}>
           <code className={styles.localCmd}>{LOCAL_CMD}</code>
@@ -254,38 +264,33 @@ function RepoAnalyzer() {
               {result.claudeMd.found ? (
                 <div className={styles.statList}>
                   <div className={styles.stat}>
-                    <span className={styles.statLabel}>Characters</span>
+                    <span className={styles.statLabel}>Lines (guidance: under 200)</span>
                     <span
-                      className={`${styles.statValue} ${result.claudeMd.overLimit ? styles.statDanger : ''}`}
+                      className={`${styles.statValue} ${result.claudeMd.overGuidance ? styles.statDanger : ''}`}
                     >
-                      {result.claudeMd.charCount.toLocaleString()} / 4,000
+                      {result.claudeMd.lineCount} / {CLAUDE_MD_LINE_GUIDANCE}
                     </span>
                   </div>
                   <div className={styles.stat}>
-                    <span className={styles.statLabel}>Lines</span>
+                    <span className={styles.statLabel}>Characters</span>
                     <span className={styles.statValue}>
-                      {result.claudeMd.lineCount}
+                      {result.claudeMd.charCount.toLocaleString()}
                     </span>
                   </div>
-                  {result.claudeMdAll.fileCount > 1 && (
-                    <div className={styles.stat}>
-                      <span className={styles.statLabel}>Total across files</span>
-                      <span
-                        className={`${styles.statValue} ${result.claudeMdAll.overLimit ? styles.statDanger : ''}`}
-                      >
-                        {result.claudeMdAll.totalChars.toLocaleString()} / 12,000
-                      </span>
-                    </div>
-                  )}
+                  <div className={styles.stat}>
+                    <span className={styles.statLabel}>
+                      Est. tokens ({result.claudeMdAll.fileCount} file{result.claudeMdAll.fileCount === 1 ? '' : 's'})
+                    </span>
+                    <span className={styles.statValue}>
+                      ~{result.claudeMdAll.totalTokens.toLocaleString()}
+                    </span>
+                  </div>
                   <div className={styles.charBar}>
                     <div
                       className={styles.charFill}
                       style={{
-                        width: `${Math.min((result.claudeMd.charCount / 4000) * 100, 100)}%`,
-                        backgroundColor: charBarColor(
-                          result.claudeMd.charCount,
-                          result.claudeMd.overLimit,
-                        ),
+                        width: `${Math.min((result.claudeMd.lineCount / CLAUDE_MD_LINE_GUIDANCE) * 100, 100)}%`,
+                        backgroundColor: lineBarColor(result.claudeMd.lineCount),
                       }}
                     />
                   </div>
@@ -295,35 +300,69 @@ function RepoAnalyzer() {
               )}
             </div>
 
-            {/* .claudeignore */}
+            {/* File-read exclusions: Read(...) rules in permissions.deny */}
             <div className={styles.panel}>
-              <h2 className={styles.panelTitle}>.claudeignore</h2>
-              {result.claudeIgnore.found ? (
-                <div className={styles.statList}>
-                  <div className={styles.stat}>
-                    <span className={styles.statLabel}>Patterns</span>
-                    <span className={styles.statValue}>
-                      {result.claudeIgnore.entryCount}
-                    </span>
+              <h2 className={styles.panelTitle}>File-read exclusions</h2>
+              <div className={styles.statList}>
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Read deny rules</span>
+                  <span
+                    className={`${styles.statValue} ${result.fileReadExclusions.readDenyRules.length > 0 ? styles.statGood : styles.statWarn}`}
+                  >
+                    {result.fileReadExclusions.readDenyRules.length}
+                  </span>
+                </div>
+                {result.fileReadExclusions.readDenyRules.length > 0 ? (
+                  <div className={styles.entryList}>
+                    {result.fileReadExclusions.readDenyRules.slice(0, 10).map((r) => (
+                      <code key={r} className={styles.entry}>
+                        {r}
+                      </code>
+                    ))}
+                    {result.fileReadExclusions.readDenyRules.length > 10 && (
+                      <span className={styles.moreEntries}>
+                        +{result.fileReadExclusions.readDenyRules.length - 10} more
+                      </span>
+                    )}
                   </div>
-                  {result.claudeIgnore.entries.length > 0 && (
+                ) : (
+                  <p className={styles.notFound}>No Read deny rules in permissions.deny</p>
+                )}
+                <div className={styles.stat}>
+                  <span className={styles.statLabel}>Lock files</span>
+                  <span
+                    className={`${styles.statValue} ${result.fileReadExclusions.lockFilesUncovered.length > 0 ? styles.statWarn : styles.statGood}`}
+                  >
+                    {lockFilesLabel(result.fileReadExclusions.lockFilesPresent, result.fileReadExclusions.lockFilesUncovered)}
+                  </span>
+                </div>
+                {result.fileReadExclusions.ignoreFileFound && (
+                  <>
+                    <div className={styles.stat}>
+                      <span className={styles.statLabel}>.claudeignore</span>
+                      <span className={`${styles.statValue} ${styles.statDanger}`}>
+                        Not read by Claude Code
+                      </span>
+                    </div>
+                    <p className={styles.notFound}>
+                      It appears nowhere in Claude Code's documentation and scores
+                      nothing. Its patterns as Read deny rules:
+                    </p>
                     <div className={styles.entryList}>
-                      {result.claudeIgnore.entries.slice(0, 10).map((e) => (
-                        <code key={e} className={styles.entry}>
-                          {e}
+                      {result.fileReadExclusions.ignoreFileRules.slice(0, 10).map((r) => (
+                        <code key={r} className={styles.entry}>
+                          {r}
                         </code>
                       ))}
-                      {result.claudeIgnore.entries.length > 10 && (
+                      {result.fileReadExclusions.ignoreFileRules.length > 10 && (
                         <span className={styles.moreEntries}>
-                          +{result.claudeIgnore.entries.length - 10} more
+                          +{result.fileReadExclusions.ignoreFileRules.length - 10} more
                         </span>
                       )}
                     </div>
-                  )}
-                </div>
-              ) : (
-                <p className={styles.notFound}>Not found</p>
-              )}
+                  </>
+                )}
+              </div>
             </div>
 
             {/* Settings */}

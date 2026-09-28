@@ -4,41 +4,32 @@ Go from zero to optimized Claude Code setup in 5 steps. No tools to install -- j
 
 ---
 
-## Step 1: Create a `.claudeignore` (1 minute)
+## Step 1: Deny reads of junk paths (1 minute)
 
-Create a `.claudeignore` file in your project root. This stops Claude from reading files that waste tokens.
+Add `permissions.deny` rules to `.claude/settings.json` in your project root. `Read(...)` rules keep Claude's file tools out of files that waste tokens, and also apply to the file commands Claude Code recognizes in Bash (`cat`, `head`, `tail`, `sed`, `tee`).
 
-```
-# Build outputs
-dist/
-build/
-out/
-.next/
-target/
-
-# Dependencies
-node_modules/
-vendor/
-.venv/
-__pycache__/
-
-# Lock files
-package-lock.json
-pnpm-lock.yaml
-yarn.lock
-poetry.lock
-Cargo.lock
-
-# Generated
-*.min.js
-*.map
-*.d.ts
-coverage/
+```json
+{
+  "permissions": {
+    "deny": [
+      "Read(./node_modules/**)",
+      "Read(./dist/**)",
+      "Read(./build/**)",
+      "Read(./coverage/**)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(*.min.js)",
+      "Read(./package-lock.json)"
+    ]
+  }
+}
 ```
 
-Adapt to your stack. The goal: exclude anything Claude doesn't need to read.
+Adapt to your stack. Patterns use gitignore syntax: `./path` is relative to the project, `*` matches within one path segment, `**` across directories, and a bare filename such as `Read(.env)` matches at any depth.
 
-**Savings: 5-15%** from reduced file read tokens.
+> `.claudeignore` is not a Claude Code feature: it appears nowhere in Claude Code's documentation and Claude Code does not read it. If you made one, convert each line: `dir/` becomes `Read(./dir/**)`, a line with a `/` elsewhere becomes `Read(./line)` (strip a leading `/`), and a bare name or glob becomes `Read(line)`. Skip blank lines, `#` comments and `!` negations.
+
+**Savings: no published measurement.** The effect depends on how often Claude would otherwise open those files. Scoped rules like `Read(./dist/**)` do not change which tools Claude sees, so they do not invalidate the prompt cache.
 
 ---
 
@@ -47,8 +38,8 @@ Adapt to your stack. The goal: exclude anything Claude doesn't need to read.
 If you don't have a `CLAUDE.md`, create one at your project root. If you do, check its size:
 
 ```bash
-wc -c CLAUDE.md
-# Should be under 4,000 characters
+wc -l CLAUDE.md
+# Anthropic's guidance: under 200 lines
 ```
 
 Keep it focused:
@@ -60,9 +51,11 @@ Keep it focused:
 
 **What to cut**: verbose explanations, full API docs, things Claude can figure out from the code.
 
-Hard limits:
-- **4,000 characters per file** (content beyond this is silently truncated)
-- **12,000 characters total** across all instruction files
+There is no character cap: CLAUDE.md files in the directories above your working directory load in full at launch. Anthropic's guidance is to "target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence." Every line costs tokens in every session, so move situational content somewhere that loads on demand:
+- **Skills** for workflow-specific instructions (PR reviews, DB migrations)
+- **Path-scoped rules** in `.claude/rules/` (with `paths:` frontmatter) or a **subdirectory CLAUDE.md** for rules that apply to one part of the tree; both load when Claude reads a matching file
+
+`@path` imports help you organize a long file, but imported files still load at launch, so they do not cut tokens.
 
 Grab a template: [minimal](../templates/CLAUDE.md/minimal.md) | [standard](../templates/CLAUDE.md/standard.md) | [by stack](../templates/CLAUDE.md/by-stack/)
 
@@ -76,9 +69,9 @@ You don't need Opus for everything. Quick rule:
 
 | Task | Model | Why |
 |------|-------|-----|
-| Architecture, complex refactors | Opus 5 | Anthropic's recommended start for complex agentic coding |
-| Feature implementation, debugging | Sonnet 5 | Good balance |
-| Tests, docs, formatting, renames | Haiku 4.5 | Fast, 5x cheaper than Opus |
+| Architecture, complex refactors | Opus 5.5 | Anthropic's recommended start for most workloads |
+| Feature implementation, debugging | Sonnet 5 | Good balance, 2x cheaper than Opus 5.5 |
+| Tests, docs, formatting, renames | Haiku 4.5 | Fast, 4x cheaper than Opus 5.5 |
 
 Switch models mid-session:
 
@@ -89,7 +82,7 @@ Switch models mid-session:
 # back to complex work
 ```
 
-**Opus 5 caveat** (GA 2026-07-24, same $5/$25 posted price as Opus 4.8): thinking is **on by default** when you omit the `thinking` param, and reasoning tokens bill as output at $25/1M. `max_tokens` caps thinking plus text together, so a small cap can be spent on thinking before the answer is written. Opus 5 also writes longer than Opus 4.8 and self-verifies on its own, so old "be brief" and "double-check your work" instructions are worth re-tuning. Details in [Guide 01](01-understanding-costs.md#token-pricing).
+**Opus 5.5 caveat** (released 2026-09-22, $4/$20, 20% below Opus 5's $5/$25): adaptive thinking is **always on** -- `thinking: {type: "disabled"}` returns a 400, so effort is the only control. Default effort is `medium` (Opus 5 defaulted to `high`), and reasoning tokens bill as output at $20/1M. Code that disabled thinking on Opus 5 now pays for thinking it did not pay for before, so re-baseline cost after migrating and lower it with `/effort`. `max_tokens` caps thinking plus text together, so a small cap can be spent on thinking before the answer is written. Details in [Guide 01](01-understanding-costs.md#token-pricing).
 
 **Savings: 20-40%** by matching model to task complexity.
 
@@ -108,7 +101,7 @@ This makes Claude think through the approach before writing code. The result:
 - Less back-and-forth correction
 - Smaller conversation history (the biggest cost driver in long sessions)
 
-Exit plan mode with `/plan` again when you're ready to code.
+Exit plan mode with `/plan` again when you're ready to code. You can also press Shift+Tab to cycle into plan mode.
 
 **Savings: 15-25%** from reduced iterative turns.
 
@@ -121,7 +114,8 @@ Every turn, Claude resends the entire conversation history. By turn 30, you're p
 Best practice:
 - **Start a new session** when switching tasks
 - **Use subagents** for isolated searches (`/agent` or let Claude spawn them)
-- **Compact** long sessions with `/compact` to summarize history
+- **Compact** long sessions with `/compact` to summarize history. While the prompt cache is warm the summary request reads from cache, so it costs a fraction of the context size; after a break longer than the cache TTL it reprocesses the full history uncached
+- **Clear** with `/clear` when the old context is no longer needed -- it costs nothing
 
 A 50-turn session costs 3-5x more per turn than a 10-turn session doing the same work.
 

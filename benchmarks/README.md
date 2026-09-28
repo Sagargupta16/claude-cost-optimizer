@@ -13,11 +13,12 @@ Each benchmark file compares costs along a specific dimension: task type, model 
 
 ### Pricing Reference
 
-All cost calculations use the following rates (verified 2026-09-05):
+All cost calculations use the following rates (verified 2026-09-28):
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
 |-------|:---------------------:|:----------------------:|:-------------------------:|
-| Opus 5 (current) | $5.00 | $25.00 | $0.50 |
+| Opus 5.5 (current) | $4.00 | $20.00 | $0.20 |
+| Opus 5 (legacy) | $5.00 | $25.00 | $0.50 |
 | Opus 4.8 (legacy) | $5.00 | $25.00 | $0.50 |
 | Opus 4.7 (legacy) | $5.00 | $25.00 | $0.50 |
 | Opus 4.6 (legacy) | $5.00 | $25.00 | $0.50 |
@@ -25,7 +26,7 @@ All cost calculations use the following rates (verified 2026-09-05):
 | Sonnet 4.6 | $3.00 | $15.00 | $0.30 |
 | Haiku 4.5 | $1.00 | $5.00 | $0.10 |
 
-Batch API pricing is 50% off the standard rates above. The new tokenizer used by Opus 4.7 and later (including Opus 4.8, Opus 5, and Sonnet 5) can use up to 35% more tokens for the same text, so expect ~20-35% higher absolute costs vs Opus 4.6 for identical workloads. Opus 5 needs no re-baselining from Opus 4.7 or 4.8 -- they share the same tokenizer. Note that Opus 5 enables adaptive thinking by default and bills reasoning tokens as output at the normal output rate, so an untuned Opus 5 run costs more than the same work on Opus 4.8 despite the identical posted rates. Sonnet 5 is $2/$10 -- permanent, after Anthropic cancelled the increase to $3/$15 that was scheduled for 2026-09-01.
+Batch API pricing is 50% off the standard rates above. The new tokenizer used by Opus 4.7 and later (including Opus 4.8, Opus 5, Opus 5.5, and Sonnet 5) can use up to 35% more tokens for the same text, so expect ~20-35% higher absolute costs vs Opus 4.6 for identical workloads. Opus 5 needs no re-baselining from Opus 4.7 or 4.8 -- they share the same tokenizer. Note that Opus 5 enables adaptive thinking by default and bills reasoning tokens as output at the normal output rate, so an untuned Opus 5 run costs more than the same work on Opus 4.8 despite the identical posted rates. Opus 5.5 is $4/$20 (20% below Opus 5) and reads cache at 0.05x base input, but thinking is always on and effort defaults to `medium`, so re-baseline rather than scaling Opus 5 figures by 0.8. Sonnet 5 is $2/$10 -- permanent, after Anthropic cancelled the increase to $3/$15 that was scheduled for 2026-09-01.
 
 ### What "Estimated" Means
 
@@ -34,7 +35,7 @@ These benchmarks are **estimates based on real usage patterns**, not determinist
 - Exact prompt wording and follow-up turns
 - Size and complexity of the codebase being worked on
 - Contents of CLAUDE.md and other context files
-- Whether prompt caching is active (cached input tokens cost 90% less)
+- Whether prompt caching is active (cached input tokens cost 90% less; 95% on Opus 5.5, 97.5% on Fable 5.1)
 - Network conditions and retries
 
 We report ranges where possible. The numbers are designed to show **relative differences** between approaches rather than exact dollar amounts you will see on your bill.
@@ -110,7 +111,7 @@ When submitting results, please include:
 ### [Your Scenario Name]
 
 **Environment:**
-- Model: [Opus 5 / Sonnet 5 / Opus 4.8 / Opus 4.7 / Opus 4.6 / Sonnet 4.6 / Haiku 4.5]
+- Model: [Opus 5.5 / Opus 5 / Sonnet 5 / Opus 4.8 / Opus 4.7 / Opus 4.6 / Sonnet 4.6 / Haiku 4.5]
 - CLAUDE.md: [line count] lines (~[token count] tokens)
 - Codebase: [language/framework], [approximate size]
 - Date: [YYYY-MM-DD]
@@ -156,7 +157,7 @@ Not every session needs optimization. Use these benchmarks to identify your high
 
 Some optimizations reduce cost at the expense of quality or developer experience. The benchmarks note these tradeoffs explicitly. For example:
 
-- Haiku is 5x cheaper than Opus but struggles with complex architectural reasoning.
+- Haiku is 4x cheaper than Opus 5.5 (5x cheaper than the $5/$25 Opus models) but struggles with complex architectural reasoning.
 - A minimal CLAUDE.md saves tokens but may require more follow-up turns to correct style violations.
 - Subagent delegation reduces main context bloat but adds overhead for simple tasks.
 

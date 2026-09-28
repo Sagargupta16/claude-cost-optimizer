@@ -2,9 +2,9 @@
 
 > **The single highest-impact optimization.** Choosing the right model per task can reduce your Claude Code bill by 30-60% with zero loss in output quality.
 
-Most developers default to the most capable model for everything. This is like hiring a senior architect to change a lightbulb. Claude Fable 5 is extraordinary, but for renaming a variable it is a $50/M-output-token lightbulb-changer (and Opus 5 a $25 one). With the 4.7-generation tokenizer using up to 35% more tokens for the same text, the effective cost penalty for over-using top-tier models is even higher than posted pricing suggests.
+Most developers default to the most capable model for everything. This is like hiring a senior architect to change a lightbulb. Claude Fable 5.1 is extraordinary, but for renaming a variable it is a $50/M-output-token lightbulb-changer (and Opus 5.5 a $20 one). With the 4.7-generation tokenizer using up to 35% more tokens for the same text, the effective cost penalty for over-using top-tier models is even higher than posted pricing suggests.
 
-> **Opus 5** (`claude-opus-5`, GA 2026-07-24) is the Opus-tier flagship at the **same $5/$25** as Opus 4.8, so the upgrade is free at the posted rate. Opus 4.8 is now legacy. Two behavior changes matter for cost: thinking is **on by default** (reasoning tokens bill as output at $25/1M), and the minimum cacheable prompt drops to **512 tokens** from 1,024. See [Guide 08](08-prompt-caching.md) for the caching side and the Opus 5 notes below for the rest.
+> **Opus 5.5** (`claude-opus-5-5`, released 2026-09-22) is the recommended default Opus: Anthropic's models overview now says to "start with Claude Opus 5.5 for most workloads". It costs **$4/$20**, 20% below Opus 5's $5/$25 -- the first Opus release to lower the rate -- and cache hits read at **0.05x** base input ($0.20). Opus 5 is now legacy. Two behavior changes matter for cost: adaptive thinking is **always on** (it cannot be disabled; reasoning tokens bill as output at $20/1M), and default effort drops to **medium**. See [Migrating to Opus 5.5](#migrating-to-opus-55) below and [Guide 08](08-prompt-caching.md) for the caching side.
 
 ---
 
@@ -24,25 +24,28 @@ Most developers default to the most capable model for everything. This is like h
 
 ## Model Lineup and Pricing
 
-### Current Pricing (verified 2026-09-05, per 1M tokens)
+### Current Pricing (verified 2026-09-28, per 1M tokens)
 
 | Model | Input Cost | Output Cost | Cache Hit | 5m Cache Write | 1h Cache Write | Min cacheable prompt | Relative Cost | Context Window | Max Output |
 |-------|:----------:|:-----------:|:---------:|:--------------:|:--------------:|:--------------------:|:-------------:|:--------------:|:----------:|
-| **Fable 5.1** (most capable) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 512 | 2x baseline | 1M | 128K |
-| **Opus 5** (Opus flagship) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 512 | 1x (baseline) | 1M | 128K |
-| **Opus 4.8** (legacy) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1,024 | 1x (baseline) | 1M | 128K |
-| **Opus 4.7** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 2,048 | 1x (baseline) | 1M | 128K |
-| **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 4,096 | 1x (baseline) | 1M | 128K |
-| **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 4,096 | 1x (baseline) | 200K | 64K |
-| Opus 4.1 (retired 2026-08-05, still on Bedrock + Google Cloud) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 1,024 | 3x baseline | 200K | 32K |
-| **Sonnet 5** (Sonnet flagship) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1,024 | 2.5x cheaper | 1M | 128K |
-| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1,024 | ~1.67x cheaper | 1M | 64K |
-| **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1,024 | ~1.67x cheaper | 200K | 64K |
-| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 4,096 | 5x cheaper | 200K | 64K |
+| **Fable 5.1** (most capable) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 512 | 2.5x baseline | 1M | 128K |
+| **Opus 5.5** (recommended default Opus) | $4.00 | $20.00 | **$0.20** | $5.00 | $8.00 | 512 | 1x (baseline) | 1M | 128K |
+| **Opus 5** (legacy) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 512 | 1.25x baseline | 1M | 128K |
+| **Opus 4.8** (legacy) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1,024 | 1.25x baseline | 1M | 128K |
+| **Opus 4.7** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 2,048 | 1.25x baseline | 1M | 128K |
+| **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 4,096 | 1.25x baseline | 1M | 128K |
+| **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 4,096 | 1.25x baseline | 200K | 64K |
+| Opus 4.1 (retired 2026-08-05, still on Bedrock + Google Cloud) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 1,024 | 3.75x baseline | 200K | 32K |
+| **Sonnet 5** (Sonnet flagship) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1,024 | 2x cheaper | 1M | 128K |
+| **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1,024 | ~1.33x cheaper | 1M | 64K |
+| **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1,024 | ~1.33x cheaper | 200K | 64K |
+| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 4,096 | 4x cheaper | 200K | 64K |
 
-> **Min cacheable prompt** is the number of tokens a prefix must reach before `cache_control` does anything. Below the threshold the block is **silently ignored**: no error, no discount, full input price every turn. Opus 5 halving it to 512 means short system prompts that never cached on Opus 4.8 now do.
+> **Cache Hit** is 0.1x base input on every model except three: **Opus 5.5 reads at 0.05x** ($0.20, 95% off) and **Fable 5.1 / Mythos 5.1 read at 0.025x** ($0.25, 97.5% off). Read the per-model rate rather than multiplying input by 0.1.
 
-> **Opus 5** (GA 2026-07-24): the Opus-tier flagship and Anthropic's recommended starting point for complex agentic coding and enterprise work. **Same $5/$25 as Opus 4.8**, so the upgrade is free at the posted rate. 1M context at standard rates, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), Batch $2.50/$12.50, Fast Mode supported at 2x ($10/$50), knowledge cutoff May 2026, earliest retirement 2027-07-24. Four cost-relevant changes versus Opus 4.8:
+> **Min cacheable prompt** is the number of tokens a prefix must reach before `cache_control` does anything. Below the threshold the block is **silently ignored**: no error, no discount, full input price every turn. Opus 5 and Opus 5.5 halving it to 512 means short system prompts that never cached on Opus 4.8 now do.
+
+> **Opus 5** (GA 2026-07-24, legacy since the Opus 5.5 launch on 2026-09-22): the previous Opus-tier flagship. **Same $5/$25 as Opus 4.8**, so that upgrade was free at the posted rate; Opus 5.5 is now 20% cheaper per token. 1M context at standard rates, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), Batch $2.50/$12.50, Fast Mode supported at 2x ($10/$50), knowledge cutoff May 2026, earliest retirement 2027-07-24. Four cost-relevant changes versus Opus 4.8:
 > 1. **Adaptive thinking is ON by default** when you omit the `thinking` param. Reasoning tokens bill as output at $25/1M, and `max_tokens` caps thinking **plus** text -- carry over a small `max_tokens` and thinking can eat the budget before the answer is written. Raise it to 64K+ at `xhigh`/`max` effort.
 > 2. **`thinking: {type: "disabled"}` is only legal at effort `high` or below.** Pairing it with `xhigh` or `max` returns a 400. On Opus 4.8 that combination was allowed.
 > 3. **Minimum cacheable prompt drops to 512 tokens** (from 1,024).
@@ -50,47 +53,68 @@ Most developers default to the most capable model for everything. This is like h
 >
 > Opus 5 also writes **longer output than Opus 4.8 by default** and self-verifies its own work. Re-tune verbosity instructions after migrating, and delete carried-over "double-check your work" prompts -- you are now paying twice for behavior the model already performs.
 >
-> **Fable 5** (GA 2026-06-09, legacy): the Mythos-class tier **above** Opus at **$10/$50, 2x Opus 5**, superseded by Fable 5.1 at the same posted rate. 1M context at standard rates, 128K max output, always-on adaptive thinking (control depth with `effort`), Batch supported ($5/$25), no Fast Mode, 30-day data retention required, min cacheable prompt 512. Safety classifiers can decline a request (HTTP 200 + `stop_reason: "refusal"`; pre-output refusals are free; beta `fallbacks` retries another model server-side). **Cost guidance**: reach for Fable 5 only when the task genuinely needs frontier-plus capability -- the hardest reasoning, the longest autonomous runs. For everything else Opus 5 at half the price is the efficient frontier. **Mythos 5** is the same model minus the classifiers, limited to approved [Project Glasswing](https://anthropic.com/glasswing) customers.
+> **Fable 5** (GA 2026-06-09, legacy): the Mythos-class tier **above** Opus at **$10/$50, 2x Opus 5**, superseded by Fable 5.1 at the same posted rate. 1M context at standard rates, 128K max output, always-on adaptive thinking (control depth with `effort`), Batch supported ($5/$25), no Fast Mode, 30-day data retention required, min cacheable prompt 512. Safety classifiers can decline a request (HTTP 200 + `stop_reason: "refusal"`; pre-output refusals are free; beta `fallbacks` retries another model server-side). **Cost guidance**: reach for Fable 5 only when the task genuinely needs frontier-plus capability -- the hardest reasoning, the longest autonomous runs. For everything else Opus 5.5, 2.5x cheaper, is the efficient frontier. **Mythos 5** is the same model minus the classifiers, limited to approved [Project Glasswing](https://anthropic.com/glasswing) customers.
 >
-> **Opus 4.8 status**: Legacy as of the Opus 5 launch. Earliest retirement 2027-05-28. **Same $5/$25 as Opus 5, so there is no cost argument for staying.** Fast Mode supported at 2x. Min cacheable prompt 1,024. Reasons to pin it: prompts tuned to this snapshot, or a workload that needs thinking off at `xhigh`/`max` effort (which Opus 5 rejects with a 400). It also remains the server-side fallback target for Opus 5 cyber refusals.
+> **Opus 4.8 status**: Legacy as of the Opus 5 launch. Earliest retirement 2027-05-28. **Same $5/$25 as Opus 5, and Opus 5.5 is 20% cheaper, so there is no cost argument for staying.** Fast Mode supported at 2x. Min cacheable prompt 1,024. Reasons to pin it: prompts tuned to this snapshot, a workload that needs thinking off (Opus 5.5 rejects that outright; Opus 5 rejects it at `xhigh`/`max`), or Priority Tier, which Opus 4.8 keeps and Opus 5.5 does not offer. It also remains the server-side fallback target for Opus 5 cyber refusals.
 >
 > **Opus 4.7 status**: Legacy. Earliest retirement 2027-04-16. Same price. **Fast Mode was removed here** -- `speed: "fast"` now returns an error with no fallback to standard. Min cacheable prompt 2,048. Pick 4.7 only if you have prompts pinned to that snapshot.
 >
 > **Opus 4.6 status**: Legacy. Earliest retirement 2027-02-05. Same price. **Fast Mode was removed here too, but silently** -- `speed: "fast"` is accepted and runs at standard speed and standard rates (`usage.speed` comes back `"standard"`). Min cacheable prompt 4,096, the highest of any Opus. Pick 4.6 only if you want a stable snapshot or your prompts already perform well on it.
 >
-> **Opus 4.5 (200K-only)**: Legacy until at least 2026-11-24. Same price as the rest of the Opus tier but smaller context window, no Fast Mode, and a 4,096-token cache floor. Generally migrate to Opus 5 unless your code is pinned to this snapshot.
+> **Opus 4.5 (200K-only)**: Legacy; not deprecated, earliest retirement 2026-11-24. Same price as the rest of the legacy Opus tier but smaller context window, no Fast Mode, and a 4,096-token cache floor. Generally migrate to Opus 5.5 unless your code is pinned to this snapshot.
 >
-> **Sonnet 5** (`claude-sonnet-5`, GA 2026-06-30): the current Sonnet flagship -- best combination of speed and intelligence, adaptive thinking (`effort` defaults to high on the Claude API and Claude Code), 1M context at standard rates, 128K max output, no Fast Mode, min cacheable prompt 1,024. Uses the newer tokenizer (~30% more tokens for the same text). **$2/$10 per MTok, and that is now the permanent standard price** -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15. That puts Sonnet 5 **60% below Opus 5** and a third below legacy Sonnet 4.6. New default for most production work; Sonnet 4.6 is now legacy and strictly more expensive.
+> **Sonnet 5** (`claude-sonnet-5`, GA 2026-06-30): the current Sonnet flagship -- best combination of speed and intelligence, adaptive thinking (`effort` defaults to high on the Claude API and Claude Code), 1M context at standard rates, 128K max output, no Fast Mode, min cacheable prompt 1,024. Uses the newer tokenizer (~30% more tokens for the same text). **$2/$10 per MTok, and that is now the permanent standard price** -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15. That puts Sonnet 5 at **half the price of Opus 5.5** (60% below legacy Opus 5) and a third below legacy Sonnet 4.6. The cost-efficient default for most production work; Sonnet 4.6 is now legacy and strictly more expensive.
 >
-> **Sonnet 4.5 (200K-only)**: Legacy until at least 2026-09-29. Same price as Sonnet 4.6 but smaller context window. Migrate to Sonnet 5 if you need 1M.
+> **Sonnet 4.5 (200K-only)**: Legacy; not deprecated, earliest retirement 2026-09-29. Same price as Sonnet 4.6 but smaller context window. Migrate to Sonnet 5 if you need 1M.
 >
-> **Opus 4.1**: **Retired 2026-08-05** on the Claude API -- requests now fail. It is still served on Bedrock and Google Cloud, which set their own schedules, at the old $15/$75 (3x current Opus rates). Migrate to Opus 5.
+> **Opus 4.1**: **Retired 2026-08-05** on the Claude API -- requests now fail. It is still served on Bedrock and Google Cloud, which set their own schedules, at the old $15/$75 (3.75x Opus 5.5 rates). Migrate to Opus 5.5.
 
 > **Claude Mythos Preview** ([Project Glasswing](https://anthropic.com/glasswing)): superseded by Mythos 5 and **deprecated** -- still functional, no longer recommended, and Anthropic publishes no retirement date for it. It is the invitation-only research preview ($25/$125) for defensive cybersecurity through Glasswing partners. Its successor Mythos 5 drops to $10/$50 (same as Fable 5) and remains Glasswing-only; the prediction that Mythos-class capabilities would reach a widely released model came true as **Fable 5**, which is GA for everyone.
+
+### Migrating to Opus 5.5
+
+Source: Anthropic's Opus 5.5 overview and migration guide (platform.claude.com/docs/en/models/opus-5-5), read 2026-09-28.
+
+**The price cut.** $4/$20 per 1M versus $5/$25 on Opus 5 and Opus 4.8: 20% off every token. Cache hits drop to $0.20 (0.05x base input, versus 0.1x on Opus 5), 5m / 1h cache writes are $5 / $8, Batch is $2/$10, and Fast Mode (research preview, Claude API only) is $8/$40, 2x its own base. Same 1M context, 128K max output (300K on Batch via `output-300k-2026-03-24`), 512-token cache floor, and the same tokenizer as Opus 4.7+. Earliest retirement 2027-09-22. IDs: `claude-opus-5-5` (Claude API, Google Cloud, Microsoft Foundry, Claude Platform on AWS), `anthropic.claude-opus-5-5` (Bedrock).
+
+**Four breaking changes versus Opus 5** (each returns a 400 if you carry old code over):
+
+1. **Thinking cannot be disabled.** Adaptive thinking is always on; `thinking: {type: "disabled"}` and `thinking: {type: "enabled", budget_tokens}` both return 400. Effort is the only control.
+2. **Forced `tool_choice` (`any` / `tool`) is rejected.** Use `auto` plus strict tool use or structured outputs.
+3. **Thinking blocks are tied to the model and conversation** that produced them.
+4. **`computer_20251124` is rejected on the Claude API and Google Cloud.** Use `computer_toolset_20260801`.
+
+Also rejected: non-default `temperature` / `top_p` / `top_k`, and assistant prefill. Text between tool calls now comes back in `thinking` blocks, empty at the default display setting.
+
+**Default effort is `medium`** (Opus 5 defaulted to `high`). The cost consequence cuts both ways: a request that omits effort now thinks less than it did on Opus 5, but code that disabled thinking on Opus 5 now pays for thinking tokens (billed as output at $20/1M) it did not pay for before. Re-baseline cost per task after migrating rather than assuming the 20% rate cut is your saving.
+
+**No Priority Tier.** Opus 4.8 keeps it; if you depend on Priority Tier capacity, Opus 5.5 is not a drop-in replacement yet.
+
+**Refusals** come back as `stop_reason: "refusal"` with `stop_details`; the categories include bio and reasoning_extraction as well as cyber.
 
 ### What These Numbers Mean in Practice
 
 A typical Claude Code turn involves roughly **2,000-5,000 input tokens** and **500-3,000 output tokens**. Here is what a single turn costs across models:
 
-| Scenario | Input Tokens | Output Tokens | Opus 5* | Sonnet 5 | Haiku 4.5 |
-|----------|:------------:|:-------------:|:-------:|:--------:|:---------:|
-| Quick fix (small) | 2,000 | 500 | $0.023 | $0.014 | $0.005 |
-| Component creation (medium) | 5,000 | 2,000 | $0.075 | $0.045 | $0.015 |
-| Architecture analysis (large) | 10,000 | 5,000 | $0.175 | $0.105 | $0.035 |
-| Multi-file refactor (XL) | 20,000 | 10,000 | $0.350 | $0.210 | $0.070 |
+| Scenario | Input Tokens | Output Tokens | Opus 5.5* | Sonnet 5 | Haiku 4.5 |
+|----------|:------------:|:-------------:|:---------:|:--------:|:---------:|
+| Quick fix (small) | 2,000 | 500 | $0.018 | $0.009 | $0.005 |
+| Component creation (medium) | 5,000 | 2,000 | $0.060 | $0.030 | $0.015 |
+| Architecture analysis (large) | 10,000 | 5,000 | $0.140 | $0.070 | $0.035 |
+| Multi-file refactor (XL) | 20,000 | 10,000 | $0.280 | $0.140 | $0.070 |
 
-> *Opus 5 costs shown at posted rate ($5/$25, identical to Opus 4.8). Multiply by ~1.2-1.35 to account for the 4.7-generation tokenizer's higher token counts on the same text. On Opus 5, add the default-on thinking tokens too: they are billed as output, so a turn that produced 500 visible output tokens may bill 1,500+ at `high` effort. Lower `effort` or disable thinking for routine turns.
+> *Opus 5.5 costs shown at its posted rate ($4/$20). Legacy Opus 5 and Opus 4.8 ($5/$25) cost 1.25x these figures. Multiply by ~1.2-1.35 to account for the 4.7-generation tokenizer's higher token counts on the same text (Opus 5.5 uses the same tokenizer). Add thinking tokens too: on Opus 5.5 adaptive thinking is always on and bills as output, so a turn can bill well above its visible output, more so above the default `medium` effort. Lower `effort` for routine turns; thinking cannot be switched off on Opus 5.5.
 
 > **Key insight**: Output tokens cost 5x more than input tokens across all models. Tasks that generate a lot of code (scaffolding, boilerplate, test suites) are where model selection has the most impact.
 
 ### Prompt Caching and Real-World Costs
 
-Claude Code uses prompt caching, which reduces the cost of repeated input tokens by 90%. After the first turn of a session, cached content (system prompt, CLAUDE.md, stable conversation history) costs far less. This means:
+Claude Code uses prompt caching, which reduces the cost of repeated input tokens by 90% on most models (95% on Opus 5.5, 97.5% on Fable 5.1 and Mythos 5.1). After the first turn of a session, cached content (system prompt, CLAUDE.md, stable conversation history) costs far less. This means:
 
 - **First turn** of a session is the most expensive
 - **Subsequent turns** benefit heavily from caching
 - **Model selection still matters** because output tokens are never cached, and output is where most cost accumulates in code-generation tasks
-- **Model selection also sets the cache floor.** Your prefix has to clear the model's minimum cacheable length before any of this applies -- 512 tokens on Opus 5 and Fable 5, 1,024 on Opus 4.8 and every Sonnet, 4,096 on Haiku 4.5 and Opus 4.6/4.5. Routing a short-prompt task down to Haiku saves 5x on the token rate but can lose the cache discount entirely.
+- **Model selection also sets the cache floor.** Your prefix has to clear the model's minimum cacheable length before any of this applies -- 512 tokens on Opus 5.5, Opus 5 and the Fable models, 1,024 on Opus 4.8 and every Sonnet, 4,096 on Haiku 4.5 and Opus 4.6/4.5. Routing a short-prompt task down to Haiku saves 4x on the token rate versus Opus 5.5 but can lose the cache discount entirely.
 
 ---
 
@@ -113,11 +137,22 @@ Assume 50 tasks per day with an average cost of $0.10/task on Opus 5:
 
 | Strategy | Daily Cost | Monthly Cost (22 days) | Savings |
 |----------|:----------:|:----------------------:|:-------:|
-| **All Opus 5** | $5.00 | $110.00 | -- |
+| **All Opus 5** (legacy) | $5.00 | $110.00 | -- |
+| **All Opus 5.5** (same work, $4/$20) | $4.00 | $88.00 | **20%** |
 | **80/20 split** (Haiku/Sonnet for 80%) | $2.00 | $44.00 | **60%** |
 | **Optimized split** (40/40/20) | $1.70 | $37.40 | **66%** |
 
-Opus 5 posts the same $5/$25 as Opus 4.8 and 4.7/4.6, so the absolute dollar savings are smaller than they were against Opus 4.1 ($15/$75) -- but a 60-66% reduction still adds up fast across a team. Model selection remains the single biggest lever you have, and two things make skipping Opus more valuable than the table suggests: the tokenizer overhead, and Opus 5's default-on thinking, which inflates the output side of every turn you route there unnecessarily.
+Savings are measured against all-Opus 5; the split rows still price their Opus 20% at Opus 5's $0.10/task. Moving to Opus 5.5 alone is a 20% cut per token, but routing is still worth three times that. Opus 5 posted the same $5/$25 as Opus 4.8 and 4.7/4.6, so the absolute dollar savings are smaller than they were against Opus 4.1 ($15/$75) -- but a 60-66% reduction still adds up fast across a team. Model selection remains the single biggest lever you have, and two things make skipping Opus more valuable than the table suggests: the tokenizer overhead, and thinking (default-on on Opus 5, always on on Opus 5.5), which inflates the output side of every turn you route there unnecessarily.
+
+### Price the Completed Task, Not the Token
+
+Anthropic's cost-optimization guide (platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) makes the point this whole guide rests on: optimize **cost per completed task**, not cost per token. A cheaper model that fails still bills, and so does the retry. Its published runs (directional, not guarantees):
+
+- **Effort before model.** On research work (Fable 5), `medium` matched the default's accuracy at 70-85% of its cost; `low` gave up 1-3 points for a third to a half off. On long-horizon coding, Opus 5 gave up about 2 points at `medium` for half the cost.
+- **Run at `low`, retry only the failures.** Running everything at `low` and re-running only failures at the default reached ~93% pass for ~$0.70/task, versus 91.7% for $1.39 running everything at the default: same pass rate, half the cost.
+- **Price the tail, not the median.** On one 20-problem run, two problems carried 43% of spend. Budget from your worst tasks, not the typical one.
+- **`max_tokens` is a backstop, not a knob.** A 16,384 cap ended 15% of Opus 5's coding attempts unsolved; use 64,000 for agentic work.
+- **Old prompts over-work new models.** Prompts written for Opus 4.8 cost 36% more per ticket on Opus 5 for no accuracy gain; audited, they were 14% cheaper and more accurate. Re-audit prompts when you move to Opus 5.5.
 
 ---
 
@@ -131,8 +166,8 @@ START: What is the task?
 ├── Does it require understanding complex architecture or
 │   reasoning about multi-file interactions?
 │   ├── YES → Is it a planning/analysis task (no code output)?
-│   │         ├── YES → Opus 5 (plan mode)
-│   │         └── NO  → Opus 5
+│   │         ├── YES → Opus 5.5 (plan mode)
+│   │         └── NO  → Opus 5.5 (Fable 5.1 only if Opus 5.5 fails)
 │   └── NO ↓
 │
 ├── Does it require generating new code with non-trivial logic?
@@ -157,7 +192,7 @@ START: What is the task?
 
 If the decision tree feels heavy, just ask two questions:
 
-1. **Does this task require reasoning about how multiple components interact?** If yes: Opus. If no: continue.
+1. **Does this task require reasoning about how multiple components interact?** If yes: Opus (Opus 5.5 by default). If no: continue.
 2. **Does this task require generating non-trivial new logic?** If yes: Sonnet. If no: Haiku.
 
 ---
@@ -212,20 +247,23 @@ Sonnet is the sweet spot for most development work. It handles logic, generates 
 claude --model sonnet "write unit tests for src/services/CartService.ts"
 ```
 
-### Complex Tasks: Use Opus 5
+### Complex Tasks: Use Opus 5.5
 
-**Cost per task: $0.05-$0.50+** (higher in practice due to the tokenizer and default-on thinking)
+**Cost per task: $0.04-$0.40+** (higher in practice due to the tokenizer and always-on thinking)
 
-Reserve Opus for tasks where deep reasoning, multi-file coordination, or architectural understanding provides genuine value. At $5/$25 (same as 4.8/4.7/4.6, down from 4.1's $15/$75) the cost penalty for using it is smaller than it used to be, but it is still ~1.67x more than Sonnet and 5x more than Haiku at posted rates, the tokenizer adds another 20-35% of effective cost, and thinking-on-by-default adds billable output on top of that. Defaulting to Opus for every task remains wasteful.
+Reserve Opus for tasks where deep reasoning, multi-file coordination, or architectural understanding provides genuine value. At $4/$20 (20% below Opus 5 and 4.8/4.7/4.6 at $5/$25, and well down from 4.1's $15/$75) the cost penalty for using it is smaller than it used to be, but it is still 2x more than Sonnet 5 and 4x more than Haiku at posted rates, the tokenizer adds another 20-35% of effective cost, and always-on thinking adds billable output on top of that. Defaulting to Opus for every task remains wasteful.
 
-**Why Opus 5 over Opus 4.8**: same posted price, better agentic coding, and a cache floor half as high (512 versus 1,024 tokens), so more of your system prompt actually caches. Opus 5 also self-verifies its work before reporting and takes instructions literally, which on long autonomous runs (audit, multi-file refactor, migration) often pays for itself by avoiding retry loops. The flip side is verbosity: Opus 5 writes longer than 4.8 by default, so trim your verbosity instructions rather than assuming an old prompt is still cost-optimal.
+**Why Opus 5.5 over Opus 5**: 20% cheaper per token, cache hits at half Opus 5's rate ($0.20 versus $0.50), and Anthropic's recommended starting model. The catch is the four breaking changes in [Migrating to Opus 5.5](#migrating-to-opus-55): if your harness disables thinking or forces `tool_choice`, fix that before switching.
+
+**Why Opus 5 over Opus 4.8** (the previous step): same posted price, better agentic coding, and a cache floor half as high (512 versus 1,024 tokens), so more of your system prompt actually caches. Opus 5 also self-verifies its work before reporting and takes instructions literally, which on long autonomous runs (audit, multi-file refactor, migration) often pays for itself by avoiding retry loops. The flip side is verbosity: Opus 5 writes longer than 4.8 by default, so trim your verbosity instructions rather than assuming an old prompt is still cost-optimal.
 
 **Thinking modes differ, and this is the migration trap**:
+- **Opus 5.5** uses **adaptive thinking, ALWAYS ON**. `thinking: {type: "disabled"}` and `budget_tokens` both return 400; effort (default `medium`, all five levels) is the only control.
 - **Opus 5** uses **adaptive thinking, ON by default** when the `thinking` param is omitted. Effort defaults to `high`. `thinking: {type: "disabled"}` works only at effort `high` or below -- pairing it with `xhigh` or `max` is a 400.
 - **Opus 4.8** uses **adaptive thinking, off unless requested**. Effort defaults to `high` on all surfaces (the Claude Code default was `xhigh` on 4.7).
 - **Opus 4.7** uses **adaptive thinking** plus an `xhigh` effort level.
 - **Opus 4.6** uses **extended thinking** -- you can configure a reasoning token budget.
-- If you have prompts or harnesses tuned against extended thinking's explicit budget knobs, they will not carry over to 4.8 or 5. And if you are moving from 4.8 to 5, the same request now costs more unless you explicitly manage thinking: budget the difference before rolling out, and raise `max_tokens` to 64K+ if you run `xhigh` or `max`.
+- If you have prompts or harnesses tuned against extended thinking's explicit budget knobs, they will not carry over to 4.8 or 5. And if you are moving from 4.8 to 5, the same request now costs more unless you explicitly manage thinking: budget the difference before rolling out, and raise `max_tokens` to 64K+ if you run `xhigh` or `max`. Moving from 5 to 5.5, code that disabled thinking now pays for it, while code that omitted effort now runs at `medium` instead of `high`: re-baseline either way.
 
 **Benchmarks published by Anthropic for Opus 4.6** (the numbers were even higher for Mythos Preview, the tier that Fable 5 / Mythos 5 now succeed -- included below for reference):
 
@@ -257,14 +295,15 @@ claude --model opus "design a plugin architecture for our CLI tool"
 ```
 
 **Want a specific Opus snapshot explicitly?** Use the dated/aliased ID:
-- Opus 5: `--model claude-opus-5` (Claude API), `anthropic.claude-opus-5` (Bedrock Messages API), `us.anthropic.claude-opus-5` (Bedrock legacy InvokeModel/Converse), `claude-opus-5` (Vertex AI)
+- Opus 5.5: `--model claude-opus-5-5` (Claude API, Google Cloud, Microsoft Foundry, Claude Platform on AWS), `anthropic.claude-opus-5-5` (Bedrock)
+- Opus 5 (legacy): `--model claude-opus-5` (Claude API), `anthropic.claude-opus-5` (Bedrock Messages API), `us.anthropic.claude-opus-5` (Bedrock legacy InvokeModel/Converse), `claude-opus-5` (Vertex AI)
 - Opus 4.8: `--model claude-opus-4-8` (Claude API), `anthropic.claude-opus-4-8` (Bedrock Messages API), `us.anthropic.claude-opus-4-8` (Bedrock legacy InvokeModel/Converse)
 - Opus 4.7: `--model claude-opus-4-7` (Claude API), `anthropic.claude-opus-4-7` (Bedrock)
 - Opus 4.6: `--model claude-opus-4-6` (Claude API), `anthropic.claude-opus-4-6-v1` (Bedrock legacy InvokeModel/Converse)
 - Opus 4.5: `--model claude-opus-4-5-20251101`
 - Opus 4.1: `--model claude-opus-4-1-20250805` -- **retired 2026-08-05 on the Claude API; this ID now fails there.** Still resolvable on Bedrock and Google Cloud
 
-The `opus` alias maps to Opus 5 on current Claude Code releases. If you need a pinned snapshot, name it explicitly rather than relying on the alias -- the alias moves with each Opus launch.
+The `opus` alias maps to Opus 5.5 on current Claude Code releases. If you need a pinned snapshot, name it explicitly rather than relying on the alias -- the alias moves with each Opus launch.
 
 ---
 
@@ -328,6 +367,8 @@ Use a subagent to find all files that import from 'utils/deprecated'.
 The subagent should use Haiku since this is a simple search task.
 ```
 
+Anthropic's costs page (code.claude.com/docs/en/costs) recommends setting `model: haiku` in the subagent definition for simple subagent tasks, so the choice does not depend on the main agent remembering it.
+
 You can also configure subagent model preferences in your CLAUDE.md:
 
 ```markdown
@@ -345,58 +386,58 @@ You can also configure subagent model preferences in your CLAUDE.md:
 
 These are real-world estimates based on typical token usage patterns. All costs assume prompt caching is active (not the first turn of a session).
 
-> The Opus 5 column uses the same posted rate its predecessor did ($5/$25), so those figures carry over unchanged from the Opus 4.8 era. **Sonnet 5 does not**: at $2/$10 it undercuts Sonnet 4.6's $3/$15, so any Sonnet figure inherited from the 4.6 era overstates the cost by a third. What they do **not** include is Opus 5's default-on thinking: reasoning tokens bill as output at $25/1M, so an Opus 5 turn at `high` effort can bill noticeably more than the output column shows. Treat the Opus 5 numbers as a floor for thinking-off or low-effort runs.
+> The Opus column is priced at Opus 5.5 ($4/$20); legacy Opus 5 and Opus 4.8 ($5/$25) cost 1.25x those figures. The Sonnet 5 column is priced at $2/$10 -- it undercuts Sonnet 4.6's $3/$15, so any Sonnet figure inherited from the 4.6 era overstates the cost by a third. What the tables do **not** include is thinking: on Opus 5.5 it is always on and reasoning tokens bill as output at $20/1M, so a turn can bill noticeably more than the output column shows, especially above the default `medium` effort. Treat the Opus numbers as a floor.
 
 ### Example 1: Rename a Function
 
 **Task**: Rename `getUserData` to `fetchUserProfile` across 8 files.
 
-| | Haiku 4.5 | Sonnet 5 | Opus 5 |
+| | Haiku 4.5 | Sonnet 5 | Opus 5.5 |
 |-|:---------:|:----------:|:--------:|
 | Input tokens | ~3,000 | ~3,000 | ~3,000 |
 | Output tokens | ~1,200 | ~1,200 | ~1,200 |
-| **Cost** | **$0.009** | **$0.027** | **$0.045** |
+| **Cost** | **$0.009** | **$0.018** | **$0.036** |
 | Quality | Identical | Identical | Identical |
 
-**Verdict**: Haiku. Saves $0.036 per rename vs Opus. Over 10 renames/day, that is $0.36/day saved. The gap is narrower than it used to be with old Opus pricing, but Haiku is still 5x cheaper for tasks where quality is identical.
+**Verdict**: Haiku. Saves $0.027 per rename vs Opus 5.5. Over 10 renames/day, that is $0.27/day saved. The gap is narrower than it used to be with old Opus pricing, but Haiku is still 4x cheaper for tasks where quality is identical.
 
 ### Example 2: Write Unit Tests for a Service
 
 **Task**: Write comprehensive unit tests for `PaymentService` (5 methods, ~200 lines).
 
-| | Haiku 4.5 | Sonnet 5 | Opus 5 |
+| | Haiku 4.5 | Sonnet 5 | Opus 5.5 |
 |-|:---------:|:----------:|:--------:|
 | Input tokens | ~8,000 | ~8,000 | ~8,000 |
 | Output tokens | ~4,000 | ~4,000 | ~4,000 |
-| **Cost** | **$0.028** | **$0.084** | **$0.140** |
-| Quality | Good (may miss edge cases) | Very good | Excellent (not worth 1.67x more) |
+| **Cost** | **$0.028** | **$0.056** | **$0.112** |
+| Quality | Good (may miss edge cases) | Very good | Excellent (not worth 2x more) |
 
-**Verdict**: Sonnet. Saves $0.056 vs Opus with negligible quality difference for standard test writing.
+**Verdict**: Sonnet. Saves $0.056 vs Opus 5.5 with negligible quality difference for standard test writing.
 
 ### Example 3: Debug a Race Condition
 
 **Task**: Investigate and fix intermittent auth failures in a distributed system spanning 12 files.
 
-| | Haiku 4.5 | Sonnet 5 | Opus 5 |
+| | Haiku 4.5 | Sonnet 5 | Opus 5.5 |
 |-|:---------:|:----------:|:--------:|
 | Turns needed | ~15 (struggles) | ~8 | ~4 |
 | Total input tokens | ~120,000 | ~80,000 | ~60,000 |
 | Total output tokens | ~30,000 | ~25,000 | ~20,000 |
-| **Total cost** | **$0.270** | **$0.615** | **$0.800** |
+| **Total cost** | **$0.270** | **$0.410** | **$0.640** |
 | Quality | Poor (likely fails) | Decent | High (finds root cause) |
 | Time | 25 min | 15 min | 8 min |
 
-**Verdict**: Opus. While the cost gap between Opus and Sonnet is now much narrower ($0.80 vs $0.615), Opus solves it in fewer turns and developer time saved justifies the modest premium. This is also the task type where Opus 5's default-on thinking earns its keep: race-condition debugging is exactly the reasoning-heavy work those tokens buy, and the fewer-turns effect more than offsets them.
+**Verdict**: Opus. Opus 5.5 costs more than Sonnet here ($0.64 vs $0.41), but it solves the task in fewer turns, and a Haiku or Sonnet attempt that fails still bills -- cost per *completed* task is what counts. This is also the task type where Opus 5.5's always-on thinking earns its keep: race-condition debugging is exactly the reasoning-heavy work those tokens buy.
 
 ### Example 4: Create a CRUD API Endpoint
 
 **Task**: Add a new `/api/projects` endpoint with GET, POST, PUT, DELETE.
 
-| | Haiku 4.5 | Sonnet 5 | Opus 5 |
+| | Haiku 4.5 | Sonnet 5 | Opus 5.5 |
 |-|:---------:|:----------:|:--------:|
 | Input tokens | ~6,000 | ~6,000 | ~6,000 |
 | Output tokens | ~3,500 | ~3,500 | ~3,500 |
-| **Cost** | **$0.024** | **$0.071** | **$0.118** |
+| **Cost** | **$0.024** | **$0.047** | **$0.094** |
 | Quality | Adequate (follows patterns) | Good | Excellent (overkill) |
 
 **Verdict**: Sonnet. Standard CRUD follows patterns that Sonnet handles well.
@@ -405,11 +446,11 @@ These are real-world estimates based on typical token usage patterns. All costs 
 
 **Task**: Design the migration strategy from MongoDB to PostgreSQL for a 20-collection database with complex relationships.
 
-| | Haiku 4.5 | Sonnet 5 | Opus 5 |
+| | Haiku 4.5 | Sonnet 5 | Opus 5.5 |
 |-|:---------:|:----------:|:--------:|
 | Input tokens | ~15,000 | ~15,000 | ~15,000 |
 | Output tokens | ~8,000 | ~8,000 | ~8,000 |
-| **Cost** | **$0.055** | **$0.165** | **$0.275** |
+| **Cost** | **$0.055** | **$0.110** | **$0.220** |
 | Quality | Superficial plan | Good plan | Thorough, catches edge cases |
 
 **Verdict**: Opus. Migration planning is high-stakes. A missed edge case can cost days of developer time. The extra $0.11 vs Sonnet is negligible compared to the cost of a botched migration.
@@ -422,30 +463,30 @@ These are real-world estimates based on typical token usage patterns. All costs 
 
 Many developers set Opus as their default model and never change it. Their reasoning: "I want the best output, and the cost is acceptable."
 
-With Opus 5's pricing ($5/$25, unchanged from 4.8/4.7/4.6, down from 4.1's $15/$75), this anti-pattern is less financially devastating than it used to be, but it is still wasteful, and two things quietly widen the gap back out: the 4.7-generation tokenizer (up to 35% more tokens per turn) and Opus 5's default-on thinking (extra billed output on every turn, including the trivial ones).
+With Opus 5.5's pricing ($4/$20, 20% below the $5/$25 of Opus 5 and 4.8/4.7/4.6, far below 4.1's $15/$75), this anti-pattern is less financially devastating than it used to be, but it is still wasteful, and two things quietly widen the gap back out: the 4.7-generation tokenizer (up to 35% more tokens per turn) and Opus 5.5's always-on thinking (extra billed output on every turn, including the trivial ones).
 
 **1. Quality is often identical across models for simple tasks.**
 
-For formatting, renaming, import management, config changes, and other mechanical tasks, Haiku produces output that is indistinguishable from Opus. You are paying 5x more for the same result.
+For formatting, renaming, import management, config changes, and other mechanical tasks, Haiku produces output that is indistinguishable from Opus. You are paying 4x more (5x on legacy Opus 5) for the same result.
 
 **2. The cost still compounds.**
 
 ```
 Scenario: 50 tasks/day, 22 working days/month
 
-All Opus 5:  50 tasks x $0.10 avg x 22 days = $110/month (+35% tokenizer = ~$148,
-             more once default-on thinking is counted)
-Smart split: (20 x $0.005) + (20 x $0.03) + (10 x $0.10) x 22 = $37/month
+All Opus 5.5: 50 tasks x $0.08 avg x 22 days = $88/month (+35% tokenizer = ~$119,
+              more once always-on thinking is counted)
+Smart split:  ((20 x $0.005) + (20 x $0.03) + (10 x $0.08)) x 22 = $33/month
 
-Annual difference: $876
-Team of 5 annual difference: $4,380
+Annual difference: $660
+Team of 5 annual difference: $3,300
 ```
 
-While the savings are more modest than they were at old Opus pricing, $4,380/year for a 5-person team is still worth capturing -- especially since it requires no loss in output quality.
+($0.08 is the Opus 5 era's $0.10 average at Opus 5.5's 20% lower rate.) While the savings are more modest than they were at old Opus pricing, $3,300/year for a 5-person team is still worth capturing -- especially since it requires no loss in output quality.
 
 **3. More expensive does not mean faster for simple tasks.**
 
-Opus does not rename a variable faster than Haiku. The latency is often higher because Opus generates more thorough (but unnecessary) reasoning for simple tasks -- and on Opus 5 that reasoning now happens by default, so the penalty applies unless you explicitly lower `effort` or disable thinking.
+Opus does not rename a variable faster than Haiku. The latency is often higher because Opus generates more thorough (but unnecessary) reasoning for simple tasks -- and on Opus 5.5 that reasoning always happens (thinking cannot be disabled), so the only way to shrink the penalty is a lower `effort`.
 
 ### How to Break the Habit
 
@@ -497,7 +538,7 @@ Start with the cheapest model and escalate only if needed:
 2. **If Haiku struggles**, retry with Sonnet.
 3. **If Sonnet struggles**, retry with Opus.
 
-This sounds like it wastes tokens on failed attempts, but in practice, most tasks succeed on the first try with the cheaper model, and the few that need escalation still cost less overall than defaulting to Opus.
+This sounds like it wastes tokens on failed attempts, but in practice, most tasks succeed on the first try with the cheaper model, and the few that need escalation still cost less overall than defaulting to Opus. The same logic works on the effort axis: Anthropic's published run at `low` effort, re-running only failures at the default, matched the all-default pass rate for half the cost (see [Price the Completed Task, Not the Token](#price-the-completed-task-not-the-token)).
 
 ---
 
@@ -524,29 +565,33 @@ SONNET 5 ($2/$10 per 1M tokens)
 ├── Single-file refactoring
 └── Error handling implementation
 
-OPUS 5 ($5/$25 per 1M tokens, +~35% tokenizer overhead, thinking ON by default)
+OPUS 5.5 ($4/$20 per 1M tokens, cache hit $0.20, +~35% tokenizer overhead,
+thinking ALWAYS ON, default effort medium) -- the default Opus
 ├── Architecture design and planning
 ├── Multi-file refactoring (5+ files)
 ├── Complex debugging (race conditions, memory leaks)
-├── Long autonomous agentic runs (self-verifies outputs)
+├── Long autonomous agentic runs
 ├── Performance optimization (N+1 queries, bottlenecks)
 ├── Security auditing
 ├── Migration planning
 ├── System integration design
 ├── Legacy code comprehension
-└── Cost control: lower `effort` for routine turns, or thinking {type:"disabled"}
-    at effort high or below (xhigh/max + disabled = 400)
+└── Cost control: lower `effort` (thinking cannot be disabled; forced
+    tool_choice, prefill and non-default sampling params all return 400)
 
-FABLE 5 ($10/$50 per 1M tokens -- 2x Opus 5, legacy; superseded by Fable 5.1)
-├── The absolute hardest reasoning problems Opus 5 can't crack
+OPUS 5 ($5/$25 per 1M tokens -- legacy, 1.25x Opus 5.5)
+└── Only if you need thinking disabled or forced tool_choice (Opus 5.5 rejects both)
+
+FABLE 5 ($10/$50 per 1M tokens -- 2.5x Opus 5.5, legacy; superseded by Fable 5.1)
+├── The absolute hardest reasoning problems Opus 5.5 can't crack
 ├── The longest autonomous agentic runs (single turns can run many minutes)
 ├── Mythos-class capability without a Glasswing invitation
 └── Note: always-on thinking, no Fast Mode, safety classifiers may refuse
     (pre-output refusals are free; use the beta fallbacks param to retry)
 
 OPUS 4.8 ($5/$25 per 1M tokens -- legacy, same price as Opus 5, Fast Mode 2x)
-└── Only if your prompts are tuned to this snapshot, or you need thinking off
-    at xhigh/max effort (Opus 5 rejects that combination)
+└── Only if your prompts are tuned to this snapshot, you need thinking off,
+    or you need Priority Tier (Opus 5.5 has none)
 
 OPUS 4.7 ($5/$25 per 1M tokens -- legacy, Fast Mode REMOVED: speed "fast" errors)
 └── Only if you have prompts pinned to that snapshot
@@ -554,8 +599,9 @@ OPUS 4.7 ($5/$25 per 1M tokens -- legacy, Fast Mode REMOVED: speed "fast" errors
 OPUS 4.6 ($5/$25 per 1M tokens -- legacy, Fast Mode REMOVED: silently runs standard)
 └── Only if you have prompts tuned to the older tokenizer or want a stable snapshot
 
-FAST MODE -- OPUS 5 or OPUS 4.8 only ($10/$50 per 1M tokens -- 2x premium, beta,
-Claude API + Managed Agents only; the old 6x tier no longer exists)
+FAST MODE -- OPUS 5.5, OPUS 5 or OPUS 4.8 only (2x each model's own base:
+$8/$40 on Opus 5.5, $10/$50 on Opus 5 and 4.8; Claude API + Managed Agents only,
+Opus 5.5 Fast Mode is a research preview on the Claude API; the old 6x tier no longer exists)
 └── Only when output latency directly impacts revenue / UX
     (live demos, real-time agentic loops, urgent debugging)
     NOT for routine interactive coding
