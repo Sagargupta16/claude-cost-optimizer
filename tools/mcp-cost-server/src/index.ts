@@ -8,10 +8,11 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 // -------------------------------------------------------------------
-// Pricing tables -- verified 2026-09-05
+// Pricing tables -- verified 2026-09-28
 //
-// cacheHitPerMillion is 0.1x input on every model EXCEPT Fable 5.1 / Mythos 5.1,
-// which read at 0.025x ($0.25/MTok). Always read the field; never derive it.
+// cacheHitPerMillion has three multipliers: 0.1x input by default, 0.025x on
+// Fable 5.1 / Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok).
+// Always read the field; never derive it.
 // -------------------------------------------------------------------
 
 interface ModelPricing {
@@ -23,12 +24,14 @@ interface ModelPricing {
 }
 
 const PRICING: Record<string, ModelPricing> = {
-  // "fable" = Fable 5.1, the most capable widely released model (2x Opus 5 rates,
+  // "fable" = Fable 5.1, the most capable widely released model (2.5x Opus 5.5 rates,
   // but a 0.025x cache read -- a quarter of Fable 5's)
   fable: { inputPerMillion: 10, outputPerMillion: 50, cacheHitPerMillion: 0.25, minCacheTokens: 512 },
   "fable-5": { inputPerMillion: 10, outputPerMillion: 50, cacheHitPerMillion: 1, minCacheTokens: 512 },
-  // "opus" alias maps to the Opus-tier flagship (Opus 5, GA 2026-07-24)
-  opus: { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 512 },
+  // "opus" alias maps to Opus 5.5 (released 2026-09-22), the recommended default Opus:
+  // $4/$20, 20% below Opus 5, with a 0.05x cache read. Opus 5 is legacy at $5/$25.
+  opus: { inputPerMillion: 4, outputPerMillion: 20, cacheHitPerMillion: 0.2, minCacheTokens: 512 },
+  "opus-5": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 512 },
   "opus-4.8": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 1024 },
   "opus-4.7": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 2048 },
   "opus-4.6": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 4096 },
@@ -40,7 +43,7 @@ const PRICING: Record<string, ModelPricing> = {
 };
 
 const MODEL_IDS = Object.keys(PRICING);
-const UNKNOWN_MODEL_HINT = `Use one of: ${MODEL_IDS.join(", ")} ("opus" is Opus 5, "sonnet" is Sonnet 5, "fable" is Fable 5.1).`;
+const UNKNOWN_MODEL_HINT = `Use one of: ${MODEL_IDS.join(", ")} ("opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5, "fable" is Fable 5.1).`;
 
 // -------------------------------------------------------------------
 // Helpers
@@ -174,7 +177,7 @@ function sessionEstimate(args: {
   }
   if ((args.mcp_servers ?? 0) > 3) {
     recommendations.push(
-      `${args.mcp_servers} MCP servers add ~${mcpSchemaTokens} tokens/turn in schema overhead. Disable unused servers.`
+      `${args.mcp_servers} MCP servers are modeled at ~${mcpSchemaTokens} tokens/turn, this tool's own assumption for full schemas, which load up front only when tool search is off. With tool search on (the default), only tool names and server instructions enter context until Claude uses a tool. Prefer CLI tools (gh, aws, gcloud) where available and disable unused servers with /mcp.`
     );
   }
   if (turns > 20) {
@@ -189,15 +192,20 @@ function sessionEstimate(args: {
   }
   if (model === "fable") {
     recommendations.push(
-      "Fable 5.1 costs 2x Opus 5 ($10/$50 vs $5/$25). Reserve it for the hardest reasoning; route routine work to Opus or Sonnet."
+      "Fable 5.1 costs 2.5x Opus 5.5 ($10/$50 vs $4/$20). Reserve it for demanding reasoning and long-horizon work; route routine work to Opus 5.5 or Sonnet 5."
     );
   }
   if (model === "opus") {
     recommendations.push(
-      "Opus 5 has adaptive thinking on by default, and reasoning tokens bill as output. Lower output_config.effort for routine turns, or set thinking to disabled (legal only at effort high or below)."
+      "Opus 5.5 runs adaptive thinking always on (thinking disabled and budget_tokens both return 400), and reasoning tokens bill as output. Effort is the only control: it defaults to medium; lower output_config.effort for routine turns."
     );
     recommendations.push(
-      "Switching to Sonnet for routine tasks saves ~40% with comparable quality for most coding work."
+      "Switching to Sonnet 5 for routine tasks saves 50% per token ($2/$10 vs $4/$20) with comparable quality for most coding work."
+    );
+  }
+  if (model === "opus-5") {
+    recommendations.push(
+      "Opus 5 is legacy: Opus 5.5 costs 20% less per token ($4/$20 vs $5/$25), though thinking cannot be disabled there, so re-baseline after migrating. On Opus 5, adaptive thinking is on by default and reasoning tokens bill as output. Lower output_config.effort for routine turns, or set thinking to disabled (legal only at effort high or below)."
     );
   }
 
@@ -300,7 +308,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             type: "string",
             enum: MODEL_IDS,
             description:
-              'Claude model (default: sonnet). "opus" is Opus 5, "sonnet" is Sonnet 5, "fable" is Fable 5.1.',
+              'Claude model (default: sonnet). "opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5, "fable" is Fable 5.1.',
           },
           turns: {
             type: "number",
@@ -326,7 +334,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             type: "string",
             enum: MODEL_IDS,
             description:
-              'Claude model (default: sonnet). "opus" is Opus 5, "sonnet" is Sonnet 5, "fable" is Fable 5.1.',
+              'Claude model (default: sonnet). "opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5, "fable" is Fable 5.1.',
           },
           claude_md_lines: {
             type: "number",
@@ -334,7 +342,8 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
           },
           mcp_servers: {
             type: "number",
-            description: "Number of configured MCP servers (default: 0)",
+            description:
+              "Number of configured MCP servers (default: 0). Modeled at ~1,500 tokens each, an assumption that fits only when tool search is off; with tool search on (the default) only tool names and server instructions load.",
           },
         },
         required: ["turns"],
@@ -343,7 +352,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: "compare_models",
       description:
-        "Compare cost across Fable 5, Opus 5, legacy Opus snapshots, Sonnet 5, and Haiku 4.5 for a given token count. Shows which model is cheapest and savings percentages.",
+        "Compare cost across Fable 5.1, Fable 5, Opus 5.5, legacy Opus snapshots (Opus 5, 4.8, 4.7, 4.6), Sonnet 5, Sonnet 4.6, and Haiku 4.5 for a given token count. Shows which model is cheapest and savings percentages.",
       inputSchema: {
         type: "object" as const,
         properties: {

@@ -26,12 +26,13 @@ except ImportError:
     sys.exit(1)
 
 
-# Claude model pricing per 1M tokens (verified 2026-09-05; Fable 5.1 released 2026-09-01)
-# NOTE: 1M context on Fable 5.1/Fable 5/Opus 5/Opus 4.8/4.7/4.6/Sonnet 5/Sonnet 4.6 is
-# billed at standard rates (no long-context premium). The old "2x over 200K" pricing
+# Claude model pricing per 1M tokens (verified 2026-09-28; Opus 5.5 released 2026-09-22)
+# NOTE: 1M context on Fable 5.1/Fable 5/Opus 5.5/Opus 5/Opus 4.8/4.7/4.6/Sonnet 5/Sonnet 4.6
+# is billed at standard rates (no long-context premium). The old "2x over 200K" pricing
 # only applied to Opus 4.1 and older.
-# NOTE: cache_hit is 0.1x input on every model EXCEPT Fable 5.1 / Mythos 5.1, which
-# read at 0.025x ($0.25/MTok). Never derive a cache rate as input * 0.1.
+# NOTE: cache_hit has three multipliers: 0.1x input by default, 0.025x on Fable 5.1 /
+# Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok). Never derive a cache
+# rate as input * 0.1.
 MODEL_PRICING = {
     "fable": {
         "input": 10.00,
@@ -39,9 +40,9 @@ MODEL_PRICING = {
         "cache_hit": 0.25,
         "name": "Fable 5.1",
         "note": (
-            "Most capable widely released model (released 2026-09-01). 2x Opus 5 pricing, but "
-            "cache reads are $0.25/MTok -- 0.025x base input, the only exception to the "
-            "0.1x rule and a quarter of Fable 5. Always-on adaptive thinking; no Fast "
+            "Most capable widely released model (released 2026-09-01). 2.5x Opus 5.5 pricing, "
+            "but cache reads are $0.25/MTok -- 0.025x base input, the deepest cache "
+            "discount in the lineup and a quarter of Fable 5. Always-on adaptive thinking; no Fast "
             "Mode; no Priority Tier; Batch $5/$25. Forced tool_choice returns 400."
         ),
     },
@@ -56,15 +57,30 @@ MODEL_PRICING = {
         ),
     },
     "opus": {
+        "input": 4.00,
+        "output": 20.00,
+        "cache_hit": 0.20,
+        "name": "Opus 5.5",
+        "note": (
+            "Anthropic's recommended starting model for most workloads (released "
+            "2026-09-22). $4/$20 -- 20% below Opus 5, the first Opus release to lower "
+            "the rate -- with cache reads at $0.20/MTok, 0.05x base input (95% off). "
+            "Adaptive thinking is always on (thinking disabled and budget_tokens both "
+            "return 400) and reasoning tokens bill as output; effort defaults to "
+            "medium. Same tokenizer as Opus 4.7+ (up to 35% more tokens than Opus "
+            "4.6). Batch $2/$10. Minimum cacheable prompt is 512 tokens."
+        ),
+    },
+    "opus_5": {
         "input": 5.00,
         "output": 25.00,
         "cache_hit": 0.50,
-        "name": "Opus 5",
+        "name": "Opus 5 (legacy)",
         "note": (
-            "Opus-tier flagship (GA 2026-07-24). Same posted rate as Opus 4.8, but "
-            "thinking is ON by default and reasoning tokens bill as output, so the "
-            "effective cost runs higher until you lower output_config.effort. Same "
-            "tokenizer as Opus 4.7/4.8 (up to 35% more tokens than Opus 4.6). "
+            "Previous Opus-tier flagship (GA 2026-07-24), moved to legacy by the Opus "
+            "5.5 launch; Opus 5.5 is 20% cheaper per token. Same posted rate as Opus "
+            "4.8, but thinking is ON by default and reasoning tokens bill as output, so "
+            "the effective cost runs higher until you lower output_config.effort. "
             "Minimum cacheable prompt is 512 tokens."
         ),
     },
@@ -98,8 +114,8 @@ MODEL_PRICING = {
         "note": (
             "Current Sonnet-tier flagship (GA 2026-06-30). $2/$10 is now the permanent "
             "standard price -- the increase to $3/$15 scheduled for 2026-09-01 was "
-            "cancelled, so Sonnet 5 is 60% cheaper than Opus 5. New tokenizer "
-            "(~30% more tokens). Batch $1/$5."
+            "cancelled, so Sonnet 5 is half the price of Opus 5.5 (60% below legacy "
+            "Opus 5). New tokenizer (~30% more tokens). Batch $1/$5."
         ),
     },
     "sonnet_4_6": {
@@ -110,13 +126,23 @@ MODEL_PRICING = {
     },
     "haiku": {"input": 1.00, "output": 5.00, "cache_hit": 0.10, "name": "Haiku 4.5"},
     "fast_mode": {
+        "input": 8.00,
+        "output": 40.00,
+        "cache_hit": None,
+        "name": "Opus 5.5 (Fast Mode)",
+        "note": (
+            "Research preview, Claude API only. 2x Opus 5.5's own base rate ($8/$40), "
+            "which undercuts the $10/$50 Fast rate on Opus 5 and 4.8 (fast_mode_opus_5)."
+        ),
+    },
+    "fast_mode_opus_5": {
         "input": 10.00,
         "output": 50.00,
         "cache_hit": None,
         "name": "Opus 5 / 4.8 (Fast Mode)",
         "note": (
-            "Research preview. Flat 2x standard Opus rates ($10/$50) on Opus 5 and "
-            "Opus 4.8 only, Claude API + Managed Agents. Not available with Batch API. "
+            "Research preview. Flat 2x standard Opus 5 / 4.8 rates ($10/$50), "
+            "Claude API + Managed Agents. Not available with Batch API. "
             "The old 6x tier is gone: Opus 4.7 errors on speed=fast, and Opus 4.6 "
             "silently runs standard speed at standard rates."
         ),
@@ -347,9 +373,11 @@ def main():
         default=None,
         help=(
             "Show cost for a specific model only (default: show all). "
-            "'opus' is Opus 5, the current flagship. Use 'opus_4_8', 'opus_4_7', or "
-            "'opus_4_6' for legacy Opus pricing. Use 'fast_mode' for Opus 5 / 4.8 "
-            "Fast Mode (flat 2x rates; the old 6x tier no longer exists)."
+            "'opus' is Opus 5.5, the recommended default Opus. Use 'opus_5', "
+            "'opus_4_8', 'opus_4_7', or 'opus_4_6' for legacy Opus pricing. Use "
+            "'fast_mode' for Opus 5.5 Fast Mode ($8/$40) or 'fast_mode_opus_5' for "
+            "Opus 5 / 4.8 Fast Mode ($10/$50); both are 2x their own base rate (the "
+            "old 6x tier no longer exists)."
         ),
     )
     parser.add_argument(

@@ -3,7 +3,7 @@ model: haiku
 description: Activate cost-conscious behavior for the rest of this session
 ---
 
-# Budget Mode — Activated
+# Budget Mode -- Activated
 
 For the remainder of this session, follow these strict cost-saving rules:
 

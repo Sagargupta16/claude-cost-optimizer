@@ -7,7 +7,7 @@
 - **Cost** is the estimated total session cost for completing the task
 - **Tokens** is total tokens (input + output) consumed
 - **Optimizations** lists the techniques applied
-- All costs use current pricing (Opus 5, 4.8, 4.7, and 4.6 at $5/$25, Sonnet 5 at $2/$10, Sonnet 4.6 at $3/$15, Haiku 4.5 at $1/$5 per MTok). Entries below stay labeled with the model they were measured on. Entries labeled "Opus 4.6" were measured before Opus 4.7 launched (2026-04-16); the current flagship Opus 5 (GA 2026-07-24) should produce similar cost ranges, with ~20-35% higher token counts due to the new tokenizer (Opus 4.7 and later), plus any extra output tokens from Opus 5's default-on adaptive thinking, which bills as output at the normal output rate.
+- All costs use current pricing (Opus 5.5 at $4/$20, Opus 5, 4.8, 4.7, and 4.6 at $5/$25, Sonnet 5 at $2/$10, Sonnet 4.6 at $3/$15, Haiku 4.5 at $1/$5 per MTok). Entries below stay labeled with the model they were measured on. Entries labeled "Opus 4.6" were measured before Opus 4.7 launched (2026-04-16). The current flagship is Opus 5.5 (released 2026-09-22): its per-token rate is 20% below Opus 5, but it shares the Opus 4.7+ tokenizer (~20-35% more tokens than Opus 4.6), its adaptive thinking is always on and bills as output, and its effort defaults to `medium` -- so re-measure rather than scaling these entries. Opus 5 (GA 2026-07-24, now legacy) likewise adds default-on adaptive thinking on top of the tokenizer change.
 
 ---
 

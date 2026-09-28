@@ -2,7 +2,7 @@
 
 <!-- ABOUT THIS TEMPLATE
   - Under 50 lines of actual content (~320 tokens)
-  - Designed for maximum cost savings — every line earns its place
+  - Designed for maximum cost savings -- every line earns its place
   - Best for: solo developers, small projects, budget-conscious usage
   - Trade-off: Claude may need more follow-up turns for project-specific conventions
   - Copy everything below the "---" line into your project's CLAUDE.md
@@ -35,13 +35,13 @@
 
 ## Structure
 
-<!-- SECTION: Key directories only — not a full tree
+<!-- SECTION: Key directories only -- not a full tree
   WHY: Helps Claude find files without running Glob on every task.
   COST: ~30 tokens. Saves 1-3 Glob calls (~500-1,500 tokens in results). -->
-- `src/components/` — React components
-- `src/services/` — Business logic
-- `src/types/` — Shared TypeScript types
-- `tests/` — Test files mirror src/ structure
+- `src/components/` -- React components
+- `src/services/` -- Business logic
+- `src/types/` -- Shared TypeScript types
+- `tests/` -- Test files mirror src/ structure
 
 ## Code Rules
 
@@ -61,11 +61,11 @@
 <!-- SECTION: Hard guardrails
   WHY: Prevents costly mistakes that require multi-turn rollbacks.
   COST: ~20 tokens. Can save an entire wasted session. -->
-- Do not modify files in `src/generated/` — these are auto-generated
+- Do not modify files in `src/generated/` -- these are auto-generated
 - Do not install new dependencies without asking first
 - Do not change the database schema without discussing migration strategy
 
-<!-- END OF TEMPLATE — This file should be under 50 lines of content.
+<!-- END OF TEMPLATE -- This file should be under 50 lines of content.
   Total estimated tokens: ~320
   Over a 30-turn session: ~9,600 tokens of CLAUDE.md overhead (pre-cache)
   Compare to a 300-line CLAUDE.md: ~63,000 tokens of overhead

@@ -19,7 +19,7 @@ assignees: ''
 - **Claude Code version**: <!-- if known -->
 - **Plan**: <!-- Pro / Max / API -->
 - **Operating system**: <!-- e.g., macOS, Linux, Windows -->
-- **Other relevant config**: <!-- .claudeignore, custom commands, MCP servers, etc. -->
+- **Other relevant config**: <!-- Read deny rules in permissions.deny, custom commands, MCP servers, etc. -->
 
 ## Methodology
 
@@ -46,11 +46,13 @@ assignees: ''
 ## Model Used
 
 <!-- Check all that apply: -->
-- [ ] Opus 5
+- [ ] Opus 5.5
 - [ ] Sonnet 5
-- [ ] Opus 4.8 (legacy)
-- [ ] Sonnet 4.6
 - [ ] Haiku 4.5
+- [ ] Fable 5.1
+- [ ] Opus 5 (legacy)
+- [ ] Opus 4.8 (legacy)
+- [ ] Sonnet 4.6 (legacy)
 - [ ] Multiple (describe in observations)
 
 ## Observations

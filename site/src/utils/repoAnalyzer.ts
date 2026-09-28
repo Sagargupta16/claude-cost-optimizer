@@ -28,18 +28,25 @@ export interface AnalysisResult {
     found: boolean
     charCount: number
     lineCount: number
-    overLimit: boolean
+    /** Primary file is over Anthropic's 200-line guidance. */
+    overGuidance: boolean
   }
   claudeMdAll: {
     totalChars: number
+    /** Estimated as ceil(totalChars / 4). */
+    totalTokens: number
     fileCount: number
-    overLimit: boolean
     files: { path: string; chars: number }[]
   }
-  claudeIgnore: {
-    found: boolean
-    entryCount: number
-    entries: string[]
+  fileReadExclusions: {
+    /** Read(...) entries in permissions.deny. */
+    readDenyRules: string[]
+    lockFilesPresent: string[]
+    lockFilesUncovered: string[]
+    /** A .claudeignore is committed. Claude Code does not read it. */
+    ignoreFileFound: boolean
+    /** Its patterns converted to Read deny rules, for migration. */
+    ignoreFileRules: string[]
   }
   settings: {
     found: boolean
@@ -250,12 +257,50 @@ async function fetchTree(
   }
 }
 
-function countIgnoreEntries(content: string): string[] {
-  return content
-    .split('\n')
-    .map((l) => l.trim())
-    .filter((l) => l && !l.startsWith('#'))
+/** Line endings normalized the way Python's text mode reads them, so counts match the CLI graders. */
+function normalizeNewlines(text: string): string {
+  return text.replace(/\r\n?/g, '\n')
 }
+
+/** Line count matching Python's str.splitlines(): a trailing newline does not start a new line. */
+function countLines(text: string): number {
+  if (!text) return 0
+  const lines = normalizeNewlines(text).split('\n')
+  return lines[lines.length - 1] === '' ? lines.length - 1 : lines.length
+}
+
+const READ_RULE = /^Read\(.+\)$/
+
+/** Read(...) entries of permissions.deny in a parsed settings object. */
+function readDenyRules(settings: Record<string, unknown> | null): string[] {
+  const perms = settings?.permissions
+  const deny = perms && typeof perms === 'object' ? (perms as Record<string, unknown>).deny : undefined
+  if (!Array.isArray(deny)) return []
+  return deny.filter((r): r is string => typeof r === 'string' && READ_RULE.test(r))
+}
+
+/**
+ * Converts ignore-file patterns to Read deny rules: `dir/` -> Read(./dir/**);
+ * a pattern containing `/` elsewhere -> Read(./pattern) with any leading `/`
+ * stripped; a bare name or glob -> Read(pattern), which matches at any depth.
+ * Blank lines, comments and `!` negations are skipped.
+ */
+function ignorePatternsAsReadRules(content: string): string[] {
+  const rules: string[] = []
+  for (const line of normalizeNewlines(content).split('\n')) {
+    const s = line.trim()
+    if (!s || s.startsWith('#') || s.startsWith('!')) continue
+    if (s.endsWith('/')) rules.push(`Read(./${s.slice(0, -1).replace(/^\//, '')}/**)`)
+    else if (s.includes('/')) rules.push(`Read(./${s.replace(/^\//, '')})`)
+    else rules.push(`Read(${s})`)
+  }
+  return rules
+}
+
+// Claude Code does not read this file. It is fetched only to flag it and convert its patterns.
+const IGNORE_FILE = '.claudeignore'
+const IGNORE_FILE_FINDING =
+  "`.claudeignore` is not read by Claude Code -- it appears nowhere in Claude Code's documentation. Move its patterns into permissions.deny as Read(...) rules."
 
 function parseSettings(content: string): Record<string, unknown> | null {
   try {
@@ -353,51 +398,48 @@ function detectFromTree(paths: string[]): TreeDetection {
 
 // -- Category scoring (mirrors tools/claude-rate rubric: 7 categories, 100 pts)
 
-function scoreClaudeMd(primaryChars: number, totalChars: number, found: boolean): CategoryScore {
+const CLAUDE_MD_LINE_GUIDANCE = 200
+
+function scoreClaudeMd(primaryLines: number, totalTokens: number, found: boolean): CategoryScore {
   let score = 0
   if (found) {
-    if (primaryChars <= 2000) score += 12
-    else if (primaryChars <= 3000) score += 10
-    else if (primaryChars <= 4000) score += 7
-    else if (primaryChars <= 6000) score += 3
-    else if (primaryChars <= 8000) score += 1
+    if (primaryLines <= 100) score += 12
+    else if (primaryLines <= CLAUDE_MD_LINE_GUIDANCE) score += 10
+    else if (primaryLines <= 300) score += 6
+    else if (primaryLines <= 500) score += 3
+    else score += 1
 
-    if (totalChars <= 6000) score += 8
-    else if (totalChars <= 9000) score += 6
-    else if (totalChars <= 12000) score += 4
-    else if (totalChars <= 16000) score += 2
+    if (totalTokens <= 2000) score += 8
+    else if (totalTokens <= 4000) score += 6
+    else if (totalTokens <= 8000) score += 4
+    else if (totalTokens <= 16000) score += 2
   }
   const detail = found
-    ? `${primaryChars.toLocaleString()} chars (${totalChars.toLocaleString()} total)`
+    ? `${primaryLines.toLocaleString()} lines (~${totalTokens.toLocaleString()} tokens total)`
     : 'not found'
   return { name: 'CLAUDE.md', score, maxScore: 20, detail }
 }
 
-function scoreClaudeIgnore(
-  found: boolean,
-  entryCount: number,
-  entries: string[],
-  lockFilesPresent: string[],
-): CategoryScore {
+function scoreFileReadExclusions(f: AnalysisResult['fileReadExclusions']): CategoryScore {
+  const count = f.readDenyRules.length
   let score = 0
-  let detail = 'not found'
-  if (found) {
-    if (entryCount >= 10) score = 13
-    else if (entryCount >= 5) score = 10
-    else if (entryCount >= 1) score = 6
+  if (count >= 10) score = 13
+  else if (count >= 5) score = 10
+  else if (count >= 1) score = 6
+  // Lock-file bonus: every lock file at the root is covered (vacuously true when none exist).
+  if (count >= 1 && f.lockFilesUncovered.length === 0) score += 2
+  score = Math.min(score, 15)
 
-    // Coverage bonus: every lock file in the repo is ignored (vacuously true when none exist).
-    const coversLocks = lockFilesPresent.every((lf) =>
-      entries.some((e) => e.includes(lf) || e.includes('*.lock')),
-    )
-    if (coversLocks && entryCount >= 1) score += 2
-    score = Math.min(score, 15)
-    const lockNote = coversLocks
-      ? ''
-      : `; lock files not covered (${lockFilesPresent.join(', ')})`
-    detail = `${entryCount} entries${lockNote}`
+  let detail = 'no Read deny rules in permissions.deny'
+  if (count > 0) {
+    let lockNote = 'lock files covered'
+    if (f.lockFilesPresent.length === 0) lockNote = 'no lock files at root'
+    else if (f.lockFilesUncovered.length > 0) {
+      lockNote = `lock files not covered: ${f.lockFilesUncovered.join(', ')}`
+    }
+    detail = `${count} Read deny rule(s); ${lockNote}`
   }
-  return { name: '.claudeignore', score, maxScore: 15, detail }
+  return { name: 'File-read exclusions', score, maxScore: 15, detail }
 }
 
 /**
@@ -456,7 +498,7 @@ function scoreMcp(count: number): CategoryScore {
     name: 'MCP servers',
     score,
     maxScore: 15,
-    detail: `${count} configured (~${(count * TOKEN_ESTIMATES.tokensPerMcpServer).toLocaleString()} tokens/turn)`,
+    detail: `${count} configured`,
   }
 }
 
@@ -549,7 +591,7 @@ export async function analyzeRepo(
     '.claude/CLAUDE.md',
     '.claude/settings.json',
     '.claude/settings.local.json',
-    '.claudeignore',
+    IGNORE_FILE,
     '.mcp.json',
   ]
   const files = await Promise.all(
@@ -566,42 +608,35 @@ export async function analyzeRepo(
   const rootClaudeMd = fileMap.get('CLAUDE.md')
   const nestedClaudeMd = fileMap.get('.claude/CLAUDE.md')
 
+  // Chars and lines are counted on newline-normalized text, as the Python graders read it.
   const claudeMdFiles: { path: string; chars: number }[] = []
   if (rootClaudeMd?.found) {
-    claudeMdFiles.push({ path: 'CLAUDE.md', chars: rootClaudeMd.content.length })
+    claudeMdFiles.push({ path: 'CLAUDE.md', chars: normalizeNewlines(rootClaudeMd.content).length })
   }
   if (nestedClaudeMd?.found) {
-    claudeMdFiles.push({ path: '.claude/CLAUDE.md', chars: nestedClaudeMd.content.length })
+    claudeMdFiles.push({
+      path: '.claude/CLAUDE.md',
+      chars: normalizeNewlines(nestedClaudeMd.content).length,
+    })
   }
 
   const primaryClaudeMd = rootClaudeMd?.found ? rootClaudeMd : nestedClaudeMd
   const totalInstructionChars = claudeMdFiles.reduce((sum, f) => sum + f.chars, 0)
+  const primaryText = primaryClaudeMd?.found ? normalizeNewlines(primaryClaudeMd.content) : ''
+  const primaryLines = countLines(primaryText)
 
   const claudeMd = {
     found: !!primaryClaudeMd?.found,
-    charCount: primaryClaudeMd?.found ? primaryClaudeMd.content.length : 0,
-    lineCount: primaryClaudeMd?.found
-      ? primaryClaudeMd.content.split('\n').length
-      : 0,
-    overLimit: (primaryClaudeMd?.found ? primaryClaudeMd.content.length : 0) > 4000,
+    charCount: primaryText.length,
+    lineCount: primaryLines,
+    overGuidance: primaryLines > CLAUDE_MD_LINE_GUIDANCE,
   }
 
   const claudeMdAll = {
     totalChars: totalInstructionChars,
+    totalTokens: estimateTokens(totalInstructionChars),
     fileCount: claudeMdFiles.length,
-    overLimit: totalInstructionChars > 12000,
     files: claudeMdFiles,
-  }
-
-  // .claudeignore
-  const ignoreFile = fileMap.get('.claudeignore')
-  const ignoreEntries = ignoreFile?.found
-    ? countIgnoreEntries(ignoreFile.content)
-    : []
-  const claudeIgnore = {
-    found: !!ignoreFile?.found,
-    entryCount: ignoreEntries.length,
-    entries: ignoreEntries,
   }
 
   // Settings
@@ -623,6 +658,21 @@ export async function analyzeRepo(
   // ignores. Value-aware on purpose: fastMode true doubles the bill and
   // effortLevel "max" raises it, so the key being present is not enough.
   const hasCostControls = settingsRaw ? computeCostControls(settingsRaw) : false
+
+  // File-read exclusions: Read(...) rules in permissions.deny. A committed
+  // .claudeignore scores nothing (Claude Code does not read it); its patterns
+  // are only converted so the page can show the rules to migrate to.
+  const denyRules = readDenyRules(settingsRaw)
+  const ignoreFile = fileMap.get(IGNORE_FILE)
+  const fileReadExclusions = {
+    readDenyRules: denyRules,
+    lockFilesPresent: detection.lockFilesPresent,
+    lockFilesUncovered: detection.lockFilesPresent.filter(
+      (lf) => !denyRules.some((r) => r.includes(lf) || r.includes('*.lock') || r.includes('*lock*')),
+    ),
+    ignoreFileFound: !!ignoreFile?.found,
+    ignoreFileRules: ignoreFile?.found ? ignorePatternsAsReadRules(ignoreFile.content) : [],
+  }
 
   // MCP servers: .mcp.json is the canonical location; settings.json is legacy.
   const mcpFile = fileMap.get('.mcp.json')
@@ -672,13 +722,8 @@ export async function analyzeRepo(
 
   // Scoring: 7 categories, 100 points -- same rubric as the claude-rate CLI.
   const categories: CategoryScore[] = [
-    scoreClaudeMd(claudeMd.charCount, totalInstructionChars, claudeMd.found),
-    scoreClaudeIgnore(
-      claudeIgnore.found,
-      claudeIgnore.entryCount,
-      ignoreEntries,
-      detection.lockFilesPresent,
-    ),
+    scoreClaudeMd(claudeMd.lineCount, claudeMdAll.totalTokens, claudeMd.found),
+    scoreFileReadExclusions(fileReadExclusions),
     scoreSettings(settings.found, hasModel, hasCostControls),
     scoreMcp(mcpServerCount),
     scoreHooks(hookCount, detection.hookScripts),
@@ -736,7 +781,7 @@ export async function analyzeRepo(
   const recommendations = buildRecommendations({
     claudeMd,
     claudeMdAll,
-    claudeIgnore,
+    fileReadExclusions,
     settings,
     tooling,
     security,
@@ -749,7 +794,7 @@ export async function analyzeRepo(
     files,
     claudeMd,
     claudeMdAll,
-    claudeIgnore,
+    fileReadExclusions,
     settings,
     tooling,
     security,
@@ -765,7 +810,7 @@ export async function analyzeRepo(
 interface RecommendationInput {
   claudeMd: AnalysisResult['claudeMd']
   claudeMdAll: AnalysisResult['claudeMdAll']
-  claudeIgnore: AnalysisResult['claudeIgnore']
+  fileReadExclusions: AnalysisResult['fileReadExclusions']
   settings: AnalysisResult['settings']
   tooling: AnalysisResult['tooling']
   security: AnalysisResult['security']
@@ -793,27 +838,29 @@ function contextRecommendations(r: RecommendationInput): string[] {
     recs.push(
       'Create a CLAUDE.md file at your repo root. This gives Claude project context and reduces back-and-forth tokens.',
     )
-  } else if (r.claudeMd.overLimit) {
+  } else if (r.claudeMd.overGuidance) {
     recs.push(
-      `Your CLAUDE.md is ${r.claudeMd.charCount.toLocaleString()} characters -- over the 4,000 char hard limit. Content beyond 4K is silently truncated. Trim it down.`,
-    )
-  } else if (r.claudeMd.charCount > 3000) {
-    recs.push(
-      `CLAUDE.md is ${r.claudeMd.charCount.toLocaleString()} chars (limit: 4,000). Consider trimming to stay safely under the limit.`,
+      `${r.claudeMd.lineCount} lines -- over Anthropic's 200-line guidance for CLAUDE.md. Longer files consume more context and reduce adherence. Move workflow-specific instructions into skills or path-scoped .claude/rules/ so they load on demand.`,
     )
   }
-  if (r.claudeMdAll.overLimit) {
+  if (r.claudeMd.found && r.claudeMdAll.totalTokens > 2000) {
     recs.push(
-      `Total instruction files are ${r.claudeMdAll.totalChars.toLocaleString()} chars -- over the 12,000 char total limit. Split into essentials only.`,
+      `Your CLAUDE.md files total ~${r.claudeMdAll.totalTokens.toLocaleString()} tokens and load in full at the start of every session. Delete duplication and drop low-value rules; 2,000 tokens or fewer scores full marks.`,
     )
   }
-  if (!r.claudeIgnore.found) {
+  const f = r.fileReadExclusions
+  if (f.ignoreFileFound) {
     recs.push(
-      'Add a .claudeignore file. Exclude build outputs, node_modules, lock files, and generated code to reduce context loading.',
+      `${IGNORE_FILE_FINDING} The File-read exclusions panel lists its patterns converted to Read rules.`,
     )
-  } else if (r.claudeIgnore.entryCount < 5) {
+  } else if (f.readDenyRules.length === 0) {
     recs.push(
-      `Only ${r.claudeIgnore.entryCount} .claudeignore entries. Aim for 5+ patterns to exclude build artifacts, vendor dirs, and large generated files.`,
+      'Add Read(...) rules to permissions.deny in .claude/settings.json to keep Claude\'s file tools out of dependency, build and generated paths, e.g. Read(./node_modules/**), Read(./dist/**), Read(*.min.js). No published measurement exists for what they save; the effect depends on how often Claude would otherwise open those files.',
+    )
+  }
+  if (f.readDenyRules.length > 0 && f.lockFilesUncovered.length > 0) {
+    recs.push(
+      `Add a Read deny rule for each lock file at the repo root: ${f.lockFilesUncovered.map((lf) => `Read(./${lf})`).join(', ')}.`,
     )
   }
   return recs
@@ -837,7 +884,7 @@ function configRecommendations(r: RecommendationInput): string[] {
   }
   if (r.mcpServerCount > 3) {
     recs.push(
-      `${r.mcpServerCount} MCP servers configured -- each adds ~1,500 tokens/turn to the system prompt. Disable servers you don't use every session.`,
+      `${r.mcpServerCount} MCP servers configured. With tool search on (the default), each adds its tool names and server instructions to context; full tool schemas load up front only when tool search is off. Prefer CLI tools (gh, aws, gcloud, sentry-cli) where they exist, and disable servers you don't use every session with /mcp.`,
     )
   }
   if (!r.settings.hasHooks) {
@@ -877,7 +924,7 @@ function buildRecommendations(r: RecommendationInput): string[] {
   ]
   if (recommendations.length === 0) {
     recommendations.push(
-      'Your setup looks well-optimized. Keep CLAUDE.md concise and .claudeignore up to date as your project grows.',
+      'Your setup looks well-optimized. Keep CLAUDE.md under 200 lines and your Read deny rules up to date as your project grows.',
     )
   }
   return recommendations

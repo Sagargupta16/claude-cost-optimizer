@@ -16,11 +16,13 @@ export interface CostBreakdown {
   model: string;
 }
 
-/** Per-1M-token pricing verified 2026-09-05. */
+/** Per-1M-token pricing verified 2026-09-28. */
 export const PRICING: Record<string, { input: number; output: number }> = {
   fable: { input: 10, output: 50 },
   "fable-5": { input: 10, output: 50 },
-  opus: { input: 5, output: 25 },
+  // "opus" is Opus 5.5 (released 2026-09-22): $4/$20, 20% below Opus 5.
+  opus: { input: 4, output: 20 },
+  "opus-5": { input: 5, output: 25 },
   "opus-4.8": { input: 5, output: 25 },
   "opus-4.7": { input: 5, output: 25 },
   "opus-4.6": { input: 5, output: 25 },
@@ -34,13 +36,15 @@ export const PRICING: Record<string, { input: number; output: number }> = {
 /**
  * Cache-read price per 1M tokens.
  *
- * 0.1x base input on every model EXCEPT Fable 5.1, which reads at 0.025x
- * ($0.25/MTok). Read this table rather than multiplying input by 0.1.
+ * Three multipliers: 0.1x base input by default, 0.025x on Fable 5.1
+ * ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok). Read this table rather
+ * than multiplying input by 0.1.
  */
 export const CACHE_HIT_PRICING: Record<string, number> = {
   fable: 0.25,
   "fable-5": 1,
-  opus: 0.5,
+  opus: 0.2,
+  "opus-5": 0.5,
   "opus-4.8": 0.5,
   "opus-4.7": 0.5,
   "opus-4.6": 0.5,
@@ -53,7 +57,8 @@ export const CACHE_HIT_PRICING: Record<string, number> = {
 export const MODEL_LABELS: Record<string, string> = {
   fable: "Fable 5.1",
   "fable-5": "Fable 5 (legacy)",
-  opus: "Opus 5",
+  opus: "Opus 5.5",
+  "opus-5": "Opus 5 (legacy)",
   "opus-4.8": "Opus 4.8 (legacy)",
   "opus-4.7": "Opus 4.7 (legacy)",
   "opus-4.6": "Opus 4.6 (legacy)",
@@ -72,6 +77,7 @@ export const MIN_CACHE_TOKENS: Record<string, number> = {
   fable: 512,
   "fable-5": 512,
   opus: 512,
+  "opus-5": 512,
   "opus-4.8": 1024,
   "opus-4.7": 2048,
   "opus-4.6": 4096,

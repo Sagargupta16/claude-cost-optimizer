@@ -6,6 +6,8 @@
   - Best for: teams of 3+, projects with complex architecture, onboarding new team members
   - Includes: architecture overview, API patterns, deployment, team conventions
   - Trade-off: higher per-turn cost, but fewer convention violations and better first-pass quality
+  - Stays under Anthropic's 200-line target ("Longer files consume more context and reduce adherence");
+    if it grows past that, move workflow-specific sections (PR reviews, DB migrations) into skills
   - Copy everything below the "---" line into your project's CLAUDE.md
   - Replace all {PLACEHOLDER} values with your project specifics
   - Delete all <!-- comment --> blocks before use to save tokens
@@ -114,13 +116,13 @@ prisma/
 ### TypeScript
 - Strict mode, no `any` without `// eslint-disable-next-line` and justification comment
 - `interface` for object shapes, `type` for unions/intersections/mapped types
-- Named exports only — no default exports anywhere
+- Named exports only -- no default exports anywhere
 - Components: `export const ComponentName = () => {}` (const arrow functions)
 - Use `as const` objects instead of TypeScript enums
 - Zod schemas for all external data validation (API inputs, env vars, form data)
 
 ### React / Next.js
-- Server Components by default — add `'use client'` only when needed (hooks, events, browser APIs)
+- Server Components by default -- add `'use client'` only when needed (hooks, events, browser APIs)
 - Props interface named `{ComponentName}Props`, defined above the component
 - Colocate related files: `Button.tsx`, `Button.test.tsx`, `Button.stories.tsx` in same directory
 - Data fetching: server components use `fetch` or Prisma directly; client components use tRPC hooks
@@ -140,13 +142,13 @@ prisma/
 - Integration: Vitest + test database, transactions rolled back after each test
 - E2E: Playwright, page object model pattern
 - Mocking: `vi.mock()` for modules, `vi.fn()` for functions, MSW for API mocks
-- Test data: factory functions in `tests/factories/` — never raw object literals
+- Test data: factory functions in `tests/factories/` -- never raw object literals
 - Naming: `it('should {expected behavior} when {condition}')`
 - Coverage target: 85%+ for services, 70%+ for components, 90%+ for utils
 
 ## API Patterns (tRPC)
 
-- Routers in `src/server/routers/` — one file per resource domain
+- Routers in `src/server/routers/` -- one file per resource domain
 - Input validation: Zod schemas defined inline or imported from `src/types/schemas/`
 - Procedures: `query` for reads, `mutation` for writes
 - Error handling: throw `TRPCError` with appropriate code (NOT_FOUND, FORBIDDEN, BAD_REQUEST)
@@ -159,14 +161,14 @@ prisma/
 - Relations: always define both sides of a relation in the Prisma schema
 - Soft deletes: use `deletedAt DateTime?` column, filter in repository layer
 - Indexes: add indexes for any column used in WHERE clauses or JOINs
-- Seeding: `prisma/seed.ts` creates a consistent dev dataset — keep it idempotent
+- Seeding: `prisma/seed.ts` creates a consistent dev dataset -- keep it idempotent
 
 ## Deployment
 
 - Environment: {Vercel} (app) + {Supabase} (PostgreSQL) + {Upstash} (Redis)
 - Branches: `main` (production), `staging` (preview), feature branches (preview deploys)
 - CI: GitHub Actions runs `typecheck`, `lint`, `test`, `build` on every PR
-- Env vars: see `.env.example` — production values are in Vercel dashboard
+- Env vars: see `.env.example` -- production values are in Vercel dashboard
 - Database migrations run automatically on deploy via `postbuild` script
 
 ## Team Conventions
@@ -174,17 +176,17 @@ prisma/
 - PRs require 1 approval before merge
 - Commit messages: conventional commits (`feat:`, `fix:`, `chore:`, `docs:`)
 - Branch naming: `{type}/{ticket-id}-{short-description}` (e.g., `feat/PROJ-123-add-teams`)
-- Feature flags: use `src/lib/feature-flags.ts` — do not use environment variables for flags
-- Logging: use `src/lib/logger.ts` (structured JSON logs) — never `console.log` in production code
+- Feature flags: use `src/lib/feature-flags.ts` -- do not use environment variables for flags
+- Logging: use `src/lib/logger.ts` (structured JSON logs) -- never `console.log` in production code
 
 ## Do Not
 
 - Do not edit files in `src/generated/` or `prisma/migrations/` (after creation)
-- Do not install dependencies without asking — check if an existing util covers the use case
+- Do not install dependencies without asking -- check if an existing util covers the use case
 - Do not commit `.env` files, API keys, or any credentials
-- Do not use `console.log` — use the structured logger
+- Do not use `console.log` -- use the structured logger
 - Do not add client-side state for data that can be a server component
-- Do not write raw SQL — use Prisma client; if a complex query is needed, use `$queryRaw` with a tagged template
+- Do not write raw SQL -- use Prisma client; if a complex query is needed, use `$queryRaw` with a tagged template
 - Do not modify CI/CD workflows without discussing with the team lead
 
 <!-- END OF TEMPLATE

@@ -13,7 +13,7 @@ assignees: ''
 - **Codebase size**: <!-- e.g., ~45K lines across 320 files -->
 - **Team size**: <!-- e.g., 3 developers using Claude Code -->
 - **Claude Code plan**: <!-- e.g., Max 5x ($100/mo) -->
-- **Primary model used**: <!-- e.g., Opus 5, Sonnet 5, Opus 4.8, Opus 4.7, Sonnet 4.6, Haiku 4.5 -->
+- **Primary model used**: <!-- e.g., Opus 5.5, Sonnet 5, Haiku 4.5, Fable 5.1, or legacy Opus 5, Opus 4.8, Sonnet 4.6 -->
 
 ## Before Optimization
 
@@ -27,7 +27,7 @@ assignees: ''
 | Estimated daily cost | $ |
 | Estimated monthly cost | $ |
 | CLAUDE.md line count | |
-| .claudeignore existed? | YES / NO |
+| Read deny rules in permissions.deny? | YES / NO (count) |
 | MCP servers connected | |
 
 ### What were your cost pain points?
@@ -86,7 +86,7 @@ assignees: ''
 - Screenshots of /usage output before and after
 - Token count logs
 - Session cost comparisons
-- Links to your CLAUDE.md or .claudeignore (if public)
+- Links to your CLAUDE.md or .claude/settings.json (if public)
 -->
 
 ## Additional Context

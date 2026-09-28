@@ -44,14 +44,15 @@ This repo is an installable Claude Code skill and a documentation/tooling projec
 
 Rates, model IDs, context windows, cache behaviour, and retirement dates live in
 [`docs/pricing-data.md`](docs/pricing-data.md) -- the source of truth. Read it before changing any
-rate or model list. It is separate because inlining it made this file 14,224 chars, and anything
-past 4,000 is truncated, so most of it never loaded.
+rate or model list. It is separate because this file loads in full every session, so a smaller
+one costs fewer tokens and is followed better (Anthropic's guidance: under 200 lines).
 
-Verified **2026-09-05**. The two facts most often got wrong:
+Verified **2026-09-28**. The facts most often got wrong:
 
+- **Opus 5.5 ($4/$20) is the current Opus flagship**; Opus 5 ($5/$25) is legacy.
 - **Sonnet 5 is $2/$10 permanently.** The rise to $3/$15 on 2026-09-01 was cancelled.
-- **Cache hit is 0.1x base input except on Fable 5.1 and Mythos 5.1, which read at 0.025x.**
-  Never derive a cache rate as `input * 0.1`; read the per-model rate.
+- **Cache hit has three multipliers: 0.1x base input, except Fable 5.1 and Mythos 5.1 (0.025x)
+  and Opus 5.5 (0.05x).** Never derive a cache rate as `input * 0.1`; read the per-model rate.
 
 After a rate change, update every file listed at the end of that doc, then run
 `python scripts/check-pricing-sync.py`. CI runs it on every PR.

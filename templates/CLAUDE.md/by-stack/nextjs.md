@@ -43,10 +43,10 @@ Node: {20.x} | Package manager: {pnpm}
 
 ```
 app/
-├── (auth)/               # Route group — shared auth layout
+├── (auth)/               # Route group -- shared auth layout
 │   ├── login/page.tsx
 │   └── register/page.tsx
-├── (dashboard)/          # Route group — shared dashboard layout
+├── (dashboard)/          # Route group -- shared dashboard layout
 │   ├── layout.tsx
 │   └── settings/page.tsx
 ├── api/                  # Route Handlers (API endpoints)
@@ -102,11 +102,11 @@ export async function createUser(formData: FormData) {
 
 ## Routing Conventions
 
-- `page.tsx` — route UI (required to make a route accessible)
-- `layout.tsx` — shared UI wrapping child routes (persists across navigation)
-- `loading.tsx` — Suspense fallback for the route segment
-- `error.tsx` — error boundary for the route segment
-- `not-found.tsx` — 404 UI for the segment
+- `page.tsx` -- route UI (required to make a route accessible)
+- `layout.tsx` -- shared UI wrapping child routes (persists across navigation)
+- `loading.tsx` -- Suspense fallback for the route segment
+- `error.tsx` -- error boundary for the route segment
+- `not-found.tsx` -- 404 UI for the segment
 - Route groups `(name)/` for organization without affecting URL
 - Dynamic routes: `[id]/`, catch-all: `[...slug]/`, optional: `[[...slug]]/`
 - Parallel routes `@slot/` and intercepting routes `(.)path/` used sparingly
@@ -114,23 +114,23 @@ export async function createUser(formData: FormData) {
 ## Middleware
 
 - File: `middleware.ts` at project root (or `src/middleware.ts`)
-- Runs on Edge Runtime — no Node.js APIs (no `fs`, no native modules)
+- Runs on Edge Runtime -- no Node.js APIs (no `fs`, no native modules)
 - Used for: auth redirects, locale detection, request rewriting
-- Keep logic minimal — delegate heavy work to route handlers
+- Keep logic minimal -- delegate heavy work to route handlers
 
 ## Code Rules
 
 - Named exports for components, default export only for `page.tsx` / `layout.tsx`
 - `interface` for props, `type` for unions
 - Styling: Tailwind utility classes, `cn()` helper for conditionals
-- No `any` types — use `unknown` + type narrowing
+- No `any` types -- use `unknown` + type narrowing
 - Files: `kebab-case.ts` for utils, `PascalCase.tsx` only for component-only files
 
 ## Do Not
 
-- Do not use `getServerSideProps` / `getStaticProps` — those are Pages Router (legacy)
+- Do not use `getServerSideProps` / `getStaticProps` -- those are Pages Router (legacy)
 - Do not put `'use client'` on files that don't need interactivity
-- Do not call Server Actions from Server Components — use them in forms or Client Components
+- Do not call Server Actions from Server Components -- use them in forms or Client Components
 - Do not install new dependencies without asking first
 - Do not modify `next.config.{js/mjs}` without discussing impact
 

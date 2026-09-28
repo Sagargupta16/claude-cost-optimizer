@@ -1,11 +1,11 @@
 ---
 model: sonnet
-description: Minimal-token bug fix — direct fix with no exploration
+description: Minimal-token bug fix -- direct fix with no exploration
 ---
 
 # Quick Fix
 
-Apply a targeted bug fix with minimal token usage. No exploration, no discussion — just fix.
+Apply a targeted bug fix with minimal token usage. No exploration, no discussion -- just fix.
 
 ## Process
 
@@ -29,14 +29,14 @@ Fixed: {what was wrong} in {file path}
 ## Rules
 
 - ONE file edit per bug. If the fix truly requires multiple files, do them all in parallel in one turn.
-- Do NOT read the entire file — read only the area around the reported issue.
+- Do NOT read the entire file -- read only the area around the reported issue.
 - Do NOT suggest follow-up improvements or "while we're here" changes.
 - Do NOT explain the fix unless the user asks "why."
-- If the bug description is ambiguous, ask ONE clarifying question — do not guess.
+- If the bug description is ambiguous, ask ONE clarifying question -- do not guess.
 
 ## Example
 
-User: "The login button doesn't submit the form — it's in src/components/LoginForm.tsx around line 45"
+User: "The login button doesn't submit the form -- it's in src/components/LoginForm.tsx around line 45"
 
 Good response:
 ```

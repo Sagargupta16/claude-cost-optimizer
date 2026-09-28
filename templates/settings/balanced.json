@@ -5,6 +5,7 @@
     "BALANCED SETTINGS - Recommended default profile.",
     "Sonnet for most tasks. Reasonable limits, good quality-to-cost ratio.",
     "Best for: most teams, daily development, standard feature work.",
+    "Read(...) deny rules keep Claude's file tools out of deps, build output and secrets (.claudeignore is not a Claude Code feature).",
     "Copy this file to ~/.claude/settings.json or .claude/settings.json"
   ],
 
@@ -25,6 +26,14 @@
       "Bash(npx eslint*)"
     ],
     "deny": [
+      "Read(./node_modules/**)",
+      "Read(./dist/**)",
+      "Read(./build/**)",
+      "Read(./coverage/**)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(*.min.js)",
+      "Read(./package-lock.json)",
       "Bash(rm -rf*)",
       "Bash(git push --force*)",
       "Bash(curl*)",

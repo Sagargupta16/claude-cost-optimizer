@@ -22,15 +22,17 @@ Usage:
 
 No external dependencies. Pure Python 3.10+ stdlib.
 
-Pricing data verified 2026-09-05 against:
+Pricing data verified 2026-09-28 against:
     https://platform.claude.com/docs/en/about-claude/pricing
     https://platform.claude.com/docs/en/about-claude/models/overview
+    https://platform.claude.com/docs/en/models/opus-5-5/overview
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import os
 import re
 import sys
@@ -41,13 +43,15 @@ from typing import Any
 
 # -- Pricing data (mirrors site/src/utils/pricing.ts) ------------------------
 
-# Active models priced as of 2026-09-05. Prices are USD per 1M tokens.
-# `fast_mode` marks the models that honor `speed: "fast"` (a flat 2x on both
-# input and output). As of Opus 5's GA on 2026-07-24 that is Opus 5 and Opus 4.8
-# only: Opus 4.7 errors on `speed: "fast"`, and Opus 4.6 silently downgrades to
-# standard speed at standard rates. The old 6x tier no longer exists.
-# `cache_hit` is 0.1x input everywhere EXCEPT Fable 5.1 / Mythos 5.1, which read
-# at 0.025x ($0.25/MTok) -- read the field, never recompute it as input * 0.1.
+# Models priced as of 2026-09-28. Prices are USD per 1M tokens.
+# `fast_mode` marks the models that honor `speed: "fast"` (a flat 2x of the
+# model's own base on both input and output). Since Opus 5.5's release on
+# 2026-09-22 that is Opus 5.5, Opus 5 and Opus 4.8 only: Opus 4.7 errors on
+# `speed: "fast"`, and Opus 4.6 silently downgrades to standard speed at
+# standard rates. The old 6x tier no longer exists.
+# `cache_hit` has three multipliers: 0.1x input on most models, 0.05x on
+# Opus 5.5 ($0.20/MTok), and 0.025x on Fable 5.1 / Mythos 5.1 ($0.25/MTok) --
+# read the field, never recompute it as input * 0.1.
 MODELS: dict[str, dict[str, Any]] = {
     "fable-5-1": {
         "name": "Fable 5.1",
@@ -73,6 +77,19 @@ MODELS: dict[str, dict[str, Any]] = {
         "fast_mode": False,
         "lifecycle": "legacy",
     },
+    # $4/$20 -- 20% below Opus 5, the first Opus release to lower the rate.
+    "opus-5-5": {
+        "name": "Opus 5.5",
+        "input": 4.00,
+        "output": 20.00,
+        "cache_hit": 0.20,
+        "cache_5m_write": 5.00,
+        "cache_1h_write": 8.00,
+        "context_window": 1_000_000,
+        "tokenizer_overhead": 1.35,
+        "fast_mode": True,
+        "lifecycle": "active",
+    },
     "opus-5": {
         "name": "Opus 5",
         "input": 5.00,
@@ -83,7 +100,7 @@ MODELS: dict[str, dict[str, Any]] = {
         "context_window": 1_000_000,
         "tokenizer_overhead": 1.35,
         "fast_mode": True,
-        "lifecycle": "active",
+        "lifecycle": "legacy",
     },
     "opus-4-8": {
         "name": "Opus 4.8",
@@ -164,16 +181,19 @@ MODELS: dict[str, dict[str, Any]] = {
 # Token estimation constants (mirrors TOKEN_ESTIMATES in pricing.ts).
 TOKENS_PER_CLAUDE_MD_LINE = 7
 SYSTEM_PROMPT_TOKENS = 3_500
+# Worst case: full schemas with MCP tool search off. With tool search on (the
+# default) a server adds only its tool names and instructions, so this overstates.
 TOKENS_PER_MCP_SERVER = 1_500
 TOKENS_PER_FILE_READ = 2_000
 OUTPUT_TOKENS_PER_TURN = 500
 HISTORY_GROWTH_PER_TURN = 1_500
 CACHE_HIT_RATE = 0.7
 
-# Limits. CLAUDE.md content beyond 4,000 chars is silently truncated; total
-# instruction-file budget across CLAUDE.md + .claude/CLAUDE.md is ~12,000.
-CLAUDE_MD_HARD_LIMIT = 4_000
-CLAUDE_MD_TOTAL_LIMIT = 12_000
+# CLAUDE.md loads in full at launch; there is no character cap. Anthropic's
+# guidance is to "target under 200 lines per CLAUDE.md file. Longer files
+# consume more context and reduce adherence." So size is scored on the primary
+# file's line count plus estimated tokens (chars / 4) across both files.
+CLAUDE_MD_LINE_GUIDANCE = 200
 
 # Repeated path/filename literals -- declared once so the rater only has one
 # place to update if Anthropic changes a convention.
@@ -183,11 +203,28 @@ SETTINGS_JSON = "settings.json"
 SETTINGS_LOCAL_JSON = "settings.local.json"
 MCP_JSON = ".mcp.json"
 GITIGNORE = ".gitignore"
-CLAUDEIGNORE = ".claudeignore"
+# Claude Code does not read this file. It is detected only so the rater can
+# say so and convert its patterns into Read deny rules.
+IGNORE_FILE = ".claudeignore"
+IGNORE_FILE_FINDING = (
+    "`.claudeignore` is not read by Claude Code -- it appears nowhere in Claude "
+    "Code's documentation. Move its patterns into permissions.deny as Read(...) rules."
+)
 
-# Lock-file names checked when auditing .claudeignore coverage.
-LOCKFILE_NAMES = ("package-lock.json", "pnpm-lock.yaml", "yarn.lock")
+# Lock files at the project root that the Read deny rules should cover.
+LOCKFILE_NAMES = (
+    "package-lock.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "poetry.lock",
+    "Cargo.lock",
+    "uv.lock",
+)
 LOCK_GLOB = "*.lock"
+LOCK_WILDCARD = "*lock*"
+
+# A permissions.deny entry that keeps Claude's file tools out of a path.
+READ_RULE = re.compile(r"Read\(.+\)")
 
 # Indentation prefix used in copy-pasteable fix output.
 FIX_INDENT = "\n    "
@@ -317,36 +354,34 @@ def _glob_count(project: Path, patterns: tuple[str, ...]) -> int:
 
 # -- Category scorers --------------------------------------------------------
 
+# Primary file line count -> (max_lines, points, label). Over 500 lines scores 1.
 _PRIMARY_TIERS: tuple[tuple[int, int, str], ...] = (
-    (2_000, 12, "concise"),
-    (3_000, 10, "well-sized"),
-    (CLAUDE_MD_HARD_LIMIT, 7, "near hard limit"),
-    (6_000, 3, "OVER 4K hard limit -- content past 4K is silently truncated"),
-    (8_000, 1, "way over hard limit"),
+    (100, 12, "concise"),
+    (CLAUDE_MD_LINE_GUIDANCE, 10, "within the 200-line guidance"),
+    (300, 6, "over the 200-line guidance"),
+    (500, 3, "well over the 200-line guidance"),
 )
+# Estimated tokens across both files -> (max_tokens, points). Over 16,000 scores 0.
 _TOTAL_TIERS: tuple[tuple[int, int], ...] = (
-    (6_000, 8),
-    (9_000, 6),
-    (CLAUDE_MD_TOTAL_LIMIT, 4),
+    (2_000, 8),
+    (4_000, 6),
+    (8_000, 4),
     (16_000, 2),
 )
 
 
-def _gather_claude_md_chars(project: Path) -> tuple[int, int, int]:
-    """Return (primary_chars, total_chars, file_count) for CLAUDE.md files."""
-    primary = Path(CLAUDE_MD)
-    secondary = Path(DOT_CLAUDE) / CLAUDE_MD
-    primary_chars = 0
-    total_chars = 0
-    count = 0
-    for relative in (primary, secondary):
-        if (project / relative).is_file():
-            chars = _char_count(_read_text(project, relative) or "")
-            total_chars += chars
-            count += 1
-            if relative == primary:
-                primary_chars = chars
-    return primary_chars, total_chars, count
+def _gather_claude_md(project: Path) -> tuple[int, int, int]:
+    """Return (primary_lines, total_chars, file_count) for CLAUDE.md files.
+
+    Primary is the root CLAUDE.md, or .claude/CLAUDE.md when the root has none.
+    """
+    texts = [
+        _read_text(project, relative) or ""
+        for relative in (Path(CLAUDE_MD), Path(DOT_CLAUDE) / CLAUDE_MD)
+        if (project / relative).is_file()
+    ]
+    primary_lines = _line_count(texts[0]) if texts else 0
+    return primary_lines, sum(_char_count(t) for t in texts), len(texts)
 
 
 def _score_tier(value: int, tiers: tuple, default: tuple) -> tuple:
@@ -358,228 +393,184 @@ def _score_tier(value: int, tiers: tuple, default: tuple) -> tuple:
 
 
 def score_claude_md(project: Path) -> CategoryResult:
-    """CLAUDE.md presence, size discipline, and total instruction budget."""
+    """CLAUDE.md presence, primary line count, and estimated tokens across files."""
     cat = CategoryResult(
         name=CLAUDE_MD, score=0, max_score=20, detail="", findings=[], fixes=[]
     )
-    primary_chars, total_chars, file_count = _gather_claude_md_chars(project)
+    primary_lines, total_chars, file_count = _gather_claude_md(project)
 
     if file_count == 0:
         cat.detail = f"{CLAUDE_MD} not found"
         cat.findings.append(f"No {CLAUDE_MD} at project root.")
         cat.fixes.append(
             f"Create {CLAUDE_MD} at the repo root with project conventions, "
-            "tech stack, and 5-10 high-value rules. Keep under 4,000 characters."
+            "tech stack, and 5-10 high-value rules. Keep it under 200 lines "
+            "(Anthropic's guidance)."
         )
         return cat
 
-    # Score primary file (max 12 points).
+    total_tokens = math.ceil(total_chars / 4)
+
+    # Primary file line count (max 12 points).
     primary_tier = _score_tier(
-        primary_chars, _PRIMARY_TIERS, (0, 0, "massively bloated")
+        primary_lines, _PRIMARY_TIERS, (0, 1, "far over the 200-line guidance")
     )
     primary_score = primary_tier[1]
     primary_msg = primary_tier[2]
 
-    # Score total instruction budget (max 8 points).
-    total_tier = _score_tier(total_chars, _TOTAL_TIERS, (0, 0))
+    # Estimated tokens across both files (max 8 points).
+    total_tier = _score_tier(total_tokens, _TOTAL_TIERS, (0, 0))
     total_score = total_tier[1]
 
     cat.score = primary_score + total_score
     cat.detail = (
-        f"{primary_chars:,} chars primary ({primary_msg}); "
-        f"{total_chars:,} chars total across {file_count} file(s)"
+        f"{primary_lines:,} lines primary ({primary_msg}); "
+        f"~{total_tokens:,} tokens total across {file_count} file(s)"
     )
 
-    _add_claude_md_findings(cat, project, primary_chars, total_chars)
+    _add_claude_md_findings(cat, primary_lines, total_tokens)
     return cat
 
 
 def _add_claude_md_findings(
-    cat: CategoryResult, project: Path, primary_chars: int, total_chars: int
+    cat: CategoryResult, primary_lines: int, total_tokens: int
 ) -> None:
     """Attach findings/fixes to a CLAUDE.md result based on size thresholds."""
-    if primary_chars > CLAUDE_MD_HARD_LIMIT:
-        over = primary_chars - CLAUDE_MD_HARD_LIMIT
+    if primary_lines > CLAUDE_MD_LINE_GUIDANCE:
         cat.findings.append(
-            f"{CLAUDE_MD} is {primary_chars:,} chars -- {over:,} chars over the 4K hard limit. "
-            "Content beyond 4,000 chars is silently truncated."
+            f"{primary_lines} lines -- over Anthropic's 200-line guidance for CLAUDE.md. "
+            "Longer files consume more context and reduce adherence. Move "
+            "workflow-specific instructions into skills or path-scoped .claude/rules/ "
+            "so they load on demand."
         )
         cat.fixes.append(
-            f"Trim {CLAUDE_MD} to under 4,000 characters. Move stack-specific or volatile "
-            f"guidance to {DOT_CLAUDE}/{CLAUDE_MD} or referenced docs."
+            f"Trim {CLAUDE_MD} to under 200 lines. Move workflow-specific instructions "
+            "(PR reviews, DB migrations) into skills, and directory-specific rules into "
+            f"{DOT_CLAUDE}/rules/ with `paths:` frontmatter."
         )
-    elif primary_chars > 3_000:
+
+    if total_tokens > _TOTAL_TIERS[0][0]:
         cat.fixes.append(
-            f"{CLAUDE_MD} is {primary_chars:,} chars (near 4K limit). Trim to under 3,000 to leave headroom."
-        )
-
-    if total_chars > CLAUDE_MD_TOTAL_LIMIT:
-        cat.findings.append(
-            f"Total instruction-file budget is {total_chars:,} chars -- over the ~12K total budget. "
-            "Every byte loads on every turn."
-        )
-        cat.fixes.append(
-            f"Audit ALL {CLAUDE_MD} files (root + {DOT_CLAUDE}/). Delete duplication, "
-            "drop low-value rules, push verbose guidance into linked deep-dive docs."
-        )
-
-    secondary_path = project / DOT_CLAUDE / CLAUDE_MD
-    if not secondary_path.is_file() and primary_chars > 3_000:
-        cat.fixes.append(
-            f"Consider splitting {CLAUDE_MD}: keep ~2K chars at root for global rules, "
-            f"push stack-specific rules to {DOT_CLAUDE}/{CLAUDE_MD}."
+            f"Your {CLAUDE_MD} files total ~{total_tokens:,} tokens and load in full at "
+            "the start of every session. Delete duplication and drop low-value rules; "
+            "2,000 tokens or fewer scores full marks."
         )
 
 
-def score_claudeignore(project: Path) -> CategoryResult:
-    """`.claudeignore` presence and coverage of common bloat sources."""
-    cat = CategoryResult(
-        name=CLAUDEIGNORE, score=0, max_score=15, detail="", findings=[], fixes=[]
-    )
-    path = project / CLAUDEIGNORE
-
-    if not path.is_file():
-        return _claudeignore_missing(cat, project)
-
-    entries = _parse_claudeignore_entries(project)
-    missing = _find_claudeignore_gaps(project, entries)
-    _apply_claudeignore_score(cat, len(entries), missing)
-    return cat
-
-
-# Coverage rules for _find_claudeignore_gaps. Each tuple is
-# (pattern, dir_to_check_on_disk). dir_to_check_on_disk == None means
-# "trigger the lock-file branch".
-_COVERAGE_CHECKS: tuple[tuple[str, str | None], ...] = (
-    ("node_modules/", "node_modules"),
-    ("dist/", "dist"),
-    ("build/", "build"),
-    (".venv/", ".venv"),
-    ("target/", "target"),
-    ("vendor/", "vendor"),
-    (LOCK_GLOB, None),
+_READ_RULE_TIERS: tuple[tuple[int, int], ...] = (
+    # (min_rule_count, points)
+    (10, 13),
+    (5, 10),
+    (1, 6),
 )
 
-# Stack-specific dirs the suggester checks when no .claudeignore exists.
-_DIR_SUGGESTIONS: tuple[tuple[str, str], ...] = (
-    ("node_modules", "node_modules/"),
-    ("dist", "dist/"),
-    ("build", "build/"),
-    (".venv", ".venv/"),
-    ("venv", ".venv/"),
-    ("target", "target/"),
-    ("vendor", "vendor/"),
-)
-_DEFAULT_SUGGESTIONS: tuple[str, ...] = (
-    ".git/",
-    "*.log",
-    "coverage/",
-    ".next/",
-    "*.min.js",
-    "*.map",
+# The Read deny block suggested when a project has none (fact sheet 3a).
+_DEFAULT_READ_DENY: tuple[str, ...] = (
+    "Read(./node_modules/**)",
+    "Read(./dist/**)",
+    "Read(./build/**)",
+    "Read(./coverage/**)",
+    "Read(./.env)",
+    "Read(./.env.*)",
+    "Read(*.min.js)",
+    "Read(./package-lock.json)",
 )
 
 
-def _suggest_claudeignore_patterns(project: Path) -> list[str]:
-    """Build a deduped list of ignore patterns based on what's on disk."""
-    suggestions: list[str] = []
-    for dir_name, pattern in _DIR_SUGGESTIONS:
-        if (project / dir_name).exists():
-            suggestions.append(pattern)
-    for lock in LOCKFILE_NAMES:
-        if (project / lock).exists():
-            suggestions.append(lock)
-    if list(project.glob(LOCK_GLOB)) or list(project.glob("*.lockb")):
-        suggestions.append(LOCK_GLOB)
-    suggestions.extend(_DEFAULT_SUGGESTIONS)
-    seen: set[str] = set()
-    return [s for s in suggestions if not (s in seen or seen.add(s))]
+def _read_deny_rules(settings: dict[str, Any] | None) -> list[str]:
+    """Entries of permissions.deny that are Read(...) rules."""
+    perms = (settings or {}).get("permissions")
+    deny = perms.get("deny") if isinstance(perms, dict) else None
+    if not isinstance(deny, list):
+        return []
+    return [r for r in deny if isinstance(r, str) and READ_RULE.fullmatch(r)]
 
 
-def _claudeignore_missing(cat: CategoryResult, project: Path) -> CategoryResult:
-    """Produce the result for a project that has no .claudeignore."""
-    cat.detail = "not found"
-    cat.findings.append(
-        f"No {CLAUDEIGNORE} file. Claude will index node_modules, dist, lock files, "
-        "and other large generated content."
-    )
-    deduped = _suggest_claudeignore_patterns(project)
-    cat.fixes.append(
-        f"Create {CLAUDEIGNORE} at repo root with these patterns:"
-        + FIX_INDENT
-        + FIX_INDENT.join(deduped)
-    )
-    return cat
+def _lock_covered(lock: str, rules: list[str]) -> bool:
+    return any(lock in r or LOCK_GLOB in r or LOCK_WILDCARD in r for r in rules)
 
 
-def _parse_claudeignore_entries(project: Path) -> list[str]:
-    """Read .claudeignore and return non-comment, non-blank entries."""
-    raw = _read_text(project, CLAUDEIGNORE) or ""
-    return [
-        line.strip()
-        for line in raw.splitlines()
-        if line.strip() and not line.strip().startswith("#")
-    ]
+def _ignore_file_as_read_rules(project: Path) -> list[str]:
+    """Convert each ignore-file pattern to a Read deny rule.
 
-
-def _has_lock_coverage(entries: list[str]) -> bool:
-    """True if entries already cover any lock-file convention."""
-    lock_set = {LOCK_GLOB, *LOCKFILE_NAMES}
-    return any(e in lock_set or "lock" in e for e in entries)
-
-
-def _project_has_lock(project: Path) -> bool:
-    return any((project / lock).exists() for lock in LOCKFILE_NAMES)
-
-
-def _find_claudeignore_gaps(project: Path, entries: list[str]) -> list[str]:
-    """Return human-readable lines listing on-disk bloat not covered by entries."""
-    missing: list[str] = []
-    for pattern, dir_check in _COVERAGE_CHECKS:
-        if dir_check is None:
-            if _project_has_lock(project) and not _has_lock_coverage(entries):
-                missing.append(
-                    f"{LOCKFILE_NAMES[0]}  # or {LOCK_GLOB} to cover all variants"
-                )
+    `dir/` -> Read(./dir/**); a pattern containing `/` elsewhere -> Read(./pattern)
+    with any leading `/` stripped; a bare name or glob -> Read(pattern), which
+    matches at any depth. Blank lines, comments and `!` negations are skipped.
+    """
+    rules: list[str] = []
+    for line in (_read_text(project, IGNORE_FILE) or "").splitlines():
+        s = line.strip()
+        if not s or s.startswith(("#", "!")):
             continue
-        if not (project / dir_check).exists():
-            continue
-        if any(pattern.rstrip("/") in e or e.rstrip("/") == dir_check for e in entries):
-            continue
-        missing.append(f"{pattern}  # {dir_check}/ exists on disk but not ignored")
-    return missing
+        if s.endswith("/"):
+            rules.append(f"Read(./{s[:-1].removeprefix('/')}/**)")
+        elif "/" in s:
+            rules.append(f"Read(./{s.removeprefix('/')})")
+        else:
+            rules.append(f"Read({s})")
+    return rules
 
 
-def _apply_claudeignore_score(
-    cat: CategoryResult, count: int, missing: list[str]
-) -> None:
-    """Map (entry count, missing) to score, detail, and remediation."""
+def _deny_block(rules: list[str] | tuple[str, ...]) -> str:
+    """A copy-pasteable permissions.deny JSON block, indented for fix output."""
+    text = json.dumps({"permissions": {"deny": list(rules)}}, indent=2)
+    return FIX_INDENT + FIX_INDENT.join(text.splitlines())
+
+
+def _file_read_detail(count: int, locks: list[str], uncovered: list[str]) -> str:
     if count == 0:
-        cat.score, cat.detail = 0, "file exists but is empty"
-    elif count >= 8 and not missing:
-        cat.score, cat.detail = 15, f"{count} entries, all common bloat covered"
-    elif count >= 5 and not missing:
-        cat.score, cat.detail = 12, f"{count} entries, common bloat covered"
-    elif count >= 5:
-        cat.score, cat.detail = 9, f"{count} entries, but {len(missing)} obvious gap(s)"
+        return "no Read deny rules in permissions.deny"
+    if not locks:
+        lock_note = "no lock files at root"
+    elif uncovered:
+        lock_note = "lock files not covered: " + ", ".join(uncovered)
     else:
-        cat.score, cat.detail = 5, f"only {count} entries -- minimal coverage"
+        lock_note = "lock files covered"
+    return f"{count} Read deny rule(s); {lock_note}"
 
-    if missing:
-        cat.findings.append(
-            f"{CLAUDEIGNORE} exists but doesn't cover the following bloat sources "
-            "actually present in your repo:"
-        )
+
+def score_file_read_exclusions(project: Path) -> CategoryResult:
+    """Read(...) rules in permissions.deny, plus lock-file coverage."""
+    cat = CategoryResult(
+        name="File-read exclusions",
+        score=0,
+        max_score=15,
+        detail="",
+        findings=[],
+        fixes=[],
+    )
+    settings, _ = _load_settings(project)
+    rules = _read_deny_rules(settings)
+    count = len(rules)
+    locks = [lock for lock in LOCKFILE_NAMES if (project / lock).is_file()]
+    uncovered = [lock for lock in locks if not _lock_covered(lock, rules)]
+
+    score = next((pts for minimum, pts in _READ_RULE_TIERS if count >= minimum), 0)
+    if count >= 1 and not uncovered:
+        score += 2
+    cat.score = min(score, cat.max_score)
+    cat.detail = _file_read_detail(count, locks, uncovered)
+
+    if (project / IGNORE_FILE).is_file():
+        cat.findings.append(IGNORE_FILE_FINDING)
         cat.fixes.append(
-            f"Add these lines to {CLAUDEIGNORE}:"
+            f"Merge its patterns into permissions.deny in {DOT_CLAUDE}/{SETTINGS_JSON}, "
+            f"then delete {IGNORE_FILE}:"
+            + _deny_block(_ignore_file_as_read_rules(project))
+        )
+    elif count == 0:
+        cat.fixes.append(
+            "Keep Claude's file tools out of dependency, build and generated paths with "
+            f"Read deny rules in {DOT_CLAUDE}/{SETTINGS_JSON}. No published measurement "
+            "exists for what they save; the effect depends on how often Claude would "
+            "otherwise open those files:" + _deny_block(_DEFAULT_READ_DENY)
+        )
+
+    if count >= 1 and uncovered:
+        cat.fixes.append(
+            "Add a Read deny rule for each lock file at the repo root:"
             + FIX_INDENT
-            + FIX_INDENT.join(missing)
-        )
-
-    if count < 5:
-        cat.fixes.append(
-            "Aim for 5+ patterns. At minimum: node_modules/, dist/, build/, *.lock, "
-            ".git/, coverage/, *.log, *.map"
+            + FIX_INDENT.join(f'"Read(./{lock})"' for lock in uncovered)
         )
 
     return cat
@@ -690,10 +681,9 @@ def score_settings(project: Path) -> CategoryResult:
         cat.fixes.append(
             f"Create {DOT_CLAUDE}/{SETTINGS_JSON} with at minimum:\n"
             '    {"model": "claude-sonnet-5", "permissions": {"allow": [], "deny": []}}\n'
-            "    Reach for claude-opus-5 only on complex agentic work -- its adaptive "
-            "thinking is ON by default and reasoning tokens bill as output, so the same "
-            "task costs more than Opus 4.8 at the identical $5/$25 rate until you tune "
-            'output_config.effort down from its "high" default.'
+            "    Reach for claude-opus-5-5 only on complex agentic work -- its adaptive "
+            "thinking is always on (it cannot be disabled) and reasoning tokens bill as "
+            "output at $20/1M, so effort is the only lever; it defaults to medium."
         )
         return cat
 
@@ -707,9 +697,9 @@ def score_settings(project: Path) -> CategoryResult:
     else:
         cat.fixes.append(
             f'Set "model" in {SETTINGS_JSON} to pin a default (e.g. "claude-sonnet-5"). '
-            "Prevents accidental Opus usage on simple tasks -- and on Opus 5 that matters "
-            "more, since adaptive thinking is on by default and every reasoning token "
-            "bills at the $25/1M output rate."
+            "Prevents accidental Opus usage on simple tasks -- and on Opus 5.5 that matters "
+            "more, since adaptive thinking is always on and every reasoning token "
+            "bills at the $20/1M output rate."
         )
 
     if cost_signals:
@@ -721,8 +711,7 @@ def score_settings(project: Path) -> CategoryResult:
             "cap setting -- keys like maxMonthlyCost or budgetCap are not in the "
             "settings schema and are silently ignored, so adding one buys nothing. "
             "Use settings it actually reads:\n"
-            '    "effortLevel": "medium"          reasoning tokens bill as output, '
-            'and effort defaults to "high"\n'
+            '    "effortLevel": "medium"          reasoning tokens bill as output\n'
             '    "fastMode": false                declines the flat 2x Fast Mode '
             "multiplier\n"
             '    "autoCompactEnabled": true       bounds the context growth that '
@@ -752,9 +741,9 @@ def score_settings(project: Path) -> CategoryResult:
 
 _MCP_TIERS: tuple[tuple[int, int, str], ...] = (
     # (max_count, score, detail_template) -- detail uses {n} for total.
-    (3, 13, "{n} MCP server(s) -- light overhead (~{tokens:,} tokens/turn)"),
+    (3, 13, "{n} MCP server(s) -- light overhead"),
     (5, 10, "{n} MCP servers -- moderate overhead"),
-    (8, 6, "{n} MCP servers -- heavy overhead (~{tokens:,} tokens/turn)"),
+    (8, 6, "{n} MCP servers -- heavy overhead"),
     (12, 3, "{n} MCP servers -- very heavy overhead"),
 )
 
@@ -777,7 +766,7 @@ def _count_mcp_servers(project: Path) -> tuple[dict[str, int], dict[str, Any] | 
 
 
 def score_mcp_servers(project: Path) -> CategoryResult:
-    """Count MCP servers across .mcp.json + settings.json. Each adds ~1.5K tokens/turn."""
+    """Count MCP servers across .mcp.json + settings.json."""
     cat = CategoryResult(
         name="MCP servers", score=0, max_score=15, detail="", findings=[], fixes=[]
     )
@@ -789,22 +778,27 @@ def score_mcp_servers(project: Path) -> CategoryResult:
         cat.detail = "no MCP servers configured (lowest overhead)"
         return cat
 
-    tokens = total * TOKENS_PER_MCP_SERVER
     cat.score, cat.detail = 0, f"{total} MCP servers -- excessive overhead"
     for max_count, score_value, template in _MCP_TIERS:
         if total <= max_count:
             cat.score = score_value
-            cat.detail = template.format(n=total, tokens=tokens)
+            cat.detail = template.format(n=total)
             break
 
     if total > 5:
         cat.findings.append(
             f"{total} MCP servers configured (across {', '.join(counts.keys())}). "
-            f"Each adds ~{TOKENS_PER_MCP_SERVER:,} tokens to every turn's system prompt."
+            "With tool search on (the default), each adds its tool names and server "
+            "instructions to context; full tool schemas load up front only when tool "
+            "search is off (ENABLE_TOOL_SEARCH=false or a custom ANTHROPIC_BASE_URL)."
         )
         cat.fixes.append(
-            "Review which MCP servers you actually use every session. Disable rarely-used "
-            f"ones in {MCP_JSON} or move them to .mcp.local.json (gitignored)."
+            "Review which MCP servers you actually use every session. Disable unused "
+            f"ones with /mcp or in {MCP_JSON}, and move personal ones to local scope "
+            "(claude mcp add --scope local, stored in ~/.claude.json) so they load only "
+            "for you. "
+            "Prefer CLI tools (gh, aws, gcloud, sentry-cli) where they exist -- they add "
+            "no per-tool listing."
         )
 
     if total > 0 and MCP_JSON not in counts and "mcpServers" in (settings or {}):
@@ -1153,7 +1147,7 @@ def estimate_costs(claude_md_chars: int, mcp_count: int) -> dict[str, dict[str, 
 
 _SCORERS = (
     score_claude_md,
-    score_claudeignore,
+    score_file_read_exclusions,
     score_settings,
     score_mcp_servers,
     score_hooks,
@@ -1168,7 +1162,7 @@ def rate(project: Path) -> RateResult:
     max_total = sum(c.max_score for c in categories)
     grade = total_to_grade(total, max_total)
 
-    _, claude_md_chars, _ = _gather_claude_md_chars(project)
+    _, claude_md_chars, _ = _gather_claude_md(project)
     counts, _ = _count_mcp_servers(project)
     mcp_count = sum(counts.values())
 
@@ -1190,7 +1184,7 @@ def rate(project: Path) -> RateResult:
 # -- Output formatters -------------------------------------------------------
 
 _BAR_WIDTH = 20
-_PRICING_VERIFIED_DATE = "2026-09-05"
+_PRICING_VERIFIED_DATE = "2026-09-28"
 
 
 def _ratio_color(ratio: float) -> str:

@@ -20,37 +20,47 @@ import os
 import sys
 from pathlib import Path
 
-# Claude model pricing per 1M tokens (verified 2026-09-05; Opus 5 GA 2026-07-24)
-# "fable" = Fable 5 (most capable, 2x Opus 5); "opus" = Opus 5, the Opus-tier
-# flagship; "opus-4.8"/"opus-4.7"/"opus-4.6" = legacy. Opus 5 and Opus 4.8/4.7/4.6
-# share the same posted rate, but Opus 5 runs adaptive thinking ON by default and
-# reasoning tokens bill at the normal output rate, so the same workload costs more
-# than it did on Opus 4.8 until output_config.effort is lowered. The 4.7+ tokenizer
-# (also used by Opus 4.8, Opus 5, Fable 5, Sonnet 5 and Sonnet 4.6) consumes up to
-# ~35% more tokens for the same source text; Opus 5 shares it exactly, so nothing
-# needs re-baselining when moving from Opus 4.7 or 4.8.
-# cache_hit is 0.1x input on every model EXCEPT Fable 5.1 / Mythos 5.1, which read at
-# 0.025x ($0.25/MTok). Read the rate from this table; never compute input * 0.1.
+# Claude model pricing per 1M tokens (verified 2026-09-28; Opus 5.5 released 2026-09-22)
+# "fable" = Fable 5.1 (most capable, 2.5x Opus 5.5); "opus" = Opus 5.5, the
+# recommended default Opus at $4/$20 (20% below Opus 5); "opus-5" and
+# "opus-4.8"/"opus-4.7"/"opus-4.6" = legacy at $5/$25. Opus 5.5 runs adaptive
+# thinking ALWAYS ON (it cannot be disabled; effort defaults to medium), and Opus 5
+# runs it ON by default; either way reasoning tokens bill at the normal output rate.
+# The 4.7+ tokenizer (also used by Opus 4.8, Opus 5, Opus 5.5, Fable 5, Sonnet 5 and
+# Sonnet 4.6) consumes up to ~35% more tokens for the same source text.
+# cache_hit has three multipliers: 0.1x input by default, 0.025x on Fable 5.1 /
+# Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok). Read the rate from
+# this table; never compute input * 0.1.
 # Pricing keys. Named so the detection table below and MODEL_PRICING cannot drift.
 FABLE = "fable"
 FABLE_5 = "fable-5"
 OPUS = "opus"
+OPUS_5 = "opus-5"
 OPUS_4_8 = "opus-4.8"
 OPUS_4_7 = "opus-4.7"
 OPUS_4_6 = "opus-4.6"
+OPUS_4_5 = "opus-4.5"
+# Opus 4.1 and Opus 4 share the old $15/$75 tier. Both are retired on the Claude
+# API but still served on Bedrock and Google Cloud, so their logs still appear.
+OPUS_4_1 = "opus-4.1"
 SONNET = "sonnet"
 SONNET_4_6 = "sonnet-4.6"
+SONNET_4_5 = "sonnet-4.5"
 HAIKU = "haiku"
 
 MODEL_PRICING = {
     FABLE: {"input": 10.00, "output": 50.00, "cache_hit": 0.25},
     FABLE_5: {"input": 10.00, "output": 50.00, "cache_hit": 1.00},
-    OPUS: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
+    OPUS: {"input": 4.00, "output": 20.00, "cache_hit": 0.20},
+    OPUS_5: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     OPUS_4_8: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     OPUS_4_7: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     OPUS_4_6: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
+    OPUS_4_5: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
+    OPUS_4_1: {"input": 15.00, "output": 75.00, "cache_hit": 1.50},
     SONNET: {"input": 2.00, "output": 10.00, "cache_hit": 0.20},
     SONNET_4_6: {"input": 3.00, "output": 15.00, "cache_hit": 0.30},
+    SONNET_4_5: {"input": 3.00, "output": 15.00, "cache_hit": 0.30},
     HAIKU: {"input": 1.00, "output": 5.00, "cache_hit": 0.10},
 }
 
@@ -113,19 +123,27 @@ def calculate_cost(
 #
 # Ordering carries meaning: Fable/Mythos 5.1 read cache at 0.025x while 5.0 reads at
 # 0.1x, so the two generations cannot share a pricing key and 5.1 must be tested
-# before the bare "fable"/"mythos" catch-all. Opus 5 and Sonnet 5 are the current
-# flagships, so they map to the plain "opus"/"sonnet" keys.
+# before the bare "fable"/"mythos" catch-all. Opus 5.5 and Sonnet 5 are the current
+# models, so they map to the plain "opus"/"sonnet" keys. "opus-5" is a substring of
+# "opus-5-5", so Opus 5.5 must be tested before legacy Opus 5.
 _MODEL_MARKERS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("fable-5-1", "mythos-5-1"), FABLE),
     (("fable-5", "mythos-5"), FABLE_5),
     (("fable", "mythos"), FABLE),
-    (("opus-5", "opus5"), OPUS),
+    (("opus-5-5", "opus-5.5", "opus5.5", "opus5-5"), OPUS),
+    (("opus-5", "opus5"), OPUS_5),
     (("opus-4-8", "opus-4.8"), OPUS_4_8),
     (("opus-4-7", "opus-4.7"), OPUS_4_7),
     (("opus-4-6", "opus-4.6"), OPUS_4_6),
+    # Without these two rows every older Opus fell through to the bare "opus"
+    # catch-all below, pricing Opus 4.5 20% low and Opus 4.1 / Opus 4 at under
+    # a third of their $15/$75. "opus-4-2025" is Opus 4's dated ID.
+    (("opus-4-5", "opus-4.5"), OPUS_4_5),
+    (("opus-4-1", "opus-4.1", "opus-4-2025"), OPUS_4_1),
     (("opus",), OPUS),
     (("haiku",), HAIKU),
     (("sonnet-4-6", "sonnet-4.6"), SONNET_4_6),
+    (("sonnet-4-5", "sonnet-4.5"), SONNET_4_5),
     (("sonnet",), SONNET),
 )
 
@@ -317,7 +335,8 @@ def identify_hotspots(sessions: list[dict]) -> list[str]:
         if avg_tokens > 50_000:
             hotspots.append(
                 f"Session '{session['name']}' averages {format_number(int(avg_tokens))} "
-                f"tokens/turn. Consider trimming context or using .claudeignore."
+                f"tokens/turn. Consider trimming context or adding Read(...) deny "
+                f"rules under permissions.deny for large files."
             )
 
     # Check for heavy file read patterns
@@ -334,7 +353,8 @@ def identify_hotspots(sessions: list[dict]) -> list[str]:
             hotspots.append(
                 f"File reads account for {read_count}/{total_tools} "
                 f"({read_count * 100 // total_tools}%) of tool calls. "
-                f"Use .claudeignore to exclude large/irrelevant files."
+                f"Add Read(...) deny rules under permissions.deny in "
+                f".claude/settings.json to keep large/irrelevant files out."
             )
 
     # Check for expensive model usage on many turns
@@ -344,9 +364,10 @@ def identify_hotspots(sessions: list[dict]) -> list[str]:
         total_turns = sum(s["turns"] for s in sessions)
         if total_turns > 0 and fable_turns / total_turns > 0.3:
             hotspots.append(
-                f"Fable 5 ($10/$50, 2x Opus 5) is used for {fable_turns}/{total_turns} "
+                f"Fable 5.1 ($10/$50, 2.5x Opus 5.5) is used for {fable_turns}/{total_turns} "
                 f"({fable_turns * 100 // total_turns}%) of turns. "
-                f"Reserve it for the hardest tasks; Opus 5 costs half as much."
+                f"Reserve it for demanding reasoning and long-horizon work; "
+                f"route the rest to Opus 5.5 ($4/$20)."
             )
 
     opus_sessions = [s for s in sessions if s["model"].startswith("opus")]
@@ -359,16 +380,28 @@ def identify_hotspots(sessions: list[dict]) -> list[str]:
                 f"({opus_turns * 100 // total_turns}%) of turns. "
                 f"Switch routine tasks to Sonnet or Haiku for major savings."
             )
+        # Opus 5.5 runs adaptive thinking ALWAYS ON and reasoning tokens bill as
+        # output, so effort is the only control over that part of the bill.
+        if any(s["model"] == OPUS for s in opus_sessions):
+            hotspots.append(
+                "Opus 5.5 turns detected. Adaptive thinking is always on there "
+                "(disabling it returns a 400) and reasoning tokens bill as output "
+                "at the normal $20/1M rate, so effort is the only control. It "
+                "defaults to medium; lower output_config.effort for routine turns. "
+                "Code that disabled thinking on Opus 5 now pays for thinking "
+                "tokens it did not before, so re-baseline after migrating."
+            )
         # Opus 5 posts the same $5/$25 as Opus 4.8, but adaptive thinking is on by
         # default and reasoning tokens bill as output, so the same work costs more.
-        if any(s["model"] == "opus" for s in opus_sessions):
+        if any(s["model"] == OPUS_5 for s in opus_sessions):
             hotspots.append(
                 "Opus 5 turns detected. Thinking is ON by default there and "
                 "reasoning tokens bill as output at the normal $25/1M rate, so "
                 "identical work costs more than it did on Opus 4.8. Lower "
                 "output_config.effort (low/medium) for routine turns, and drop "
                 "inherited 'double-check your work' instructions -- Opus 5 already "
-                "self-verifies, so you pay for it twice."
+                "self-verifies, so you pay for it twice. Opus 5 is legacy; Opus "
+                "5.5 is 20% cheaper per token."
             )
 
     # Check for long sessions
@@ -400,25 +433,34 @@ def generate_recommendations(sessions: list[dict]) -> list[str]:
         if input_ratio > 0.85:
             recommendations.append(
                 "Input tokens dominate your usage ({:.0f}%). Focus on reducing "
-                "context size: trim CLAUDE.md, use .claudeignore, avoid reading "
-                "large files.".format(input_ratio * 100)
+                "context size: trim CLAUDE.md, add Read(...) deny rules under "
+                "permissions.deny, avoid reading large files.".format(input_ratio * 100)
             )
 
     # Model-specific recommendations
     models_used = set(s["model"] for s in sessions)
     if models_used == {"fable"}:
         recommendations.append(
-            "You're using Fable 5 exclusively ($10/$50 -- 2x Opus 5). Route "
-            "standard work to Opus 5 or Sonnet 5 and keep Fable 5 for the "
-            "hardest reasoning to cut those turns by 50-90%."
+            "You're using Fable 5.1 exclusively ($10/$50 -- 2.5x Opus 5.5). Route "
+            "standard work to Opus 5.5 or Sonnet 5 and keep Fable 5.1 for the "
+            "hardest reasoning to cut the per-token rate on those turns by 60% "
+            "(Opus 5.5, $4/$20) to 80% (Sonnet 5, $2/$10)."
         )
     elif models_used == {"opus"}:
         recommendations.append(
-            "You're using Opus 5 exclusively. Consider Sonnet 5 for standard "
-            "coding tasks and Haiku 4.5 for simple lookups to save 40-80% on "
-            "those turns. On the Opus 5 turns you keep, lower "
-            "output_config.effort (it defaults to high) -- thinking is on by "
-            "default and those reasoning tokens bill as output."
+            "You're using Opus 5.5 exclusively. Consider Sonnet 5 for standard "
+            "coding tasks and Haiku 4.5 for simple lookups to save 50-75% per "
+            "token on those turns (Sonnet 5 is half the rate, Haiku 4.5 a "
+            "quarter). On the Opus 5.5 turns you keep, effort is the only "
+            "thinking control (thinking cannot be disabled); it defaults to "
+            "medium, and those reasoning tokens bill as output."
+        )
+    elif models_used == {OPUS_5}:
+        recommendations.append(
+            "You're using legacy Opus 5 exclusively. Opus 5.5 is 20% cheaper per "
+            "token ($4/$20 vs $5/$25), but thinking cannot be disabled there, so "
+            "re-baseline cost after migrating. Sonnet 5 costs 60% less per token "
+            "than Opus 5 for standard coding tasks."
         )
 
     avg_turns = sum(s["turns"] for s in sessions) / len(sessions)

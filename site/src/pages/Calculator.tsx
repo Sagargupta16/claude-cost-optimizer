@@ -5,7 +5,7 @@ import { BeforeAfterChart, CostPerTurnChart, ModelComparisonChart } from '../com
 import styles from './Calculator.module.css'
 
 const defaultInputs: CalculatorInputs = {
-  model: 'opus-5',
+  model: 'opus-5-5',
   turnsPerSession: 30,
   claudeMdLines: 100,
   sessionsPerDay: 3,

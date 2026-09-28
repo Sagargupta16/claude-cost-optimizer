@@ -69,7 +69,7 @@ tests/
 
 - Routers in `app/routers/`, included in `main.py` with prefix
 - Use dependency injection for DB sessions, auth, pagination
-- Return Pydantic `response_model` — never return ORM objects directly
+- Return Pydantic `response_model` -- never return ORM objects directly
 - Status codes: 201 for creation, 204 for deletion, 200 for everything else
 
 ```python
@@ -95,42 +95,42 @@ async def get_user(user_id: int, db=Depends(get_db)):
 
 ## Pydantic Models (Schemas)
 
-- `{Name}Create` — request body for creation (no id)
-- `{Name}Update` — partial update fields (all Optional)
-- `{Name}Response` — API response shape (includes id, timestamps)
-- `{Name}Base` — shared fields inherited by Create/Response
+- `{Name}Create` -- request body for creation (no id)
+- `{Name}Update` -- partial update fields (all Optional)
+- `{Name}Response` -- API response shape (includes id, timestamps)
+- `{Name}Base` -- shared fields inherited by Create/Response
 - Use `model_config = ConfigDict(from_attributes=True)` for ORM conversion
 
 ## Database Patterns
 
 - ORM: {SQLAlchemy 2.0 async / Tortoise ORM}
-- Session: injected via `Depends(get_db)` — never create sessions manually
-- Migrations: {Alembic} — auto-generate with `alembic revision --autogenerate -m "description"`
-- Queries go in `app/repositories/` — routers and services never write raw SQL
+- Session: injected via `Depends(get_db)` -- never create sessions manually
+- Migrations: {Alembic} -- auto-generate with `alembic revision --autogenerate -m "description"`
+- Queries go in `app/repositories/` -- routers and services never write raw SQL
 - Transactions: use `async with db.begin():` for multi-step operations
 
 ## Testing with pytest
 
 - Test client: `httpx.AsyncClient` with `app` (or `TestClient` for sync)
 - Fixtures in `conftest.py`: test DB, authenticated client, sample data
-- Use factories for test data — not hardcoded dicts
+- Use factories for test data -- not hardcoded dicts
 - Mock external services with `unittest.mock.patch` or `pytest-mock`
 - Name tests: `test_{action}_{expected_result}` (e.g., `test_create_user_returns_201`)
 
 ## Code Rules
 
-- Type hints on all function signatures — enforce with mypy
+- Type hints on all function signatures -- enforce with mypy
 - `snake_case` for functions/variables, `PascalCase` for classes
-- No `*` imports — explicit imports only
+- No `*` imports -- explicit imports only
 - Async endpoints by default unless calling sync-only libraries
-- Logging via `structlog` or stdlib `logging` — no `print()` in app code
+- Logging via `structlog` or stdlib `logging` -- no `print()` in app code
 
 ## Do Not
 
-- Do not put business logic in routers — delegate to services
-- Do not return ORM model instances from endpoints — use Pydantic schemas
+- Do not put business logic in routers -- delegate to services
+- Do not return ORM model instances from endpoints -- use Pydantic schemas
 - Do not edit Alembic migration files after they have been applied
-- Do not store secrets in code — use environment variables via `app/config.py`
+- Do not store secrets in code -- use environment variables via `app/config.py`
 - Do not install new dependencies without asking first
 
 <!-- END OF TEMPLATE

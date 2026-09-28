@@ -17,9 +17,17 @@
 
 ## MCP Server Token Overhead
 
-Every connected MCP server injects its **tool schemas** into the system prompt. This happens on every turn, regardless of whether you use that server.
+In Claude Code, **MCP tool search is on by default** (code.claude.com/docs/en/mcp and /costs, read 2026-09-28). Tool definitions are deferred: only **tool names and server instructions** enter context until Claude uses a specific tool, and then that tool's schema loads. Anthropic publishes no per-server token figure for deferred servers.
 
-### Typical Tool Schema Sizes
+Full **tool schemas** load into the prompt up front, on every turn, only when tool search is off:
+
+- `ENABLE_TOOL_SEARCH=false`, or `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`
+- an `ANTHROPIC_BASE_URL` pointing at a non-first-party host (set `ENABLE_TOOL_SEARCH=true` if your proxy forwards `tool_reference` blocks)
+- models older than the Claude 4.5 generation on Google Cloud, and Microsoft Foundry deployments hosted on Azure
+
+The sizes and the worked example below are that **tool-search-off** case.
+
+### Typical Tool Schema Sizes (tool search off)
 
 | MCP Server | Tools | Approx. Tokens Added |
 |------------|:-----:|:--------------------:|
@@ -31,39 +39,47 @@ Every connected MCP server injects its **tool schemas** into the system prompt. 
 | Brave Search | 3 | ~400-600 |
 | 21st (Magic) | 3 | ~400-600 |
 
-### The Multiplication Effect
+### The Multiplication Effect (tool search off)
 
-If you have 10 MCP servers connected with ~1,500 tokens average each:
+With tool search off, if you have 10 MCP servers connected with ~1,500 tokens of full schemas each (an estimate from the table above, not an Anthropic figure):
 
 ```
 15,000 tokens of MCP schemas x 50 turns = 750,000 input tokens
 
-On Opus 5:    750K tokens x $5.00/1M = $3.75 just for MCP schemas (+~35% if new tokenizer inflates schema)
+On Opus 5.5:  750K tokens x $4.00/1M = $3.00 just for MCP schemas (+~35% if new tokenizer inflates schema)
+On Opus 5:    750K tokens x $5.00/1M = $3.75 (legacy)
 On Sonnet 5:  750K tokens x $2.00/1M = $1.50 just for MCP schemas
 ```
 
-Add the tool-use system prompt on top of the schemas themselves: **286 tokens** with `tool_choice: auto` or `none`, **406 tokens** with `any` or `tool`. Individual built-in tools cost more (the bash tool adds 325 input tokens on Opus 5 / 4.8 / 4.7, 244 on Opus 4.6 and earlier; the text editor tool adds 700).
+With tool search on (the default), that per-turn schema load does not happen: only tool names and server instructions ride along until a tool is used. This is why the old advice that "adding a server breaks the cache" is out of date -- with tool search on, connecting or removing a server does **not** invalidate the prompt cache. It still does when tool search is off, and so does enabling or disabling a plugin that provides MCP servers.
 
-With prompt caching, the actual cost is much lower (~90% of those tokens get cached). But the first turn and any cache misses still pay full price. Note that Opus 5's minimum cacheable prompt is only **512 tokens** (Opus 4.8 needed 1,024, Opus 4.7 needed 2,048, Opus 4.6 needed 4,096), so even a single small MCP server's schemas are now big enough to cache.
+Add the tool-use system prompt on top of the schemas themselves: **286 tokens** with `tool_choice: auto` or `none`, **406 tokens** with `any` or `tool` (Opus 5.5 rejects forced `any`/`tool`, so only 286 applies there). Individual built-in tools cost more (the bash tool adds 325 input tokens on Opus 5 / 4.8 / 4.7, 244 on Opus 4.6 and earlier; the text editor tool adds 700).
+
+With prompt caching, the actual cost is much lower: cached schema tokens bill at 0.1x base input on most models (0.05x on Opus 5.5, 0.025x on Fable 5.1). But the first turn and any cache misses still pay full price. Note that the minimum cacheable prompt on Opus 5.5 and Opus 5 is only **512 tokens** (Opus 4.8 needed 1,024, Opus 4.7 needed 2,048, Opus 4.6 needed 4,096), so even a single small MCP server's schemas are now big enough to cache.
 
 ### Tool Search (Deferred Tools)
 
-Claude Code 2.1+ supports **deferred tool loading** -- tool schemas are only loaded when needed, not all at once. This can significantly reduce per-turn token overhead if most MCP tools go unused in a session.
+Tool search is **on by default** in Claude Code: schemas load only when Claude uses a tool, not all at once. Anthropic publishes no percentage saving for it; what it removes is the full-schema load described above for every tool you do not call. Leave it on unless you have a reason to turn it off, and remember that pointing Claude Code at a custom `ANTHROPIC_BASE_URL` also turns it off.
 
-If your MCP servers support it, deferred tools can save 5-15% on input tokens.
+### MCP Tool Output
+
+What a tool **returns** costs tokens too, deferred or not. Claude Code warns when an MCP tool's output exceeds **10,000 tokens** and caps it at **25,000 tokens** by default; raise or lower the cap with `MAX_MCP_OUTPUT_TOKENS`. A lower cap is a cost backstop for servers that dump whole pages or tables.
 
 ---
 
 ## Measuring Your MCP Cost
 
-Run this to estimate your MCP overhead:
+Measure rather than estimate. Inside a session, `/context` shows what is consuming context space, and on a Pro, Max, Team or Enterprise plan `/usage` attributes recent usage to individual MCP servers as a share of the total.
+
+If tool search is off, a rough estimate is still possible:
 
 ```bash
 # Count connected MCP servers
 claude mcp list 2>&1 | grep "Connected" | wc -l
 
-# Rough estimate: multiply connected servers x 1,500 tokens x turns per session
-# Example: 10 servers x 1,500 tokens x 30 turns = 450,000 extra input tokens
+# Tool search OFF only: multiply connected servers x their full-schema size x turns per session
+# Example: 10 servers x ~1,500 tokens x 30 turns = 450,000 extra input tokens
+# Tool search ON (default): only tool names and server instructions load; use /context instead
 ```
 
 ---
@@ -72,10 +88,9 @@ claude mcp list 2>&1 | grep "Connected" | wc -l
 
 ### 1. Only Connect What You Need
 
-Don't connect 12 MCP servers if you only use 3 regularly. Add servers to **project-level** config (not global) so they only load for relevant projects.
+Don't connect 12 MCP servers if you only use 3 regularly. Tool search keeps idle servers cheap, but each still adds its tool names and server instructions, and each one Claude does call loads its schema and returns output. Run `/mcp` to see configured servers and disable the ones you are not using. Add servers to **project-level** config (not global) so they only load for relevant projects. Project-scoped servers live in `.mcp.json` at the project root (`claude mcp add --scope project` writes it), not in `settings.json`:
 
 ```json
-// .claude/settings.json (project-level) -- only loads for this project
 {
   "mcpServers": {
     "context7": { "command": "npx", "args": ["-y", "@upstash/context7-mcp"] }
@@ -88,11 +103,15 @@ Don't connect 12 MCP servers if you only use 3 regularly. Add servers to **proje
 | Scope | When to Use |
 |-------|-------------|
 | **Global** (`~/.claude.json`) | Daily drivers: memory, sequential-thinking |
-| **Project** (`.claude/settings.json`) | Stack-specific: playwright (web projects), context7 (library work) |
+| **Project** (`.mcp.json`) | Stack-specific: playwright (web projects), context7 (library work) |
 
 ### 3. Disable Unused Built-in MCPs
 
-Built-in MCPs like `plugin:github:github` or `plugin:playwright:playwright` load even if you don't use them. Check `claude mcp list` and disable any that show as connected but you never invoke.
+Built-in MCPs like `plugin:github:github` or `plugin:playwright:playwright` load even if you don't use them. Check `claude mcp list` (or `/mcp` inside a session) and disable any that show as connected but you never invoke.
+
+### 3b. Prefer a CLI When One Exists
+
+Anthropic's costs page still recommends CLI tools such as `gh`, `aws`, `gcloud` and `sentry-cli` over the equivalent MCP server when available, because they add no per-tool listing at all: Claude runs the command directly. A GitHub MCP server is worth it only for what `gh` cannot do.
 
 ### 4. Add or Remove Tools Mid-Conversation Without Busting the Cache
 
@@ -105,6 +124,8 @@ anthropic-beta: mid-conversation-tool-changes-2026-07-01
 ```
 
 With that header, tool definitions can change between turns while the rest of the cached prefix stays valid. This makes it affordable to load a narrow tool set by default and attach extra MCP servers only for the turns that need them, instead of carrying every schema for the whole session.
+
+That header is for your own API calls. Inside Claude Code the question is tool search: with it on (the default), connecting or removing an MCP server keeps the cache; with it off, connecting or removing a server, or denying an entire tool, invalidates it.
 
 ---
 
@@ -142,7 +163,11 @@ Main context savings = avoided context pollution from search results
 }
 ```
 
-On Opus 5 subagents, remember that adaptive thinking is on by default when you omit the `thinking` parameter, and reasoning tokens bill as **output** at $25/MTok. A fan-out of ten search subagents on Opus 5 pays for ten sets of reasoning tokens. Drop the effort level, or set `thinking: {type: "disabled"}` (allowed only at effort `high` or below), for subagents that just grep and summarize. Also note that `max_tokens` caps thinking plus visible text together, so a subagent with a tight `max_tokens` and high effort can burn its budget reasoning and return nothing usable.
+Anthropic's costs page gives the same advice: set `model: haiku` in the subagent configuration for simple subagent tasks. Without it, a subagent can inherit your session's model, so a switch to Opus applies to it too.
+
+On Opus 5.5 subagents, adaptive thinking is **always on** -- `thinking: {type: "disabled"}` returns a 400 -- and reasoning tokens bill as **output** at $20/MTok. A fan-out of ten search subagents on Opus 5.5 pays for ten sets of reasoning tokens, so lower the effort level (default `medium`) or, better, route subagents that just grep and summarize to Haiku. On legacy Opus 5, thinking is on by default at $25/MTok and can be disabled only at effort `high` or below. Also note that `max_tokens` caps thinking plus visible text together, so a subagent with a tight `max_tokens` and high effort can burn its budget reasoning and return nothing usable.
+
+Subagents also cache on a shorter clock: on a Claude subscription the main conversation gets a one-hour cache TTL, but subagents get five minutes (tunable with `subagentPromptCacheTtl` / `CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL`).
 
 ---
 
@@ -162,12 +187,14 @@ Orchestrator agent: $X per session
 = Total: $X + (N x $Y)
 ```
 
+Claude Code's **agent teams** are the extreme case: Anthropic's costs page says they use about **7x the tokens** of a standard session when teammates run in plan mode, because each teammate keeps its own context window. Keep teams small and shut teammates down when their work is done.
+
 ### Cost Controls
 
-Use `--max-budget-usd` in CLI mode to cap spending:
+Use `--max-budget-usd` to cap spending. It works in print mode (`-p`) only:
 
 ```bash
-claude -p "analyze this codebase" --max-budget-usd 5.00
+claude -p --max-budget-usd 5 "analyze this codebase"
 ```
 
 Use `--fallback-model` to auto-switch when the primary model is overloaded:
@@ -184,11 +211,13 @@ If you are billed for Managed Agents rather than raw tokens, budget the session 
 
 ## Key Takeaways
 
-1. **Each MCP server adds ~500-3,000 tokens per turn** to your context -- connect only what you need
-2. **Use project-level MCP configs** instead of global to avoid loading unnecessary servers
-3. **Subagents save money on large searches** but cost more for simple one-off queries
-4. **Use `--max-budget-usd`** to prevent runaway costs in automated/SDK workflows
-5. **Deferred tool loading** (when available) reduces MCP schema overhead significantly
-6. **Haiku subagents** are ideal for search/exploration tasks at 5x lower cost
-7. **Changing tools mid-conversation no longer busts the cache** on Opus 5 with the `mid-conversation-tool-changes-2026-07-01` beta -- attach MCP servers per-turn instead of carrying every schema all session
-8. **Opus 5 thinks by default** and reasoning tokens bill as output at $25/MTok -- lower the effort level or disable thinking on subagents that only search and summarize
+1. **MCP tool search is on by default** -- only tool names and server instructions enter context until a tool is used; the ~500-3,000 tokens per server per turn in the table above applies only with tool search off
+2. **Use project-level MCP configs** instead of global to avoid loading unnecessary servers, and disable unused ones with `/mcp`
+3. **Prefer CLI tools** (`gh`, `aws`, `gcloud`, `sentry-cli`) over an MCP server when one exists -- they add no per-tool listing
+4. **Cap tool output** -- warning above 10,000 tokens, default cap 25,000 (`MAX_MCP_OUTPUT_TOKENS`)
+5. **Subagents save money on large searches** but cost more for simple one-off queries
+6. **Use `claude -p --max-budget-usd`** (print mode only) to prevent runaway costs in automated/SDK workflows
+7. **Haiku subagents** (`model: haiku`) are ideal for search/exploration tasks at 4x lower cost than Opus 5.5
+8. **Agent teams use ~7x the tokens** of a standard session when teammates run in plan mode -- keep them small
+9. **With tool search on, adding or removing a server keeps the cache** in Claude Code; on your own API calls, the `mid-conversation-tool-changes-2026-07-01` beta on Opus 5 does the same for changed tool definitions
+10. **Opus 5.5 always thinks** and reasoning tokens bill as output at $20/MTok -- lower the effort level, or route subagents that only search and summarize to Haiku

@@ -14,8 +14,10 @@
   MONOREPO CONTEXT STRATEGY:
   Claude Code loads CLAUDE.md from the current working directory AND parent directories.
   In a monorepo, this means if you are working in packages/web/, Claude loads:
-    1. /CLAUDE.md (root — shared conventions)
+    1. /CLAUDE.md (root -- shared conventions)
     2. /packages/web/CLAUDE.md (package-specific)
+  Launch from the root instead and each package CLAUDE.md loads on demand, the first
+  time Claude reads a file in that package.
 
   This is powerful but dangerous for costs: if both files are large, you pay for
   both on every turn. The strategy below keeps the root file focused on shared rules
@@ -25,7 +27,7 @@
 ---
 
 <!-- ============================================================
-     ROOT CLAUDE.md — Copy this into your monorepo root
+     ROOT CLAUDE.md -- Copy this into your monorepo root
      ============================================================ -->
 
 # {Project Name} Monorepo
@@ -71,10 +73,10 @@ packages/
 These rules apply across ALL packages. Package-specific rules are in each package's own CLAUDE.md.
 
 ### TypeScript
-- Strict mode in all packages — base config is in `packages/config/tsconfig.base.json`
-- Named exports only — no default exports
+- Strict mode in all packages -- base config is in `packages/config/tsconfig.base.json`
+- Named exports only -- no default exports
 - `interface` for object shapes, `type` for unions/intersections
-- Shared types go in `packages/types/` — do not duplicate type definitions across packages
+- Shared types go in `packages/types/` -- do not duplicate type definitions across packages
 
 ### Naming
 - Files: `kebab-case.ts` for utils, `PascalCase.tsx` for components
@@ -107,21 +109,21 @@ Build order follows this graph. Do not introduce circular dependencies between p
 
 ## Shared Infrastructure
 
-- CI: GitHub Actions — runs `turbo build test lint typecheck` on PRs
+- CI: GitHub Actions -- runs `turbo build test lint typecheck` on PRs
 - Deploy: `web` → {Vercel}, `api` → {Railway}, `ui` → {Chromatic} (Storybook)
-- Env vars: each package has its own `.env.example` — root `.env` is for shared vars only
+- Env vars: each package has its own `.env.example` -- root `.env` is for shared vars only
 
 ## Do Not
 
-- Do not duplicate types across packages — add shared types to `packages/types/`
-- Do not import across packages using relative paths — use workspace protocol
+- Do not duplicate types across packages -- add shared types to `packages/types/`
+- Do not import across packages using relative paths -- use workspace protocol
 - Do not add dependencies to the root `package.json` unless they are workspace-level tools
 - Do not edit `packages/config/` without considering the impact on all packages
 - Do not install dependencies without asking first
 
 
 <!-- ============================================================
-     PACKAGE-LEVEL CLAUDE.md — Copy this into each package directory
+     PACKAGE-LEVEL CLAUDE.md -- Copy this into each package directory
      (e.g., packages/web/CLAUDE.md, packages/api/CLAUDE.md)
      Keep each package CLAUDE.md under 40 lines to control total context size.
      ============================================================ -->
@@ -155,16 +157,16 @@ src/
 
 ## Web-Specific Rules
 
-- Server Components by default — add `'use client'` only when needed
-- Use components from `@{scope}/ui` — do not create new primitives in this package
+- Server Components by default -- add `'use client'` only when needed
+- Use components from `@{scope}/ui` -- do not create new primitives in this package
 - Data fetching: server components use tRPC server caller, client components use tRPC React hooks
-- Styling: Tailwind only — no CSS modules or styled-components
+- Styling: Tailwind only -- no CSS modules or styled-components
 - Auth: use `useAuth()` hook for client, `getServerSession()` for server components
 
 ## Do Not
 
-- Do not create generic UI components here — add them to `@{scope}/ui` instead
-- Do not define types that are used by other packages — add them to `@{scope}/types`
+- Do not create generic UI components here -- add them to `@{scope}/ui` instead
+- Do not define types that are used by other packages -- add them to `@{scope}/types`
 -->
 
 
@@ -203,15 +205,15 @@ prisma/
 
 ## API-Specific Rules
 
-- All routes use tRPC — no raw Express route handlers
+- All routes use tRPC -- no raw Express route handlers
 - Input validation: Zod schemas inline in router procedures
 - Auth: `.protectedProcedure()` for authenticated, `.adminProcedure()` for admin
-- Errors: throw `TRPCError` with proper codes — never return error objects
-- Database: Prisma client only — no raw SQL except via `$queryRaw` with tagged templates
+- Errors: throw `TRPCError` with proper codes -- never return error objects
+- Database: Prisma client only -- no raw SQL except via `$queryRaw` with tagged templates
 
 ## Do Not
 
-- Do not return Prisma models directly — map to response DTOs
+- Do not return Prisma models directly -- map to response DTOs
 - Do not edit migration files after they have been applied
 -->
 

@@ -6,10 +6,10 @@
 
 Every turn in Claude Code re-sends the entire conversation context to the model. This includes:
 
-1. **System prompt** — Claude Code's built-in instructions (~2,000 tokens, constant)
-2. **CLAUDE.md** — your project configuration file (variable, loaded every turn)
-3. **Conversation history** — all previous messages and tool results (grows each turn)
-4. **Current turn content** — the new user message, file reads, tool results
+1. **System prompt** -- Claude Code's built-in instructions (~2,000 tokens, constant)
+2. **CLAUDE.md** -- your project configuration file (variable, loaded every turn)
+3. **Conversation history** -- all previous messages and tool results (grows each turn)
+4. **Current turn content** -- the new user message, file reads, tool results
 
 The first two items are **fixed overhead per turn**. The third **grows linearly** with each turn. This means:
 
@@ -17,7 +17,7 @@ The first two items are **fixed overhead per turn**. The third **grows linearly*
 - A 300-line CLAUDE.md in the same session is loaded 30 times.
 - The difference compounds with every turn.
 
-> **Note on prompt caching**: Claude Code caches stable content (system prompt, CLAUDE.md, earlier conversation turns) between turns. Cached tokens cost ~90% less. The token counts below represent **pre-cache** (raw) values. Actual billed costs will be lower for the CLAUDE.md portion after the first turn, but the relative differences between sizes still hold because larger files occupy more cache space and reduce room for caching conversation history.
+> **Note on prompt caching**: Claude Code caches stable content (system prompt, CLAUDE.md, earlier conversation turns) between turns. Cached tokens cost ~90% less (95% on Opus 5.5, 97.5% on Fable 5.1). The token counts below represent **pre-cache** (raw) values. Actual billed costs will be lower for the CLAUDE.md portion after the first turn, but the relative differences between sizes still hold because larger files occupy more cache space and reduce room for caching conversation history.
 
 ---
 
@@ -84,7 +84,7 @@ Including all input tokens (system prompt, conversation history, file reads, CLA
 | Task quality | Lower (missing conventions leads to follow-ups) | Good balance | Marginally better quality, but diminishing returns |
 | Effective cost (quality-adjusted) | $3.14 | **$2.82** | $3.06 |
 
-**Key finding**: The Standard CLAUDE.md (~100 lines, ~700 tokens) hits the sweet spot. The Minimal version saves on per-turn overhead but causes 8 follow-up turns due to missing convention information — those extra turns cost more than the tokens saved. The Bloated version provides marginally better first-pass quality but wastes tokens on content Claude rarely needs (historical notes, redundant examples).
+**Key finding**: The Standard CLAUDE.md (~100 lines, ~700 tokens) hits the sweet spot. The Minimal version saves on per-turn overhead but causes 8 follow-up turns due to missing convention information -- those extra turns cost more than the tokens saved. The Bloated version provides marginally better first-pass quality but wastes tokens on content Claude rarely needs (historical notes, redundant examples).
 
 > **Recommendation**: Keep your CLAUDE.md between 80-120 lines. Below 80, you lose too much context and pay for it in follow-ups. Above 150, you pay for redundant context that does not measurably improve output quality.
 
@@ -104,34 +104,36 @@ We measured the impact of reading files of different sizes during a 10-turn sess
 | 10 KB | ~2,500 tokens | A medium component or service (250 lines) |
 | 100 KB | ~25,000 tokens | A large module, generated code, or bundled file (2,500 lines) |
 
-### Single File Read — Cost Propagation
+### Single File Read -- Cost Propagation
 
 When Claude reads a file on turn 3 of a 10-turn session, that file's content stays in the conversation history for turns 3-10 (8 turns). Here is the input token overhead from that single file read:
 
 | File Size | Tokens per Turn | Turns in Context | Total Added Tokens | Added Cost (Sonnet 5) |
 |:---------:|:---------------:|:----------------:|:------------------:|:---------------------:|
-| 1 KB | 250 | 8 | 2,000 | $0.006 |
-| 10 KB | 2,500 | 8 | 20,000 | $0.060 |
-| 100 KB | 25,000 | 8 | 200,000 | $0.600 |
+| 1 KB | 250 | 8 | 2,000 | $0.004 |
+| 10 KB | 2,500 | 8 | 20,000 | $0.040 |
+| 100 KB | 25,000 | 8 | 200,000 | $0.400 |
 
-> A single 100 KB file read adds $0.60 to a Sonnet session. With Opus 5, that same read adds **$1.00** in propagated input costs.
+> A single 100 KB file read adds $0.40 to a Sonnet 5 session ($2/1M input; $0.60 on Sonnet 4.6 at $3/1M). With Opus 5.5 ($4/1M), that same read adds **$0.80** in propagated input costs ($1.00 on legacy Opus 5).
 
-### Multiple File Reads — Compounding Effect
+### Multiple File Reads -- Compounding Effect
 
 Many tasks require Claude to read several files. Here is the total overhead when multiple files are read on turn 2 of a 10-turn session (9 turns of propagation):
 
-| Files Read | Total Tokens Added to Context | Propagated Over 9 Turns | Added Cost (Sonnet 5) | Added Cost (Opus 5) |
+| Files Read | Total Tokens Added to Context | Propagated Over 9 Turns | Added Cost (Sonnet 5) | Added Cost (Opus 5.5) |
 |:----------:|:-----------------------------:|:-----------------------:|:---------------------:|:-------------------:|
-| 3 x 1 KB | 750 | 6,750 | $0.02 | $0.03 |
-| 3 x 10 KB | 7,500 | 67,500 | $0.20 | $0.34 |
-| 1 x 10 KB + 1 x 100 KB | 27,500 | 247,500 | $0.74 | $1.24 |
-| 3 x 100 KB | 75,000 | 675,000 | $2.03 | $3.38 |
+| 3 x 1 KB | 750 | 6,750 | $0.01 | $0.03 |
+| 3 x 10 KB | 7,500 | 67,500 | $0.14 | $0.27 |
+| 1 x 10 KB + 1 x 100 KB | 27,500 | 247,500 | $0.50 | $0.99 |
+| 3 x 100 KB | 75,000 | 675,000 | $1.35 | $2.70 |
+
+Pre-cache input cost at $2/1M (Sonnet 5) and $4/1M (Opus 5.5). On legacy Opus 5 ($5/1M) each Opus figure is 25% higher.
 
 ### File Read Optimization Strategies
 
 | Strategy | When to Use | Token Savings |
 |----------|-------------|:-------------:|
-| Use `.claudeignore` to exclude large generated/vendor files | Always | Prevents accidental reads of `node_modules`, `dist`, lock files |
+| Add `Read(...)` deny rules to `permissions.deny` for large generated/vendor files (`.claudeignore` is not a Claude Code feature) | Always | Keeps Claude's file tools out of `node_modules`, `dist`, lock files; no published savings figure |
 | Ask Claude to read specific sections ("lines 50-120") | When you know where the relevant code is | 60-90% of full file read |
 | Summarize large files in CLAUDE.md instead of reading them | For files Claude reads repeatedly (config, types) | 80-95% per turn |
 | Use subagents for file-heavy investigation | When the task requires reading many files | Keeps main context clean |
@@ -145,7 +147,7 @@ Based on cost-efficiency data, here are guidelines for how many file reads to bu
 |-------|:------------------:|:-------------------:|:-------------------:|
 | Haiku 4.5 | 20+ (negligible cost) | 10-15 | 1-2 (delegate to subagent) |
 | Sonnet 5 | 15-20 | 5-10 | 1 (delegate to subagent) |
-| Opus 5 | 10-15 | 5-8 | 1-2 (delegate to subagent) |
+| Opus 5.5 | 10-15 | 5-8 | 1-2 (delegate to subagent) |
 
 ---
 
@@ -153,7 +155,7 @@ Based on cost-efficiency data, here are guidelines for how many file reads to bu
 
 ### How Context Grows
 
-Claude Code uses the model's full context window: **1M tokens on Opus 5 (at standard rates, no long-context premium), Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5, and Sonnet 4.6**, and **200K on Haiku 4.5**. As a session progresses, the context fills with conversation history. Here is how context utilization typically grows (200K baseline shown, since most sessions stay well under the 1M cap):
+Claude Code uses the model's full context window: **1M tokens on Opus 5.5 and Opus 5 (at standard rates, no long-context premium), Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5, and Sonnet 4.6**, and **200K on Haiku 4.5**. As a session progresses, the context fills with conversation history. Here is how context utilization typically grows (200K baseline shown, since most sessions stay well under the 1M cap):
 
 | Turn | Typical Context Fill | Cumulative Input Tokens Billed | Per-Turn Input Cost (Sonnet 4.6) |
 |:----:|:--------------------:|:------------------------------:|:------------------------------:|
@@ -238,7 +240,7 @@ The trade-off: each new session loses conversation history, so Claude may need t
 
 ---
 
-## Benchmark 4: Combined Impact — Context Optimization Playbook
+## Benchmark 4: Combined Impact -- Context Optimization Playbook
 
 ### Scenario
 
@@ -277,7 +279,7 @@ A developer works for a full day using Claude Code, performing approximately 8 t
 
 ## Key Takeaways
 
-1. **Start new sessions for new tasks.** This is the single biggest cost lever — it prevents quadratic context growth. Splitting an 80-turn day into 8x10-turn sessions saves 60-70% of input tokens.
+1. **Start new sessions for new tasks.** This is the single biggest cost lever -- it prevents quadratic context growth. Splitting an 80-turn day into 8x10-turn sessions saves 60-70% of input tokens.
 
 2. **Keep CLAUDE.md between 80-120 lines.** Below 80, you lose conventions and pay for follow-up turns. Above 150, you are paying for content that does not improve output quality.
 

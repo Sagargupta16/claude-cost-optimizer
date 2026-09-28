@@ -6,13 +6,13 @@ A custom Claude Code slash command that audits your project's configuration and 
 
 When you run `/optimize` in Claude Code, it inspects your project for cost-related configuration and produces a structured report:
 
-1. **CLAUDE.md audit** -- checks existence, line count, and structure
-2. **.claudeignore audit** -- checks existence and coverage of common expensive paths
+1. **CLAUDE.md audit** -- checks existence, line count against Anthropic's 200-line guidance, and structure
+2. **File-read exclusions audit** -- counts `Read(...)` rules in `permissions.deny` and checks coverage of common expensive paths. A `.claudeignore` is not a Claude Code feature (Claude Code never reads it), so the command flags one and converts its patterns to `Read(...)` rules
 3. **settings.json audit** -- checks model configuration and cost-related flags
-4. **MCP server count** -- estimates per-turn token overhead from connected servers
+4. **MCP server audit** -- counts connected servers, checks whether tool search is on (the default), and flags servers that duplicate a CLI
 5. **Conversation pattern check** -- looks for custom commands and large files
 
-The output includes an estimated per-session cost, a letter grade (A+ through F), and ranked recommendations with expected savings percentages.
+The output includes an estimated per-session cost, a letter grade (A+ through F), and ranked recommendations with expected savings percentages, or "no published figure" where no measurement exists.
 
 ## Installation
 
@@ -49,44 +49,45 @@ cp path/to/optimize.md ~/.claude/commands/optimize.md
 CLAUDE CODE COST OPTIMIZATION REPORT
 =====================================
 Project: my-web-app
-Date:    2026-04-03
+Date:    2026-09-28
 
 CONFIGURATION AUDIT
 -------------------
-CLAUDE.md:          EXISTS (187 lines)
-.claudeignore:      MISSING
-settings.json:      EXISTS (model: opus-4-6)
-MCP servers:        4 connected (~4000 extra tokens/turn)
-Custom commands:    0 defined
+CLAUDE.md:          EXISTS (243 lines)
+Read deny rules:    0 in permissions.deny; .claudeignore found (not read by Claude Code)
+settings.json:      EXISTS (model: opus)
+MCP servers:        4 connected (tool search: ON)
+Custom commands:    2 defined
 
 COST ESTIMATE
 -------------
-Model:              opus-4-6
-Est. input/turn:    ~6280 tokens
+Model:              Opus 5.5 ($4/$20 per 1M)
+Est. input/turn:    ~2365 tokens (MCP not counted: no per-server figure)
 Est. output/turn:   ~500 tokens
-Est. session cost:  ~$1.75 (40 turns)
-Est. monthly cost:  ~$192.50 (assuming 5 sessions/day, 22 workdays)
+Est. session cost:  ~$0.78 (40 turns)
+Est. monthly cost:  ~$85.80 (assuming 5 sessions/day, 22 workdays)
 
-GRADE: D (55/100)
+GRADE: D (50/100)
 
 ISSUES FOUND
 ------------
-1. CLAUDE.md exceeds 150-line limit (187 lines) -- adds ~2200 unnecessary tokens/turn
-2. No .claudeignore -- Claude may read node_modules, lock files, and build artifacts
-3. Opus set as default with no task-based model switching
-4. 4 MCP servers add ~4000 tokens per turn
-5. No custom commands defined for repetitive workflows
+1. CLAUDE.md is 243 lines -- over Anthropic's 200-line guidance; longer files consume more context and reduce adherence
+2. No Read deny rules in permissions.deny -- Claude may read node_modules, lock files, and build artifacts
+3. .claudeignore found (6 rules) -- Claude Code does not read it
+4. Opus set as default with no task-based model switching
+5. 4 MCP servers connected; 2 duplicate installed CLIs (gh, aws)
 
 RECOMMENDATIONS (ranked by impact)
 -----------------------------------
-1. [HIGH] Add .claudeignore excluding node_modules, dist, lock files -- saves ~15% per session
-2. [HIGH] Trim CLAUDE.md to under 150 lines (move verbose sections to linked files) -- saves ~10%
-3. [HIGH] Use Sonnet or Haiku as default model, reserve Opus for complex tasks -- saves ~20-40%
-4. [MED]  Remove unused MCP servers (audit which are actually needed) -- saves ~5%
-5. [LOW]  Add custom commands for frequent workflows to reduce prompting tokens -- saves ~3%
+1. [HIGH] Use Sonnet 5 as default for most tasks (assumed 80% of turns), reserve Opus 5.5 for complex work -- saves ~40% per session
+2. [HIGH] Move the 6 .claudeignore patterns into permissions.deny as Read(...) rules -- no published figure
+3. [MED]  Trim CLAUDE.md under 200 lines (move workflow-specific sections into skills or path-scoped .claude/rules/) -- saves ~2% per session, plus better adherence
+4. [MED]  Disable the gh and aws MCP servers with /mcp and use the CLIs -- no published figure; run /context to see what they use
 
-ESTIMATED SAVINGS IF ALL APPLIED: ~45% reduction (~$1.75/session -> ~$0.96/session)
+ESTIMATED SAVINGS IF ALL APPLIED: ~41% reduction (~$0.78/session -> ~$0.46/session)
 ```
+
+The example math: input is 2,000 base + 243 lines x 1.5 = ~2,365 tokens/turn, so 40 turns is 94,600 input tokens ($0.38 at $4/1M) plus 20,000 output tokens ($0.40 at $20/1M). Moving 80% of turns to Sonnet 5 ($2/$10) and trimming CLAUDE.md to 190 lines gives ~$0.46.
 
 ## Customizing the Grading Thresholds
 
@@ -97,10 +98,10 @@ The grade is calculated by starting at 100 points and subtracting penalties for 
 | Finding | Default Penalty | Customization Notes |
 |---------|:--------------:|---------------------|
 | No CLAUDE.md | -20 | Lower if your project is simple enough to not need one |
-| CLAUDE.md over 150 lines | -10 | Adjust the line threshold for larger projects |
-| CLAUDE.md over 300 lines | -20 | Replaces the 150-line penalty |
-| No .claudeignore | -20 | Lower for small projects with few ignorable files |
-| Weak .claudeignore coverage | -10 | Adjust based on your tech stack |
+| CLAUDE.md over 200 lines | -10 | Matches Anthropic's 200-line guidance; adjust for larger projects |
+| CLAUDE.md over 300 lines | -20 | Replaces the 200-line penalty |
+| No `Read(...)` deny rules | -20 | Lower for small projects with few ignorable files. A `.claudeignore` does not count |
+| Weak Read deny rule coverage | -10 | Adjust based on your tech stack |
 | No settings.json | -5 | Increase if team standardization matters |
 | Opus as default without switching | -10 | Remove if your work requires Opus consistently |
 | 4+ MCP servers | -10 | Raise or lower based on your server overhead |
@@ -126,9 +127,10 @@ The per-session cost estimate uses these defaults (editable in the "Cost Estimat
 
 - **Turns per session**: 40
 - **Tokens per CLAUDE.md line**: ~1.5
-- **Tokens per MCP server per turn**: ~1000
+- **MCP servers**: not counted. Tool search is on by default, so only tool names and server instructions enter context, and no per-server figure is published. Run `/context` to see the real number
 - **Base system prompt**: ~2000 tokens/turn
 - **Average output per turn**: ~500 tokens
+- **Default model**: Opus 5.5 at $4/$20 per 1M input/output tokens when no model is set
 
 Adjust these if your usage patterns differ. For example, if your sessions average 20 turns, halve the session cost estimate.
 

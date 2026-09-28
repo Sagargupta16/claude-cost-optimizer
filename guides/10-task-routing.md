@@ -11,7 +11,7 @@ This guide introduces a three-tier routing framework that goes beyond model sele
 ```
 Tier 0: No LLM needed           $0.000    <1ms
 Tier 1: Haiku / Sonnet          $0.005    ~1s
-Tier 2: Opus 5 + multi-turn     $0.050    ~5s
+Tier 2: Opus 5.5 + multi-turn   $0.040    ~5s
 ```
 
 Most developers operate entirely in Tier 2. Moving 30-50% of your tasks to Tier 0 or Tier 1 is where the biggest savings come from.
@@ -64,18 +64,18 @@ Tasks that need some reasoning but not deep analysis. Haiku 4.5 at $1/$5 per 1M 
 
 ### Tier 1 Tasks
 
-| Task | Why Haiku works | Cost vs Opus 5 |
+| Task | Why Haiku works | Cost vs Opus 5.5 |
 |------|----------------|:------------:|
-| Write a single unit test | Pattern-based, one file | 5x cheaper |
-| Add error handling to a function | Wrap in try/catch, type errors | 5x cheaper |
-| Write a docstring/JSDoc | Read function, describe it | 5x cheaper |
-| Create a simple component | Boilerplate + props | 5x cheaper |
-| Explain what a function does | Reading comprehension | 5x cheaper |
-| Fix a typo in code | Find and replace with context | 5x cheaper |
-| Add TypeScript types to JS | Mechanical inference | 5x cheaper |
-| Generate a config file | Template with project-specific values | 5x cheaper |
-| Write a commit message | Summarize a diff | 5x cheaper |
-| Translate error message | Simple text transformation | 5x cheaper |
+| Write a single unit test | Pattern-based, one file | 4x cheaper |
+| Add error handling to a function | Wrap in try/catch, type errors | 4x cheaper |
+| Write a docstring/JSDoc | Read function, describe it | 4x cheaper |
+| Create a simple component | Boilerplate + props | 4x cheaper |
+| Explain what a function does | Reading comprehension | 4x cheaper |
+| Fix a typo in code | Find and replace with context | 4x cheaper |
+| Add TypeScript types to JS | Mechanical inference | 4x cheaper |
+| Generate a config file | Template with project-specific values | 4x cheaper |
+| Write a commit message | Summarize a diff | 4x cheaper |
+| Translate error message | Simple text transformation | 4x cheaper |
 
 ### How to Stay in Tier 1
 
@@ -100,11 +100,11 @@ Then delegate to haiku: `claude --model haiku -p "/test src/utils/parser.ts"`
 
 ## Tier 2: Full Power for Complex Work
 
-Tasks that require deep reasoning, multi-file awareness, or architectural understanding. This is where Opus 5 earns its cost. Anthropic's own guidance is to start with Opus 5 for complex agentic coding and enterprise work.
+Tasks that require deep reasoning, multi-file awareness, or architectural understanding. This is where Opus 5.5 earns its cost. Anthropic's models overview now says to "start with Claude Opus 5.5 for most workloads", and at $4/$20 it is 20% cheaper per token than the Opus 5 it replaced. Fable 5.1 ($10/$50, 2.5x Opus 5.5) is for the most demanding reasoning and long-horizon work.
 
 ### Tier 2 Tasks
 
-| Task | Why Opus 5 is worth it |
+| Task | Why Opus 5.5 is worth it |
 |------|---------------------|
 | Debug a race condition | Needs to trace async flows across files |
 | Plan a multi-file refactor | Must understand dependency graph |
@@ -144,10 +144,11 @@ Is the task deterministic?
          │         Single file? Haiku.
          │         Multi-file but straightforward? Sonnet.
          │
-         └── YES → Tier 2: Opus 5 ($5/$25)
+         └── YES → Tier 2: Opus 5.5 ($4/$20)
                    Use Plan Mode first to reduce wasted turns.
                    Lower the effort level for the easier Tier 2 work --
-                   thinking is on by default and bills as output.
+                   thinking is always on and bills as output
+                   (default effort is medium).
 ```
 
 ---
@@ -158,15 +159,15 @@ A developer who runs 90 tasks/day (3 sessions x 30 turns):
 
 | Routing Strategy | Distribution | Daily Cost | Monthly Cost |
 |-----------------|:------------|:----------:|:------------:|
-| **All Opus 5** | 100% Tier 2 | $8.55 | $188.10 |
-| **Manual model switching** | 30% Haiku, 70% Opus 5 | $6.27 | $137.94 |
-| **Three-tier routing** | 20% Tier 0, 40% Tier 1, 40% Tier 2 | $3.76 | $82.72 |
+| **All Opus 5.5** | 100% Tier 2 | $6.84 | $150.48 |
+| **Manual model switching** | 30% Haiku, 70% Opus 5.5 | $5.07 | $111.54 |
+| **Three-tier routing** | 20% Tier 0, 40% Tier 1, 40% Tier 2 | $3.08 | $67.76 |
 
-**Savings with three-tier routing: $105/month (56%)**
+**Savings with three-tier routing: $83/month (55%)**
 
 The biggest win is Tier 0. Every task you handle with a CLI tool instead of an API call is effectively free.
 
-> These figures assume the standard $5/$25 Opus rate and hold unchanged for Opus 5, which is priced identically to Opus 4.8. They do **not** account for Opus 5's default-on thinking: reasoning tokens bill as output at $25/MTok, so a real Opus-heavy day now runs above the "All Opus 5" row unless you lower the effort level. That makes the case for routing down to Tier 0 and Tier 1 stronger, not weaker.
+> These figures take the earlier $5/$25 Opus 5 estimate ($8.55/day all-Opus) and scale the Opus share by 0.8 for Opus 5.5's $4/$20, which is 20% cheaper per token; the Haiku and Sonnet shares are unchanged. On legacy Opus 5 the same three rows were $188.10, $137.94 and $82.72 a month. They do **not** account for thinking: on Opus 5.5 it is always on and reasoning tokens bill as output at $20/MTok. The default effort is `medium`, so lower it further for routine Tier 2 work -- and routing down to Tier 0 and Tier 1 still removes the most cost.
 
 ---
 
@@ -205,8 +206,8 @@ case "$TOOL" in
     ;;
 esac
 
-# Log the estimate (using Opus 5 pricing, $5/$25, as worst-case)
-COST=$(echo "scale=4; ($EST_INPUT * 5 + $EST_OUTPUT * 25) / 1000000" | bc 2>/dev/null || echo "0.01")
+# Log the estimate (using Opus 5.5 pricing, $4/$20, the Tier 2 default)
+COST=$(echo "scale=4; ($EST_INPUT * 4 + $EST_OUTPUT * 20) / 1000000" | bc 2>/dev/null || echo "0.01")
 echo "$(date +%H:%M:%S) $TOOL input:~${EST_INPUT} output:~${EST_OUTPUT} ~\$${COST}" >> "$SESSION_LOG"
 
 # Count total calls this session
@@ -245,9 +246,9 @@ After a session, review where your tokens went:
 
 ```bash
 cat /tmp/claude-cost-log/session-$(date +%Y%m%d).log
-# 09:15:23 Read input:~2000 output:~100 ~$0.0125
-# 09:15:25 Edit input:~3000 output:~1500 ~$0.0525
-# 09:15:30 Bash input:~2000 output:~500 ~$0.0225
+# 09:15:23 Read input:~2000 output:~100 ~$0.0100
+# 09:15:25 Edit input:~3000 output:~1500 ~$0.0420
+# 09:15:30 Bash input:~2000 output:~500 ~$0.0180
 # ...
 ```
 
@@ -276,7 +277,7 @@ TIER 1 -- Haiku 4.5 $1/$5 or Sonnet 5 $2/$10
 ├── Type annotation addition
 └── Code explanation
 
-TIER 2 -- Opus 5 $5/$25
+TIER 2 -- Opus 5.5 $4/$20
 ├── Architecture design
 ├── Multi-file refactoring
 ├── Complex debugging
@@ -285,8 +286,8 @@ TIER 2 -- Opus 5 $5/$25
 ├── Framework migration
 └── System design
 
-TIER 2+ -- Fable 5 $10/$50 (2x Opus 5, use sparingly)
-├── Reasoning problems Opus 5 fails on
+TIER 2+ -- Fable 5.1 $10/$50 (2.5x Opus 5.5, use sparingly)
+├── Reasoning problems Opus 5.5 fails on
 └── Longest autonomous agentic runs (hours-scale)
 ```
 
