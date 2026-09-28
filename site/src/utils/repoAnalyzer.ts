@@ -859,9 +859,8 @@ function contextRecommendations(r: RecommendationInput): string[] {
     )
   }
   if (f.readDenyRules.length > 0 && f.lockFilesUncovered.length > 0) {
-    recs.push(
-      `Add a Read deny rule for each lock file at the repo root: ${f.lockFilesUncovered.map((lf) => `Read(./${lf})`).join(', ')}.`,
-    )
+    const lockRules = f.lockFilesUncovered.map((lf) => 'Read(./' + lf + ')').join(', ')
+    recs.push(`Add a Read deny rule for each lock file at the repo root: ${lockRules}.`)
   }
   return recs
 }

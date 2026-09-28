@@ -24,6 +24,8 @@ from pathlib import Path
 
 # -- Scoring ------------------------------------------------------------------
 
+SETTINGS_JSON = ".claude/settings.json"
+
 
 def _resolve_inside(project: Path, name: str) -> Path | None:
     """Resolve project/name and ensure it stays inside the project root."""
@@ -124,7 +126,7 @@ IGNORE_FILE_FINDING = (
 
 def _load_settings(project: Path) -> dict | None:
     """First of .claude/settings.json, .claude/settings.local.json that is a JSON object."""
-    for name in (".claude/settings.json", ".claude/settings.local.json"):
+    for name in (SETTINGS_JSON, ".claude/settings.local.json"):
         text = _read_inside(project, name)
         if text is None:
             continue
@@ -219,7 +221,7 @@ def has_cost_controls(data: dict) -> bool:
 
 def score_settings(project: Path) -> dict:
     """Score .claude/settings.json for model pin and real cost controls."""
-    path = _resolve_inside(project, ".claude/settings.json")
+    path = _resolve_inside(project, SETTINGS_JSON)
     if path is None or not path.is_file():
         return {
             "score": 0,
@@ -268,7 +270,7 @@ def score_settings(project: Path) -> dict:
 
 def score_mcp(project: Path) -> dict:
     """Score MCP server count from settings.json."""
-    path = _resolve_inside(project, ".claude/settings.json")
+    path = _resolve_inside(project, SETTINGS_JSON)
     if path is None or not path.is_file():
         return {"score": 25, "detail": "0 MCP servers (no settings file)", "count": 0}
 

@@ -291,6 +291,16 @@ function generateRecommendations(
     })
   }
 
+  recs.push(...modelRecommendations(inputs))
+
+  recs.sort((a, b) => b.impact - a.impact)
+  return recs.slice(0, 3).map((r) => r.text)
+}
+
+/** Recommendations that depend on which model is selected. */
+function modelRecommendations(inputs: CalculatorInputs): { text: string; impact: number }[] {
+  const recs: { text: string; impact: number }[] = []
+
   // Ratios are computed from MODELS, never hardcoded: the Opus flagship price
   // moved on 2026-09-22, and every literal "60%" in this file went stale with it.
   const model = MODELS[inputs.model]
@@ -372,8 +382,7 @@ function generateRecommendations(
     })
   }
 
-  recs.sort((a, b) => b.impact - a.impact)
-  return recs.slice(0, 3).map((r) => r.text)
+  return recs
 }
 
 export function resultToMarkdown(inputs: CalculatorInputs, result: CalculatorResult): string {

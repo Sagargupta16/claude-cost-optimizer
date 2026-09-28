@@ -29,16 +29,14 @@ export async function checkProjectConfig(): Promise<void> {
   }
 
   const rootPath = workspaceFolders[0].uri.fsPath;
-  const findings: ConfigFinding[] = [];
-
-  // Check CLAUDE.md
-  findings.push(checkClaudeMd(rootPath));
-
-  // Check Read deny rules in permissions.deny
-  findings.push(checkFileReadExclusions(rootPath));
-
-  // Check .claude/settings.json
-  findings.push(checkClaudeSettings(rootPath));
+  const findings: ConfigFinding[] = [
+    // CLAUDE.md
+    checkClaudeMd(rootPath),
+    // Read deny rules in permissions.deny
+    checkFileReadExclusions(rootPath),
+    // .claude/settings.json
+    checkClaudeSettings(rootPath),
+  ];
 
   // Show summary as information message
   const summary = findings
@@ -72,7 +70,7 @@ function countLines(text: string): number {
     return 0;
   }
   const lines = text.split("\n");
-  return lines[lines.length - 1] === "" ? lines.length - 1 : lines.length;
+  return lines.at(-1) === "" ? lines.length - 1 : lines.length;
 }
 
 /** Shared rubric, 20 points: primary line count (12) + estimated tokens across files (8). */
