@@ -4,6 +4,7 @@
   "_comment": [
     "BALANCED SETTINGS - Recommended default profile.",
     "Sonnet for most tasks. Reasonable limits, good quality-to-cost ratio.",
+    "\"sonnet\" is Sonnet 5.5 on the Anthropic API but Sonnet 4.5 ($3/$15, 200K) on Bedrock, Google Cloud and Foundry -- pin claude-sonnet-5-5 (Bedrock: anthropic.claude-sonnet-5-5) there.",
     "Best for: most teams, daily development, standard feature work.",
     "Read(...) deny rules keep Claude's file tools out of deps, build output and secrets (.claudeignore is not a Claude Code feature).",
     "Copy this file to ~/.claude/settings.json or .claude/settings.json"

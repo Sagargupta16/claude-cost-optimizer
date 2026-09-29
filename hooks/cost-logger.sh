@@ -41,7 +41,7 @@ case "$TOOL" in
     ;;
 esac
 
-# Per-model rates in dollars per 1M tokens (verified 2026-09-28).
+# Per-model rates in dollars per 1M tokens (verified 2026-09-29).
 # Defaults to the "opus" alias (Opus 5.5) when no model is set; unrecognized
 # model strings fall through to the legacy Opus rate.
 MODEL="${HOOK_MODEL_ID:-${ANTHROPIC_MODEL:-opus}}"
@@ -56,7 +56,7 @@ case "$MODEL" in
     RATE_OUTPUT=15
     ;;
   *sonnet*)
-    # Sonnet 5 is $2/$10 permanently.
+    # Sonnet 5.5 and Sonnet 5 are both $2/$10 (Sonnet 5's rate is permanent).
     RATE_INPUT=2
     RATE_OUTPUT=10
     ;;

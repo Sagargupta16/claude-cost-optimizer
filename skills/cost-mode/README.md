@@ -32,7 +32,7 @@ Once installed, activate with:
 ## What It Does
 
 - **Cuts filler**: No pleasantries, hedging, restating questions, or trailing summaries
-- **Suggests cheaper models**: Recommends Haiku 4.5 (1/4 the Opus 5.5 rate) for simple tasks, Sonnet 5 (half the rate) for standard work, Opus 5.5 over legacy Opus 5 (20% cheaper) and over Fable 5.1 for routine work, and lower effort on Opus 5.5 (its thinking can't be disabled, and thinking bills as output)
+- **Suggests cheaper models**: Recommends Haiku 4.5 (1/4 the Opus 5.5 rate) for simple tasks, Sonnet 5.5 (half the rate) for standard work, Opus 5.5 over legacy Opus 5 (20% cheaper) and over Fable 5.1 for routine work, and lower effort on Opus 5.5 (its thinking can't be disabled, and thinking bills as output)
 - **Suggests CLI tools**: Points to `prettier`, `eslint --fix`, `git` instead of burning LLM tokens on deterministic tasks, and to `gh`/`aws` over the matching MCP server
 - **Session awareness**: `/clear` between unrelated tasks, `/compact` at natural breaks while the prompt cache is warm, `/rewind` off a wrong path, and no mid-task model switches (each rebuilds the cache)
 - **Workflow levers**: Hooks that filter noisy test output to failures, `model: haiku` subagents for simple delegated work, `permissions.deny` `Read(...)` rules for build output and lock files

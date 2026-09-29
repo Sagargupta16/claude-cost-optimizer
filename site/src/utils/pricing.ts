@@ -1,6 +1,8 @@
-// Pricing data verified against Anthropic docs on 2026-09-28 (Opus 5.5 launch):
+// Pricing data verified against Anthropic docs on 2026-09-29 (Sonnet 5.5 launch):
 //   - https://platform.claude.com/docs/en/about-claude/pricing
 //   - https://platform.claude.com/docs/en/about-claude/models/overview
+//   - https://platform.claude.com/docs/en/models/sonnet-5-5/overview
+//   - https://platform.claude.com/docs/en/models/sonnet-5-5/whats-new-sonnet-5-5
 //   - https://platform.claude.com/docs/en/models/opus-5-5/overview
 //   - https://platform.claude.com/docs/en/models/opus-5-5/migration-guide
 //   - https://platform.claude.com/docs/en/models/opus-5/migration-guide
@@ -19,6 +21,7 @@ export type ModelId =
   | 'opus-4-7'
   | 'opus-4-6'
   | 'opus-4-5'
+  | 'sonnet-5-5'
   | 'sonnet-5'
   | 'sonnet'
   | 'sonnet-4-5'
@@ -261,6 +264,33 @@ export const MODELS: Record<ModelId, ModelPricing> = {
       'Legacy. Extended thinking. No Fast Mode. 200K context (not 1M). Min cacheable prompt 4,096 tokens. ' +
       'Earliest retirement: 2026-11-24. Migrate to Opus 5.5 unless you have a workload pinned to this snapshot.',
   },
+  'sonnet-5-5': {
+    id: 'sonnet-5-5',
+    name: 'Sonnet 5.5',
+    // Same $2/$10 as Sonnet 5, including cache and batch rates.
+    inputPer1M: 2,
+    outputPer1M: 10,
+    cacheHitPer1M: 0.2,
+    cacheWrite5mPer1M: 2.5,
+    cacheWrite1hPer1M: 4,
+    contextWindow: '1M',
+    maxOutput: '128K',
+    fastModeCapable: false,
+    // Same tokenizer as Sonnet 5, so the same text gives the same token count.
+    tokenizerOverhead: 1.3,
+    minCacheTokens: 512,
+    lifecycle: 'active',
+    notes:
+      'Current Sonnet-tier flagship (released 2026-09-28): best combination of speed and intelligence. ' +
+      'Same $2/$10 and tokenizer as Sonnet 5, so migrating is free at the posted rate. Half the price of ' +
+      'Opus 5.5 ($4/$20). Min cacheable prompt drops to 512 tokens (Sonnet 5: 1,024) and the tool-use system ' +
+      'prompt to 286 tokens (Sonnet 5: 354). Adaptive thinking on by default, effort defaults to high and ' +
+      'is recalibrated -- re-run your effort sweep. thinking {type:"disabled"} returns 400: the lowest ' +
+      'setting is between_tools (no up-front thinking), at high effort or below. Forced tool_choice ' +
+      '(any/tool), sampling params and computer_20251124 (Claude API, Google Cloud) return 400. ' +
+      'Mid-conversation tool changes supported. No Fast Mode. Batch $1/$5. 1M context; 128K output. ' +
+      'Earliest retirement: 2027-09-28.',
+  },
   'sonnet-5': {
     id: 'sonnet-5',
     name: 'Sonnet 5',
@@ -277,11 +307,11 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     // New tokenizer shared with Opus 4.7+/Fable 5 -- ~30% more tokens for the same text.
     tokenizerOverhead: 1.3,
     minCacheTokens: 1024,
-    lifecycle: 'active',
+    lifecycle: 'legacy',
     notes:
-      'Current Sonnet-tier flagship (GA 2026-06-30): best combination of speed and intelligence. ' +
-      '$2/$10 per MTok is now the permanent standard price -- Anthropic cancelled the increase to ' +
-      '$3/$15 that was scheduled for 2026-09-01. Half the price of Opus 5.5 ($4/$20); 60% below legacy Opus 5. ' +
+      'Previous Sonnet-tier flagship (GA 2026-06-30), moved to legacy by the Sonnet 5.5 launch. ' +
+      '$2/$10 per MTok is the permanent standard price -- Anthropic cancelled the increase to ' +
+      '$3/$15 that was scheduled for 2026-09-01. Sonnet 5.5 costs the same and caches from 512 tokens. ' +
       'Adaptive thinking (effort defaults to high on the Claude API and Claude Code). No Fast Mode. ' +
       '1M context at standard rates; Batch $1/$5. Min cacheable prompt 1,024 tokens. ' +
       'Earliest retirement: 2027-06-30.',
@@ -301,7 +331,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     lifecycle: 'legacy',
     notes:
       'Legacy. Extended + adaptive thinking. Previous general-purpose default. ' +
-      'Min cacheable prompt 1,024 tokens. Earliest retirement: 2027-02-17. Migrate to Sonnet 5.',
+      'Min cacheable prompt 1,024 tokens. Earliest retirement: 2027-02-17. Migrate to Sonnet 5.5.',
   },
   'sonnet-4-5': {
     id: 'sonnet-4-5',
@@ -318,7 +348,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     lifecycle: 'legacy',
     notes:
       'Legacy. Extended thinking. 200K context. Min cacheable prompt 1,024 tokens. ' +
-      'Earliest retirement: 2026-09-29. Migrate to Sonnet 5 for the 1M-context window ' +
+      'Earliest retirement: 2026-09-29. Migrate to Sonnet 5.5 for the 1M-context window ' +
       'unless your workload is pinned.',
   },
   haiku: {

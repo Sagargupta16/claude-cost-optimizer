@@ -79,7 +79,7 @@ ISSUES FOUND
 
 RECOMMENDATIONS (ranked by impact)
 -----------------------------------
-1. [HIGH] Use Sonnet 5 as default for most tasks (assumed 80% of turns), reserve Opus 5.5 for complex work -- saves ~40% per session
+1. [HIGH] Use Sonnet 5.5 as default for most tasks (assumed 80% of turns), reserve Opus 5.5 for complex work -- saves ~40% per session
 2. [HIGH] Move the 6 .claudeignore patterns into permissions.deny as Read(...) rules -- no published figure
 3. [MED]  Trim CLAUDE.md under 200 lines (move workflow-specific sections into skills or path-scoped .claude/rules/) -- saves ~2% per session, plus better adherence
 4. [MED]  Disable the gh and aws MCP servers with /mcp and use the CLIs -- no published figure; run /context to see what they use
@@ -87,7 +87,7 @@ RECOMMENDATIONS (ranked by impact)
 ESTIMATED SAVINGS IF ALL APPLIED: ~41% reduction (~$0.78/session -> ~$0.46/session)
 ```
 
-The example math: input is 2,000 base + 243 lines x 1.5 = ~2,365 tokens/turn, so 40 turns is 94,600 input tokens ($0.38 at $4/1M) plus 20,000 output tokens ($0.40 at $20/1M). Moving 80% of turns to Sonnet 5 ($2/$10) and trimming CLAUDE.md to 190 lines gives ~$0.46.
+The example math: input is 2,000 base + 243 lines x 1.5 = ~2,365 tokens/turn, so 40 turns is 94,600 input tokens ($0.38 at $4/1M) plus 20,000 output tokens ($0.40 at $20/1M). Moving 80% of turns to Sonnet 5.5 ($2/$10) and trimming CLAUDE.md to 190 lines gives ~$0.46.
 
 ## Customizing the Grading Thresholds
 

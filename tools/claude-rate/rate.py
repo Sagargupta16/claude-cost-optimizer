@@ -22,9 +22,10 @@ Usage:
 
 No external dependencies. Pure Python 3.10+ stdlib.
 
-Pricing data verified 2026-09-28 against:
+Pricing data verified 2026-09-29 against:
     https://platform.claude.com/docs/en/about-claude/pricing
     https://platform.claude.com/docs/en/about-claude/models/overview
+    https://platform.claude.com/docs/en/models/sonnet-5-5/overview
     https://platform.claude.com/docs/en/models/opus-5-5/overview
 """
 
@@ -43,7 +44,7 @@ from typing import Any
 
 # -- Pricing data (mirrors site/src/utils/pricing.ts) ------------------------
 
-# Models priced as of 2026-09-28. Prices are USD per 1M tokens.
+# Models priced as of 2026-09-29. Prices are USD per 1M tokens.
 # `fast_mode` marks the models that honor `speed: "fast"` (a flat 2x of the
 # model's own base on both input and output). Since Opus 5.5's release on
 # 2026-09-22 that is Opus 5.5, Opus 5 and Opus 4.8 only: Opus 4.7 errors on
@@ -138,6 +139,19 @@ MODELS: dict[str, dict[str, Any]] = {
         "fast_mode": False,
         "lifecycle": "legacy",
     },
+    # Same $2/$10 and tokenizer as Sonnet 5; the cache floor drops to 512 tokens.
+    "sonnet-5-5": {
+        "name": "Sonnet 5.5",
+        "input": 2.00,
+        "output": 10.00,
+        "cache_hit": 0.20,
+        "cache_5m_write": 2.50,
+        "cache_1h_write": 4.00,
+        "context_window": 1_000_000,
+        "tokenizer_overhead": 1.3,
+        "fast_mode": False,
+        "lifecycle": "active",
+    },
     # $2/$10 became the permanent standard price on 2026-09-01; the scheduled
     # increase to $3/$15 was cancelled.
     "sonnet-5": {
@@ -150,7 +164,7 @@ MODELS: dict[str, dict[str, Any]] = {
         "context_window": 1_000_000,
         "tokenizer_overhead": 1.3,
         "fast_mode": False,
-        "lifecycle": "active",
+        "lifecycle": "legacy",
     },
     "sonnet-4-6": {
         "name": "Sonnet 4.6",
@@ -680,7 +694,7 @@ def score_settings(project: Path) -> CategoryResult:
         )
         cat.fixes.append(
             f"Create {DOT_CLAUDE}/{SETTINGS_JSON} with at minimum:\n"
-            '    {"model": "claude-sonnet-5", "permissions": {"allow": [], "deny": []}}\n'
+            '    {"model": "claude-sonnet-5-5", "permissions": {"allow": [], "deny": []}}\n'
             "    Reach for claude-opus-5-5 only on complex agentic work -- its adaptive "
             "thinking is always on (it cannot be disabled) and reasoning tokens bill as "
             "output at $20/1M, so effort is the only lever; it defaults to medium."
@@ -696,7 +710,7 @@ def score_settings(project: Path) -> CategoryResult:
         parts.append(f"model={model_id}")
     else:
         cat.fixes.append(
-            f'Set "model" in {SETTINGS_JSON} to pin a default (e.g. "claude-sonnet-5"). '
+            f'Set "model" in {SETTINGS_JSON} to pin a default (e.g. "claude-sonnet-5-5"). '
             "Prevents accidental Opus usage on simple tasks -- and on Opus 5.5 that matters "
             "more, since adaptive thinking is always on and every reasoning token "
             "bills at the $20/1M output rate."
@@ -717,7 +731,7 @@ def score_settings(project: Path) -> CategoryResult:
             '    "autoCompactEnabled": true       bounds the context growth that '
             "drives input cost\n"
             '    "enforceAvailableModels": true with "availableModels": '
-            '["claude-sonnet-5"]  keeps Opus- and Fable-tier models out entirely\n'
+            '["claude-sonnet-5-5"]  keeps Opus- and Fable-tier models out entirely\n'
             "    For an actual spend ceiling you need a PreToolUse hook, not a "
             "setting -- see hooks/budget-tracker.sh in this repo."
         )
@@ -1184,7 +1198,7 @@ def rate(project: Path) -> RateResult:
 # -- Output formatters -------------------------------------------------------
 
 _BAR_WIDTH = 20
-_PRICING_VERIFIED_DATE = "2026-09-28"
+_PRICING_VERIFIED_DATE = "2026-09-29"
 
 
 def _ratio_color(ratio: float) -> str:

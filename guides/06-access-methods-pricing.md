@@ -44,7 +44,7 @@ All platforms provide access to the same Claude models with the same intelligenc
 
 The Anthropic API is the baseline. All other platforms price relative to it.
 
-### Standard Pricing (per 1M tokens, verified 2026-09-28)
+### Standard Pricing (per 1M tokens, verified 2026-09-29)
 
 | Model | Input | Output | Cache Hit | 5m Cache Write | 1h Cache Write | Context | Max Output |
 |-------|:-----:|:------:|:---------:|:--------------:|:--------------:|:-------:|:----------:|
@@ -62,7 +62,8 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 | **Opus 5.5 Fast Mode** (research preview) | $8.00 (2x) | $40.00 (2x) | -- | -- | -- | 1M (included) | 128K |
 | **Opus 5 Fast Mode** (beta) | $10.00 (2x) | $50.00 (2x) | -- | -- | -- | 1M (included) | 128K |
 | **Opus 4.8 Fast Mode** (beta) | $10.00 (2x) | $50.00 (2x) | -- | -- | -- | 1M (included) | 128K |
-| **Sonnet 5** | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1M | 128K |
+| **Sonnet 5.5** (recommended Sonnet) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1M | 128K |
+| **Sonnet 5** (legacy) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1M | 128K |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K |
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
@@ -75,6 +76,28 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 > - **Default effort is `medium`** (Opus 5 defaulted to `high`), so a request that omits effort now thinks less. Re-baseline cost after migrating.
 > - **Forced `tool_choice` (`any` / `tool`) returns 400** -- use `auto` plus strict tool use or structured outputs. Non-default sampling params and assistant prefill also return 400; thinking blocks are tied to the model and conversation; `computer_20251124` is rejected on the Claude API and Google Cloud (use `computer_toolset_20260801`).
 > - **No Priority Tier.** Opus 4.8 keeps it.
+>
+> **Sonnet 5.5** (`claude-sonnet-5-5`, released 2026-09-28): the current Sonnet flagship, at **$2/$10 -- identical to Sonnet 5**, including caching (hit $0.20 = 0.1x, 5m / 1h writes $2.50 / $4.00) and Batch ($1/$5). Same tokenizer as Sonnet 5, so migrating is free at the posted rate. 1M context at standard rates, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), min cacheable prompt **512** (Sonnet 5 was 1,024), knowledge cutoff Jun 2026, no Fast Mode. Available on all five platforms: `claude-sonnet-5-5` on the Claude API, Google Cloud, Microsoft Foundry and Claude Platform on AWS; `anthropic.claude-sonnet-5-5` on Bedrock. Earliest retirement is not sooner than 2027-09-28. Sonnet 5 is now legacy (still Active, not deprecated).
+>
+> **Five breaking changes versus Sonnet 5** (each returns a 400 when old code is carried over):
+> - `thinking: {type: "disabled"}` and manual `budget_tokens` return 400. Adaptive thinking is on by default (effort `high`) and reasoning bills as output at $10/MTok. The lowest setting is `thinking: {type: "between_tools"}`, which turns off up-front thinking and is accepted only at `low`, `medium` and `high` effort (`xhigh`/`max` + `between_tools` = 400) -- send it on routine turns.
+> - Forced `tool_choice` (`any` / `tool`) returns 400 -- use `auto` plus strict tool use or structured outputs.
+> - Thinking blocks are tied to the model and conversation: keep conversations append-only, because replaying a Sonnet 5.5 thinking block after editing earlier history can return 400.
+> - `computer_20251124` is rejected on the Claude API and Google Cloud (Bedrock still accepts it); use `computer_toolset_20260801`.
+> - The advisor tool rejects Opus 4.8, Opus 4.7 and Sonnet 5 as advisors for a Sonnet 5.5 executor.
+>
+> Non-default `temperature` / `top_p` / `top_k` also return 400. **Effort levels are recalibrated**: the same level does not produce the same amount of thinking as on Sonnet 5, so re-run your effort sweep instead of carrying a setting over (Anthropic's starting points: `high` in general, `medium` for well-specified agentic coding and multistep tool use).
+>
+> **Claude Code `sonnet` alias cost gotcha**: the alias resolves by provider, and only the Anthropic API maps it to Sonnet 5.5. Sonnet 5.5 needs Claude Code v2.1.284 or later.
+>
+> | Provider | `sonnet` resolves to | Rate and context |
+> |----------|----------------------|------------------|
+> | Anthropic API | **Sonnet 5.5** | $2/$10, 1M |
+> | Claude Platform on AWS | Sonnet 4.6 | $3/$15, 1M |
+> | Amazon Bedrock, Google Cloud | **Sonnet 4.5** | $3/$15, 200K |
+> | Microsoft Foundry | **Sonnet 4.5** | $3/$15, 200K |
+>
+> On Bedrock, Google Cloud and Foundry, `sonnet` therefore costs **1.5x Sonnet 5.5 for a smaller window**. Pin it with `--model claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) or `ANTHROPIC_DEFAULT_SONNET_MODEL`.
 >
 > **Opus 5** (GA 2026-07-24, legacy since the Opus 5.5 launch): the previous Opus flagship, at the **identical posted price to Opus 4.8** ($5/$25). 1M context at standard rates across the whole window, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), knowledge cutoff May 2026. Earliest retirement is not sooner than 2027-07-24.
 >
@@ -93,7 +116,7 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 
 > **Sonnet 5 pricing is settled**: $2/$10 per MTok is now the standard rate. The launch pricing was labelled introductory through 2026-08-31, but Anthropic made it permanent and cancelled the increase to $3/$15, so budget $2/$10 indefinitely.
 
-> **1M context at standard rates**: Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5, and Sonnet 4.6 charge the standard per-token rate across the full 1M window -- no long-context premium. Opus 4.5, Sonnet 4.5, Opus 4.1, and Haiku 4.5 are 200K-context only. (Opus 4.8 is 200K-context on Microsoft Foundry only.)
+> **1M context at standard rates**: Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 charge the standard per-token rate across the full 1M window -- no long-context premium. Opus 4.5, Sonnet 4.5, Opus 4.1, and Haiku 4.5 are 200K-context only. (Opus 4.8 is 200K-context on Microsoft Foundry only.)
 >
 > **Opus 4.7+ tokenizer**: The tokenizer introduced with Opus 4.7 (and used by Opus 4.8, Opus 5 and Opus 5.5) uses up to **35% more tokens** for the same text. The posted rate does not change with it, but effective cost rises proportionally. Budget accordingly.
 >
@@ -101,19 +124,19 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 >
 > | Model | Minimum cacheable prompt |
 > |-------|:------------------------:|
-> | Opus 5.5, Opus 5, Fable 5, Mythos 5 | 512 |
+> | Opus 5.5, Opus 5, Sonnet 5.5, Fable 5, Mythos 5 | 512 |
 > | Opus 4.8, Opus 4.1, Sonnet 5, Sonnet 4.6, Sonnet 4.5 | 1,024 |
 > | Opus 4.7, Mythos Preview | 2,048 |
 > | Opus 4.6, Opus 4.5, Haiku 4.5 | 4,096 |
 >
-> **Tool-use overhead**: Tool definitions add a system-prompt token cost on every call. The base tool-use system prompt is **286 tokens** with `tool_choice: auto` or `none` and **406 tokens** with `any` or `tool` (Opus 5.5 rejects forced `any`/`tool`, so only the 286-token figure applies there). Add this to your `tools` array (names + descriptions + schemas) when budgeting.
+> **Tool-use overhead**: Tool definitions add a system-prompt token cost on every call. The base tool-use system prompt is **286 tokens** with `tool_choice: auto` or `none` and **406 tokens** with `any` or `tool` (Opus 5.5 and Sonnet 5.5 reject forced `any`/`tool`, so only the 286-token figure applies there; legacy Sonnet 5 is 354 / 474). Add this to your `tools` array (names + descriptions + schemas) when budgeting.
 
 ### Additional Pricing Modifiers
 
 | Modifier | Effect | Details |
 |----------|--------|---------|
 | **Batch API** | 50% discount on input AND output | Non-real-time, async results. Stacks with prompt caching. NOT compatible with Fast Mode or Priority Tier. |
-| **Data residency** (`inference_geo: "us"`) | 1.1x multiplier on every category | Applies to Opus 4.6, Sonnet 4.6, and all later models (including Opus 5 and Sonnet 5) on Claude API (1P) and Claude Platform on AWS. Earlier models error if the parameter is set. |
+| **Data residency** (`inference_geo: "us"`) | 1.1x multiplier on every category | Applies to Opus 4.6, Sonnet 4.6, and all later models (including Opus 5.5, Opus 5, Sonnet 5.5 and Sonnet 5) on Claude API (1P) and Claude Platform on AWS. Earlier models error if the parameter is set. |
 | **Fast Mode** (beta) | 2x each model's base ($8 / $40 on Opus 5.5, $10 / $50 on Opus 5 and 4.8) | **Opus 5.5, Opus 5 and Opus 4.8 only**, all at 2x; on Opus 5.5 it is a research preview on the Claude API. Header `anthropic-beta: fast-mode-2026-02-01`, `speed: "fast"`. Up to 2.5x output tokens/sec (throughput, not time-to-first-token). Opus 4.7 with `speed: "fast"` now **returns an error**; Opus 4.6 silently runs at standard speed and standard rates (`usage.speed` returns `"standard"`). The old 6x tier no longer exists. Claude API + Managed Agents only: not on Bedrock, Vertex AI, Microsoft Foundry, Claude Platform on AWS, Batch API, or Priority Tier. Switching speeds invalidates the prompt cache. Dedicated rate limits surface in `anthropic-fast-*` response headers. |
 | **Cache write (5-min TTL)** | 1.25x base input price | Content cached for 5 minutes. Pays off after 1 reuse. |
 | **Cache write (1-hour TTL)** | 2x base input price | Content cached for 1 hour. Pays off after 2 reuses. |
@@ -135,7 +158,8 @@ The Batch API is the single biggest discount available. For any workload that do
 | **Opus 4.6** | $2.50 | $12.50 | 50% |
 | **Opus 4.5** | $2.50 | $12.50 | 50% |
 | **Opus 4.1** | $7.50 | $37.50 | 50% |
-| **Sonnet 5** | $1.00 | $5.00 | 50% |
+| **Sonnet 5.5** | $1.00 | $5.00 | 50% |
+| **Sonnet 5** (legacy) | $1.00 | $5.00 | 50% |
 | **Sonnet 4.6** | $1.50 | $7.50 | 50% |
 | **Sonnet 4.5** | $1.50 | $7.50 | 50% |
 | **Haiku 4.5** | $0.50 | $2.50 | 50% |
@@ -161,7 +185,7 @@ Tokens billed at standard model rates (caching multipliers apply identically). *
 
 ## AWS Bedrock Pricing
 
-AWS Bedrock provides Claude access through two endpoint types with different pricing. **Fable 5.1 (the most capable widely released model) and Opus 5.5 (the recommended default Opus) are both available on Bedrock** as `anthropic.claude-fable-5-1` and `anthropic.claude-opus-5-5`, alongside Fable 5, Opus 5 (`anthropic.claude-opus-5`), Opus 4.8 and Opus 4.7. Anthropic also offers two Bedrock integration paths: the new Claude in Amazon Bedrock (Mantle) endpoint, and the legacy InvokeModel/Converse API.
+AWS Bedrock provides Claude access through two endpoint types with different pricing. **Fable 5.1 (the most capable widely released model) and Opus 5.5 (the recommended default Opus) are both available on Bedrock** as `anthropic.claude-fable-5-1` and `anthropic.claude-opus-5-5`, as is Sonnet 5.5 (`anthropic.claude-sonnet-5-5`), alongside Fable 5, Opus 5 (`anthropic.claude-opus-5`), Opus 4.8 and Opus 4.7. Anthropic also offers two Bedrock integration paths: the new Claude in Amazon Bedrock (Mantle) endpoint, and the legacy InvokeModel/Converse API.
 
 ### Global Endpoints
 
@@ -176,6 +200,7 @@ Global endpoints match Anthropic API pricing exactly:
 | **Opus 4.8** (open access, GA) | $5.00 | $25.00 | $0.50 |
 | **Opus 4.7** (open access, GA) | $5.00 | $25.00 | $0.50 |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 |
+| **Sonnet 5.5** (GA) | $2.00 | $10.00 | $0.20 |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 |
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 |
@@ -184,7 +209,7 @@ Global endpoints match Anthropic API pricing exactly:
 
 ### Regional Endpoints (us/eu/jp/apac/au inference profiles)
 
-Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models** (Opus 5 and Opus 5.5 included). Earlier models retain their existing pricing.
+Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models** (Opus 5, Opus 5.5 and Sonnet 5.5 included). Earlier models retain their existing pricing.
 
 | Model | Regional Input | Regional Output | Premium |
 |-------|:--------------:|:---------------:|:-------:|
@@ -196,6 +221,7 @@ Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 
 | **Opus 4.7** | $5.50 | $27.50 | +10% |
 | **Opus 4.6** | $5.50 | $27.50 | +10% |
 | **Opus 4.5** | $5.50 | $27.50 | +10% |
+| **Sonnet 5.5** | $2.20 | $11.00 | +10% |
 | **Sonnet 4.6** | $3.30 | $16.50 | +10% |
 | **Sonnet 4.5** | $3.30 | $16.50 | +10% |
 | **Haiku 4.5** | $1.10 | $5.50 | +10% |
@@ -224,6 +250,7 @@ The new **Claude in Amazon Bedrock (Mantle)** endpoint at `https://bedrock-mantl
 | Opus 4.6 | `anthropic.claude-opus-4-6` | `anthropic.claude-opus-4-6-v1` |
 | Opus 4.5 | -- | `anthropic.claude-opus-4-5-20251101-v1:0` |
 | Opus 4.1 | -- | `anthropic.claude-opus-4-1-20250805-v1:0` |
+| Sonnet 5.5 | `anthropic.claude-sonnet-5-5` | Check the Bedrock console for inference profiles |
 | Sonnet 4.6 | `anthropic.claude-sonnet-4-6` | `anthropic.claude-sonnet-4-6` |
 | Sonnet 4.5 | -- | `anthropic.claude-sonnet-4-5-20250929-v1:0` |
 | Haiku 4.5 | `anthropic.claude-haiku-4-5` | `anthropic.claude-haiku-4-5-20251001-v1:0` |
@@ -256,7 +283,7 @@ Claude Platform on AWS is **Anthropic-operated** (different from partner-operate
 
 ### Inference geography
 
-For Opus 4.6, Sonnet 4.6, and later models (including Opus 5 and Opus 5.5), setting `inference_geo: "us"` applies a **1.1x pricing multiplier** to all token categories. `inference_geo: "global"` (default) uses standard pricing.
+For Opus 4.6, Sonnet 4.6, and later models (including Opus 5, Opus 5.5 and Sonnet 5.5), setting `inference_geo: "us"` applies a **1.1x pricing multiplier** to all token categories. `inference_geo: "global"` (default) uses standard pricing.
 
 ### What's NOT available on Claude Platform on AWS
 
@@ -289,6 +316,7 @@ Global endpoints match Anthropic API pricing exactly:
 | **Opus 4.7** | $5.00 | $25.00 | $0.50 |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 |
+| **Sonnet 5.5** | $2.00 | $10.00 | $0.20 |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 |
 | **Sonnet 4.5** | $3.00 | $15.00 | $0.30 |
 | **Haiku 4.5** | $1.00 | $5.00 | $0.10 |
@@ -305,6 +333,7 @@ Both regional endpoints (single GCP region) and multi-region endpoints (dynamic 
 | **Opus 4.7** | $5.50 | $27.50 | +10% |
 | **Opus 4.6** | $5.50 | $27.50 | +10% |
 | **Opus 4.5** | $5.50 | $27.50 | +10% |
+| **Sonnet 5.5** | $2.20 | $11.00 | +10% |
 | **Sonnet 4.6** | $3.30 | $16.50 | +10% |
 | **Sonnet 4.5** | $3.30 | $16.50 | +10% |
 | **Haiku 4.5** | $1.10 | $5.50 | +10% |
@@ -320,6 +349,7 @@ Both regional endpoints (single GCP region) and multi-region endpoints (dynamic 
 | Opus 4.6 | `claude-opus-4-6` |
 | Opus 4.5 | `claude-opus-4-5@20251101` |
 | Opus 4.1 | `claude-opus-4-1@20250805` |
+| Sonnet 5.5 | `claude-sonnet-5-5` |
 | Sonnet 4.6 | `claude-sonnet-4-6` |
 | Sonnet 4.5 | `claude-sonnet-4-5@20250929` |
 | Haiku 4.5 | `claude-haiku-4-5@20251001` |
@@ -405,6 +435,20 @@ Opus 5, Opus 4.8, Opus 4.7, and Opus 4.6 share the same base pricing and are **G
 | **AWS Bedrock** | Regional | $5.50 | $27.50 | $0.55 | $2.75 | $13.75 |
 | **Google Vertex AI** | Global | $5.00 | $25.00 | $0.50 | $2.50 | $12.50 |
 | **Google Vertex AI** | Regional / Multi-region | $5.50 | $27.50 | $0.55 | $2.75 | $13.75 |
+
+### Sonnet 5.5 Pricing Across All Platforms (per 1M tokens)
+
+Sonnet 5.5 is available on all five platforms at Sonnet 5's price. Regional rows apply the same +10% as the other models.
+
+| Platform | Endpoint | Input | Output | Cache Hit | Batch Input | Batch Output |
+|----------|----------|:-----:|:------:|:---------:|:-----------:|:------------:|
+| **Anthropic API** | Direct | $2.00 | $10.00 | $0.20 | $1.00 | $5.00 |
+| **Claude Platform on AWS** | CCU billing (global) | $2.00 | $10.00 | $0.20 | -- (no Batch) | -- |
+| **Claude Platform on AWS** | `inference_geo: "us"` | $2.20 | $11.00 | $0.22 | -- | -- |
+| **AWS Bedrock** | Global | $2.00 | $10.00 | $0.20 | $1.00 | $5.00 |
+| **AWS Bedrock** | Regional | $2.20 | $11.00 | $0.22 | $1.10 | $5.50 |
+| **Google Vertex AI** | Global | $2.00 | $10.00 | $0.20 | $1.00 | $5.00 |
+| **Google Vertex AI** | Regional / Multi-region | $2.20 | $11.00 | $0.22 | $1.10 | $5.50 |
 
 ### Sonnet 4.6 Pricing Across All Platforms (per 1M tokens)
 
@@ -519,7 +563,7 @@ The Batch API is the single most impactful discount. Any workload that can toler
 
 ### Strategy 3: Watch Cumulative Context Growth (Long Context Is Now Free, But Cache Write Costs Grow With It)
 
-**Good news**: Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5, and Sonnet 4.6 all bill the full 1M context window at **standard per-token rates**. There is no longer a 2x input / 1.5x output premium for crossing the 200K threshold. (This earlier pricing applied to Opus 4.1 and older.)
+**Good news**: Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 all bill the full 1M context window at **standard per-token rates**. There is no longer a 2x input / 1.5x output premium for crossing the 200K threshold. (This earlier pricing applied to Opus 4.1 and older.)
 
 **The catch**: While the rate is flat, the absolute token count still grows with context. A 500K-token input at $5/MTok is $2.50 per call -- small per call, but it adds up across a long session, and every fresh cache write on that content costs 1.25-2x more in absolute dollars.
 
@@ -571,7 +615,7 @@ Prompt caching gives you a 90% discount on input tokens that have been seen befo
 - Use 5-min TTL for content that changes infrequently
 - Use 1-hour TTL only for content reused across many requests
 - The cache write cost is paid once; the savings compound over every subsequent request
-- Respect the per-model minimum cacheable prompt length. Opus 5.5 and Opus 5 need only **512 tokens** (down from 1,024 on Opus 4.8, 2,048 on Opus 4.7, and 4,096 on Opus 4.6), so prefixes that were too short to cache before now qualify. Below the threshold the `cache_control` block is silently ignored -- no error, no discount.
+- Respect the per-model minimum cacheable prompt length. Opus 5.5, Opus 5 and Sonnet 5.5 need only **512 tokens** (down from 1,024 on Opus 4.8 and Sonnet 5, 2,048 on Opus 4.7, and 4,096 on Opus 4.6), so prefixes that were too short to cache before now qualify. Below the threshold the `cache_control` block is silently ignored -- no error, no discount.
 
 ---
 
@@ -614,7 +658,7 @@ The 10% premium on regional endpoints applies to every token. Over time, this ad
 
 ### 3. US Data Residency Premium
 
-The 1.1x multiplier for US data residency (`inference_geo: us-only` on the Claude API) applies to Opus 4.6 and newer models (including Opus 5.5, 5, 4.8, and 4.7):
+The 1.1x multiplier for US data residency (`inference_geo: us-only` on the Claude API) applies to Opus 4.6 and newer models (including Opus 5.5, 5, 4.8, 4.7, and Sonnet 5.5):
 
 | Model | Standard Input | US Residency Input | Extra Cost |
 |-------|:--------------:|:------------------:|:----------:|
@@ -622,6 +666,8 @@ The 1.1x multiplier for US data residency (`inference_geo: us-only` on the Claud
 | Opus 5.5 | $20.00 (output) | $22.00 (output) | +$2.00/MTok |
 | Opus 5 / 4.8 / 4.7 / 4.6 | $5.00 | $5.50 | +$0.50/MTok |
 | Opus 5 / 4.8 / 4.7 / 4.6 | $25.00 (output) | $27.50 (output) | +$2.50/MTok |
+| Sonnet 5.5 | $2.00 | $2.20 | +$0.20/MTok |
+| Sonnet 5.5 | $10.00 (output) | $11.00 (output) | +$1.00/MTok |
 
 This is the same 10% premium as regional endpoints on Bedrock/Vertex. If you are already paying for regional endpoints for data residency, adding US data residency on the Anthropic API side doubles the compliance premium.
 
@@ -715,7 +761,7 @@ Here is the concrete recommendation for minimizing Claude costs, ordered by impa
 2. **Use global endpoints** on Bedrock and Vertex AI -- **10% savings** over regional
 3. **Use Haiku** as your default model and route to Sonnet/Opus only when complexity demands it
 4. **Cache aggressively** -- structure prompts so stable content comes first, aim for 70%+ cache hit rates
-5. **Watch cumulative context growth** -- 1M context is priced at standard rates on Opus 5.5/5/4.8/4.7/4.6 and Sonnet 5/4.6 (no premium), but absolute token count still grows with context, and the Opus 4.7+ tokenizer (used by Opus 4.8, Opus 5 and Opus 5.5) inflates the count further
+5. **Watch cumulative context growth** -- 1M context is priced at standard rates on Opus 5.5/5/4.8/4.7/4.6 and Sonnet 5.5/5/4.6 (no premium), but absolute token count still grows with context, and the Opus 4.7+ tokenizer (used by Opus 4.8, Opus 5 and Opus 5.5) inflates the count further
 6. **Never use Fast Mode** unless you have proven that standard latency is hurting your business metrics
 
 ### The Optimal Stack
@@ -725,7 +771,7 @@ For most teams, the cheapest configuration is:
 ```
 Interactive work:  Claude Code Max 5x ($100/mo per developer)
 Automation:        Anthropic Batch API with Haiku ($0.50/$2.50 per MTok)
-Complex tasks:     Anthropic API with Sonnet 5 ($2/$10 per MTok)
+Complex tasks:     Anthropic API with Sonnet 5.5 ($2/$10 per MTok)
 Rare, hard tasks:  Anthropic API with Opus 5.5 ($4/$20 per MTok)
 Data residency:    Bedrock/Vertex Regional (accept the 10% premium)
 ```
@@ -767,9 +813,9 @@ Anthropic periodically runs promotional events that double usage limits during o
 ## Key Takeaways
 
 1. **Global endpoints on Bedrock and Vertex AI are the same price as the Anthropic API** -- use them if you need cloud billing integration without paying more
-2. **Regional endpoints cost 10% more everywhere** -- only use them for data residency compliance. Scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models (Opus 5.5 included).
+2. **Regional endpoints cost 10% more everywhere** -- only use them for data residency compliance. Scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models (Opus 5.5 and Sonnet 5.5 included).
 3. **The Batch API saves 50%** -- the single biggest discount available, for any workload that can wait
-4. **1M context bills at standard rates on Opus 5.5/5/4.8/4.7/4.6 and Sonnet 5/4.6** -- no long-context premium. (Earlier "2x over 200K" applied to Opus 4.1 and older.) Absolute cost still grows with token count, so trim aggressively anyway.
+4. **1M context bills at standard rates on Opus 5.5/5/4.8/4.7/4.6 and Sonnet 5.5/5/4.6** -- no long-context premium. (Earlier "2x over 200K" applied to Opus 4.1 and older.) Absolute cost still grows with token count, so trim aggressively anyway.
 5. **Fast Mode is 2x standard on Opus 5.5 ($8/$40, research preview), Opus 5 and Opus 4.8 ($10/$50) only**. Opus 4.7 errors on `speed: "fast"`, Opus 4.6 silently runs standard, and the old 6x tier is gone. Almost never worth it for development work.
 6. **Pro plan annual saves 17%** -- $200/yr vs $240/yr monthly equivalent, no usage difference.
 7. **Claude Platform on AWS** uses CCU billing at $0.01/CCU but matches per-token rates -- pick it over Bedrock for same-day Anthropic feature parity (no Fast Mode or Batch though).
@@ -777,6 +823,7 @@ Anthropic periodically runs promotional events that double usage limits during o
 7. **Claude Code subscriptions beat API rates for interactive development** -- the math almost always works out in favor of a subscription
 8. **The cheapest token is the one you don't send** -- all the strategies in this repo (context optimization, model selection, workflow patterns) compound with platform-level savings
 9. **Opus 5.5 (released 2026-09-22) is the first Opus to cut the price** -- $4/$20, 20% below Opus 5 and 4.8, with cache hits at 0.05x instead of 0.1x, on all five platforms. Thinking is always on and default effort is `medium`, so your output token count can move in either direction; forced `tool_choice`, prefill and non-default sampling params now return 400, and there is no Priority Tier. Migrate, then re-baseline cost per task.
+10. **Sonnet 5.5 (released 2026-09-28) costs exactly what Sonnet 5 did** -- $2/$10, same cache rates, same tokenizer -- and halves the cache floor to 512. Carried-over code can 400 (`thinking: disabled`, forced `tool_choice`, `computer_20251124` on the Claude API and Google Cloud), and effort levels are recalibrated, so re-run your effort sweep. In Claude Code on Bedrock, Google Cloud or Foundry, the `sonnet` alias still means Sonnet 4.5 at $3/$15 with 200K context: pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) or you pay 1.5x for a smaller window.
 
 ---
 

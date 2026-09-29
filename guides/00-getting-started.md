@@ -70,7 +70,7 @@ You don't need Opus for everything. Quick rule:
 | Task | Model | Why |
 |------|-------|-----|
 | Architecture, complex refactors | Opus 5.5 | Anthropic's recommended start for most workloads |
-| Feature implementation, debugging | Sonnet 5 | Good balance, 2x cheaper than Opus 5.5 |
+| Feature implementation, debugging | Sonnet 5.5 | Good balance, 2x cheaper than Opus 5.5 |
 | Tests, docs, formatting, renames | Haiku 4.5 | Fast, 4x cheaper than Opus 5.5 |
 
 Switch models mid-session:

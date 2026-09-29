@@ -297,6 +297,8 @@ function generateRecommendations(
   return recs.slice(0, 3).map((r) => r.text)
 }
 
+const pctBelow = (cheaper: number, dearer: number) => Math.round((1 - cheaper / dearer) * 100)
+
 /** Recommendations that depend on which model is selected. */
 function modelRecommendations(inputs: CalculatorInputs): { text: string; impact: number }[] {
   const recs: { text: string; impact: number }[] = []
@@ -305,8 +307,7 @@ function modelRecommendations(inputs: CalculatorInputs): { text: string; impact:
   // moved on 2026-09-22, and every literal "60%" in this file went stale with it.
   const model = MODELS[inputs.model]
   const opusFlagship = MODELS['opus-5-5']
-  const sonnetFlagship = MODELS['sonnet-5']
-  const pctBelow = (cheaper: number, dearer: number) => Math.round((1 - cheaper / dearer) * 100)
+  const sonnetFlagship = MODELS['sonnet-5-5']
 
   const isFableTier =
     inputs.model === 'fable-5-1' ||
@@ -338,7 +339,7 @@ function modelRecommendations(inputs: CalculatorInputs): { text: string; impact:
     inputs.model === 'opus-4-6'
   if (isOpusTier && !inputs.fastMode) {
     recs.push({
-      text: `Consider Sonnet 5 for routine development -- ${pctBelow(sonnetFlagship.inputPer1M, model.inputPer1M)}% cheaper ($${sonnetFlagship.inputPer1M}/$${sonnetFlagship.outputPer1M} vs $${model.inputPer1M}/$${model.outputPer1M}) with similar quality for most tasks`,
+      text: `Consider Sonnet 5.5 for routine development -- ${pctBelow(sonnetFlagship.inputPer1M, model.inputPer1M)}% cheaper ($${sonnetFlagship.inputPer1M}/$${sonnetFlagship.outputPer1M} vs $${model.inputPer1M}/$${model.outputPer1M}) with similar quality for most tasks`,
       impact: pctBelow(sonnetFlagship.inputPer1M, model.inputPer1M),
     })
   }
@@ -377,12 +378,34 @@ function modelRecommendations(inputs: CalculatorInputs): { text: string; impact:
 
   if (model.minCacheTokens >= 4096) {
     recs.push({
-      text: `${model.name} needs ${model.minCacheTokens.toLocaleString()}+ tokens before a prompt caches at all. Below that you pay full input price every turn -- Opus 5.5, Sonnet 5, and Fable 5.1 cache from 512-1,024 tokens`,
+      text: `${model.name} needs ${model.minCacheTokens.toLocaleString()}+ tokens before a prompt caches at all. Below that you pay full input price every turn -- Opus 5.5, Sonnet 5.5 and Fable 5.1 cache from 512 tokens`,
       impact: 12,
     })
   }
 
+  const sonnetMigration = legacySonnetRecommendation(inputs.model)
+  if (sonnetMigration) recs.push(sonnetMigration)
+
   return recs
+}
+
+// Sonnet 5.5 is the same $2/$10 as Sonnet 5 and a third below Sonnet 4.6 / 4.5's
+// $3/$15, with a 512-token cache floor, so moving up is free or a price cut.
+const LEGACY_SONNETS: ReadonlySet<ModelId> = new Set<ModelId>(['sonnet-5', 'sonnet', 'sonnet-4-5'])
+
+function legacySonnetRecommendation(id: ModelId): { text: string; impact: number } | null {
+  if (!LEGACY_SONNETS.has(id)) return null
+  const model = MODELS[id]
+  const target = MODELS['sonnet-5-5']
+  const saving = pctBelow(target.inputPer1M, model.inputPer1M)
+  const price =
+    saving > 0
+      ? `${saving}% cheaper ($${target.inputPer1M}/$${target.outputPer1M} vs $${model.inputPer1M}/$${model.outputPer1M})`
+      : `the same $${target.inputPer1M}/$${target.outputPer1M}`
+  return {
+    text: `Migrate to Sonnet 5.5 -- ${price}, and prompts cache from ${target.minCacheTokens} tokens instead of ${model.minCacheTokens.toLocaleString()}. Check first: thinking {type:"disabled"} returns 400 (send between_tools) and forced tool_choice returns 400`,
+    impact: saving > 0 ? 30 : 10,
+  }
 }
 
 export function resultToMarkdown(inputs: CalculatorInputs, result: CalculatorResult): string {

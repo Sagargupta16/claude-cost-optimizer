@@ -26,8 +26,8 @@ except ImportError:
     sys.exit(1)
 
 
-# Claude model pricing per 1M tokens (verified 2026-09-28; Opus 5.5 released 2026-09-22)
-# NOTE: 1M context on Fable 5.1/Fable 5/Opus 5.5/Opus 5/Opus 4.8/4.7/4.6/Sonnet 5/Sonnet 4.6
+# Claude model pricing per 1M tokens (verified 2026-09-29; Sonnet 5.5 released 2026-09-28)
+# NOTE: 1M context on Fable 5.1/Fable 5/Opus 5.5/Opus 5/Opus 4.8/4.7/4.6/Sonnet 5.5/Sonnet 5/Sonnet 4.6
 # is billed at standard rates (no long-context premium). The old "2x over 200K" pricing
 # only applied to Opus 4.1 and older.
 # NOTE: cache_hit has three multipliers: 0.1x input by default, 0.025x on Fable 5.1 /
@@ -110,12 +110,25 @@ MODEL_PRICING = {
         "input": 2.00,
         "output": 10.00,
         "cache_hit": 0.20,
-        "name": "Sonnet 5",
+        "name": "Sonnet 5.5",
         "note": (
-            "Current Sonnet-tier flagship (GA 2026-06-30). $2/$10 is now the permanent "
-            "standard price -- the increase to $3/$15 scheduled for 2026-09-01 was "
-            "cancelled, so Sonnet 5 is half the price of Opus 5.5 (60% below legacy "
-            "Opus 5). New tokenizer (~30% more tokens). Batch $1/$5."
+            "Current Sonnet-tier flagship (released 2026-09-28). Same $2/$10 and "
+            "tokenizer as Sonnet 5, so migrating is free at the posted rate; half the "
+            "price of Opus 5.5. Minimum cacheable prompt drops to 512 tokens. Adaptive "
+            "thinking on by default (effort defaults to high, recalibrated); thinking "
+            "disabled returns 400, the lowest setting is between_tools. Batch $1/$5."
+        ),
+    },
+    "sonnet_5": {
+        "input": 2.00,
+        "output": 10.00,
+        "cache_hit": 0.20,
+        "name": "Sonnet 5 (legacy)",
+        "note": (
+            "Previous Sonnet-tier flagship (GA 2026-06-30), moved to legacy by the "
+            "Sonnet 5.5 launch at the same price. $2/$10 is the permanent standard "
+            "price -- the increase to $3/$15 scheduled for 2026-09-01 was cancelled. "
+            "Minimum cacheable prompt is 1,024 tokens. Batch $1/$5."
         ),
     },
     "sonnet_4_6": {
@@ -374,7 +387,8 @@ def main():
         help=(
             "Show cost for a specific model only (default: show all). "
             "'opus' is Opus 5.5, the recommended default Opus. Use 'opus_5', "
-            "'opus_4_8', 'opus_4_7', or 'opus_4_6' for legacy Opus pricing. Use "
+            "'opus_4_8', 'opus_4_7', or 'opus_4_6' for legacy Opus pricing. "
+            "'sonnet' is Sonnet 5.5; 'sonnet_5' is legacy Sonnet 5 at the same rate. Use "
             "'fast_mode' for Opus 5.5 Fast Mode ($8/$40) or 'fast_mode_opus_5' for "
             "Opus 5 / 4.8 Fast Mode ($10/$50); both are 2x their own base rate (the "
             "old 6x tier no longer exists)."

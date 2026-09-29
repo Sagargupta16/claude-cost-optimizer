@@ -47,11 +47,12 @@ assignees: ''
 
 <!-- Check all that apply: -->
 - [ ] Opus 5.5
-- [ ] Sonnet 5
+- [ ] Sonnet 5.5
 - [ ] Haiku 4.5
 - [ ] Fable 5.1
 - [ ] Opus 5 (legacy)
 - [ ] Opus 4.8 (legacy)
+- [ ] Sonnet 5 (legacy)
 - [ ] Sonnet 4.6 (legacy)
 - [ ] Multiple (describe in observations)
 

@@ -48,14 +48,14 @@ With tool search off, if you have 10 MCP servers connected with ~1,500 tokens of
 
 On Opus 5.5:  750K tokens x $4.00/1M = $3.00 just for MCP schemas (+~35% if new tokenizer inflates schema)
 On Opus 5:    750K tokens x $5.00/1M = $3.75 (legacy)
-On Sonnet 5:  750K tokens x $2.00/1M = $1.50 just for MCP schemas
+On Sonnet 5.5: 750K tokens x $2.00/1M = $1.50 just for MCP schemas
 ```
 
 With tool search on (the default), that per-turn schema load does not happen: only tool names and server instructions ride along until a tool is used. This is why the old advice that "adding a server breaks the cache" is out of date -- with tool search on, connecting or removing a server does **not** invalidate the prompt cache. It still does when tool search is off, and so does enabling or disabling a plugin that provides MCP servers.
 
-Add the tool-use system prompt on top of the schemas themselves: **286 tokens** with `tool_choice: auto` or `none`, **406 tokens** with `any` or `tool` (Opus 5.5 rejects forced `any`/`tool`, so only 286 applies there). Individual built-in tools cost more (the bash tool adds 325 input tokens on Opus 5 / 4.8 / 4.7, 244 on Opus 4.6 and earlier; the text editor tool adds 700).
+Add the tool-use system prompt on top of the schemas themselves: **286 tokens** with `tool_choice: auto` or `none`, **406 tokens** with `any` or `tool` (Opus 5.5 and Sonnet 5.5 reject forced `any`/`tool`, so only 286 applies there). Individual built-in tools cost more (the bash tool adds 325 input tokens on Opus 5 / 4.8 / 4.7, 244 on Opus 4.6 and earlier; the text editor tool adds 700).
 
-With prompt caching, the actual cost is much lower: cached schema tokens bill at 0.1x base input on most models (0.05x on Opus 5.5, 0.025x on Fable 5.1). But the first turn and any cache misses still pay full price. Note that the minimum cacheable prompt on Opus 5.5 and Opus 5 is only **512 tokens** (Opus 4.8 needed 1,024, Opus 4.7 needed 2,048, Opus 4.6 needed 4,096), so even a single small MCP server's schemas are now big enough to cache.
+With prompt caching, the actual cost is much lower: cached schema tokens bill at 0.1x base input on most models (0.05x on Opus 5.5, 0.025x on Fable 5.1). But the first turn and any cache misses still pay full price. Note that the minimum cacheable prompt on Opus 5.5, Opus 5 and Sonnet 5.5 is only **512 tokens** (Opus 4.8 and Sonnet 5 needed 1,024, Opus 4.7 needed 2,048, Opus 4.6 needed 4,096), so even a single small MCP server's schemas are now big enough to cache.
 
 ### Tool Search (Deferred Tools)
 
@@ -125,6 +125,8 @@ anthropic-beta: mid-conversation-tool-changes-2026-07-01
 
 With that header, tool definitions can change between turns while the rest of the cached prefix stays valid. This makes it affordable to load a narrow tool set by default and attach extra MCP servers only for the turns that need them, instead of carrying every schema for the whole session.
 
+On the Sonnet tier, mid-conversation tool changes (beta) are supported on **Sonnet 5.5 but not Sonnet 5**, so dynamic tool sets keep the cache only after you move to Sonnet 5.5.
+
 That header is for your own API calls. Inside Claude Code the question is tool search: with it on (the default), connecting or removing an MCP server keeps the cache; with it off, connecting or removing a server, or denying an entire tool, invalidates it.
 
 ---
@@ -163,7 +165,7 @@ Main context savings = avoided context pollution from search results
 }
 ```
 
-Anthropic's costs page gives the same advice: set `model: haiku` in the subagent configuration for simple subagent tasks. Without it, a subagent can inherit your session's model, so a switch to Opus applies to it too.
+Anthropic's costs page gives the same advice: set `model: haiku` in the subagent configuration for simple subagent tasks. Without it, a subagent can inherit your session's model, so a switch to Opus applies to it too. The `sonnet` alias resolves by provider: on Bedrock, Google Cloud and Microsoft Foundry it means Sonnet 4.5 ($3/$15, 200K), not Sonnet 5.5 ($2/$10), so pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) there -- see [Guide 06](06-access-methods-pricing.md#anthropic-api-direct-pricing).
 
 On Opus 5.5 subagents, adaptive thinking is **always on** -- `thinking: {type: "disabled"}` returns a 400 -- and reasoning tokens bill as **output** at $20/MTok. A fan-out of ten search subagents on Opus 5.5 pays for ten sets of reasoning tokens, so lower the effort level (default `medium`) or, better, route subagents that just grep and summarize to Haiku. On legacy Opus 5, thinking is on by default at $25/MTok and can be disabled only at effort `high` or below. Also note that `max_tokens` caps thinking plus visible text together, so a subagent with a tight `max_tokens` and high effort can burn its budget reasoning and return nothing usable.
 
@@ -219,5 +221,5 @@ If you are billed for Managed Agents rather than raw tokens, budget the session 
 6. **Use `claude -p --max-budget-usd`** (print mode only) to prevent runaway costs in automated/SDK workflows
 7. **Haiku subagents** (`model: haiku`) are ideal for search/exploration tasks at 4x lower cost than Opus 5.5
 8. **Agent teams use ~7x the tokens** of a standard session when teammates run in plan mode -- keep them small
-9. **With tool search on, adding or removing a server keeps the cache** in Claude Code; on your own API calls, the `mid-conversation-tool-changes-2026-07-01` beta on Opus 5 does the same for changed tool definitions
+9. **With tool search on, adding or removing a server keeps the cache** in Claude Code; on your own API calls, the `mid-conversation-tool-changes-2026-07-01` beta on Opus 5 does the same for changed tool definitions, and on the Sonnet tier mid-conversation tool changes need Sonnet 5.5 (Sonnet 5 does not support them)
 10. **Opus 5.5 always thinks** and reasoning tokens bill as output at $20/MTok -- lower the effort level, or route subagents that only search and summarize to Haiku

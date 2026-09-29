@@ -13,7 +13,7 @@ Each benchmark file compares costs along a specific dimension: task type, model 
 
 ### Pricing Reference
 
-All cost calculations use the following rates (verified 2026-09-28):
+All cost calculations use the following rates (verified 2026-09-29):
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
 |-------|:---------------------:|:----------------------:|:-------------------------:|
@@ -22,11 +22,12 @@ All cost calculations use the following rates (verified 2026-09-28):
 | Opus 4.8 (legacy) | $5.00 | $25.00 | $0.50 |
 | Opus 4.7 (legacy) | $5.00 | $25.00 | $0.50 |
 | Opus 4.6 (legacy) | $5.00 | $25.00 | $0.50 |
-| Sonnet 5 | $2.00 | $10.00 | $0.20 |
+| Sonnet 5.5 (current) | $2.00 | $10.00 | $0.20 |
+| Sonnet 5 (legacy) | $2.00 | $10.00 | $0.20 |
 | Sonnet 4.6 | $3.00 | $15.00 | $0.30 |
 | Haiku 4.5 | $1.00 | $5.00 | $0.10 |
 
-Batch API pricing is 50% off the standard rates above. The new tokenizer used by Opus 4.7 and later (including Opus 4.8, Opus 5, Opus 5.5, and Sonnet 5) can use up to 35% more tokens for the same text, so expect ~20-35% higher absolute costs vs Opus 4.6 for identical workloads. Opus 5 needs no re-baselining from Opus 4.7 or 4.8 -- they share the same tokenizer. Note that Opus 5 enables adaptive thinking by default and bills reasoning tokens as output at the normal output rate, so an untuned Opus 5 run costs more than the same work on Opus 4.8 despite the identical posted rates. Opus 5.5 is $4/$20 (20% below Opus 5) and reads cache at 0.05x base input, but thinking is always on and effort defaults to `medium`, so re-baseline rather than scaling Opus 5 figures by 0.8. Sonnet 5 is $2/$10 -- permanent, after Anthropic cancelled the increase to $3/$15 that was scheduled for 2026-09-01.
+Batch API pricing is 50% off the standard rates above. The new tokenizer used by Opus 4.7 and later (including Opus 4.8, Opus 5, Opus 5.5, Sonnet 5, and Sonnet 5.5) can use up to 35% more tokens for the same text, so expect ~20-35% higher absolute costs vs Opus 4.6 for identical workloads. Opus 5 needs no re-baselining from Opus 4.7 or 4.8 -- they share the same tokenizer. Note that Opus 5 enables adaptive thinking by default and bills reasoning tokens as output at the normal output rate, so an untuned Opus 5 run costs more than the same work on Opus 4.8 despite the identical posted rates. Opus 5.5 is $4/$20 (20% below Opus 5) and reads cache at 0.05x base input, but thinking is always on and effort defaults to `medium`, so re-baseline rather than scaling Opus 5 figures by 0.8. Sonnet 5 is $2/$10 -- permanent, after Anthropic cancelled the increase to $3/$15 that was scheduled for 2026-09-01. Sonnet 5.5 (released 2026-09-28) costs the same $2/$10 and uses the same tokenizer as Sonnet 5, but adaptive thinking is on by default (reasoning bills as output) and its effort levels are recalibrated, so re-run your effort sweep rather than carrying Sonnet 5 figures over.
 
 ### What "Estimated" Means
 
@@ -111,7 +112,7 @@ When submitting results, please include:
 ### [Your Scenario Name]
 
 **Environment:**
-- Model: [Opus 5.5 / Opus 5 / Sonnet 5 / Opus 4.8 / Opus 4.7 / Opus 4.6 / Sonnet 4.6 / Haiku 4.5]
+- Model: [Opus 5.5 / Sonnet 5.5 / Opus 5 / Sonnet 5 / Opus 4.8 / Opus 4.7 / Opus 4.6 / Sonnet 4.6 / Haiku 4.5]
 - CLAUDE.md: [line count] lines (~[token count] tokens)
 - Codebase: [language/framework], [approximate size]
 - Date: [YYYY-MM-DD]

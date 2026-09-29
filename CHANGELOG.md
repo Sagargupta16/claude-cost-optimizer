@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.14.0] - 2026-09-29
+
+Claude Sonnet 5.5 is added and becomes the recommended Sonnet. It costs exactly what Sonnet 5 does, so no dollar figure in the repo moves; what changes is which model the advice points at, the cache floor, and five ways old Sonnet 5 code now fails. Every fact was read from a live Anthropic page on 2026-09-29.
+
+### Added
+- **Claude Sonnet 5.5** (`claude-sonnet-5-5`, Bedrock `anthropic.claude-sonnet-5-5`, released 2026-09-28, earliest retirement 2027-09-28) across every pricing table, guide, tool and the web calculator. **$2/$10 per 1M -- identical to Sonnet 5**, including cache writes ($2.50 / $4), cache reads ($0.20, the normal 0.1x) and Batch ($1/$5). Same tokenizer, so the same text gives the same token count. 1M context, 128K output (300K on Batch via beta), knowledge cutoff Jun 2026, on all five platforms. No Fast Mode. In every tool the `sonnet` key now means Sonnet 5.5, and legacy Sonnet 5 gets an explicit key (`sonnet-5`, or `sonnet_5` in token-estimator).
+- **Where Sonnet 5.5 is cheaper than Sonnet 5 at the same price:** the minimum cacheable prompt halves to **512 tokens** (Sonnet 5: 1,024), so short system prompts that never cached now do; the tool-use system prompt is **286 tokens** (Sonnet 5: 354); and mid-conversation tool changes, mid-conversation system messages and per-message effort are supported, so tools and instructions can change without losing the prompt cache.
+- **Its five breaking changes, documented where they cost money:** `thinking: {type: "disabled"}` returns 400 (the lowest setting is `between_tools`, no up-front thinking, and only at `high` effort or below); forced `tool_choice` returns 400; thinking blocks are tied to the model and conversation; `computer_20251124` is rejected on the Claude API and Google Cloud; the advisor tool rejects Opus 4.8, Opus 4.7 and Sonnet 5 as advisors. Effort levels are **recalibrated** (default `high`), so an effort setting tuned on Sonnet 5 does not carry over.
+- **The Claude Code `sonnet` alias gotcha.** `sonnet` resolves to Sonnet 5.5 only on the Anthropic API (Claude Code v2.1.284+). On Bedrock, Google Cloud and Microsoft Foundry it resolves to **Sonnet 4.5** ($3/$15, 200K context), and on Claude Platform on AWS to Sonnet 4.6 ($3/$15) -- 1.5x the Sonnet 5.5 rate for the same habit. Documented in the guides, cheatsheet, README, `balanced.json` and the cost-mode skill, with `ANTHROPIC_DEFAULT_SONNET_MODEL` as the fix.
+- **Calculator:** a "Migrate to Sonnet 5.5" recommendation for Sonnet 5 (same price, 512-token cache floor) and Sonnet 4.6 / 4.5 (33% cheaper).
+- **cost-mode skill:** Sonnet 5.5 is the standard-work suggestion, plus a routing row for Sonnet 4.6 / 4.5 and the alias gotcha.
+
+### Changed
+- **Sonnet 5 is legacy.** Anthropic's models overview moved it to "Legacy models (still available)". It is still Active on the deprecations page, not deprecated, with an earliest retirement of 2027-06-30, and its $2/$10 price stays permanent.
+- This repo's own `.claude/settings.json` pins `claude-sonnet-5-5`.
+
+### Fixed
+- **Two templates priced "Sonnet 5 standard rates" at $3/1M.** `templates/CLAUDE.md/minimal.md` said $0.16 and `monorepo.md` $0.15 for 53,400 and 50,100 input tokens; at $2/1M those are $0.11 and $0.10.
+
 ## [1.13.0] - 2026-09-28
 
 Two things land together. Claude Opus 5.5 is added, and it is the first Opus release to cut the price. And a fact audit against Anthropic's live Claude Code docs found that several claims this repo was built on are not true -- two of them sat inside the grading rubric, so published grades change. Every fact below was re-read from a live Anthropic page on 2026-09-28.
