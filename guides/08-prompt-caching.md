@@ -61,7 +61,8 @@ This is why caching is so powerful in Claude Code specifically. The structure of
 | **Opus 5** (legacy) | $5.00 | $0.50 | **90% off** | $6.25 (1.25x) | $10.00 (2x) |
 | **Fable 5 / Mythos 5** (legacy) | $10.00 | $1.00 | **90% off** | $12.50 (1.25x) | $20.00 (2x) |
 | **Opus 4.8 (legacy) / 4.7 / 4.6** | $5.00 | $0.50 | **90% off** | $6.25 (1.25x) | $10.00 (2x) |
-| **Sonnet 5** | $2.00 | $0.20 | **90% off** | $2.50 (1.25x) | $4.00 (2x) |
+| **Sonnet 5.5** | $2.00 | $0.20 | **90% off** | $2.50 (1.25x) | $4.00 (2x) |
+| **Sonnet 5** (legacy) | $2.00 | $0.20 | **90% off** | $2.50 (1.25x) | $4.00 (2x) |
 | **Sonnet 4.6 / 4.5** | $3.00 | $0.30 | **90% off** | $3.75 (1.25x) | $6.00 (2x) |
 | **Haiku 4.5** | $1.00 | $0.10 | **90% off** | $1.25 (1.25x) | $2.00 (2x) |
 
@@ -69,9 +70,9 @@ This is why caching is so powerful in Claude Code specifically. The structure of
 >
 > This also flips a planning default. Because a hit costs so little *relative to a miss* on Fable 5.1, losing the cache hurts far more than it does elsewhere, while a read is nearly free. For a 5-to-60-minute gap between turns, re-sending the previous request with `max_tokens: 0` to refresh the 5-minute entry is usually cheaper than paying the 2x write for the 1-hour TTL -- the keep-alive bills only a cheap cache read and no output tokens. (`max_tokens: 0` can't be combined with streaming, structured outputs, or Batches; where the request can't be reshaped, use the 1-hour TTL.)
 >
-> Absolute savings per 1M cached tokens: **$9.75 on Fable 5.1**, $9.00 on Fable 5, $3.80 on Opus 5.5, $4.50 on legacy Opus 5 / 4.x, $1.80 on Sonnet 5.
+> Absolute savings per 1M cached tokens: **$9.75 on Fable 5.1**, $9.00 on Fable 5, $3.80 on Opus 5.5, $4.50 on legacy Opus 5 / 4.x, $1.80 on Sonnet 5.5 and Sonnet 5.
 
-> Sonnet 5 is $2/$10 permanently (the increase to $3/$15 was cancelled), so its cache rates are $0.20 hit, $2.50 5-minute write, $4.00 1-hour write. The multipliers are unchanged -- only the base input price differs.
+> Sonnet 5 is $2/$10 permanently (the increase to $3/$15 was cancelled), so its cache rates are $0.20 hit, $2.50 5-minute write, $4.00 1-hour write. The multipliers are unchanged -- only the base input price differs. Sonnet 5.5 (`claude-sonnet-5-5`, released 2026-09-28) launched at the identical $2/$10 and the same cache rates, with the same tokenizer.
 
 > Opus 5.5 (`claude-opus-5-5`, released 2026-09-22) is $4/$20 -- 20% below Opus 5 -- and Anthropic's models overview now says to "start with Claude Opus 5.5 for most workloads". Its cache rates are $0.20 hit, $5.00 5-minute write, $8.00 1-hour write. Opus 5 moved to legacy and keeps its $5/$25 price, the same as Opus 4.8, so the legacy Opus cache numbers in this guide are unchanged.
 
@@ -94,15 +95,16 @@ Caching does not kick in on short prompts. Each model has a minimum cacheable pr
 | **Opus 4.6** | 4,096 |
 | **Opus 4.5** | 4,096 |
 | **Opus 4.1** (retired 2026-08-05) | 1,024 |
-| **Sonnet 5** | 1,024 |
+| **Sonnet 5.5** | **512** |
+| **Sonnet 5** (legacy) | 1,024 |
 | **Sonnet 4.6** | 1,024 |
 | **Sonnet 4.5** | 1,024 |
 | **Haiku 4.5** | 4,096 |
 | **Haiku 3.5** | 2,048 |
 
-**Opus 5 halved the threshold: 512 tokens, down from 1,024 on Opus 4.8, and Opus 5.5 keeps it at 512.** Two consequences:
+**Opus 5 halved the threshold: 512 tokens, down from 1,024 on Opus 4.8, and Opus 5.5 keeps it at 512. Sonnet 5.5 does the same on the Sonnet tier: 512, down from Sonnet 5's 1,024.** Two consequences:
 
-- **Migrating up is strictly better.** A 700-token system prompt that never cached on Opus 4.8 starts caching on Opus 5.5 (or Opus 5) with no code change.
+- **Migrating up is strictly better.** A 700-token system prompt that never cached on Opus 4.8 or Sonnet 5 starts caching on Opus 5.5 (or Opus 5) or Sonnet 5.5 with no code change.
 - **Migrating down or sideways is the trap.** A prefix sized for Opus 5.5's 512-token floor silently stops caching on Sonnet 5 (1,024), Opus 4.7 (2,048), or Haiku 4.5 (4,096). The request still succeeds. You just quietly pay 10x on that segment.
 
 **How to check whether you actually got a cache.** Read the `usage` block on the response. If `cache_creation_input_tokens` and `cache_read_input_tokens` are both 0 while your `cache_control` block is set, your prefix was under the threshold and the marker was dropped.
@@ -190,6 +192,8 @@ MCP tool search is on by default: tool definitions are deferred, and only tool n
 The old rule still applies when tool search is off (`ENABLE_TOOL_SEARCH=false`, a custom `ANTHROPIC_BASE_URL`, or models older than the Claude 4.5 generation on Google Cloud). Then full schemas load up front, and connecting or removing a server -- or enabling or disabling a plugin that provides MCP servers, or denying an entire tool -- changes the prefix and breaks the cache on everything that follows.
 
 > **Opus 5 caveat (2026-07-24)**: the new beta `mid-conversation-tool-changes-2026-07-01` lets tool definitions change between turns **without** invalidating the prompt cache. With that beta header set, changing tools mid-conversation is no longer a cache-busting move. Without that header, the old rule stands: changing the tool set reprocesses everything after the schema block at full price. It is a beta opt-in on the API, so assume the old behavior unless you are explicitly sending the header.
+>
+> **Sonnet 5.5 caveat (2026-09-28)**: mid-conversation tool changes (beta), mid-conversation system messages and per-message effort (beta) are supported on **Sonnet 5.5 and not on Sonnet 5**, so on the Sonnet tier tools and instructions can change mid-conversation without losing the prompt cache only after you move to Sonnet 5.5.
 
 ### 3. Cache TTL Expiration
 
@@ -204,7 +208,7 @@ This means:
 
 Each model maintains its own cache. Switching from Sonnet to Opus (or vice versa) means the new model has no cached prefix -- everything is processed from scratch.
 
-Switching model also changes the minimum cacheable length. Moving from Opus 5.5 (512) to Sonnet 5 (1,024) or Haiku 4.5 (4,096) can turn a previously-cached small prefix into one that never caches at all. See [Minimum Cacheable Prompt Length](#minimum-cacheable-prompt-length).
+Switching model also changes the minimum cacheable length. Moving from Opus 5.5 or Sonnet 5.5 (512) to Sonnet 5 (1,024) or Haiku 4.5 (4,096) can turn a previously-cached small prefix into one that never caches at all. See [Minimum Cacheable Prompt Length](#minimum-cacheable-prompt-length).
 
 ### 5. Switching Speed Mid-Session (Fast Mode)
 
@@ -225,7 +229,7 @@ A few more actions invalidate the cache in Claude Code: compaction (it rebuilds 
 | Edit CLAUDE.md mid-session | **None** -- the file is read once at session start | No penalty; the edit applies after `/clear`, `/compact`, or restart |
 | Add/remove MCP server, or toggle a plugin that provides MCP servers | None with tool search on (the default); with tool search off, invalidates prefix from schema change onward | With tool search off: all history reprocessed at full input price |
 | Deny an entire tool | Same rule: only breaks the cache when tool search is off | With tool search off: all history reprocessed at full input price |
-| Change tool definitions mid-conversation (custom API tooling) | Invalidates prefix from schema change onward -- **unless** the `mid-conversation-tool-changes-2026-07-01` beta is enabled, which makes it free | All history reprocessed at full input price (no penalty with the beta) |
+| Change tool definitions mid-conversation (custom API tooling) | Invalidates prefix from schema change onward -- **unless** the `mid-conversation-tool-changes-2026-07-01` beta is enabled, which makes it free (on the Sonnet tier, Sonnet 5.5 only; Sonnet 5 does not support it) | All history reprocessed at full input price (no penalty with the beta) |
 | Gap longer than the TTL between turns | Full cache expiration (TTL is 5 minutes, or 1 hour on a subscription's main conversation) | Entire prefix reprocessed (cache write at 1.25x) |
 | Switch model mid-session | New model has empty cache, and may have a higher minimum cacheable length | Entire prefix reprocessed (cache write at 1.25x) |
 | Change effort level | Invalidates the cache -- **except** on Opus 5.5 and Fable 5.1 with an API key or subscription | Entire prefix reprocessed (none on Opus 5.5 / Fable 5.1) |
@@ -631,7 +635,7 @@ With compacting before break:
 
 6. **The difference between good and poor caching is $370+/month.** On Sonnet with 110 sessions/month, the gap between 90% and 0% cache hit rate is $371. Good caching hygiene is not optional -- it is one of the highest-ROI optimizations you can make.
 
-7. **Know your model's minimum cacheable prompt length.** Opus 5.5 and Opus 5 cache from 512 tokens, Opus 4.8 and Sonnet 5 from 1,024, Opus 4.7 from 2,048, Haiku 4.5 from 4,096. Below the floor, `cache_control` is silently ignored -- you pay full price every turn with no error. If you build custom API tooling, check `cache_read_input_tokens` in the `usage` block to confirm the cache is real.
+7. **Know your model's minimum cacheable prompt length.** Opus 5.5, Opus 5 and Sonnet 5.5 cache from 512 tokens, Opus 4.8 and Sonnet 5 from 1,024, Opus 4.7 from 2,048, Haiku 4.5 from 4,096. Below the floor, `cache_control` is silently ignored -- you pay full price every turn with no error. If you build custom API tooling, check `cache_read_input_tokens` in the `usage` block to confirm the cache is real.
 
 ---
 

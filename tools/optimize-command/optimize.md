@@ -59,7 +59,7 @@ Check whether `.claude/settings.json` exists. If it exists:
   - Which model is configured as default (if any).
   - Whether any permission allowlists or denylists are set (Read deny rules are scored in step 2).
   - Whether any cost-related settings are configured, such as `env.CLAUDE_CODE_MAX_TURNS` (the settings form of `--max-turns`), `promptCacheTtl`, or per-model effort in `modelSettings`.
-- Flag if Opus is the default for a project where Sonnet or Haiku would suffice for most tasks. Opus 5.5 is $4/$20 per 1M input/output tokens; Sonnet 5 ($2/$10) is 2x cheaper and Haiku 4.5 ($1/$5) is 4x cheaper.
+- Flag if Opus is the default for a project where Sonnet or Haiku would suffice for most tasks. Opus 5.5 is $4/$20 per 1M input/output tokens; Sonnet 5.5 ($2/$10, the same as legacy Sonnet 5) is 2x cheaper and Haiku 4.5 ($1/$5) is 4x cheaper.
 
 If it does not exist, note that the project is using global defaults.
 
@@ -113,7 +113,7 @@ Estimate the per-session cost using these assumptions:
 - MCP servers: leave them out of the per-turn number (no per-server figure is published) and say so; if tool search is off, note that the estimate is low because full tool schemas load up front
 - Base system prompt: ~2000 tokens per turn
 - Average output per turn: ~500 tokens
-- Use the pricing for the configured model (default to Opus 5.5 at $4/$20 per 1M input/output tokens if no model is set). Rates per 1M input/output: Opus 5.5 $4/$20, Sonnet 5 $2/$10, Haiku 4.5 $1/$5, Fable 5.1 $10/$50; legacy Opus 5 and Opus 4.x $5/$25, legacy Sonnet 4.6 and 4.5 $3/$15
+- Use the pricing for the configured model (default to Opus 5.5 at $4/$20 per 1M input/output tokens if no model is set). Rates per 1M input/output: Opus 5.5 $4/$20, Sonnet 5.5 $2/$10, Haiku 4.5 $1/$5, Fable 5.1 $10/$50; legacy Opus 5 and Opus 4.x $5/$25, legacy Sonnet 5 $2/$10, legacy Sonnet 4.6 and 4.5 $3/$15. The `sonnet` alias is Sonnet 5.5 on the Anthropic API but Sonnet 4.5 ($3/$15) on Bedrock, Google Cloud and Foundry, and Sonnet 4.6 ($3/$15) on Claude Platform on AWS
 
 Show the math briefly, then give the final estimate.
 

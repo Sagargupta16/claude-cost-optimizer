@@ -19,6 +19,8 @@ Mermaid flowcharts for key cost optimization decisions. These render natively on
 The current Claude model lineup, their positioning, and cost tiers. Mythos 5 is the limited-availability sibling of Fable 5 under [Project Glasswing](https://anthropic.com/glasswing) -- same specs and price, no safety classifiers.
 
 > **Opus 5.5** (`claude-opus-5-5`, released 2026-09-22) is the Opus flagship and Anthropic's recommended starting model for most workloads, at $4 / $20 -- 20% below Opus 5, which moved to legacy alongside Opus 4.8. It reads cache at $0.20 (0.05x). Fast Mode is Opus 5.5 ($8 / $40), Opus 5 and Opus 4.8 ($10 / $50) only, each at 2x its own base. Mythos Preview is **deprecated** -- retirement to be announced.
+>
+> **Sonnet 5.5** (`claude-sonnet-5-5`, released 2026-09-28) is the Sonnet flagship at Sonnet 5's $2 / $10, with the same cache rates and tokenizer, a 512-token cache floor (Sonnet 5 was 1,024) and no Fast Mode. Sonnet 5 moved to legacy.
 
 ```mermaid
 flowchart TB
@@ -32,7 +34,8 @@ flowchart TB
         opus7["Opus 4.7 (legacy)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking · Fast Mode removed"]
         opus6["Opus 4.6 (legacy)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Extended + adaptive · Fast Mode removed"]
         opus45["Opus 4.5<br/>$5 / $25 per 1M<br/>200K context · 64K output<br/>Extended thinking"]
-        sonnet5["Sonnet 5 (safe default)<br/>$2 / $10 per 1M<br/>50% cheaper than Opus 5.5<br/>Extended + adaptive thinking"]
+        sonnet55["Sonnet 5.5 (safe default)<br/>$2 / $10 per 1M<br/>50% cheaper than Opus 5.5<br/>Adaptive thinking · No Fast Mode"]
+        sonnet5["Sonnet 5 (legacy)<br/>$2 / $10 per 1M<br/>Superseded by Sonnet 5.5<br/>Extended + adaptive thinking"]
         sonnet["Sonnet 4.6<br/>$3 / $15 per 1M<br/>1M context · 64K output<br/>Extended + adaptive thinking"]
         sonnet45["Sonnet 4.5<br/>$3 / $15 per 1M<br/>200K context · 64K output<br/>Extended thinking"]
         haiku["Haiku 4.5 (budget)<br/>$1 / $5 per 1M<br/>200K context · 64K output<br/>Extended thinking"]
@@ -51,8 +54,8 @@ flowchart TB
     classDef preview fill:#e8d0f4,stroke:#7a4ac9,color:#222
 
     class fable51,opus55 flagship
-    class fable5,opus5,opus8,opus7,opus6,opus45,sonnet,sonnet45 snapshot
-    class sonnet5 default
+    class fable5,opus5,opus8,opus7,opus6,opus45,sonnet5,sonnet,sonnet45 snapshot
+    class sonnet55 default
     class haiku budget
     class mythos5,mythos preview
 ```
@@ -69,8 +72,9 @@ flowchart TB
 | Opus 4.7 | GA (legacy) | Pinned snapshots tuned to 4.7 | Fast Mode was removed: `speed: "fast"` now returns an error |
 | Opus 4.6 | GA (legacy) | Workloads tuned to the older tokenizer; stable snapshot | Fast Mode was removed *silently*: the request succeeds at standard speed and standard rates |
 | Opus 4.5 | GA | Pinned snapshots only | 200K context (not 1M); no Fast Mode; earliest retirement 2026-11-24 |
-| Sonnet 5 | GA | Everyday development (the safe default) | Stretched on complex architecture + long agentic runs |
-| Sonnet 4.6 | GA | Prompts tuned to this snapshot | Sonnet 5 is the current mid-tier and costs less ($2/$10 vs $3/$15) |
+| Sonnet 5.5 | **GA on every platform** (Anthropic API, Claude Platform on AWS, Bedrock, Google Cloud, Microsoft Foundry) | Everyday development (the safe default) at Sonnet 5's price, with a 512-token cache floor | Stretched on complex architecture + long agentic runs; `thinking: {type: "disabled"}` and forced tool use return 400; no Fast Mode; earliest retirement 2027-09-28 |
+| Sonnet 5 | GA (legacy) | Prompts tuned to this snapshot, or code that sends `thinking: {type: "disabled"}` or forced `tool_choice` (both rejected by Sonnet 5.5) | Sonnet 5.5 costs the same and caches from 512 tokens instead of 1,024; earliest retirement 2027-06-30 |
+| Sonnet 4.6 | GA | Prompts tuned to this snapshot | Sonnet 5.5 is the current mid-tier and costs less ($2/$10 vs $3/$15) |
 | Sonnet 4.5 | GA | Pinned snapshots only | 200K context (not 1M); earliest retirement 2026-09-29 |
 | Haiku 4.5 | GA | Formatting, renaming, simple edits, file lookups | Lacks reasoning depth for multi-file work; 200K context; 4,096-token cache floor |
 | Mythos 5 | Glasswing only | Fable 5's capabilities without safety classifiers (approved customers) | No self-serve access; use Fable 5.1 instead |
@@ -87,10 +91,10 @@ flowchart TD
     A[Start: evaluate task] --> B{"Complex architecture,<br/>long agentic run, or<br/>multi-file refactor?"}
     B -- Yes --> C["Use Opus 5.5<br/>$4 / $20 per 1M"]
     B -- No --> D{"Standard feature work,<br/>code review, or<br/>writing tests?"}
-    D -- Yes --> E["Use Sonnet 5<br/>$2 / $10 per 1M"]
+    D -- Yes --> E["Use Sonnet 5.5<br/>$2 / $10 per 1M"]
     D -- No --> F{"Simple fix, formatting,<br/>boilerplate, or<br/>file lookup?"}
     F -- Yes --> G["Use Haiku 4.5<br/>$1 / $5 per 1M"]
-    F -- No --> H["Not sure?<br/>Start with Sonnet 5"]
+    F -- No --> H["Not sure?<br/>Start with Sonnet 5.5"]
 
     C -. "latency-critical?" .-> C2["Enable Fast Mode<br/>on Opus 5.5, $8 / $40<br/>(2x rate, 2.5x OTPS)"]
     C -. "cost-sensitive?" .-> C3["Lower output_config.effort<br/>(default medium, thinking<br/>cannot be disabled)"]
@@ -114,7 +118,8 @@ flowchart TD
 | High | Opus 5.5 | $4 / $20 | Architecture design, complex debugging, large refactors, long agentic runs; cache reads at 0.05x |
 | High (Fast Mode) | Opus 5.5 | $8 / $40 | Latency-critical urgent work (2x premium, 2.5x output tokens/sec); legacy Opus 5 / 4.8 Fast Mode is $10 / $50 |
 | High (legacy) | Opus 5 / 4.8 / 4.7 / 4.6 | $5 / $25 | Pinned snapshots only; Opus 5.5 is 20% cheaper. Fast Mode is gone on 4.7 (errors) and 4.6 (silently runs standard) |
-| Medium | Sonnet 5 | $2 / $10 | Feature implementation, code review, test writing (permanent rate) |
+| Medium | Sonnet 5.5 | $2 / $10 | Feature implementation, code review, test writing; 512-token cache floor |
+| Medium (legacy) | Sonnet 5 | $2 / $10 | Pinned snapshots only (same permanent rate as Sonnet 5.5) |
 | Low | Haiku 4.5 | $1 / $5 | Formatting, renaming, boilerplate, lookups |
 
 > **Opus 5.5 caveat.** The posted rate is 20% below Opus 5, but thinking is always on -- `thinking: {type: "disabled"}` and `budget_tokens` both return a 400 -- and reasoning tokens bill as output. `output_config.effort` is the only control and defaults to `medium` (Opus 5 defaulted to `high`). Re-baseline after migrating: a request that omits effort thinks less than it did on Opus 5, but code that disabled thinking on Opus 5 now pays for thinking tokens. `max_tokens` caps thinking plus text combined, so raise it before running at high effort.
@@ -295,7 +300,7 @@ On legacy Opus 5 ($5 base, 0.1x cache hits) the same rows are $5.00, $0.50, $2.5
 > - Fast Mode **cannot** combine with Batch API or Priority Tier.
 > - Switching between Fast and Standard speeds invalidates the prompt cache (different speed prefixes don't share cache).
 > - Cache-write/hit multipliers DO stack on top of Fast Mode rates.
-> - Data residency (`inference_geo: "us"`) only applies to Opus 4.6, Sonnet 4.6, and all later models (Opus 5 and Opus 5.5 included) on Anthropic API and Claude Platform on AWS. Earlier models error if the parameter is set.
+> - Data residency (`inference_geo: "us"`) only applies to Opus 4.6, Sonnet 4.6, and all later models (Opus 5, Opus 5.5 and Sonnet 5.5 included) on Anthropic API and Claude Platform on AWS. Earlier models error if the parameter is set.
 > - **Not shown on the diagram:** extended thinking has no multiplier -- reasoning tokens simply bill as output at the normal rate. On Opus 5.5 thinking is always on and cannot be disabled, so code that disabled thinking on Opus 5 now bills thinking tokens as output.
 
 ### Minimum Cacheable Prompt Length
@@ -312,11 +317,12 @@ A `cache_control` block below the model's floor is **silently ignored**. No erro
 | Opus 4.7 | 2,048 tokens |
 | Opus 4.6 / Opus 4.5 | 4,096 tokens |
 | Opus 4.1 | 1,024 tokens |
-| Sonnet 5 / 4.6 / 4.5 | 1,024 tokens |
+| Sonnet 5.5 | 512 tokens |
+| Sonnet 5 (legacy) / 4.6 / 4.5 | 1,024 tokens |
 | Haiku 4.5 | 4,096 tokens |
 | Haiku 3.5 | 2,048 tokens |
 
-Size your cached prefix against the **highest** floor you route to. A 2,000-token prefix caches on Opus 5.5 and Sonnet 5 but not on Haiku 4.5, so a Haiku-first routing tier can quietly pay full price while your Opus tier looks fine.
+Size your cached prefix against the **highest** floor you route to. A 2,000-token prefix caches on Opus 5.5 and Sonnet 5.5 but not on Haiku 4.5, so a Haiku-first routing tier can quietly pay full price while your Opus tier looks fine.
 
 ---
 

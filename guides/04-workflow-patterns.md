@@ -748,7 +748,7 @@ Here is what a cost-optimized Claude Code session looks like in practice:
 | Approach | Turns | Avg Cost/Turn | Total |
 |----------|:-----:|:-------------:|:-----:|
 | Unoptimized (all Opus 5.5, no planning, no batching) | 25 | $0.096 | $2.40 |
-| Partially optimized (Sonnet 5 default, some planning) | 18 | $0.08 | $1.44 |
+| Partially optimized (Sonnet 5.5 default, some planning) | 18 | $0.08 | $1.44 |
 | Fully optimized (right models, planning, batching, /compact) | 12 | $0.06 | $0.72 |
 
 **Fully optimized is 70% cheaper** than the unoptimized approach, for the same end result. ($0.096 is the old $0.12 Opus 5 per-turn figure at Opus 5.5's 20% lower rate; on legacy Opus 5 the unoptimized session is $3.00 and the gap is 76%.) Even with Opus 5.5's $4/$20 pricing (vs the $15/$75 of the old Opus 4.1), disciplined workflows yield significant savings.

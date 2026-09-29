@@ -85,7 +85,7 @@ Anthropic's target is under **200 lines** per CLAUDE.md file; this guide aims fo
 
 **On Opus 5.5**, multiply these numbers by ~1.33x (Opus 5.5 input is $4/MTok vs Sonnet 4.6's $3/MTok; legacy Opus 5 / 4.8 / 4.7 / 4.6 at $5/MTok is ~1.67x). A 500-line CLAUDE.md on Opus 5.5 costs about $48.40/month just for the CLAUDE.md itself across 110 sessions ($60.50 on legacy Opus 5). **Opus 5.5 adds another ~20-35% on top** because its tokenizer (the same one shipped with Opus 4.7 and used by every Opus since) uses more tokens for the same text.
 
-One caching caveat that depends on size: a `cache_control` block is silently ignored -- no error, no discount -- if the prefix it marks is shorter than the model's minimum cacheable prompt. That floor is **512 tokens on Opus 5.5 and Opus 5**, down from 1,024 on Opus 4.8, 2,048 on Opus 4.7, and 4,096 on Opus 4.6. Sonnet 5 and Sonnet 4.6 sit at 1,024; Haiku 4.5 at 4,096. Practical effect: a ~100-line CLAUDE.md (~700 tokens) that was too short to cache on Opus 4.8 does cache on Opus 5.5 and Opus 5, while a 50-line one (~350 tokens) still caches on neither.
+One caching caveat that depends on size: a `cache_control` block is silently ignored -- no error, no discount -- if the prefix it marks is shorter than the model's minimum cacheable prompt. That floor is **512 tokens on Opus 5.5, Opus 5 and Sonnet 5.5**, down from 1,024 on Opus 4.8, 2,048 on Opus 4.7, and 4,096 on Opus 4.6. Sonnet 5 and Sonnet 4.6 sit at 1,024; Haiku 4.5 at 4,096. Practical effect: a ~100-line CLAUDE.md (~700 tokens) that was too short to cache on Opus 4.8 or Sonnet 5 does cache on Opus 5.5, Opus 5 and Sonnet 5.5, while a 50-line one (~350 tokens) still caches on none of them.
 
 ### What Belongs in CLAUDE.md
 
@@ -335,7 +335,7 @@ src/
 6. Post-deploy: verify monitoring dashboards
 ```
 
-**Token count: ~2,660 tokens per turn. Over 30 turns with 80% caching: ~$0.045 (Sonnet 5) / ~$0.077 (Opus 5.5)**
+**Token count: ~2,660 tokens per turn. Over 30 turns with 80% caching: ~$0.045 (Sonnet 5.5) / ~$0.077 (Opus 5.5)**
 
 ### After: 62 Lines (Optimized)
 
@@ -384,7 +384,7 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 - Squash merge, 1+ review required
 ```
 
-**Token count: ~434 tokens per turn. Over 30 turns with 80% caching: ~$0.007 (Sonnet 5) / ~$0.012 (Opus 5.5)**
+**Token count: ~434 tokens per turn. Over 30 turns with 80% caching: ~$0.007 (Sonnet 5.5) / ~$0.012 (Opus 5.5)**
 
 ### What Was Cut and Why
 
@@ -407,11 +407,11 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 |--------|:------:|:-----:|:-----------:|
 | Lines | 380 | 62 | **84% fewer** |
 | Tokens per turn | ~2,660 | ~434 | **84% fewer** |
-| 30-turn Sonnet 5 cost | $0.045 | $0.007 | **$0.037 saved/session** |
+| 30-turn Sonnet 5.5 cost | $0.045 | $0.007 | **$0.037 saved/session** |
 | 30-turn Opus 5.5 cost | $0.077 | $0.012 | **$0.064 saved/session** |
 | Monthly Opus 5.5 cost (110 sessions) | $8.43 | $1.37 | **$7.05 saved/month** |
 
-> Costs use the blended rate from [Guide 01](01-understanding-costs.md#key-formulas): 80% of tokens at the cache-hit price ($0.20/MTok on both Sonnet 5 and Opus 5.5) and 20% at full input price ($2 and $4/MTok).
+> Costs use the blended rate from [Guide 01](01-understanding-costs.md#key-formulas): 80% of tokens at the cache-hit price ($0.20/MTok on both Sonnet 5.5 and Opus 5.5) and 20% at full input price ($2 and $4/MTok).
 
 ---
 

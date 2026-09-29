@@ -45,7 +45,7 @@ No external dependencies. Pure Python 3.10+ stdlib.
 claude-rate -- Claude / AI setup audit
 ============================================================
 Project: /home/sagar/work/my-project
-Verified against Anthropic pricing as of: 2026-09-28
+Verified against Anthropic pricing as of: 2026-09-29
 
   CLAUDE.md                [############--------]  12/20  250 lines primary (over the 200-line guidance); ~3,223 tokens total across 1 file(s)
     ! 250 lines -- over Anthropic's 200-line guidance for CLAUDE.md. Longer files consume more context and reduce adherence. Move workflow-specific instructions into skills or path-scoped .claude/rules/ so they load on demand.
@@ -68,6 +68,7 @@ Estimated monthly cost (30 turns/session, 3 sessions/day, 22 days, 70% cache hit
   Opus 4.8       $ 2.79/session  ->  $ 184.10/month
   Opus 4.7       $ 2.79/session  ->  $ 184.10/month
   Opus 4.6       $ 2.07/session  ->  $ 136.37/month
+  Sonnet 5.5     $ 1.07/session  ->  $  70.91/month
   Sonnet 5       $ 1.07/session  ->  $  70.91/month
   Sonnet 4.6     $ 1.24/session  ->  $  81.82/month
   Haiku 4.5      $ 0.41/session  ->  $  27.27/month
@@ -154,7 +155,7 @@ jobs:
 ### Programmatic / JSON
 
 ```bash
-claude-rate . --json | jq '.grade, .cost_estimate."sonnet-5".per_month'
+claude-rate . --json | jq '.grade, .cost_estimate."sonnet-5-5".per_month'
 # "B"
 # 99.77
 ```
@@ -172,16 +173,17 @@ The web analyzer (built in [../../site/](../../site/), not yet live on the deplo
 
 ## Pricing data
 
-All cost estimates use Anthropic's published rates **verified 2026-09-28**:
+All cost estimates use Anthropic's published rates **verified 2026-09-29**:
 
 - Fable 5.1: $10/$50 per 1M tokens (1M context, most capable model); Fable 5: $10/$50 (legacy)
 - Opus 5.5: $4/$20 per 1M tokens (1M context, released 2026-09-22) -- Anthropic's recommended starting model for most workloads, and 20% below Opus 5
 - Opus 5 / 4.8 / 4.7 / 4.6: $5/$25 per 1M tokens (1M context, all legacy)
-- Sonnet 5: $2/$10 per 1M tokens (1M context) -- the permanent standard rate; the increase to $3/$15 was cancelled
+- Sonnet 5.5: $2/$10 per 1M tokens (1M context, released 2026-09-28) -- the current Sonnet flagship, same rate and tokenizer as Sonnet 5
+- Sonnet 5: $2/$10 per 1M tokens (1M context, legacy) -- the permanent standard rate; the increase to $3/$15 was cancelled
 - Sonnet 4.6: $3/$15 per 1M tokens (1M context, legacy)
 - Haiku 4.5: $1/$5 per 1M tokens (200K context)
 - Cache hit: three multipliers -- 0.1x base input on most models, 0.05x on Opus 5.5 ($0.20/1M), 0.025x on Fable 5.1 ($0.25/1M); 5m write: 1.25x; 1h write: 2x
-- Opus 5.5 / 5 / 4.8 / 4.7 cost estimates include the +35% tokenizer overhead; Fable 5.1, Fable 5 and Sonnet 5 include +30%
+- Opus 5.5 / 5 / 4.8 / 4.7 cost estimates include the +35% tokenizer overhead; Fable 5.1, Fable 5, Sonnet 5.5 and Sonnet 5 include +30%
 
 ### Opus 5.5 cost gotchas
 
@@ -194,6 +196,16 @@ Opus 5.5 is 20% cheaper per token than Opus 5 ($4/$20 vs $5/$25), but re-baselin
 - **Prompts written for an older model make the new one over-work.** In Anthropic's published runs, prompts written for Opus 4.8 cost 36% more per ticket on Opus 5 for no accuracy gain; audited, they were 14% cheaper and more accurate. Prune inherited instructions.
 - **Minimum cacheable prompt is 512 tokens** on Opus 5.5 and Opus 5 (1,024 on Opus 4.8, 2,048 on Opus 4.7, 4,096 on Opus 4.6). A `cache_control` block below the floor is silently ignored: no error, no `cache_creation_input_tokens`, full input price.
 
+### Sonnet 5.5 cost gotchas
+
+Sonnet 5.5 costs the same as Sonnet 5 ($2/$10) and uses the same tokenizer, so migrating is free at the posted rate. What still moves the bill:
+
+- **Adaptive thinking is on by default** (effort `high`) and reasoning bills as output at $10/1M. `thinking: {type: "disabled"}` and `budget_tokens` return a 400; send `thinking: {type: "between_tools"}` at `high` effort or below to stop up-front thinking on routine turns.
+- **Effort levels are recalibrated.** The same level does not produce the same amount of thinking as on Sonnet 5, so re-run your effort sweep. Anthropic's starting points: `high` in general, `medium` for well-specified agentic coding.
+- **Forced `tool_choice` (`any` / `tool`) returns a 400**, as do non-default `temperature` / `top_p` / `top_k`. Use `auto` with strict tool use or structured outputs.
+- **Minimum cacheable prompt is 512 tokens** (1,024 on Sonnet 5), so short system prompts that never cached on Sonnet 5 now do.
+- **In Claude Code, `sonnet` is Sonnet 5.5 only on the Anthropic API.** On Bedrock, Google Cloud and Foundry it is Sonnet 4.5 ($3/$15, 200K context), and on Claude Platform on AWS it is Sonnet 4.6 ($3/$15). Pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) or set `ANTHROPIC_DEFAULT_SONNET_MODEL`. Needs Claude Code v2.1.284 or later.
+
 ### Fast Mode
 
 `speed: "fast"` (with the `fast-mode-2026-02-01` beta header) is **Opus 5.5, Opus 5 and Opus 4.8 only**, at a flat **2x** of each model's base: $8/$40 on Opus 5.5, $10/$50 on the other two. The older 6x tier no longer exists. Opus 4.7 returns an error on `speed: "fast"` with no fallback, and Opus 4.6 accepts the field but silently runs at standard speed and standard rates (`usage.speed` comes back `"standard"`). Claude API and Managed Agents only (Opus 5.5: Claude API only, as a research preview); cannot combine with Batch or Priority Tier, and switching speeds invalidates the prompt cache.
@@ -202,6 +214,7 @@ Sources:
 - [platform.claude.com/docs/en/about-claude/pricing](https://platform.claude.com/docs/en/about-claude/pricing)
 - [platform.claude.com/docs/en/about-claude/models/overview](https://platform.claude.com/docs/en/about-claude/models/overview)
 - [platform.claude.com/docs/en/models/opus-5-5/overview](https://platform.claude.com/docs/en/models/opus-5-5/overview)
+- [platform.claude.com/docs/en/models/sonnet-5-5/overview](https://platform.claude.com/docs/en/models/sonnet-5-5/overview)
 
 ## Limitations
 

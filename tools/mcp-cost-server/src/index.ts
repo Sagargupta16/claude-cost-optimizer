@@ -8,7 +8,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 // -------------------------------------------------------------------
-// Pricing tables -- verified 2026-09-28
+// Pricing tables -- verified 2026-09-29
 //
 // cacheHitPerMillion has three multipliers: 0.1x input by default, 0.025x on
 // Fable 5.1 / Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok).
@@ -35,15 +35,17 @@ const PRICING: Record<string, ModelPricing> = {
   "opus-4.8": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 1024 },
   "opus-4.7": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 2048 },
   "opus-4.6": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 4096 },
-  // "sonnet" = Sonnet 5 at its permanent $2/$10 (the scheduled rise to $3/$15 on
-  // 2026-09-01 was cancelled); Sonnet 4.6 stays on the older $3/$15 tier
-  sonnet: { inputPerMillion: 2, outputPerMillion: 10, cacheHitPerMillion: 0.2, minCacheTokens: 1024 },
+  // "sonnet" = Sonnet 5.5 (released 2026-09-28): the same $2/$10 as Sonnet 5 but a
+  // 512-token cache floor. "sonnet-5" is legacy Sonnet 5 at its permanent $2/$10 (the
+  // scheduled rise to $3/$15 on 2026-09-01 was cancelled); Sonnet 4.6 stays at $3/$15
+  sonnet: { inputPerMillion: 2, outputPerMillion: 10, cacheHitPerMillion: 0.2, minCacheTokens: 512 },
+  "sonnet-5": { inputPerMillion: 2, outputPerMillion: 10, cacheHitPerMillion: 0.2, minCacheTokens: 1024 },
   "sonnet-4.6": { inputPerMillion: 3, outputPerMillion: 15, cacheHitPerMillion: 0.3, minCacheTokens: 1024 },
   haiku: { inputPerMillion: 1, outputPerMillion: 5, cacheHitPerMillion: 0.1, minCacheTokens: 4096 },
 };
 
 const MODEL_IDS = Object.keys(PRICING);
-const UNKNOWN_MODEL_HINT = `Use one of: ${MODEL_IDS.join(", ")} ("opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5, "fable" is Fable 5.1).`;
+const UNKNOWN_MODEL_HINT = `Use one of: ${MODEL_IDS.join(", ")} ("opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5.5, "sonnet-5" is legacy Sonnet 5, "fable" is Fable 5.1).`;
 
 // -------------------------------------------------------------------
 // Helpers
@@ -192,7 +194,7 @@ function sessionEstimate(args: {
   }
   if (model === "fable") {
     recommendations.push(
-      "Fable 5.1 costs 2.5x Opus 5.5 ($10/$50 vs $4/$20). Reserve it for demanding reasoning and long-horizon work; route routine work to Opus 5.5 or Sonnet 5."
+      "Fable 5.1 costs 2.5x Opus 5.5 ($10/$50 vs $4/$20). Reserve it for demanding reasoning and long-horizon work; route routine work to Opus 5.5 or Sonnet 5.5."
     );
   }
   if (model === "opus") {
@@ -200,7 +202,7 @@ function sessionEstimate(args: {
       "Opus 5.5 runs adaptive thinking always on (thinking disabled and budget_tokens both return 400), and reasoning tokens bill as output. Effort is the only control: it defaults to medium; lower output_config.effort for routine turns."
     );
     recommendations.push(
-      "Switching to Sonnet 5 for routine tasks saves 50% per token ($2/$10 vs $4/$20) with comparable quality for most coding work."
+      "Switching to Sonnet 5.5 for routine tasks saves 50% per token ($2/$10 vs $4/$20) with comparable quality for most coding work."
     );
   }
   if (model === "opus-5") {
@@ -308,7 +310,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             type: "string",
             enum: MODEL_IDS,
             description:
-              'Claude model (default: sonnet). "opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5, "fable" is Fable 5.1.',
+              'Claude model (default: sonnet). "opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5.5, "sonnet-5" is legacy Sonnet 5, "fable" is Fable 5.1.',
           },
           turns: {
             type: "number",
@@ -334,7 +336,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
             type: "string",
             enum: MODEL_IDS,
             description:
-              'Claude model (default: sonnet). "opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5, "fable" is Fable 5.1.',
+              'Claude model (default: sonnet). "opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5.5, "sonnet-5" is legacy Sonnet 5, "fable" is Fable 5.1.',
           },
           claude_md_lines: {
             type: "number",
@@ -352,7 +354,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: "compare_models",
       description:
-        "Compare cost across Fable 5.1, Fable 5, Opus 5.5, legacy Opus snapshots (Opus 5, 4.8, 4.7, 4.6), Sonnet 5, Sonnet 4.6, and Haiku 4.5 for a given token count. Shows which model is cheapest and savings percentages.",
+        "Compare cost across Fable 5.1, Fable 5, Opus 5.5, legacy Opus snapshots (Opus 5, 4.8, 4.7, 4.6), Sonnet 5.5, Sonnet 5, Sonnet 4.6, and Haiku 4.5 for a given token count. Shows which model is cheapest and savings percentages.",
       inputSchema: {
         type: "object" as const,
         properties: {

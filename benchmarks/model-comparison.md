@@ -1,6 +1,6 @@
 # Model Comparison Benchmarks
 
-> Opus 5.5 vs Sonnet 5 vs Haiku 4.5 across five common task types. Find the best cost-to-quality ratio for each kind of work.
+> Opus 5.5 vs Sonnet 5.5 vs Haiku 4.5 across five common task types. Find the best cost-to-quality ratio for each kind of work.
 
 ## Pricing Reference
 
@@ -13,11 +13,14 @@
 | Opus 4.8 (legacy) | $5.00 | $25.00 | 1.25x baseline |
 | Opus 4.7 (legacy) | $5.00 | $25.00 | 1.25x baseline |
 | Opus 4.6 (legacy) | $5.00 | $25.00 | 1.25x baseline |
-| Sonnet 5 | $2.00 | $10.00 | 2x cheaper |
+| Sonnet 5.5 (Sonnet flagship) | $2.00 | $10.00 | 2x cheaper |
+| Sonnet 5 (legacy) | $2.00 | $10.00 | 2x cheaper |
 | Sonnet 4.6 | $3.00 | $15.00 | ~1.3x cheaper |
 | Haiku 4.5 | $1.00 | $5.00 | 4x cheaper |
 
-> **Historical note**: The numbers in the task-type sections below were measured on Opus 4.6, Sonnet 4.6, and Haiku 4.5, and stay attributed to those models. On Opus 4.8, Opus 4.7, Opus 5, Opus 5.5, and Sonnet 5, expect ~20-35% higher token counts for identical prompts (new tokenizer, Opus 4.7 and later), which translates to 20-35% higher absolute costs for the same task at the same per-token rate. Fresh benchmark runs on Opus 5.5 and Sonnet 5 are welcome contributions.
+> **Historical note**: The numbers in the task-type sections below were measured on Opus 4.6, Sonnet 4.6, and Haiku 4.5, and stay attributed to those models. On Opus 4.8, Opus 4.7, Opus 5, Opus 5.5, Sonnet 5, and Sonnet 5.5, expect ~20-35% higher token counts for identical prompts (new tokenizer, Opus 4.7 and later), which translates to 20-35% higher absolute costs for the same task at the same per-token rate. Fresh benchmark runs on Opus 5.5 and Sonnet 5.5 are welcome contributions.
+>
+> **Sonnet 5.5 cost note**: Sonnet 5.5 (released 2026-09-28) posts the same $2/$10 as Sonnet 5 and uses the same tokenizer. Adaptive thinking is on by default (effort `high`; reasoning bills as output) and effort levels are recalibrated, so re-run your effort sweep rather than carrying a Sonnet 5 setting over. To stop up-front thinking on routine turns, send `thinking: {type: "between_tools"}` at `high` effort or below; `thinking: {type: "disabled"}` returns a 400. Fast Mode is not available.
 >
 > **Opus 5.5 cost note**: Opus 5.5 (released 2026-09-22) posts $4/$20, 20% below Opus 5, and reads cache at 0.05x base input. Adaptive thinking is **always on** (it cannot be disabled; reasoning bills as output) and effort defaults to `medium` (Opus 5: `high`), so re-baseline cost on your own tasks rather than scaling the Opus figures below by 0.8. Fast Mode is $8/$40 (2x its base).
 >
@@ -91,7 +94,7 @@ This task involves moderate complexity -- TypeScript generics, multiple interact
 
 | | Recommendation |
 |---------|----------------|
-| **Best Value** | Sonnet 5 -- 2x cheaper than Opus 5.5 per token ($2/$10 vs $4/$20), nearly equal quality (4/5), one minor fix |
+| **Best Value** | Sonnet 5.5 -- 2x cheaper than Opus 5.5 per token ($2/$10 vs $4/$20), nearly equal quality (4/5), one minor fix |
 | **Best Quality** | Opus 5.5 -- perfect output, zero iterations needed |
 | **Avoid** | Haiku 4.5 for complex components -- follow-up turns erode cost savings and quality suffers |
 
@@ -122,7 +125,7 @@ Bug investigation is where model intelligence matters most. The task requires re
 
 | | Recommendation |
 |---------|----------------|
-| **Best Value** | Sonnet 5 -- finds the primary issue quickly, reasonable cost, acceptable that it needs a nudge for the secondary issue |
+| **Best Value** | Sonnet 5.5 -- finds the primary issue quickly, reasonable cost, acceptable that it needs a nudge for the secondary issue |
 | **Best Quality** | Opus 5.5 -- finds both causes in a single investigation pass |
 | **Avoid** | Haiku 4.5 for debugging -- low accuracy means more developer time spent steering, which defeats the purpose |
 
@@ -153,7 +156,7 @@ Architecture planning requires the model to reason about system design, anticipa
 
 | | Recommendation |
 |---------|----------------|
-| **Best Value** | Sonnet 5 -- covers 90% of what Opus produces at 57% of the cost |
+| **Best Value** | Sonnet 5.5 -- covers 90% of what Opus produces at 57% of the cost |
 | **Best Quality** | Opus 5.5 -- the plan is production-ready without modification |
 | **Avoid** | Haiku 4.5 -- output requires so much developer augmentation that it saves neither time nor money |
 
@@ -194,7 +197,7 @@ Architecture planning requires the model to reason about system design, anticipa
 
 | | Recommendation |
 |---------|----------------|
-| **Best Value** | Sonnet 5 -- catches the high-impact issues at 56% of Opus's cost |
+| **Best Value** | Sonnet 5.5 -- catches the high-impact issues at 56% of Opus's cost |
 | **Best Quality** | Opus 5.5 -- catches subtle correctness issues that could become production bugs |
 | **Avoid** | Haiku 4.5 for security/correctness review -- missing critical issues makes it counterproductive |
 
@@ -224,7 +227,7 @@ Another way to look at it -- quality points per dollar:
 | Architecture planning | 15.4 | **11.1** | 7.9 |
 | Code review | 42.9 | **21.1** | 14.7 |
 
-> Higher is better. Haiku dominates for simple tasks. Sonnet wins for everything else on a quality-per-dollar basis. Opus is now much closer in cost to Sonnet, making it a more viable choice when quality matters -- the per-token premium of Opus 5.5 over Sonnet 5 is only 2x (it was ~1.7x for the $5/$25 Opus models over Sonnet 4.6, and 5x before that).
+> Higher is better. Haiku dominates for simple tasks. Sonnet wins for everything else on a quality-per-dollar basis. Opus is now much closer in cost to Sonnet, making it a more viable choice when quality matters -- the per-token premium of Opus 5.5 over Sonnet 5.5 is only 2x (it was ~1.7x for the $5/$25 Opus models over Sonnet 4.6, and 5x before that).
 
 ---
 
@@ -239,10 +242,10 @@ Is the task mechanical (rename, format, simple find-and-replace)?
     │   └── No
     │       ├── Is the task straightforward with clear requirements?
     │       │   ├── Yes → Use Haiku 4.5
-    │       │   └── No → Use Sonnet 5
+    │       │   └── No → Use Sonnet 5.5
     │       └── Are you on a tight budget?
-    │           ├── Yes → Use Sonnet 5 (with plan mode to reduce iterations)
-    │           └── No → Use Opus 5.5 (only 2x the per-token price of Sonnet 5)
+    │           ├── Yes → Use Sonnet 5.5 (with plan mode to reduce iterations)
+    │           └── No → Use Opus 5.5 (only 2x the per-token price of Sonnet 5.5)
 ```
 
 ### Practical Model Switching
@@ -254,6 +257,8 @@ In Claude Code, switch models per-task:
 claude --model haiku
 
 # Switch mid-session for a harder task (use /model command)
+# `sonnet` is Sonnet 5.5 on the Anthropic API but Sonnet 4.5 ($3/$15, 200K) on Bedrock,
+# Google Cloud and Foundry -- pin it there with ANTHROPIC_DEFAULT_SONNET_MODEL
 /model sonnet
 
 # Or start separate sessions per model
@@ -272,4 +277,4 @@ Assuming 80 tasks per month with the distribution: 30% simple, 25% component/fea
 | Always Haiku | $9.16 | Poor (for complex tasks) |
 | **Smart routing** (Haiku for simple, Sonnet for medium, Opus for critical) | **$23.90** | **Good to Excellent** |
 
-> Smart model routing saves **34%** versus always-Opus while maintaining high quality where it matters. Note that with current pricing, Opus 5.5 is only 2x more expensive per token than Sonnet 5, so the cost gap between strategies is narrower than it used to be. The main benefit of smart routing is using Haiku for simple tasks where all models perform equally.
+> Smart model routing saves **34%** versus always-Opus while maintaining high quality where it matters. Note that with current pricing, Opus 5.5 is only 2x more expensive per token than Sonnet 5.5, so the cost gap between strategies is narrower than it used to be. The main benefit of smart routing is using Haiku for simple tasks where all models perform equally.

@@ -16,7 +16,7 @@ export interface CostBreakdown {
   model: string;
 }
 
-/** Per-1M-token pricing verified 2026-09-28. */
+/** Per-1M-token pricing verified 2026-09-29. */
 export const PRICING: Record<string, { input: number; output: number }> = {
   fable: { input: 10, output: 50 },
   "fable-5": { input: 10, output: 50 },
@@ -26,9 +26,11 @@ export const PRICING: Record<string, { input: number; output: number }> = {
   "opus-4.8": { input: 5, output: 25 },
   "opus-4.7": { input: 5, output: 25 },
   "opus-4.6": { input: 5, output: 25 },
+  // "sonnet" is Sonnet 5.5 (released 2026-09-28), the same $2/$10 as Sonnet 5.
   // $2/$10 is Sonnet 5's permanent standard price -- the increase to $3/$15
   // scheduled for 2026-09-01 was cancelled. Sonnet 4.6 stays at $3/$15.
   sonnet: { input: 2, output: 10 },
+  "sonnet-5": { input: 2, output: 10 },
   "sonnet-4.6": { input: 3, output: 15 },
   haiku: { input: 1, output: 5 },
 };
@@ -49,6 +51,7 @@ export const CACHE_HIT_PRICING: Record<string, number> = {
   "opus-4.7": 0.5,
   "opus-4.6": 0.5,
   sonnet: 0.2,
+  "sonnet-5": 0.2,
   "sonnet-4.6": 0.3,
   haiku: 0.1,
 };
@@ -62,7 +65,8 @@ export const MODEL_LABELS: Record<string, string> = {
   "opus-4.8": "Opus 4.8 (legacy)",
   "opus-4.7": "Opus 4.7 (legacy)",
   "opus-4.6": "Opus 4.6 (legacy)",
-  sonnet: "Sonnet 5",
+  sonnet: "Sonnet 5.5",
+  "sonnet-5": "Sonnet 5 (legacy)",
   "sonnet-4.6": "Sonnet 4.6 (legacy)",
   haiku: "Haiku 4.5",
 };
@@ -81,7 +85,8 @@ export const MIN_CACHE_TOKENS: Record<string, number> = {
   "opus-4.8": 1024,
   "opus-4.7": 2048,
   "opus-4.6": 4096,
-  sonnet: 1024,
+  sonnet: 512,
+  "sonnet-5": 1024,
   "sonnet-4.6": 1024,
   haiku: 4096,
 };

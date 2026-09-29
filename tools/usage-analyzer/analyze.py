@@ -20,14 +20,15 @@ import os
 import sys
 from pathlib import Path
 
-# Claude model pricing per 1M tokens (verified 2026-09-28; Opus 5.5 released 2026-09-22)
+# Claude model pricing per 1M tokens (verified 2026-09-29; Sonnet 5.5 released 2026-09-28)
 # "fable" = Fable 5.1 (most capable, 2.5x Opus 5.5); "opus" = Opus 5.5, the
 # recommended default Opus at $4/$20 (20% below Opus 5); "opus-5" and
 # "opus-4.8"/"opus-4.7"/"opus-4.6" = legacy at $5/$25. Opus 5.5 runs adaptive
 # thinking ALWAYS ON (it cannot be disabled; effort defaults to medium), and Opus 5
 # runs it ON by default; either way reasoning tokens bill at the normal output rate.
-# The 4.7+ tokenizer (also used by Opus 4.8, Opus 5, Opus 5.5, Fable 5, Sonnet 5 and
-# Sonnet 4.6) consumes up to ~35% more tokens for the same source text.
+# "sonnet" = Sonnet 5.5 at $2/$10; "sonnet-5" = legacy Sonnet 5 at the same rate.
+# The 4.7+ tokenizer (also used by Opus 4.8, Opus 5, Opus 5.5, Fable 5, Sonnet 5.5,
+# Sonnet 5 and Sonnet 4.6) consumes up to ~35% more tokens for the same source text.
 # cache_hit has three multipliers: 0.1x input by default, 0.025x on Fable 5.1 /
 # Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok). Read the rate from
 # this table; never compute input * 0.1.
@@ -44,6 +45,7 @@ OPUS_4_5 = "opus-4.5"
 # API but still served on Bedrock and Google Cloud, so their logs still appear.
 OPUS_4_1 = "opus-4.1"
 SONNET = "sonnet"
+SONNET_5 = "sonnet-5"
 SONNET_4_6 = "sonnet-4.6"
 SONNET_4_5 = "sonnet-4.5"
 HAIKU = "haiku"
@@ -59,6 +61,7 @@ MODEL_PRICING = {
     OPUS_4_5: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     OPUS_4_1: {"input": 15.00, "output": 75.00, "cache_hit": 1.50},
     SONNET: {"input": 2.00, "output": 10.00, "cache_hit": 0.20},
+    SONNET_5: {"input": 2.00, "output": 10.00, "cache_hit": 0.20},
     SONNET_4_6: {"input": 3.00, "output": 15.00, "cache_hit": 0.30},
     SONNET_4_5: {"input": 3.00, "output": 15.00, "cache_hit": 0.30},
     HAIKU: {"input": 1.00, "output": 5.00, "cache_hit": 0.10},
@@ -123,9 +126,10 @@ def calculate_cost(
 #
 # Ordering carries meaning: Fable/Mythos 5.1 read cache at 0.025x while 5.0 reads at
 # 0.1x, so the two generations cannot share a pricing key and 5.1 must be tested
-# before the bare "fable"/"mythos" catch-all. Opus 5.5 and Sonnet 5 are the current
+# before the bare "fable"/"mythos" catch-all. Opus 5.5 and Sonnet 5.5 are the current
 # models, so they map to the plain "opus"/"sonnet" keys. "opus-5" is a substring of
-# "opus-5-5", so Opus 5.5 must be tested before legacy Opus 5.
+# "opus-5-5" (and "sonnet-5" of "sonnet-5-5"), so each 5.5 must be tested before
+# its legacy 5.
 _MODEL_MARKERS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("fable-5-1", "mythos-5-1"), FABLE),
     (("fable-5", "mythos-5"), FABLE_5),
@@ -142,6 +146,8 @@ _MODEL_MARKERS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("opus-4-1", "opus-4.1", "opus-4-2025"), OPUS_4_1),
     (("opus",), OPUS),
     (("haiku",), HAIKU),
+    (("sonnet-5-5", "sonnet-5.5", "sonnet5.5", "sonnet5-5"), SONNET),
+    (("sonnet-5", "sonnet5"), SONNET_5),
     (("sonnet-4-6", "sonnet-4.6"), SONNET_4_6),
     (("sonnet-4-5", "sonnet-4.5"), SONNET_4_5),
     (("sonnet",), SONNET),
@@ -442,15 +448,15 @@ def generate_recommendations(sessions: list[dict]) -> list[str]:
     if models_used == {"fable"}:
         recommendations.append(
             "You're using Fable 5.1 exclusively ($10/$50 -- 2.5x Opus 5.5). Route "
-            "standard work to Opus 5.5 or Sonnet 5 and keep Fable 5.1 for the "
+            "standard work to Opus 5.5 or Sonnet 5.5 and keep Fable 5.1 for the "
             "hardest reasoning to cut the per-token rate on those turns by 60% "
-            "(Opus 5.5, $4/$20) to 80% (Sonnet 5, $2/$10)."
+            "(Opus 5.5, $4/$20) to 80% (Sonnet 5.5, $2/$10)."
         )
     elif models_used == {"opus"}:
         recommendations.append(
-            "You're using Opus 5.5 exclusively. Consider Sonnet 5 for standard "
+            "You're using Opus 5.5 exclusively. Consider Sonnet 5.5 for standard "
             "coding tasks and Haiku 4.5 for simple lookups to save 50-75% per "
-            "token on those turns (Sonnet 5 is half the rate, Haiku 4.5 a "
+            "token on those turns (Sonnet 5.5 is half the rate, Haiku 4.5 a "
             "quarter). On the Opus 5.5 turns you keep, effort is the only "
             "thinking control (thinking cannot be disabled); it defaults to "
             "medium, and those reasoning tokens bill as output."
@@ -459,7 +465,7 @@ def generate_recommendations(sessions: list[dict]) -> list[str]:
         recommendations.append(
             "You're using legacy Opus 5 exclusively. Opus 5.5 is 20% cheaper per "
             "token ($4/$20 vs $5/$25), but thinking cannot be disabled there, so "
-            "re-baseline cost after migrating. Sonnet 5 costs 60% less per token "
+            "re-baseline cost after migrating. Sonnet 5.5 costs 60% less per token "
             "than Opus 5 for standard coding tasks."
         )
 

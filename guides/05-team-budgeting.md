@@ -92,7 +92,7 @@ Monthly Cost = (Simple Tasks x Simple Cost) +
 
 Where (per developer per day):
   Simple Tasks  = ~15-25 tasks/day   x $0.01 avg (Haiku 4.5)  = $0.15-0.25/day
-  Medium Tasks  = ~8-15 tasks/day    x $0.07 avg (Sonnet 5)    = $0.56-1.05/day
+  Medium Tasks  = ~8-15 tasks/day    x $0.07 avg (Sonnet 5.5)  = $0.56-1.05/day
   Complex Tasks = ~2-5 tasks/day     x $0.10 avg (Opus 5.5)    = $0.20-0.50/day
 
   Daily Total   = $0.91-1.80/day
@@ -113,7 +113,7 @@ Working days/month:           _____ (default: 22)
 
 Per Developer (daily averages):
   Simple tasks (Haiku 4.5):   _____ tasks x $0.01 = $_____ /day
-  Medium tasks (Sonnet 5):    _____ tasks x $0.07 = $_____ /day
+  Medium tasks (Sonnet 5.5):  _____ tasks x $0.07 = $_____ /day
   Complex tasks (Opus 5.5):   _____ tasks x $0.10 = $_____ /day
 
   Daily subtotal:             $_____ /day
@@ -401,19 +401,19 @@ When planning sprints, estimate Claude Code costs alongside development time:
 
 ```
 Feature: User notification preferences
-  - Frontend component (Sonnet 5, ~$0.10)
-  - API endpoint (Sonnet 5, ~$0.07)
+  - Frontend component (Sonnet 5.5, ~$0.10)
+  - API endpoint (Sonnet 5.5, ~$0.07)
   - Database migration (Haiku 4.5, ~$0.02)
-  - Unit tests (Sonnet 5, ~$0.10)
-  - Integration test (Sonnet 5, ~$0.07)
+  - Unit tests (Sonnet 5.5, ~$0.10)
+  - Integration test (Sonnet 5.5, ~$0.07)
   - Code review assist (Haiku 4.5, ~$0.03)
   Estimated Claude Code cost: ~$0.39
 
 Feature: Payment system overhaul
   - Architecture design (Opus 5.5, ~$0.22)
-  - 5 service refactors (Sonnet 5, ~$0.40)
-  - Database migration (Opus 5.5 plan + Sonnet 5 impl, ~$0.25)
-  - Test suite (Sonnet 5, ~$0.25)
+  - 5 service refactors (Sonnet 5.5, ~$0.40)
+  - Database migration (Opus 5.5 plan + Sonnet 5.5 impl, ~$0.25)
+  - Test suite (Sonnet 5.5, ~$0.25)
   - Security review (Opus 5.5, ~$0.16)
   Estimated Claude Code cost: ~$1.28
 ```
@@ -428,7 +428,7 @@ Feature: Payment system overhaul
 
 | Action | Impact |
 |--------|--------|
-| Set Sonnet 5 as the team default model | Prevents Opus overuse from day one |
+| Set Sonnet 5.5 as the team default model (pin `claude-sonnet-5-5`: outside the Anthropic API the `sonnet` alias means an older $3/$15 Sonnet, see [Guide 03](03-model-selection.md#the-sonnet-alias-depends-on-your-provider)) | Prevents Opus overuse from day one |
 | Share a standard CLAUDE.md template | Consistent costs across the team |
 | Create a shared command library | Standardized workflows, pre-set models |
 | Weekly informal cost review | Catch problems early |
@@ -505,7 +505,7 @@ Day 1: Setup
   [ ] Copy the team's standard CLAUDE.md to your project(s)
   [ ] Copy the team's permissions.deny Read(...) rules into .claude/settings.json
       (.claudeignore is not a Claude Code feature; Read deny rules replace it)
-  [ ] Set your default model to Sonnet 5 (not Opus)
+  [ ] Set your default model to Sonnet 5.5 (not Opus)
   [ ] Install the team's shared command library
 
 Day 1: Read These Guides (30 minutes total)

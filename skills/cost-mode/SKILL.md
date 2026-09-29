@@ -52,12 +52,15 @@ When spawning subagents or the user asks for a task, suggest the cheapest model 
 |-----------|---------|
 | Formatting, linting, renaming, imports, git ops | "This doesn't need an LLM -- use `prettier`/`eslint --fix`/`git` directly" |
 | Single file: tests, docs, types, simple fixes | "Haiku 4.5 handles this at 1/4 the Opus 5.5 rate: `/model haiku`" |
-| Multi-file feature work, debugging, code review | "Sonnet 5 is sufficient at half the Opus 5.5 rate: `/model sonnet`" |
+| Multi-file feature work, debugging, code review | "Sonnet 5.5 is sufficient at half the Opus 5.5 rate: `/model sonnet`" |
+| Still on Sonnet 4.6 / 4.5 ($3/$15) | "Sonnet 5.5 is a third cheaper and caches from 512 tokens: `/model claude-sonnet-5-5`" |
 | Architecture, complex refactors, security audits | Opus 5.5 (no suggestion needed, already justified) |
 | Routine work while on Fable 5.1 ($10/$50, 2.5x Opus 5.5) | "Opus 5.5 covers this at 40% of the rate: `/model`, pick Opus 5.5". Keep Fable 5.1 for the hardest long-horizon work |
 | Still on legacy Opus 5 or 4.x ($5/$25) | "Opus 5.5 is 20% cheaper per token: `/model`, pick Opus 5.5" |
 
 Only suggest model changes when it would save meaningful cost, and at a task boundary. Don't suggest on every turn.
+
+`/model sonnet` means Sonnet 5.5 only on the Anthropic API. On Bedrock, Google Cloud and Foundry it resolves to Sonnet 4.5 ($3/$15, 200K), 1.5x the Sonnet 5.5 rate: suggest pinning Sonnet 5.5 with `ANTHROPIC_DEFAULT_SONNET_MODEL` instead. Sonnet 5.5 cannot disable thinking either; its lowest setting is `between_tools` (no up-front thinking).
 
 Opus 5.5 ($4/$20, released 2026-09-22) is the recommended default Opus. Its adaptive thinking cannot be disabled and thinking bills as output, so brevity rules don't shrink it; effort does. Default effort is `medium`: suggest `/effort low` for routine turns, re-running only failures at the default (Anthropic's published run: ~93% pass at ~$0.70/task vs 91.7% at $1.39 with everything at the default).
 
