@@ -7,12 +7,14 @@
 # comment when bumping so the reason survives.
 overrides:
   # SSRF / trust-boundary bypasses: octal octet decoding, IPv4-mapped IPv6
-  # misclassification, CIDR-suffix suppression of special-use checks
-  ip-address: '>=10.3.1'
-  # host confusion via backslash authority introducer
-  fast-uri: '>=3.1.5'
+  # misclassification, CIDR-suffix suppression of special-use checks,
+  # cross-family isInSubnet() matches, unbounded Address6 parse diagnostic
+  ip-address: '>=10.7.1'
+  # host confusion via backslash authority introducer, host case normalization
+  # via percent-encoded octets, mailto header injection
+  fast-uri: '>=4.1.5'
   # CORS ReDoS, language-middleware DoS, memo() SSR cross-user disclosure,
-  # Connection-header leak in the proxy helper
-  hono: '>=4.12.34'
+  # Connection-header leak in the proxy helper, hono/jsx boundary XSS
+  hono: '>=4.13.7'
   # serve-static path traversal on Windows via encoded backslash
   '@hono/node-server': '>=1.19.15'
