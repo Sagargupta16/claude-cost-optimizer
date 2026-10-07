@@ -1,5 +1,9 @@
 {
   "name": "claude-cost-optimizer",
+  "owner": {
+    "name": "Sagar Gupta",
+    "url": "https://github.com/Sagargupta16"
+  },
   "plugins": [
     {
       "name": "cost-mode",
