@@ -51,7 +51,7 @@ When spawning subagents or the user asks for a task, suggest the cheapest model 
 | Task Type | Suggest |
 |-----------|---------|
 | Formatting, linting, renaming, imports, git ops | "This doesn't need an LLM -- use `prettier`/`eslint --fix`/`git` directly" |
-| Single file: tests, docs, types, simple fixes | "Haiku 4.5 handles this at 1/4 the Opus 5.5 rate: `/model haiku`" |
+| Single file: tests, docs, types, simple fixes | "Haiku 5.5 handles this at 1/40 the Opus 5.5 rate while the prompt stays under 100K tokens: `/model haiku`" |
 | Multi-file feature work, debugging, code review | "Sonnet 5.5 is sufficient at half the Opus 5.5 rate: `/model sonnet`" |
 | Still on Sonnet 4.6 / 4.5 ($3/$15) | "Sonnet 5.5 is a third cheaper and caches from 512 tokens: `/model claude-sonnet-5-5`" |
 | Architecture, complex refactors, security audits | Opus 5.5 (no suggestion needed, already justified) |
@@ -60,7 +60,9 @@ When spawning subagents or the user asks for a task, suggest the cheapest model 
 
 Only suggest model changes when it would save meaningful cost, and at a task boundary. Don't suggest on every turn.
 
-`/model sonnet` means Sonnet 5.5 only on the Anthropic API. On Bedrock, Google Cloud and Foundry it resolves to Sonnet 4.5 ($3/$15, 200K), 1.5x the Sonnet 5.5 rate: suggest pinning Sonnet 5.5 with `ANTHROPIC_DEFAULT_SONNET_MODEL` instead. Sonnet 5.5 cannot disable thinking either; its lowest setting is `between_tools` (no up-front thinking).
+`/model sonnet` and `/model haiku` mean Sonnet 5.5 and Haiku 5.5 only on the Anthropic API. On Bedrock, Google Cloud and Foundry they resolve to Sonnet 4.5 ($3/$15, 200K, deprecated) and Haiku 4.5 ($1/$5): suggest pinning with `ANTHROPIC_DEFAULT_SONNET_MODEL` / `ANTHROPIC_DEFAULT_HAIKU_MODEL` instead. Sonnet 5.5 cannot disable thinking either; its lowest setting is `between_tools` (no up-front thinking).
+
+Haiku 5.5 is priced by prompt length: $0.10/$0.50 up to 100,000 prompt tokens, $0.50/$2.50 above, on the whole request, and cache reads count toward the line. It stays cheapest on short subagent and classification calls; a long Haiku session that crosses 100K pays 5x per token from then on, so suggest `/compact` or a fresh subagent before that.
 
 Opus 5.5 ($4/$20, released 2026-09-22) is the recommended default Opus. Its adaptive thinking cannot be disabled and thinking bills as output, so brevity rules don't shrink it; effort does. Default effort is `medium`: suggest `/effort low` for routine turns, re-running only failures at the default (Anthropic's published run: ~93% pass at ~$0.70/task vs 91.7% at $1.39 with everything at the default).
 

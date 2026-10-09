@@ -1,6 +1,6 @@
 # Guide 08: Prompt Caching
 
-> **Prompt caching is the single largest automatic discount on your Claude Code bill.** It reduces input token costs by 90% on repeated content on most models -- **95% on Opus 5.5 (0.05x) and 97.5% on Fable 5.1 and Mythos 5.1 (0.025x)** -- and it happens without any configuration. Understanding how it works, what breaks it, and how to maximize hit rates can save you hundreds of dollars per month.
+> **Prompt caching is the single largest automatic discount on your Claude Code bill.** It reduces input token costs by 90% on repeated content on most models -- **95% on Opus 5.5 and Sonnet 5.5 (0.05x) and 97.5% on Fable 5.1 and Mythos 5.1 (0.025x)** -- and it happens without any configuration. Understanding how it works, what breaks it, and how to maximize hit rates can save you hundreds of dollars per month.
 
 ---
 
@@ -58,21 +58,37 @@ This is why caching is so powerful in Claude Code specifically. The structure of
 |-------|:-----------------------:|:-------------------:|:--------:|:-----------------------:|:------------------------:|
 | **Fable 5.1 / Mythos 5.1** | $10.00 | **$0.25** | **97.5% off** (0.025x) | $12.50 (1.25x) | $20.00 (2x) |
 | **Opus 5.5** | $4.00 | **$0.20** | **95% off** (0.05x) | $5.00 (1.25x) | $8.00 (2x) |
+| **Sonnet 5.5** | $2.00 | **$0.10** | **95% off** (0.05x) | $2.50 (1.25x) | $4.00 (2x) |
 | **Opus 5** (legacy) | $5.00 | $0.50 | **90% off** | $6.25 (1.25x) | $10.00 (2x) |
 | **Fable 5 / Mythos 5** (legacy) | $10.00 | $1.00 | **90% off** | $12.50 (1.25x) | $20.00 (2x) |
 | **Opus 4.8 (legacy) / 4.7 / 4.6** | $5.00 | $0.50 | **90% off** | $6.25 (1.25x) | $10.00 (2x) |
-| **Sonnet 5.5** | $2.00 | $0.20 | **90% off** | $2.50 (1.25x) | $4.00 (2x) |
 | **Sonnet 5** (legacy) | $2.00 | $0.20 | **90% off** | $2.50 (1.25x) | $4.00 (2x) |
-| **Sonnet 4.6 / 4.5** | $3.00 | $0.30 | **90% off** | $3.75 (1.25x) | $6.00 (2x) |
-| **Haiku 4.5** | $1.00 | $0.10 | **90% off** | $1.25 (1.25x) | $2.00 (2x) |
+| **Sonnet 4.6 / 4.5** (4.5 deprecated) | $3.00 | $0.30 | **90% off** | $3.75 (1.25x) | $6.00 (2x) |
+| **Haiku 5.5** (prompt <= 100K tokens) | $0.10 | **$0.01** | **90% off** (0.1x) | $0.125 (1.25x) | $0.20 (2x) |
+| **Haiku 5.5** (prompt > 100K tokens) | $0.50 | $0.05 | **90% off** (0.1x) | $0.625 (1.25x) | $1.00 (2x) |
+| **Haiku 4.5** (legacy) | $1.00 | $0.10 | **90% off** | $1.25 (1.25x) | $2.00 (2x) |
 
-> **There are now three cache-hit multipliers, not one.** Fable 5.1 and Mythos 5.1 read cache at **0.025x base input** ($0.25 per 1M) -- a 97.5% discount. Opus 5.5 reads at **0.05x** ($0.20 per 1M) -- a 95% discount. Every other model is still 0.1x (90% off). If you compute a cache rate anywhere in your own tooling as `input * 0.1`, that formula is now wrong on three models; read the per-model rate instead.
+> **There are now three cache-hit multipliers, not one.** Fable 5.1 and Mythos 5.1 read cache at **0.025x base input** ($0.25 per 1M) -- a 97.5% discount. Opus 5.5 and Sonnet 5.5 read at **0.05x** ($0.20 and $0.10 per 1M) -- a 95% discount; Sonnet 5.5 joined this group on 2026-10-07, when its cache read was cut from $0.20 to $0.10. Every other model is still 0.1x (90% off), Haiku 5.5 included, where the 0.1x applies to the request's own tier. If you compute a cache rate anywhere in your own tooling as `input * 0.1`, that formula is now wrong on four models; read the per-model rate instead.
 >
 > This also flips a planning default. Because a hit costs so little *relative to a miss* on Fable 5.1, losing the cache hurts far more than it does elsewhere, while a read is nearly free. For a 5-to-60-minute gap between turns, re-sending the previous request with `max_tokens: 0` to refresh the 5-minute entry is usually cheaper than paying the 2x write for the 1-hour TTL -- the keep-alive bills only a cheap cache read and no output tokens. (`max_tokens: 0` can't be combined with streaming, structured outputs, or Batches; where the request can't be reshaped, use the 1-hour TTL.)
 >
-> Absolute savings per 1M cached tokens: **$9.75 on Fable 5.1**, $9.00 on Fable 5, $3.80 on Opus 5.5, $4.50 on legacy Opus 5 / 4.x, $1.80 on Sonnet 5.5 and Sonnet 5.
+> Absolute savings per 1M cached tokens: **$9.75 on Fable 5.1**, $9.00 on Fable 5, $3.80 on Opus 5.5, $4.50 on legacy Opus 5 / 4.x, **$1.90 on Sonnet 5.5** ($2.00 - $0.10; it was $1.80 before the cut), $1.80 on Sonnet 5, and on Haiku 5.5 $0.09 at <= 100K prompt tokens ($0.10 - $0.01) or $0.45 above ($0.50 - $0.05).
 
-> Sonnet 5 is $2/$10 permanently (the increase to $3/$15 was cancelled), so its cache rates are $0.20 hit, $2.50 5-minute write, $4.00 1-hour write. The multipliers are unchanged -- only the base input price differs. Sonnet 5.5 (`claude-sonnet-5-5`, released 2026-09-28) launched at the identical $2/$10 and the same cache rates, with the same tokenizer.
+> Sonnet 5 is $2/$10 permanently (the increase to $3/$15 was cancelled), so its cache rates are $0.20 hit, $2.50 5-minute write, $4.00 1-hour write. The multipliers are unchanged -- only the base input price differs. Sonnet 5.5 (`claude-sonnet-5-5`, released 2026-09-28) launched at the same $2/$10 and the same cache rates, with the same tokenizer; on 2026-10-07 Anthropic cut its cache read to **$0.10 (0.05x)**, so it now reads cache at half Sonnet 5's price while the writes stay $2.50 / $4.00.
+
+> **Haiku 5.5 (`claude-haiku-5-5`, released 2026-10-07) caches per prompt-length tier.** It is the first model priced by prompt length: a request whose prompt is <= 100,000 tokens pays $0.10 input, $0.01 cache hit and $0.125 / $0.20 writes; a request over 100,000 tokens pays $0.50, $0.05 and $0.625 / $1.00 on all of it, and its output moves from $0.50 to $2.50. Each cache rate is the usual multiple of its own tier's input (0.1x hit, 1.25x / 2x writes).
+>
+> **The 100K threshold counts cache reads and cache writes**, so caching a big prefix does not get a request under it. Anthropic prices each request on its own, and a request over the threshold pays the higher prices even when part of its prompt is a cache hit:
+>
+> ```
+> 95,000 cached + 4,000 new = 99,000 prompt tokens  -> <= 100K tier
+>   95,000 x $0.01/1M + 4,000 x $0.10/1M = $0.00095 + $0.00040 = $0.00135
+>
+> 95,000 cached + 6,000 new = 101,000 prompt tokens -> > 100K tier
+>   95,000 x $0.05/1M + 6,000 x $0.50/1M = $0.00475 + $0.00300 = $0.00775
+> ```
+>
+> 2% more prompt tokens cost 5.7x more input, and every output token on that request bills at $2.50 instead of $0.50. In a long Claude Code session the cached history grows every turn, so a Haiku 5.5 conversation crosses into the higher tier as soon as the prefix plus the new turn passes 100K. Above the line Haiku 5.5 is still 4x cheaper per token than Sonnet 5.5, but 5x dearer than its own lower tier: `/compact` or start fresh before the prompt reaches 100K, and keep Haiku work to short calls.
 
 > Opus 5.5 (`claude-opus-5-5`, released 2026-09-22) is $4/$20 -- 20% below Opus 5 -- and Anthropic's models overview now says to "start with Claude Opus 5.5 for most workloads". Its cache rates are $0.20 hit, $5.00 5-minute write, $8.00 1-hour write. Opus 5 moved to legacy and keeps its $5/$25 price, the same as Opus 4.8, so the legacy Opus cache numbers in this guide are unchanged.
 
@@ -98,14 +114,15 @@ Caching does not kick in on short prompts. Each model has a minimum cacheable pr
 | **Sonnet 5.5** | **512** |
 | **Sonnet 5** (legacy) | 1,024 |
 | **Sonnet 4.6** | 1,024 |
-| **Sonnet 4.5** | 1,024 |
-| **Haiku 4.5** | 4,096 |
+| **Sonnet 4.5** (deprecated) | 1,024 |
+| **Haiku 5.5** | **512** |
+| **Haiku 4.5** (legacy) | 4,096 |
 | **Haiku 3.5** | 2,048 |
 
-**Opus 5 halved the threshold: 512 tokens, down from 1,024 on Opus 4.8, and Opus 5.5 keeps it at 512. Sonnet 5.5 does the same on the Sonnet tier: 512, down from Sonnet 5's 1,024.** Two consequences:
+**Opus 5 halved the threshold: 512 tokens, down from 1,024 on Opus 4.8, and Opus 5.5 keeps it at 512. Sonnet 5.5 does the same on the Sonnet tier: 512, down from Sonnet 5's 1,024. Haiku 5.5 goes furthest: 512, down from Haiku 4.5's 4,096.** Two consequences:
 
-- **Migrating up is strictly better.** A 700-token system prompt that never cached on Opus 4.8 or Sonnet 5 starts caching on Opus 5.5 (or Opus 5) or Sonnet 5.5 with no code change.
-- **Migrating down or sideways is the trap.** A prefix sized for Opus 5.5's 512-token floor silently stops caching on Sonnet 5 (1,024), Opus 4.7 (2,048), or Haiku 4.5 (4,096). The request still succeeds. You just quietly pay 10x on that segment.
+- **Migrating up is strictly better.** A 700-token system prompt that never cached on Opus 4.8, Sonnet 5 or Haiku 4.5 starts caching on Opus 5.5 (or Opus 5), Sonnet 5.5 or Haiku 5.5 with no code change.
+- **Migrating down or sideways is the trap.** A prefix sized for Opus 5.5's 512-token floor silently stops caching on Sonnet 5 (1,024), Opus 4.7 (2,048), or legacy Haiku 4.5 (4,096). The request still succeeds. You just quietly pay 10x on that segment.
 
 **How to check whether you actually got a cache.** Read the `usage` block on the response. If `cache_creation_input_tokens` and `cache_read_input_tokens` are both 0 while your `cache_control` block is set, your prefix was under the threshold and the marker was dropped.
 
@@ -119,7 +136,7 @@ Cached (8,000-token prefix, Haiku 4.5):
   usage: { cache_creation_input_tokens: 0, cache_read_input_tokens: 8000 }   turn 2+
 ```
 
-In Claude Code this rarely bites you: the ~3,500-token system prompt plus tool schemas clears every model's floor from turn 1. It matters when you build custom API tooling with small system prompts, or when you route the same prompt across models with different floors. Size your cacheable prefix against the **highest** floor you route to, not the lowest -- 4,096 tokens covers every current model.
+In Claude Code this rarely bites you: the ~3,500-token system prompt plus tool schemas clears every model's floor from turn 1. It matters when you build custom API tooling with small system prompts, or when you route the same prompt across models with different floors. Size your cacheable prefix against the **highest** floor you route to, not the lowest -- 512 tokens covers the current lineup (Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5), and 4,096 covers every model on the list, legacy Haiku 4.5 included.
 
 ### Cache Write vs Cache Hit
 
@@ -127,7 +144,7 @@ There are three possible states for input tokens:
 
 | State | Cost | When It Happens |
 |-------|:----:|-----------------|
-| **Cache hit** | 0.1x input price (0.05x on Opus 5.5, 0.025x on Fable 5.1 / Mythos 5.1) | Tokens match a cached prefix from a recent request |
+| **Cache hit** | 0.1x input price (0.05x on Opus 5.5 and Sonnet 5.5, 0.025x on Fable 5.1 / Mythos 5.1) | Tokens match a cached prefix from a recent request |
 | **Cache write** | 1.25x input price (5-min TTL) | Tokens processed for the first time and written to cache |
 | **Regular input** | 1x input price | Tokens that are not cached and not written to cache |
 
@@ -208,7 +225,7 @@ This means:
 
 Each model maintains its own cache. Switching from Sonnet to Opus (or vice versa) means the new model has no cached prefix -- everything is processed from scratch.
 
-Switching model also changes the minimum cacheable length. Moving from Opus 5.5 or Sonnet 5.5 (512) to Sonnet 5 (1,024) or Haiku 4.5 (4,096) can turn a previously-cached small prefix into one that never caches at all. See [Minimum Cacheable Prompt Length](#minimum-cacheable-prompt-length).
+Switching model also changes the minimum cacheable length. Moving from Opus 5.5, Sonnet 5.5 or Haiku 5.5 (512) to Sonnet 5 (1,024) or legacy Haiku 4.5 (4,096) can turn a previously-cached small prefix into one that never caches at all. See [Minimum Cacheable Prompt Length](#minimum-cacheable-prompt-length).
 
 ### 5. Switching Speed Mid-Session (Fast Mode)
 
@@ -300,7 +317,7 @@ Breakeven: 1 write + N hits = cost without caching
 You break even after just 1 cache hit following the initial write.
 ```
 
-On Opus 5.5 (hits at 0.05x) and Fable 5.1 / Mythos 5.1 (0.025x) each hit saves more, so the breakeven arrives even sooner.
+On Opus 5.5 and Sonnet 5.5 (hits at 0.05x) and Fable 5.1 / Mythos 5.1 (0.025x) each hit saves more, so the breakeven arrives even sooner.
 
 In other words: if you use the cached content even **once** after writing it, caching has already paid for itself. By the second cache hit, you are saving money. By the 10th hit, the savings are substantial.
 
@@ -623,7 +640,7 @@ With compacting before break:
 
 ## Key Takeaways
 
-1. **Prompt caching gives you a 90% discount on repeated input tokens -- 95% on Opus 5.5 and 97.5% on Fable 5.1 / Mythos 5.1.** In a typical multi-turn session, 80-90% of input tokens are cache hits. This is the largest automatic cost reduction in Claude Code.
+1. **Prompt caching gives you a 90% discount on repeated input tokens -- 95% on Opus 5.5 and Sonnet 5.5, and 97.5% on Fable 5.1 / Mythos 5.1.** In a typical multi-turn session, 80-90% of input tokens are cache hits. This is the largest automatic cost reduction in Claude Code.
 
 2. **Know the real cache breakers.** Switching models, changing effort (except on Opus 5.5 and Fable 5.1 with an API key or subscription), turning on fast mode (once per conversation), and MCP changes with tool search off all force a rebuild. Editing CLAUDE.md mid-session does not -- but the edit only applies after `/clear`, `/compact`, or restart. `/usage` shows a `Prompt cache (main)` line with your hit share and the likely cause of misses.
 
@@ -635,7 +652,9 @@ With compacting before break:
 
 6. **The difference between good and poor caching is $370+/month.** On Sonnet with 110 sessions/month, the gap between 90% and 0% cache hit rate is $371. Good caching hygiene is not optional -- it is one of the highest-ROI optimizations you can make.
 
-7. **Know your model's minimum cacheable prompt length.** Opus 5.5, Opus 5 and Sonnet 5.5 cache from 512 tokens, Opus 4.8 and Sonnet 5 from 1,024, Opus 4.7 from 2,048, Haiku 4.5 from 4,096. Below the floor, `cache_control` is silently ignored -- you pay full price every turn with no error. If you build custom API tooling, check `cache_read_input_tokens` in the `usage` block to confirm the cache is real.
+7. **Know your model's minimum cacheable prompt length.** Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5 cache from 512 tokens, Opus 4.8 and Sonnet 5 from 1,024, Opus 4.7 from 2,048, legacy Haiku 4.5 from 4,096. Below the floor, `cache_control` is silently ignored -- you pay full price every turn with no error. If you build custom API tooling, check `cache_read_input_tokens` in the `usage` block to confirm the cache is real.
+
+8. **On Haiku 5.5, cached tokens still count toward the 100K tier line.** A request over 100,000 prompt tokens, cache reads and writes included, pays $0.50/$2.50 and a $0.05 cache hit on the whole request instead of $0.10/$0.50 and $0.01. Keep Haiku 5.5 prompts under 100K, cached prefix and all.
 
 ---
 

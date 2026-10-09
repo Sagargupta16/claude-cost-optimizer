@@ -31,24 +31,42 @@ Claude Code offers three subscription tiers. These are for interactive use of Cl
 
 | Plan | Monthly Price | Annual Price (effective monthly) | Usage Relative to Pro | Per-Day Equivalent | Models Included |
 |------|:------------:|:--------------------------------:|:---------------------:|:------------------:|:---------------:|
-| **Pro** | $20/mo | **$200/yr (~$16.67/mo, 17% off)** | 1x (baseline) | ~$0.67/day (annual) | Opus 5.5, Sonnet 5.5, Haiku 4.5 |
-| **Max 5x** | $100/mo | (no annual rate currently published) | 5x Pro usage | ~$3.33/day | Opus 5.5, Sonnet 5.5, Haiku 4.5 |
-| **Max 20x** | $200/mo | (no annual rate currently published) | 20x Pro usage | ~$6.67/day | Opus 5.5, Sonnet 5.5, Haiku 4.5 |
+| **Pro** | $20/mo | **$200/yr (~$16.67/mo, 17% off)** | 1x (baseline) | ~$0.67/day (annual) | Opus 5.5, Sonnet 5.5, Haiku 5.5 |
+| **Max 5x** | $100/mo | (no annual rate currently published) | 5x Pro usage | ~$3.33/day | Opus 5.5, Sonnet 5.5, Haiku 5.5 |
+| **Max 20x** | $200/mo | (no annual rate currently published) | 20x Pro usage | ~$6.67/day | Opus 5.5, Sonnet 5.5, Haiku 5.5 |
 
 > **Annual Pro saves $40/year (17%)** -- $200 up front vs $240 paid monthly. If you'll use Claude Code for more than ~10 months in a year, annual is the cheaper choice.
+
+### Monthly API Credits on Max and Team
+
+Since 2026-10-07, Max and Team plans include a monthly credit for Anthropic's developer products:
+
+| Plan | Monthly API credit |
+|------|:------------------:|
+| **Max 5x** | $100 |
+| **Max 20x** | $200 |
+| **Team, Standard seat** | $20 per seat |
+| **Team, Premium seat** | $100 per seat |
+
+- **What it pays for**: the Claude API (in the Claude Console only), Claude Managed Agents, the Claude Agent SDK and the playground. It does **not** pay for Claude Code or for extra usage in the Claude apps, and it cannot be spent on Bedrock, Google Cloud, Microsoft Foundry or Claude Platform on AWS.
+- **No rollover**: credits expire at the end of each billing cycle. A month you don't use them is a month they are gone.
+- **Team pooling**: Team credits are pooled per month and capped at **$500**. The cap is reached at 25 Standard seats ($500 / $20) or 5 Premium seats ($500 / $100); seats beyond that add no credit.
+- **Eligibility**: new subscribers can claim after 7 days. Free, Pro and Enterprise are not eligible.
+
+What it changes: on Max, the plan now prepays part of an API bill you may already have. If you run your own scripts or pipelines on the Claude API through the Console, your out-of-pocket API spend drops by up to the credit -- $100 a month on Max 5x, $200 on Max 20x. It does **not** stretch your Claude Code allowance and does not lower the cost of interactive Claude Code work, which the credit cannot touch.
 
 ### What All Plans Include
 
 - CLI access (Claude Code terminal interface)
 - Desktop app access (macOS, Windows, Linux)
 - Mobile app access (iOS, Android)
-- Access to all current model tiers (Opus 5.5, Sonnet 5.5, Haiku 4.5, plus legacy Opus 5/4.8/4.7/4.6 and Sonnet 5/4.6); Sonnet 5.5 needs Claude Code v2.1.284 or later
+- Access to all current model tiers (Opus 5.5, Sonnet 5.5, Haiku 5.5, plus legacy Opus 5/4.8/4.7/4.6, Sonnet 5/4.6 and Haiku 4.5); Sonnet 5.5 needs Claude Code v2.1.284 or later, and the `haiku` alias reaches Haiku 5.5 from v2.1.293
 - Automatic prompt caching, with a **one-hour cache TTL on the main conversation** while you are within plan usage (API-key users, and subscribers once they draw on usage credits, get five minutes), so a long break costs a subscriber less -- see [Guide 08](08-prompt-caching.md#how-claude-code-picks-the-cache-ttl)
 - All Claude Code features (tool use, file editing, subagents, MCP servers, plugins, agent skills)
 
 ### What Plans Do NOT Include
 
-- Anthropic API access (separate billing, pay-per-token)
+- Anthropic API access beyond the monthly API credit (separate billing, pay-per-token; Max includes $100 or $200 a month of Console API credit, Pro includes none -- see [Monthly API Credits on Max and Team](#monthly-api-credits-on-max-and-team))
 - Batch API (50% discount, API-only)
 - Fast Mode (Opus 5.5 at $8/$40, Opus 5 and Opus 4.8 at $10/$50 -- each 2x its own base; research preview on the API. Opus 4.7 errors on `speed: "fast"`, Opus 4.6 silently runs standard; the old 6x tier no longer exists)
 - Server-side tools billed separately (web search $10/1k, code execution $0.05/hour beyond 1,550 free hours)
@@ -89,7 +107,7 @@ Not all tokens are equal when it comes to your plan allowance. More capable mode
 
 | Model | Relative Allowance Cost | Practical Impact |
 |-------|:-----------------------:|-----------------|
-| **Haiku 4.5** | Lowest | Stretches your plan the furthest |
+| **Haiku 5.5** | Lowest | Stretches your plan the furthest. API rate $0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above; thinking is on by default (effort `medium`) and Claude Code cannot turn it off |
 | **Sonnet 5.5** | Medium | Good balance of capability and allowance efficiency |
 | **Opus 5.5** | Highest | Burns through allowance fastest (Opus-4.7-generation tokenizer, up to ~35% more tokens than pre-4.7 models for the same text, plus thinking is always on and cannot be disabled) |
 
@@ -99,7 +117,7 @@ Not all tokens are equal when it comes to your plan allowance. More capable mode
 
 Opus 5.5 (released 2026-09-22) changes the burn-rate picture in a way that matters more on a subscription than on the API, because you cannot see the bill move:
 
-- **Thinking is always on.** Anthropic's costs page says it plainly: "You can't turn off thinking on Opus 5.5 or the Fable models." Those reasoning tokens are billed and counted as **output**. If you had thinking disabled on Opus 5, the same task now consumes more allowance on Opus 5.5.
+- **Thinking is always on.** Anthropic's costs page says it plainly: "You can't turn off thinking on Opus 5.5, Sonnet 5.5, Haiku 5.5, or the Fable models, which always use extended thinking." Those reasoning tokens are billed and counted as **output**. If you had thinking disabled on Opus 5, the same task now consumes more allowance on Opus 5.5.
 - **Effort level is the only throttle, and its default dropped.** Effort runs low/medium/high/xhigh/max and defaults to `medium` on Opus 5.5 (Opus 5 defaulted to `high`), so a request that omits effort thinks less than it did on Opus 5. Use `/effort` to go lower for routine work. `MAX_THINKING_TOKENS` does not help here: it only affects fixed-budget models, and adaptive models ignore it.
 - **Changing effort is cache-safe on Opus 5.5.** On a subscription (or an API key), effort changes on Opus 5.5 and Fable 5.1 keep the prompt cache, so dropping to `low` mid-session does not cost a cache rebuild.
 - **Output runs longer on Opus 5 than on 4.8.** If you are still on legacy Opus 5: it writes more than 4.8 for the same prompt and self-verifies, so any carried-over "double-check your work" instruction in your CLAUDE.md pays twice -- delete those lines.
@@ -175,7 +193,7 @@ Set Haiku as your default model and only switch up when needed:
 
 ```bash
 # In your Claude Code settings or CLAUDE.md:
-# "Default to Haiku 4.5 for all tasks. Only use Sonnet for component creation,
+# "Default to Haiku 5.5 for all tasks. Only use Sonnet for component creation,
 # bug fixes involving multiple files, and test writing. Only use Opus for
 # architecture decisions, complex debugging, and multi-file refactoring."
 ```
@@ -368,7 +386,9 @@ The Batch API offers 50% off standard rates for non-time-sensitive workloads. Th
 | Sonnet 5.5 (output) | $10.00/MTok | $5.00/MTok | 50% |
 | Sonnet 5, legacy (output) | $10.00/MTok | $5.00/MTok | 50% |
 | Sonnet 4.6 (output) | $15.00/MTok | $7.50/MTok | 50% |
-| Haiku 4.5 (output) | $5.00/MTok | $2.50/MTok | 50% |
+| Haiku 5.5, prompt <= 100K (output) | $0.50/MTok | $0.25/MTok | 50% |
+| Haiku 5.5, prompt > 100K (output) | $2.50/MTok | $1.25/MTok | 50% |
+| Haiku 4.5, legacy (output) | $5.00/MTok | $2.50/MTok | 50% |
 
 **5. Your usage is extremely light**
 
@@ -395,6 +415,8 @@ These are rough estimates -- actual break-even depends on your model mix, sessio
 | Max 20x ($200) | ~$200 worth of API tokens/month | < 15-20 Sonnet sessions/day |
 
 > **Note**: Claude Code adds overhead beyond raw token costs (system prompts, tool schemas, conversation management). The subscription absorbs this overhead, so the effective break-even is lower than raw token math suggests. Most interactive developers get better value from subscriptions.
+
+> **Max API credits change the comparison only for Console API spend.** The break-even above is about Claude Code, and the monthly credit ($100 on Max 5x, $200 on Max 20x) cannot be spent on Claude Code. Where it matters is if you also pay for the Claude API through the Console: Max then costs you the plan price minus whatever of the credit you use. Max 5x with $60 of monthly Console API usage costs $100 - $60 = $40 more than the API bill you already had; with $100 or more of usage, Max 5x adds nothing on top. The credit does not roll over, so unused credit is not savings, and API traffic on Bedrock, Google Cloud, Foundry or Claude Platform on AWS does not count.
 
 > **Opus 5.5 moves this break-even in both directions -- re-measure.** Its posted price is $4/$20, 20% below Opus 5's $5/$25, which pulls API-side cost down. But thinking is always on (it cannot be disabled) and reasoning tokens bill as output at $20/MTok. If your API-side estimate was built with thinking off, your real per-session output spend on Opus 5.5 is higher than that estimate -- so you cross the subscription break-even at fewer sessions per day than the table above implies. If you simply omitted effort on Opus 5, the new `medium` default thinks less than Opus 5's `high` did. Re-measure against actual Opus 5.5 usage before concluding that API billing is cheaper for you. On the API you can claw cost back by lowering the effort level; on a subscription the same lever stretches your allowance instead.
 
@@ -572,12 +594,12 @@ Some developers get the best value by combining a subscription for interactive w
 
 **Pattern 1: Subscription for coding + API for CI/CD**
 - Claude Code Max 5x for daily interactive development
-- Anthropic API with Haiku for automated PR review in CI pipelines
+- Anthropic API with Haiku 5.5 for automated PR review in CI pipelines (keep each request under 100K prompt tokens)
 - Batch API with Sonnet for nightly code quality scans
 
 **Pattern 2: Subscription for interactive + API for batch processing**
 - Claude Code Pro for interactive exploratory work
-- Batch API with Haiku for large-scale data processing, migration scripts, or documentation generation
+- Batch API with Haiku 5.5 for large-scale data processing, migration scripts, or documentation generation
 
 **Pattern 3: Subscription for team + API for shared tooling**
 - Each developer on Claude Code Max 5x
@@ -596,6 +618,8 @@ Monthly Cost Tracking:
 │   └── Ad-hoc API calls:           ~$5/mo
 └── Total: ~$145/mo
 ```
+
+With the Max 5x monthly API credit, the ~$45 of API usage above is covered if it runs on the Claude API through the Claude Console: out-of-pocket drops from ~$145 to $100, and the other $55 of credit ($100 - $45) expires unused at the end of the cycle. If the CI/CD job runs Claude Code itself (for example `claude -p` in a pipeline) rather than calling the API, or goes through Bedrock, Google Cloud, Foundry or Claude Platform on AWS, the credit does not cover it.
 
 Review this breakdown monthly. If your API costs consistently exceed $100, consider whether those workloads could be handled within a higher subscription tier, or whether the API's per-token billing is genuinely more efficient for those specific tasks.
 
@@ -676,7 +700,7 @@ If rate limits are trending up but productivity is flat, you need better optimiz
 
 6. **Review your plan monthly.** Check rate-limit frequency, model usage mix, and productivity trends. Both upgrading too late and staying on an oversized plan cost you money.
 
-7. **The hybrid approach (subscription + API) works well for developers who do both interactive coding and automated pipeline work.** Track both costs separately and review the split monthly.
+7. **The hybrid approach (subscription + API) works well for developers who do both interactive coding and automated pipeline work.** Track both costs separately and review the split monthly. On Max, the monthly API credit ($100 on Max 5x, $200 on Max 20x; Team $20 / $100 per seat, pooled and capped at $500) pays the first part of your Console API bill -- but not Claude Code, and it does not roll over.
 
 8. **On any plan, the optimization fundamentals still apply.** Keep CLAUDE.md lean, use Plan Mode, leverage subagents, start new sessions for new tasks, and run `/compact` regularly. These strategies compound whether you are on Pro or Max 20x.
 

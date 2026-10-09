@@ -60,22 +60,22 @@ This uses Claude only as a command runner (minimal output tokens) rather than a 
 
 ## Tier 1: Cheap Model for Simple Tasks
 
-Tasks that need some reasoning but not deep analysis. Haiku 4.5 at $1/$5 per 1M tokens handles these well.
+Tasks that need some reasoning but not deep analysis. Haiku 5.5 handles these at $0.10/$0.50 per 1M tokens up to 100K prompt tokens, $0.50/$2.50 above. The 100K counts the whole prompt, cached history included, so Tier 1 means short, self-contained calls: at or under the line Haiku 5.5 is 40x cheaper per token than Opus 5.5, above it only 8x. Anthropic positions it for high-volume, latency-sensitive work such as classification, extraction, routing and subagent tasks.
 
 ### Tier 1 Tasks
 
-| Task | Why Haiku works | Cost vs Opus 5.5 |
+| Task | Why Haiku works | Cost vs Opus 5.5 (Haiku 5.5, prompt <= 100K) |
 |------|----------------|:------------:|
-| Write a single unit test | Pattern-based, one file | 4x cheaper |
-| Add error handling to a function | Wrap in try/catch, type errors | 4x cheaper |
-| Write a docstring/JSDoc | Read function, describe it | 4x cheaper |
-| Create a simple component | Boilerplate + props | 4x cheaper |
-| Explain what a function does | Reading comprehension | 4x cheaper |
-| Fix a typo in code | Find and replace with context | 4x cheaper |
-| Add TypeScript types to JS | Mechanical inference | 4x cheaper |
-| Generate a config file | Template with project-specific values | 4x cheaper |
-| Write a commit message | Summarize a diff | 4x cheaper |
-| Translate error message | Simple text transformation | 4x cheaper |
+| Write a single unit test | Pattern-based, one file | 40x cheaper |
+| Add error handling to a function | Wrap in try/catch, type errors | 40x cheaper |
+| Write a docstring/JSDoc | Read function, describe it | 40x cheaper |
+| Create a simple component | Boilerplate + props | 40x cheaper |
+| Explain what a function does | Reading comprehension | 40x cheaper |
+| Fix a typo in code | Find and replace with context | 40x cheaper |
+| Add TypeScript types to JS | Mechanical inference | 40x cheaper |
+| Generate a config file | Template with project-specific values | 40x cheaper |
+| Write a commit message | Summarize a diff | 40x cheaper |
+| Translate error message | Simple text transformation | 40x cheaper |
 
 ### How to Stay in Tier 1
 
@@ -95,6 +95,8 @@ Focus on edge cases and error paths. Keep tests concise.
 ```
 
 Then delegate to haiku: `claude --model haiku -p "/test src/utils/parser.ts"`
+
+The `haiku` alias means Haiku 5.5 only on the Anthropic API (Claude Code v2.1.293+). On Claude Platform on AWS, Bedrock, Google Cloud and Foundry it still resolves to legacy Haiku 4.5 at $1/$5, 10x Haiku 5.5's per-token rate up to 100K prompt tokens; pin `ANTHROPIC_DEFAULT_HAIKU_MODEL` to `claude-haiku-5-5` (Bedrock: `anthropic.claude-haiku-5-5`) there.
 
 ---
 
@@ -140,7 +142,8 @@ Is the task deterministic?
 └── NO → Does it need deep reasoning?
          (multi-file, architecture, debugging complex state)
          │
-         ├── NO → Tier 1: Haiku 4.5 ($1/$5) or Sonnet 5.5 ($2/$10)
+         ├── NO → Tier 1: Haiku 5.5 ($0.10/$0.50 up to 100K prompt
+         │         tokens) or Sonnet 5.5 ($2/$10)
          │         Single file? Haiku.
          │         Multi-file but straightforward? Sonnet.
          │
@@ -167,7 +170,7 @@ A developer who runs 90 tasks/day (3 sessions x 30 turns):
 
 The biggest win is Tier 0. Every task you handle with a CLI tool instead of an API call is effectively free.
 
-> These figures take the earlier $5/$25 Opus 5 estimate ($8.55/day all-Opus) and scale the Opus share by 0.8 for Opus 5.5's $4/$20, which is 20% cheaper per token; the Haiku and Sonnet shares are unchanged. On legacy Opus 5 the same three rows were $188.10, $137.94 and $82.72 a month. They do **not** account for thinking: on Opus 5.5 it is always on and reasoning tokens bill as output at $20/MTok. The default effort is `medium`, so lower it further for routine Tier 2 work -- and routing down to Tier 0 and Tier 1 still removes the most cost.
+> These figures take the earlier $5/$25 Opus 5 estimate ($8.55/day all-Opus) and scale the Opus share by 0.8 for Opus 5.5's $4/$20, which is 20% cheaper per token; the Haiku and Sonnet shares are unchanged. On legacy Opus 5 the same three rows were $188.10, $137.94 and $82.72 a month. The Haiku share is still the Haiku 4.5 estimate. On Haiku 5.5 (prompts up to 100K tokens) the same task costs roughly 7.7x less (10x cheaper per token, divided by ~1.3 for its larger token count), which takes the manual-switching Haiku share from about $0.28 to $0.04 a day and that row from $5.07 to about $4.82 a day ($106 a month): $5.07 - 0.7 x $6.84 = $5.07 - $4.788 = $0.282; $0.282 / 7.7 = $0.0366; $4.788 + $0.0366 = $4.8246 a day; x 22 days = $106.14. The three-tier row falls too, by an amount that depends on how its Tier 1 share splits between Haiku and Sonnet. They do **not** account for thinking: on Opus 5.5 it is always on and reasoning tokens bill as output at $20/MTok. The default effort is `medium`, so lower it further for routine Tier 2 work -- and routing down to Tier 0 and Tier 1 still removes the most cost.
 
 ---
 
@@ -268,7 +271,7 @@ TIER 0 -- $0 (skip the LLM)
 ├── Tests:         jest, pytest (just running them)
 └── Git:           commit, branch, rebase
 
-TIER 1 -- Haiku 4.5 $1/$5 or Sonnet 5.5 $2/$10
+TIER 1 -- Haiku 5.5 $0.10/$0.50 (prompt up to 100K) or Sonnet 5.5 $2/$10
 ├── Single unit test writing
 ├── Docstrings and comments
 ├── Simple component creation

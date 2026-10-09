@@ -5,7 +5,7 @@ A lightweight VS Code extension that shows estimated token count and Claude API 
 ## Features
 
 - **Status bar token count**: Shows `~1,247 tokens | $0.004` for the active file, updated in real time as you type.
-- **Estimate Current File**: Detailed breakdown of input/output costs across all Claude model tiers (Fable 5.1, Opus 5.5, Sonnet 5.5, legacy Fable/Opus/Sonnet snapshots including Sonnet 5, Haiku 4.5).
+- **Estimate Current File**: Detailed breakdown of input/output costs across all Claude model tiers (Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5, legacy Fable/Opus/Sonnet/Haiku snapshots including Sonnet 5 and Haiku 4.5).
 - **Estimate CLAUDE.md Per-Turn Cost**: Finds all CLAUDE.md files in the workspace and calculates how much they add to each turn of a Claude Code session. Warns when the file is too small to be cacheable on the selected model.
 - **Check Project Configuration**: Audits your workspace for CLAUDE.md and .claude/settings.json, including file-read exclusions (`Read(...)` rules under `permissions.deny`). Reports missing files and suggests improvements. A `.claudeignore` file is not read by Claude Code -- it appears nowhere in Claude Code's documentation -- so move its patterns into `permissions.deny`.
 - **CLAUDE.md size warning**: The status bar turns yellow when a CLAUDE.md file exceeds the configured line threshold, since large instruction files increase per-turn costs.
@@ -47,7 +47,7 @@ Open the command palette (`Ctrl+Shift+P` / `Cmd+Shift+P`) and search for:
 
 | Setting | Default | Description |
 |---------|---------|-------------|
-| `claudeCost.defaultModel` | `sonnet` | Model for cost estimation: `fable` (Fable 5.1), `fable-5`, `opus` (Opus 5.5), `opus-5`, `opus-4.8`, `opus-4.7`, `opus-4.6`, `sonnet` (Sonnet 5.5), `sonnet-5`, `sonnet-4.6`, or `haiku` |
+| `claudeCost.defaultModel` | `sonnet` | Model for cost estimation: `fable` (Fable 5.1), `fable-5`, `opus` (Opus 5.5), `opus-5`, `opus-4.8`, `opus-4.7`, `opus-4.6`, `sonnet` (Sonnet 5.5), `sonnet-5`, `sonnet-4.6`, `haiku` (Haiku 5.5), or `haiku-4.5` (legacy Haiku 4.5) |
 | `claudeCost.showInStatusBar` | `true` | Show the token count status bar item |
 | `claudeCost.claudeMdWarningThreshold` | `150` | Line count above which CLAUDE.md triggers a warning |
 
@@ -63,7 +63,7 @@ This is fast and dependency-free, with roughly 10-15% variance compared to the a
 
 ## Pricing Data
 
-Costs are based on Claude API pricing as of 2026-09-29:
+Costs are based on Claude API pricing as of 2026-10-09:
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Min cacheable prompt |
 |-------|:---------------------:|:----------------------:|:--------------------:|
@@ -76,15 +76,17 @@ Costs are based on Claude API pricing as of 2026-09-29:
 | Opus 4.6, legacy (alias: `opus-4.6`) | $5.00 | $25.00 | 4,096 |
 | Sonnet 5.5 (alias: `sonnet`) | $2.00 | $10.00 | 512 |
 | Sonnet 5, legacy (alias: `sonnet-5`) | $2.00 | $10.00 | 1,024 |
-| Haiku 4.5 (alias: `haiku`) | $1.00 | $5.00 | 4,096 |
+| Haiku 5.5 (alias: `haiku`), prompt <= 100K tokens | $0.10 | $0.50 | 512 |
+| Haiku 5.5 (alias: `haiku`), prompt > 100K tokens | $0.50 | $2.50 | 512 |
+| Haiku 4.5, legacy (alias: `haiku-4.5`) | $1.00 | $5.00 | 4,096 |
 
-The `opus` alias points at Opus 5.5 (released 2026-09-22), Anthropic's recommended default, at $4/$20 -- 20% below Opus 5. Opus 5, 4.8, 4.7, and 4.6 stay in the table as legacy snapshots at $5/$25 so you can price an older pinned model, not because you should pick one. The `sonnet` alias points at Sonnet 5.5 (released 2026-09-28), the current Sonnet flagship at the same $2/$10 as Sonnet 5, which stays as a legacy snapshot under `sonnet-5`.
+The `opus` alias points at Opus 5.5 (released 2026-09-22), Anthropic's recommended default, at $4/$20 -- 20% below Opus 5. Opus 5, 4.8, 4.7, and 4.6 stay in the table as legacy snapshots at $5/$25 so you can price an older pinned model, not because you should pick one. The `sonnet` alias points at Sonnet 5.5 (released 2026-09-28), the current Sonnet flagship at the same $2/$10 as Sonnet 5, which stays as a legacy snapshot under `sonnet-5`. The `haiku` alias points at Haiku 5.5 (released 2026-10-07): $0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above. The extension prices each request at its own tier: a file, or a per-turn estimate, whose prompt is over 100,000 tokens pays the higher rates for input and output. Legacy Haiku 4.5 stays under `haiku-4.5` at $1/$5.
 
-Cache reads have three multipliers: 0.1x base input by default, 0.025x on Fable 5.1, and 0.05x on Opus 5.5 ($0.20/MTok).
+Cache reads have three multipliers: 0.1x base input by default, 0.025x on Fable 5.1, and 0.05x on Opus 5.5 ($0.20/MTok) and Sonnet 5.5 ($0.10/MTok).
 
 Sonnet 5 is $2/$10 permanently -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15.
 
-**Minimum cacheable prompt.** A `cache_control` block on a prefix shorter than the listed floor is silently ignored: no error, no `cache_creation_input_tokens`, and full input price on every turn. "Estimate CLAUDE.md Per-Turn Cost" adds a note when your CLAUDE.md falls below the floor for the selected model. Watch this on Haiku 4.5 especially -- its 4,096-token floor is 8x Opus 5.5's, so a CLAUDE.md that caches fine on Opus quietly pays full price on Haiku.
+**Minimum cacheable prompt.** A `cache_control` block on a prefix shorter than the listed floor is silently ignored: no error, no `cache_creation_input_tokens`, and full input price on every turn. "Estimate CLAUDE.md Per-Turn Cost" adds a note when your CLAUDE.md falls below the floor for the selected model. Watch this on legacy Haiku 4.5 especially -- its 4,096-token floor is 8x Opus 5.5's (Haiku 5.5's is 512), so a CLAUDE.md that caches fine on Opus quietly pays full price on Haiku 4.5.
 
 > **Opus 5.5 note.** Opus 5.5 runs adaptive thinking always on and reasoning tokens bill as output. The per-turn output figure here assumes a flat 500 tokens, which is a floor rather than an average. Thinking cannot be disabled on Opus 5.5 (`thinking: {type: "disabled"}` returns a 400), so lower `output_config.effort` for routine turns -- it defaults to `medium`. On legacy Opus 5, setting `thinking` to disabled is legal only at effort `high` or below.
 

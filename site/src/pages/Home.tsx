@@ -60,7 +60,7 @@ const levers = [
   {
     title: 'Model routing',
     savings: '~80%',
-    description: 'Haiku is 4x cheaper than Opus 5.5 per token. Route simple tasks down.',
+    description: 'Haiku 5.5 is 40x cheaper than Opus 5.5 per token while the prompt stays under 100K tokens. Route simple tasks down.',
     source: 'RouteLLM',
     link: 'https://arxiv.org/pdf/2406.18665',
   },

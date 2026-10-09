@@ -16,7 +16,7 @@ export interface CostBreakdown {
   model: string;
 }
 
-/** Per-1M-token pricing verified 2026-09-29. */
+/** Per-1M-token pricing verified 2026-10-09. */
 export const PRICING: Record<string, { input: number; output: number }> = {
   fable: { input: 10, output: 50 },
   "fable-5": { input: 10, output: 50 },
@@ -32,15 +32,31 @@ export const PRICING: Record<string, { input: number; output: number }> = {
   sonnet: { input: 2, output: 10 },
   "sonnet-5": { input: 2, output: 10 },
   "sonnet-4.6": { input: 3, output: 15 },
-  haiku: { input: 1, output: 5 },
+  // "haiku" is Haiku 5.5 (released 2026-10-07): $0.10/$0.50 up to 100,000 prompt
+  // tokens; LONG_PROMPT_PRICING holds the rates above that. Haiku 4.5 is legacy.
+  haiku: { input: 0.1, output: 0.5 },
+  "haiku-4.5": { input: 1, output: 5 },
+};
+
+/**
+ * Prompt-length tiers. A request whose prompt is over `threshold` tokens,
+ * cache reads and writes included, pays these rates on the whole request.
+ * Only Haiku 5.5 has one.
+ */
+export const LONG_PROMPT_PRICING: Record<
+  string,
+  { threshold: number; input: number; output: number; cacheHit: number }
+> = {
+  haiku: { threshold: 100_000, input: 0.5, output: 2.5, cacheHit: 0.05 },
 };
 
 /**
  * Cache-read price per 1M tokens.
  *
  * Three multipliers: 0.1x base input by default, 0.025x on Fable 5.1
- * ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok). Read this table rather
- * than multiplying input by 0.1.
+ * ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok) and Sonnet 5.5
+ * ($0.10/MTok since 2026-10-07). Read this table rather than multiplying
+ * input by 0.1.
  */
 export const CACHE_HIT_PRICING: Record<string, number> = {
   fable: 0.25,
@@ -50,10 +66,11 @@ export const CACHE_HIT_PRICING: Record<string, number> = {
   "opus-4.8": 0.5,
   "opus-4.7": 0.5,
   "opus-4.6": 0.5,
-  sonnet: 0.2,
+  sonnet: 0.1,
   "sonnet-5": 0.2,
   "sonnet-4.6": 0.3,
-  haiku: 0.1,
+  haiku: 0.01,
+  "haiku-4.5": 0.1,
 };
 
 /** Friendly display names for each model tier. */
@@ -68,7 +85,8 @@ export const MODEL_LABELS: Record<string, string> = {
   sonnet: "Sonnet 5.5",
   "sonnet-5": "Sonnet 5 (legacy)",
   "sonnet-4.6": "Sonnet 4.6 (legacy)",
-  haiku: "Haiku 4.5",
+  haiku: "Haiku 5.5",
+  "haiku-4.5": "Haiku 4.5 (legacy)",
 };
 
 /**
@@ -88,7 +106,8 @@ export const MIN_CACHE_TOKENS: Record<string, number> = {
   sonnet: 512,
   "sonnet-5": 1024,
   "sonnet-4.6": 1024,
-  haiku: 4096,
+  haiku: 512,
+  "haiku-4.5": 4096,
 };
 
 /**
@@ -116,13 +135,18 @@ export function estimateTokens(text: string): number {
 
 /**
  * Calculate cost in USD for a given token count, model, and direction.
+ *
+ * `promptTokens` is the size of the request's prompt and picks the price tier
+ * on a tiered model (Haiku 5.5); it defaults to `tokens`.
  */
 export function calculateCost(
   tokens: number,
   model: string,
-  direction: "input" | "output"
+  direction: "input" | "output",
+  promptTokens: number = tokens
 ): number {
-  const pricing = PRICING[model];
+  const tier = LONG_PROMPT_PRICING[model];
+  const pricing = tier && promptTokens > tier.threshold ? tier : PRICING[model];
   if (!pricing) {
     return 0;
   }
@@ -147,7 +171,7 @@ export function estimatePerTurnCost(
 
   // Rough average output per turn -- 500 tokens covers a typical response
   const avgOutputTokens = 500;
-  const outputEstimatePerTurn = calculateCost(avgOutputTokens, model, "output");
+  const outputEstimatePerTurn = calculateCost(avgOutputTokens, model, "output", tokens);
 
   const totalPerTurn = inputCostPerTurn + outputEstimatePerTurn;
   const totalForSession = inputCostPerTurn * turns + outputEstimatePerTurn * turns;

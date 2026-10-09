@@ -15,7 +15,7 @@ Analyze the current session and report on cost efficiency. Be concise -- this co
    - Approximate input tokens consumed (including CLAUDE.md overhead per turn)
    - Approximate output tokens generated
    - Which model has been used (Haiku/Sonnet/Opus)
-   - Price it per 1M input/output tokens: Opus 5.5 $4/$20, Sonnet 5.5 $2/$10, Haiku 4.5 $1/$5, Fable 5.1 $10/$50 (legacy Opus 5 and Opus 4.x $5/$25, legacy Sonnet 5 $2/$10). This is an estimate; `/usage` shows the session's real total cost.
+   - Price it per 1M input/output tokens: Opus 5.5 $4/$20, Sonnet 5.5 $2/$10, Haiku 5.5 $0.10/$0.50 up to 100K prompt tokens and $0.50/$2.50 above (each request priced by its own prompt length), Fable 5.1 $10/$50 (legacy Opus 5 and Opus 4.x $5/$25, legacy Sonnet 5 $2/$10, legacy Haiku 4.5 $1/$5). This is an estimate; `/usage` shows the session's real total cost.
 
 3. **Cost patterns identified**: Flag any of these wasteful patterns if they occurred:
    - Full file reads when partial reads would suffice

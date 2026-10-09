@@ -26,13 +26,16 @@ except ImportError:
     sys.exit(1)
 
 
-# Claude model pricing per 1M tokens (verified 2026-09-29; Sonnet 5.5 released 2026-09-28)
+# Claude model pricing per 1M tokens (verified 2026-10-09; Haiku 5.5 released 2026-10-07)
 # NOTE: 1M context on Fable 5.1/Fable 5/Opus 5.5/Opus 5/Opus 4.8/4.7/4.6/Sonnet 5.5/Sonnet 5/Sonnet 4.6
 # is billed at standard rates (no long-context premium). The old "2x over 200K" pricing
 # only applied to Opus 4.1 and older.
 # NOTE: cache_hit has three multipliers: 0.1x input by default, 0.025x on Fable 5.1 /
-# Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok). Never derive a cache
-# rate as input * 0.1.
+# Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok) and Sonnet 5.5
+# ($0.10/MTok since 2026-10-07). Never derive a cache rate as input * 0.1.
+# NOTE: Haiku 5.5 is priced by prompt length. "long_prompt" holds the rates a
+# request pays when its prompt is over "threshold" tokens; calculate_cost picks
+# the tier from the size of one request, not from a multi-turn total.
 MODEL_PRICING = {
     "fable": {
         "input": 10.00,
@@ -109,12 +112,12 @@ MODEL_PRICING = {
     "sonnet": {
         "input": 2.00,
         "output": 10.00,
-        "cache_hit": 0.20,
+        "cache_hit": 0.10,
         "name": "Sonnet 5.5",
         "note": (
             "Current Sonnet-tier flagship (released 2026-09-28). Same $2/$10 and "
-            "tokenizer as Sonnet 5, so migrating is free at the posted rate; half the "
-            "price of Opus 5.5. Minimum cacheable prompt drops to 512 tokens. Adaptive "
+            "tokenizer as Sonnet 5, with cache reads at $0.10 (0.05x, cut from $0.20 on "
+            "2026-10-07), half Sonnet 5's; half the price of Opus 5.5. Minimum cacheable prompt drops to 512 tokens. Adaptive "
             "thinking on by default (effort defaults to high, recalibrated); thinking "
             "disabled returns 400, the lowest setting is between_tools. Batch $1/$5."
         ),
@@ -137,7 +140,36 @@ MODEL_PRICING = {
         "cache_hit": 0.30,
         "name": "Sonnet 4.6 (legacy)",
     },
-    "haiku": {"input": 1.00, "output": 5.00, "cache_hit": 0.10, "name": "Haiku 4.5"},
+    "haiku": {
+        "input": 0.10,
+        "output": 0.50,
+        "cache_hit": 0.01,
+        "name": "Haiku 5.5",
+        "long_prompt": {
+            "threshold": 100_000,
+            "input": 0.50,
+            "output": 2.50,
+            "cache_hit": 0.05,
+        },
+        "note": (
+            "Current Haiku (released 2026-10-07). Priced by prompt length: $0.10/$0.50 "
+            "up to 100,000 prompt tokens, $0.50/$2.50 above, on the whole request. "
+            "Counts here use cl100k; Haiku 5.5 counts ~30% more tokens than Haiku 4.5, "
+            "so treat a prompt near 100K as over the line. 1M context, 512-token cache "
+            "floor, adaptive thinking (effort defaults to medium). Batch $0.05/$0.25 in "
+            "the low tier."
+        ),
+    },
+    "haiku_4_5": {
+        "input": 1.00,
+        "output": 5.00,
+        "cache_hit": 0.10,
+        "name": "Haiku 4.5 (legacy)",
+        "note": (
+            "Legacy since the Haiku 5.5 launch (not deprecated). 200K context, 4,096-token "
+            "cache floor. Haiku 5.5 is 10x cheaper per token up to 100K prompt tokens."
+        ),
+    },
     "fast_mode": {
         "input": 8.00,
         "output": 40.00,
@@ -166,7 +198,8 @@ MODEL_PRICING = {
         "cache_hit": 0.25,
         "name": "Mythos 5.1",
         "note": (
-            "Fable 5.1 under Project Glasswing: same specs and pricing, including the "
+            "Fable 5.1 for organizations verified through Anthropic's verification "
+            "programs (e.g. the Cyber Verification Program): same specs and pricing, including the "
             "$0.25/MTok (0.025x) cache read. Unlike Mythos 5 it runs access-program "
             "safeguards, so refusals can occur. Listed for reference only. "
             "(Mythos 5 reads at $1.00; Mythos Preview is deprecated.)"
@@ -222,10 +255,25 @@ def format_cost(cost: float) -> str:
     return f"${cost:.2f}"
 
 
-def calculate_cost(token_count: int, model: str, direction: str = "input") -> float:
-    """Calculate cost for a given token count and model."""
-    price_per_million = MODEL_PRICING[model][direction]
-    return (token_count / 1_000_000) * price_per_million
+def rate_for(model: str, direction: str, prompt_tokens: int) -> float:
+    """Per-1M rate a request of `prompt_tokens` pays (Haiku 5.5 has two tiers)."""
+    info = MODEL_PRICING[model]
+    tier = info.get("long_prompt")
+    if tier and prompt_tokens > tier["threshold"]:
+        return tier[direction]
+    return info[direction]
+
+
+def calculate_cost(
+    token_count: int, model: str, direction: str = "input", prompt_tokens: int | None = None
+) -> float:
+    """Calculate cost for a given token count and model.
+
+    `prompt_tokens` is the size of one request and picks the price tier on a
+    tiered model; it defaults to `token_count` (a single request).
+    """
+    request = token_count if prompt_tokens is None else prompt_tokens
+    return (token_count / 1_000_000) * rate_for(model, direction, request)
 
 
 def read_input(source: str) -> str:
@@ -314,7 +362,7 @@ def print_cost_table(token_count: int, model_filter: str | None = None):
 
     for key, info in models.items():
         cost = calculate_cost(token_count, key, "input")
-        price_label = "${:.2f}".format(info["input"])
+        price_label = "${:.2f}".format(rate_for(key, "input", token_count))
         print(
             f"  {info['name']:<14} {c(GREEN, format_cost(cost)):>22} "
             f"{c(DIM, price_label):>23}"
@@ -339,7 +387,7 @@ def print_per_turn_table(token_count: int, turns: int, model_filter: str | None 
     print(f"  {'':.<14} {'':.<12} {'':.<12}")
 
     for key, info in models.items():
-        total_cost = calculate_cost(total_tokens, key, "input")
+        total_cost = calculate_cost(total_tokens, key, "input", prompt_tokens=token_count)
         per_turn_cost = calculate_cost(token_count, key, "input")
         print(
             f"  {info['name']:<14} "
@@ -388,7 +436,9 @@ def main():
             "Show cost for a specific model only (default: show all). "
             "'opus' is Opus 5.5, the recommended default Opus. Use 'opus_5', "
             "'opus_4_8', 'opus_4_7', or 'opus_4_6' for legacy Opus pricing. "
-            "'sonnet' is Sonnet 5.5; 'sonnet_5' is legacy Sonnet 5 at the same rate. Use "
+            "'sonnet' is Sonnet 5.5; 'sonnet_5' is legacy Sonnet 5 at the same rate. "
+            "'haiku' is Haiku 5.5 (tiered at 100K prompt tokens); 'haiku_4_5' is legacy "
+            "Haiku 4.5. Use "
             "'fast_mode' for Opus 5.5 Fast Mode ($8/$40) or 'fast_mode_opus_5' for "
             "Opus 5 / 4.8 Fast Mode ($10/$50); both are 2x their own base rate (the "
             "old 6x tier no longer exists)."
@@ -435,7 +485,7 @@ def main():
                 entry["per_turn_tokens"] = token_count
                 entry["total_tokens"] = token_count * args.per_turn
                 entry["total_cost"] = calculate_cost(
-                    token_count * args.per_turn, key, "input"
+                    token_count * args.per_turn, key, "input", prompt_tokens=token_count
                 )
                 entry["turns"] = args.per_turn
             result["costs"][key] = entry

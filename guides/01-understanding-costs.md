@@ -24,7 +24,7 @@
 
 Every interaction with Claude Code consumes tokens. Tokens are the fundamental billing unit -- roughly 1 token per 4 characters of English text, or about 0.75 words per token. Code tends to be slightly less dense: a typical line of code is around 8-12 tokens.
 
-### Current Model Pricing (verified 2026-09-29)
+### Current Model Pricing (verified 2026-10-09)
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M) | 5m Cache Write | 1h Cache Write | Context Window | Max Output |
 |-------|:---------------------:|:----------------------:|:---------------------:|:--------------:|:--------------:|:--------------:|:----------:|
@@ -37,11 +37,13 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K |
 | Opus 4.1 (retired 2026-08-05, still on Bedrock + Google Cloud) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
-| **Sonnet 5.5** (latest Sonnet) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1M | 128K |
+| **Sonnet 5.5** (latest Sonnet) | $2.00 | $10.00 | **$0.10** | $2.50 | $4.00 | 1M | 128K |
 | **Sonnet 5** (legacy) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | see note | see note |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K |
-| **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
-| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
+| **Sonnet 4.5** (deprecated; retirement scheduled for 2026-11-30) | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
+| **Haiku 5.5** (latest Haiku), prompt <= 100K tokens | $0.10 | $0.50 | $0.01 | $0.125 | $0.20 | 1M | 128K |
+| **Haiku 5.5**, prompt > 100K tokens | $0.50 | $2.50 | $0.05 | $0.625 | $1.00 | 1M | 128K |
+| **Haiku 4.5** (legacy) | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
 | **Opus 5.5 (Fast Mode)** | $8.00 (2x) | $40.00 (2x) | N/A | -- | -- | 1M (included) | 128K |
 | **Opus 5 / 4.8 (Fast Mode)** | $10.00 (2x) | $50.00 (2x) | N/A | -- | -- | 1M (included) | 128K |
 
@@ -69,7 +71,7 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 >
 > **Fable 5** (legacy, GA 2026-06-09): Anthropic's Mythos-class tier above Opus at **2.5x Opus 5.5's rates** ($10/$50; 2x legacy Opus 5). Always-on adaptive thinking, no Fast Mode, Batch supported ($5/$25), 30-day data retention required. Safety classifiers can refuse a request (`stop_reason: "refusal"`) -- pre-output refusals are not billed. From a cost standpoint, treat Fable 5 as a deliberate splurge for the hardest tasks, not a default.
 >
-> **Sonnet 5.5** (released 2026-09-28, `claude-sonnet-5-5`): **$2/$10, identical to Sonnet 5**, including caching and batch. Cache hits cost $0.20/1M, **0.1x base input** (the normal multiplier); 5m cache write $2.50, 1h cache write $4; Batch $1/$5. 1M context at standard rates, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), knowledge cutoff Jun 2026, same tokenizer as Sonnet 5 (the same text gives the same token count), minimum cacheable prompt **512** tokens (Sonnet 5: 1,024), tool-use system prompt 286 tokens (Sonnet 5: 354). Adaptive thinking is on by default with default effort `high`; no Fast Mode. Bedrock ID `anthropic.claude-sonnet-5-5`; `claude-sonnet-5-5` on Google Cloud, Microsoft Foundry and Claude Platform on AWS. Earliest retirement not sooner than 2027-09-28. It is the current Sonnet flagship; Anthropic's models overview still says to start with Opus 5.5 for most workloads.
+> **Sonnet 5.5** (released 2026-09-28, `claude-sonnet-5-5`): **$2/$10, the same as Sonnet 5**, with the same cache writes and batch rates, but since 2026-10-07 cache hits cost **$0.10/1M, 0.05x base input (95% off)** -- half Sonnet 5's $0.20; 5m cache write $2.50, 1h cache write $4; Batch $1/$5. 1M context at standard rates, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), knowledge cutoff Jun 2026, same tokenizer as Sonnet 5 (the same text gives the same token count), minimum cacheable prompt **512** tokens (Sonnet 5: 1,024), tool-use system prompt 286 tokens (Sonnet 5: 354). Adaptive thinking is on by default with default effort `high`; no Fast Mode. Bedrock ID `anthropic.claude-sonnet-5-5`; `claude-sonnet-5-5` on Google Cloud, Microsoft Foundry and Claude Platform on AWS. Earliest retirement not sooner than 2027-09-28. It is the current Sonnet flagship; Anthropic's models overview still says to start with Opus 5.5 for most workloads.
 >
 > **Cost-relevant breaking changes vs Sonnet 5** (each returns a 400 when old code is carried over):
 > - `thinking: {type: "disabled"}` and manual `budget_tokens` return 400. The lowest setting is `thinking: {type: "between_tools"}`, which turns off up-front thinking and is accepted only at `low`, `medium` and `high` effort. Reasoning tokens bill as output at $10/1M.
@@ -80,11 +82,15 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 >
 > **Sonnet 5** (legacy since the Sonnet 5.5 launch, still Active and not deprecated): **$2/$10 permanently** -- the launch intro rate became standard and the increase to $3/$15 was cancelled. Minimum cacheable prompt 1,024 tokens. Retirement not sooner than 2027-06-30. Sonnet 5.5 replaced it as the Sonnet-tier migration target at the same price. Context window and max output are not restated here -- check the [Anthropic models overview](https://docs.claude.com/en/docs/about-claude/models/overview) before you size a request against them.
 >
-> **1M context at standard rates**: Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 bill the full 1M window at the standard per-token rate -- no long-context premium. **Sonnet 5.5 at $2/$10 is the cheapest 1M-context option** (legacy Sonnet 5 costs the same), so reach for it before an Opus tier on long-context work. (The earlier "2x over 200K" pricing applied to Opus 4.1 and older. Note that Opus 4.5, Sonnet 4.5, and Haiku 4.5 are 200K-only.)
+> **Haiku 5.5** (released 2026-10-07, `claude-haiku-5-5`; Bedrock `anthropic.claude-haiku-5-5`): the current Haiku, for "high-volume, latency-sensitive tasks such as classification, extraction, routing" and subagent work. **The first model priced by prompt length**: **$0.10/$0.50** per 1M when the prompt is at most 100,000 tokens (cache hit $0.01, 5m write $0.125, 1h write $0.20, Batch $0.05/$0.25) and **$0.50/$2.50** above it (cache hit $0.05, 5m write $0.625, 1h write $1.00, Batch $0.25/$1.25). Prompt length counts every input token, cache reads and writes included, and each request is priced on its own: a request over the line pays the higher input and output rates even when part of its prompt is a cache hit. Cache hits are 0.1x of the tier's own input price. The cliff: a 100,000-token prompt costs $0.010 of input, a 100,001-token prompt $0.050. Regional endpoints add 10% as on other current models ($0.11/$0.55 at the lower tier on Bedrock regional). 1M context, 128K max output (300K on Batch via `output-300k-2026-03-24`), minimum cacheable prompt **512** (Haiku 4.5: 4,096), tool-use system prompt 286 tokens (`auto`/`none`) / 406 (`any`/`tool`; forced tool use is supported). It uses the newer Claude 4.7+ tokenizer, so the same text is ~30% more tokens than on Haiku 4.5: per task that is roughly 7.7x cheaper than Haiku 4.5 at <= 100K and ~1.5x cheaper above. Adaptive thinking is on by default at effort `medium`; on the API `thinking: {type: "disabled"}` still works at `high` effort or below, but Claude Code cannot turn it off. No Fast Mode. Knowledge cutoff Jun 2026. Earliest retirement not sooner than 2027-10-07. Breaking changes versus Haiku 4.5 are in [Guide 03](03-model-selection.md#migrating-to-haiku-55).
+>
+> **Haiku 4.5** is now legacy (still Active, not deprecated; earliest retirement 2026-10-15). **Sonnet 4.5** is deprecated: retirement scheduled for 2026-11-30 on the Claude API, with Sonnet 5.5 the recommended replacement.
+>
+> **1M context at standard rates**: Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 bill the full 1M window at the standard per-token rate -- no long-context premium. **Sonnet 5.5 at $2/$10 is the cheapest of them** (legacy Sonnet 5 costs the same per token), so reach for it before an Opus tier on long-context work. Haiku 5.5 also has a 1M window and is cheaper still, but it is the one exception to flat pricing: every request over 100K prompt tokens bills at $0.50/$2.50. (The earlier "2x over 200K" pricing applied to Opus 4.1 and older. Note that Opus 4.5, Sonnet 4.5, and Haiku 4.5 are 200K-only.)
 >
 > **New tokenizer caveat**: Opus 4.7 and later (including Opus 4.8, Opus 5 and Opus 5.5) use the same Opus-4.7-generation tokenizer, which may use up to **35% more tokens** for the same source text. Posted pricing stayed at $5/$25 through Opus 5 (Opus 5.5 cut it to $4/$20), but effective per-task cost is 20-35% higher than it would have been on Opus 4.6.
 >
-> **Subscriptions**: Pro **$20/mo** (or **$200/yr ≈ $16.67/mo** with annual billing -- ~17% off). Max 5x $100/mo. Max 20x $200/mo. **Batch API**: 50% discount on both input and output. **Cache write**: 1.25x base input price (5-min TTL), 2x base input price (1-hour TTL). **Cache hit/refresh**: 0.1x base input price on every model except Fable 5.1 / Mythos 5.1 (0.025x) and Opus 5.5 (0.05x). **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"`, scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all future models): +10%.
+> **Subscriptions**: Pro **$20/mo** (or **$200/yr ≈ $16.67/mo** with annual billing -- ~17% off). Max 5x $100/mo. Max 20x $200/mo. **Batch API**: 50% discount on both input and output. **Cache write**: 1.25x base input price (5-min TTL), 2x base input price (1-hour TTL). Since 2026-10-07 Max 5x and Max 20x include $100 and $200 of monthly Claude API credit (Claude Console API only, **not Claude Code**, no rollover). **Cache hit/refresh**: 0.1x base input price on every model except Fable 5.1 / Mythos 5.1 (0.025x) and Opus 5.5 and Sonnet 5.5 (0.05x). **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"`, scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all future models): +10%.
 
 ### Off-Peak 2x Usage Events
 
@@ -101,12 +107,14 @@ To build intuition, here is what $1.00 buys you with each model:
 | **Fable 5** | ~100,000 tokens (~255 pages) | ~20,000 tokens (~51 pages) | ~1,000,000 tokens (~2,550 pages) |
 | **Opus 5.5** | ~250,000 tokens (~640 pages) | ~50,000 tokens (~128 pages) | ~5,000,000 tokens (~12,750 pages) |
 | **Opus 5 / 4.8 / 4.7 / 4.6** (legacy) | ~200,000 tokens (~510 pages) | ~40,000 tokens (~102 pages) | ~2,000,000 tokens (~5,100 pages) |
-| **Sonnet 5.5** | ~500,000 tokens (~1,275 pages) | ~100,000 tokens (~255 pages) | ~5,000,000 tokens (~12,750 pages) |
+| **Sonnet 5.5** | ~500,000 tokens (~1,275 pages) | ~100,000 tokens (~255 pages) | ~10,000,000 tokens (~25,500 pages) |
 | **Sonnet 5** (legacy) | ~500,000 tokens (~1,275 pages) | ~100,000 tokens (~255 pages) | ~5,000,000 tokens (~12,750 pages) |
 | **Sonnet 4.6** | ~333,300 tokens (~850 pages) | ~66,700 tokens (~170 pages) | ~3,333,300 tokens (~8,500 pages) |
-| **Haiku 4.5** | ~1,000,000 tokens (~2,560 pages) | ~200,000 tokens (~510 pages) | ~10,000,000 tokens (~25,600 pages) |
+| **Haiku 5.5**, prompts <= 100K | ~10,000,000 tokens (~25,500 pages) | ~2,000,000 tokens (~5,100 pages) | ~100,000,000 tokens (~255,000 pages) |
+| **Haiku 5.5**, prompts > 100K | ~2,000,000 tokens (~5,100 pages) | ~400,000 tokens (~1,020 pages) | ~20,000,000 tokens (~51,000 pages) |
+| **Haiku 4.5** (legacy) | ~1,000,000 tokens (~2,560 pages) | ~200,000 tokens (~510 pages) | ~10,000,000 tokens (~25,600 pages) |
 
-> Opus 5.5, 5, 4.8 and 4.7's token counts may be ~20-35% lower than shown (fewer pages per $1) due to the new tokenizer. Budget with that in mind if you're migrating from 4.6.
+> Opus 5.5, 5, 4.8 and 4.7's token counts may be ~20-35% lower than shown (fewer pages per $1) due to the new tokenizer. Budget with that in mind if you're migrating from 4.6. Haiku 5.5 uses the same newer tokenizer (~30% more tokens than Haiku 4.5 for the same text), so its pages per $1 run about 23% below what its token counts suggest.
 >
 > On Opus 5.5 (thinking always on) and Opus 5 (thinking on by default), part of that output budget goes to reasoning tokens you never read. They bill at the same output rate as visible text: $20/1M on Opus 5.5, $25/1M on Opus 5.
 
@@ -122,14 +130,20 @@ Relative to Opus 5.5 (the recommended default Opus; legacy Opus 5 / 4.8 / 4.7 / 
 | Opus 5.5 vs legacy Opus 5 | **20% cheaper** | **20% cheaper** |
 | Sonnet 5.5 vs Opus 5.5 | **2x cheaper** | **2x cheaper** |
 | Sonnet 5.5 vs legacy Opus 5 | **2.5x cheaper** | **2.5x cheaper** |
-| Haiku 4.5 vs Opus 5.5 | **4x cheaper** | **4x cheaper** |
-| Haiku 4.5 vs legacy Opus 5 | **5x cheaper** | **5x cheaper** |
-| Haiku 4.5 vs Fable 5.1 | **10x cheaper** | **10x cheaper** |
-| Haiku 4.5 vs Sonnet 5.5 | **2x cheaper** | **2x cheaper** |
+| Haiku 5.5 vs Opus 5.5, prompt <= 100K | **40x cheaper** | **40x cheaper** |
+| Haiku 5.5 vs Opus 5.5, prompt > 100K | **8x cheaper** | **8x cheaper** |
+| Haiku 5.5 vs Sonnet 5.5, prompt <= 100K | **20x cheaper** | **20x cheaper** |
+| Haiku 5.5 vs Sonnet 5.5, prompt > 100K | **4x cheaper** | **4x cheaper** |
+| Haiku 5.5 vs Fable 5.1, prompt <= 100K | **100x cheaper** | **100x cheaper** |
+| Haiku 5.5 vs legacy Haiku 4.5, prompt <= 100K | **10x cheaper** per token (~7.7x per task) | **10x cheaper** per token (~7.7x per task) |
+| Haiku 5.5 vs legacy Haiku 4.5, prompt > 100K | **2x cheaper** per token (~1.5x per task) | **2x cheaper** per token (~1.5x per task) |
+| Legacy Haiku 4.5 vs Opus 5.5 | 4x cheaper | 4x cheaper |
 
-Switching from Opus 5.5 to Haiku for a task that costs $1.00 on Opus 5.5 would cost approximately $0.25 on Haiku. The same task on Sonnet 5.5 would cost about $0.50.
+Haiku 5.5, Sonnet 5.5 and Opus 5.5 share a tokenizer, so those per-token ratios are also per-task ratios. Against Haiku 4.5 the same text is ~30% more tokens on Haiku 5.5, which is where 7.7x (10 / 1.3) and 1.5x (2 / 1.3) come from.
 
-> **Note**: Opus 5.5 is priced at $4/$20 -- 20% below the $5/$25 of Opus 5 / 4.8 / 4.7 / 4.6. The gap between models is much smaller than it used to be. Model selection still saves money, but the ratios are more modest (4x Haiku-to-Opus 5.5 vs the historical 19x). The new tokenizer (Opus 4.7 and later, including Opus 5.5) narrows the "effective" gap slightly further -- budget ~20-35% higher than the posted rate suggests. Sonnet 5's $2/$10 is now permanent and Sonnet 5.5 launched at the same rate, so the Sonnet-vs-Opus gap is a durable **2x** against Opus 5.5 (2.5x against legacy Opus 5), not the 1.67x of Sonnet 4.6 vs Opus 5.
+Switching from Opus 5.5 to Haiku 5.5 for a task that costs $1.00 on Opus 5.5 would cost approximately $0.025 if every request stays at or under 100K prompt tokens ($0.125 if they are all above), and $0.25 on legacy Haiku 4.5. The same task on Sonnet 5.5 would cost about $0.50.
+
+> **Note**: Opus 5.5 is priced at $4/$20 -- 20% below the $5/$25 of Opus 5 / 4.8 / 4.7 / 4.6. The gap between Opus and Sonnet is much smaller than it used to be. At the bottom of the ladder Haiku 5.5 widens it again: 40x below Opus 5.5 per token while a prompt stays at or under 100K tokens (8x above), versus 4x for legacy Haiku 4.5 and the historical 19x. The new tokenizer (Opus 4.7 and later, including Opus 5.5) narrows the "effective" gap slightly further -- budget ~20-35% higher than the posted rate suggests. Sonnet 5's $2/$10 is now permanent and Sonnet 5.5 launched at the same rate, so the Sonnet-vs-Opus gap is a durable **2x** against Opus 5.5 (2.5x against legacy Opus 5), not the 1.67x of Sonnet 4.6 vs Opus 5.
 
 ### Long Context Pricing (1M)
 
@@ -146,13 +160,22 @@ Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, 
 | **Opus 4.6** | $5.00 | $25.00 | 1M |
 | **Sonnet 5.5** | $2.00 | $10.00 | 1M |
 | **Sonnet 4.6** | $3.00 | $15.00 | 1M |
-| **Haiku 4.5** | $1.00 | $5.00 | 200K |
+| **Haiku 4.5** (legacy) | $1.00 | $5.00 | 200K |
 
 Legacy Sonnet 5 is priced at $2/$10 with no long-context premium either; its exact maximum window is not restated here.
 
-A 900K-token request is billed at the same per-token rate as a 9K-token request. You still pay for each token, so context growth still costs more in absolute dollars -- but there is no rate cliff at 200K anymore.
+On the models in that table, a 900K-token request is billed at the same per-token rate as a 9K-token request. You still pay for each token, so context growth still costs more in absolute dollars -- but there is no rate cliff at 200K anymore.
 
-> **Practical implication**: Sending a 300K-token input on Opus 5.5 costs $1.20 at the $4/1M rate ($1.50 on legacy Opus 5 at $5/1M). Under the old pricing, the Opus 5 request would have been $3.00 (entire request at the 2x rate). Long agentic sessions, large-codebase audits, and big-document analysis are now significantly cheaper.
+**Haiku 5.5 is the exception.** It has a 1M window, but it is the one model from Claude 4.6 on that does not bill the whole window at one rate:
+
+| Haiku 5.5 prompt length | Input | Output | Cache hit | Max Context |
+|-------------------------|:-----:|:------:|:---------:|:-----------:|
+| <= 100,000 tokens | $0.10 | $0.50 | $0.01 | 1M |
+| > 100,000 tokens | $0.50 | $2.50 | $0.05 | 1M |
+
+Prompt length counts all input tokens, including cache reads and writes, and each request is priced on its own: a request over 100K pays the higher input **and** output rates for the whole request, not just the tokens past the line. A 100,000-token prompt costs $0.010 of input; a 100,001-token prompt costs $0.050.
+
+> **Practical implication**: Sending a 300K-token input on Opus 5.5 costs $1.20 at the $4/1M rate ($1.50 on legacy Opus 5 at $5/1M). Under the old pricing, the Opus 5 request would have been $3.00 (entire request at the 2x rate). Long agentic sessions, large-codebase audits, and big-document analysis are now significantly cheaper. On Haiku 5.5 the same 300K input costs $0.15, all of it at the > 100K rate of $0.50/1M.
 
 > **AWS Bedrock / Vertex AI**: Claude models are available on AWS Bedrock and Google Vertex AI at the same pricing for global (cross-region) inference. Regional inference profiles carry a **+10% surcharge** over the standard API rates.
 
@@ -277,10 +300,10 @@ The cost **accelerates** with each turn. A 30-turn session does not cost 30x a s
 
 ### How the Context Window Works
 
-Claude's context window (1M tokens for Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, and Sonnet 4.6; 200K for Haiku 4.5) is the maximum amount of text it can process in a single turn. Think of it as Claude's working memory.
+Claude's context window (1M tokens for Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 4.6, and Haiku 5.5; 200K for legacy Haiku 4.5) is the maximum amount of text it can process in a single turn. Think of it as Claude's working memory.
 
 ```
-Context Window (1M tokens for Opus/Sonnet, 200K for Haiku)
+Context Window (1M tokens for Opus/Sonnet/Haiku 5.5, 200K for Haiku 4.5)
 ┌─────────────────────────────────────────────────────┐
 │ System Prompt          (~3,500 tokens)              │
 │ CLAUDE.md              (~1,050 tokens @ 150 lines)  │
@@ -311,9 +334,10 @@ What it costs to fill the context window on a single turn:
 | Opus 5 / 4.8 / 4.7 / 4.6 (legacy) | $1.00 | $5.00 (flat rate, no 200K premium) | $3.20 (128K output) |
 | Sonnet 5.5 | $0.40 | $2.00 (flat rate, no 200K premium) | $1.28 (128K output) |
 | Sonnet 4.6 | $0.60 | $3.00 (flat rate, no 200K premium) | $0.96 (64K output) |
-| Haiku 4.5 | $0.20 | N/A (200K max) | $0.32 (64K output) |
+| Haiku 5.5 | $0.10 (> 100K rate) | $0.50 (> 100K rate) | $0.32 (128K output at the > 100K rate) |
+| Haiku 4.5 (legacy) | $0.20 | N/A (200K max) | $0.32 (64K output) |
 
-> Long sessions on Opus can cost $5-20+. On Opus 5.5 / 5 / 4.8 / 4.7 / 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 there is no 200K rate cliff -- the full 1M window bills at the standard per-token rate -- but absolute dollars still climb as context grows.
+> Long sessions on Opus can cost $5-20+. On Opus 5.5 / 5 / 4.8 / 4.7 / 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 there is no 200K rate cliff -- the full 1M window bills at the standard per-token rate -- but absolute dollars still climb as context grows. Haiku 5.5 has its cliff at 100K instead: a full 200K or 1M prompt bills every input and output token at $0.50/$2.50, 5x its rate below the line.
 >
 > On Opus 5.5 and Opus 5 the 128K max-output figure covers thinking **plus** visible text, since `max_tokens` caps both together. Reasoning tokens bill as output ($20/1M on Opus 5.5, $25/1M on Opus 5), so a max-output turn can be mostly thinking you never see. (Batch raises the ceiling to 300K via the `output-300k-2026-03-24` beta.)
 
@@ -334,7 +358,7 @@ Prompt caching is the single most impactful automatic cost reduction in Claude C
 
 ### How Prompt Caching Works
 
-When you send a request to Claude, the API checks if the beginning of your input matches a recently cached prompt prefix. If it does, those cached tokens are charged at a steep discount. There are three cache-hit multipliers: **0.1x base input (90% off)** on most models, **0.05x (95% off)** on Opus 5.5, and **0.025x (97.5% off)** on Fable 5.1 and Mythos 5.1.
+When you send a request to Claude, the API checks if the beginning of your input matches a recently cached prompt prefix. If it does, those cached tokens are charged at a steep discount. There are three cache-hit multipliers: **0.1x base input (90% off)** on most models, **0.05x (95% off)** on Opus 5.5 and Sonnet 5.5, and **0.025x (97.5% off)** on Fable 5.1 and Mythos 5.1. Haiku 5.5 reads at 0.1x of whichever price tier the request falls in ($0.01 or $0.05).
 
 ```
 Normal input cost:   $3.00 / 1M tokens (Sonnet 4.6)
@@ -384,10 +408,11 @@ A prefix has to clear a per-model token floor before it can be cached at all. A 
 | **Sonnet 5.5** | 512 |
 | **Sonnet 5** | 1,024 |
 | **Sonnet 4.6** | 1,024 |
-| **Sonnet 4.5** | 1,024 |
-| **Haiku 4.5** | 4,096 |
+| **Sonnet 4.5** (deprecated) | 1,024 |
+| **Haiku 5.5** | 512 |
+| **Haiku 4.5** (legacy) | 4,096 |
 
-Opus 5.5 and Opus 5 share the lowest Opus-tier floor at 512 tokens, half of Opus 4.8's 1,024 and a quarter of Opus 4.7's 2,048. Short system prompts and small CLAUDE.md files that were too small to cache on older Opus models now qualify on Opus 5.5 and Opus 5. Sonnet 5.5 halves the Sonnet floor the same way, to 512 from Sonnet 5's 1,024, so short system prompts that never cached on Sonnet 5 now do.
+Opus 5.5 and Opus 5 share the lowest Opus-tier floor at 512 tokens, half of Opus 4.8's 1,024 and a quarter of Opus 4.7's 2,048. Short system prompts and small CLAUDE.md files that were too small to cache on older Opus models now qualify on Opus 5.5 and Opus 5. Sonnet 5.5 halves the Sonnet floor the same way, to 512 from Sonnet 5's 1,024, so short system prompts that never cached on Sonnet 5 now do. Haiku 5.5 cuts the Haiku floor 8x, to 512 from Haiku 4.5's 4,096, so short classification and subagent prompts now cache too.
 
 ### Cache Savings in Practice
 
@@ -428,7 +453,7 @@ Actions that **keep** the cache in Claude Code: editing repo files, editing CLAU
 3. **Avoid switching models or effort mid-session** unless the savings from a cheaper setting outweigh the cache loss. Effort changes are free on Opus 5.5 and Fable 5.1 (API key or subscription).
 4. **Know your TTL.** A pause longer than the TTL expires the cache: one hour for the main conversation on a subscription within plan usage, five minutes on an API key, a cloud provider, or usage credits. Pick it yourself with `promptCacheTtl` (`5m` or `1h`).
 5. **Compact while the cache is warm.** `/compact` sends a summarization request that reads the prefix from cache while warm, so it costs a fraction of the context size; after a break longer than the TTL it reprocesses the full history uncached. `/clear` costs nothing, and `/rewind` returns to an already-cached prefix.
-6. **Check your prefix clears the model's floor.** Below the minimum cacheable length there is no discount and no warning. Opus 5.5 and Opus 5 share the most forgiving Opus-tier floor, 512 tokens, and Sonnet 5.5 matches it (1,024 on Sonnet 5, Sonnet 4.6 and Sonnet 4.5).
+6. **Check your prefix clears the model's floor.** Below the minimum cacheable length there is no discount and no warning. Opus 5.5 and Opus 5 share the most forgiving Opus-tier floor, 512 tokens, and Sonnet 5.5 and Haiku 5.5 match it (1,024 on Sonnet 5, Sonnet 4.6 and Sonnet 4.5; 4,096 on legacy Haiku 4.5).
 7. **Leave MCP tool search on.** It is the default, and with it on, connecting or removing an MCP server keeps the cache.
 
 ---
@@ -633,12 +658,15 @@ Without prompt caching, every input token is charged at full price:
 |-------|:--------------------:|:---------------------------------:|
 | **Opus 5.5** | ~$1.66 | ~$183 |
 | **Opus 5 / 4.8 / 4.7 / 4.6** (legacy) | ~$2.33 | ~$256 |
-| **Sonnet 5.5** | ~$0.93 | ~$102 |
+| **Sonnet 5.5** | ~$0.83 | ~$91 |
 | **Sonnet 5** (legacy) | ~$0.93 | ~$102 |
 | **Sonnet 4.6** | ~$1.40 | ~$154 |
-| **Haiku 4.5** | ~$0.47 | ~$52 |
+| **Haiku 5.5** | ~$0.058 | ~$6 |
+| **Haiku 4.5** (legacy) | ~$0.47 | ~$52 |
 
-> **Note**: Every row re-prices the same token mix as the Sonnet 4.6 walkthrough (about 1.02M cached input tokens, derived from the $2.76 caching saving, plus the rest at each model's own input, output and cache-hit rates). Opus 5.5 lands at ~$1.66 rather than a flat 20% below Opus 5 because its cache reads cost 0.05x instead of 0.1x. With Opus 5.5 at $4/$20, an Opus session is ~1.8x a Sonnet 5.5 session here (the per-token gap is 2x; the deeper cache discount narrows it). Haiku at $1/$5 is still the clear budget choice at 4x cheaper per token than Opus 5.5 (5x vs legacy Opus 5).
+> **Note**: Every row re-prices the same token mix as the Sonnet 4.6 walkthrough (about 1.02M cached input tokens, derived from the $2.76 caching saving, plus the rest at each model's own input, output and cache-hit rates). Opus 5.5 and Sonnet 5.5 land below a straight per-token scaling because their cache reads cost 0.05x instead of 0.1x, which is also why Sonnet 5.5 now undercuts legacy Sonnet 5 on this session. With both reading cache at 0.05x, an Opus 5.5 session is exactly 2x a Sonnet 5.5 session here, the same as the per-token gap.
+>
+> Haiku 5.5 is priced per request, so the row has to follow the prompt size turn by turn. Turns 1-29 stay at or under 100K prompt tokens and bill at $0.10/$0.50; turn 30's prompt is 102,440 tokens, so that whole request bills at $0.50/$2.50, which adds about $0.011 to the session. That one turn is the gap between ~$0.047 and ~$0.058, and Haiku 5.5 is still ~29x below Opus 5.5 here. On real Haiku 5.5 traffic the same text is ~30% more tokens than these Sonnet 4.6-era counts, so the prompt would cross 100K around turn 23 instead -- run `/compact` before then to stay in the cheap tier.
 >
 > The Opus figures assume the same output volume as the table's Sonnet baseline. In practice Opus 5.5 always thinks (default effort `medium`), and Opus 5 thinks by default and writes longer than Opus 4.8. Reasoning bills as output ($20/1M on Opus 5.5, $25/1M on Opus 5), so a like-for-like session can land above these figures until you tune effort level and verbosity.
 
@@ -674,7 +702,7 @@ The first 10 turns might cost $0.27 total. The last 10 turns (41-50) might cost 
 
 3. **Bloated CLAUDE.md** -- A 500-line CLAUDE.md adds ~3,500 tokens to every single turn. Over 30 turns, that is 105,000 extra input tokens -- $0.32 on Sonnet 4.6, $0.42 on Opus 5.5 ($0.53 on legacy Opus 5), before caching.
 
-4. **Using Opus for routine tasks** -- If 60% of your turns are simple (formatting, small fixes, lookups), using Opus 5.5 for all of them costs 4x more than Haiku for those turns (5x on legacy Opus 5). The gap is narrower than it used to be, but still adds up across many turns.
+4. **Using Opus for routine tasks** -- If 60% of your turns are simple (formatting, small fixes, lookups), using Opus 5.5 for all of them costs 40x more than Haiku 5.5 for those turns while their prompts stay at or under 100K tokens (8x above; 4x against legacy Haiku 4.5). Haiku 5.5 makes this the widest gap in the lineup again, and it adds up across many turns.
 
 5. **Trial-and-error coding instead of planning first** -- Without Plan Mode, Claude might write code, find it does not work, rewrite it, and iterate 4-5 times. Each iteration adds both input history and output tokens. Planning first typically reduces total turns by 30-50%.
 
@@ -754,7 +782,7 @@ For a rough rule of thumb: if you have more than 3-4 turns left in a session, sw
 
 4. **CLAUDE.md loads on every turn.** Anthropic's guidance is to target under 200 lines per file; nothing is truncated past that, it just costs more and is followed less. Every line you cut saves tokens across your entire session.
 
-5. **Model selection still matters, but the gaps are smaller.** Haiku 4.5 at $1/$5 vs Opus 5.5 at $4/$20 is a 4x difference (5x vs legacy Opus 5 / 4.8 / 4.7 / 4.6 at $5/$25). Use the cheapest model that gets the job done, and judge it by cost per completed task, not cost per token: a cheaper model that fails still bills. The new tokenizer (Opus 4.7 and later, +~35% tokens for the same text) slightly re-widens the effective gap.
+5. **Model selection matters, and Haiku 5.5 widens the bottom gap again.** Haiku 5.5 at $0.10/$0.50 vs Opus 5.5 at $4/$20 is a 40x difference while the prompt stays at or under 100K tokens (8x above, where Haiku 5.5 bills $0.50/$2.50); legacy Haiku 4.5 at $1/$5 was 4x. Use the cheapest model that gets the job done, and judge it by cost per completed task, not cost per token: a cheaper model that fails still bills. The new tokenizer (Opus 4.7 and later, +~35% tokens for the same text) slightly re-widens the effective gap.
 
 6. **Track your usage.** Run `/usage` regularly. Put `--max-budget-usd` on every scripted `claude -p` run (interactive sessions ignore it). What gets measured gets managed.
 

@@ -1,6 +1,9 @@
-// Pricing data verified against Anthropic docs on 2026-09-29 (Sonnet 5.5 launch):
+// Pricing data verified against Anthropic docs on 2026-10-09 (Haiku 5.5 launch,
+// Sonnet 5.5 cache-read cut):
 //   - https://platform.claude.com/docs/en/about-claude/pricing
 //   - https://platform.claude.com/docs/en/about-claude/models/overview
+//   - https://platform.claude.com/docs/en/models/haiku-5-5/overview
+//   - https://platform.claude.com/docs/en/models/haiku-5-5/whats-new-haiku-5-5
 //   - https://platform.claude.com/docs/en/models/sonnet-5-5/overview
 //   - https://platform.claude.com/docs/en/models/sonnet-5-5/whats-new-sonnet-5-5
 //   - https://platform.claude.com/docs/en/models/opus-5-5/overview
@@ -25,6 +28,7 @@ export type ModelId =
   | 'sonnet-5'
   | 'sonnet'
   | 'sonnet-4-5'
+  | 'haiku-5-5'
   | 'haiku'
   | 'mythos-5-1'
   | 'mythos-5'
@@ -56,15 +60,38 @@ export interface ModelPricing {
   // 'legacy', which only means superseded. Chart selection filters on
   // 'active', so a deprecated model is excluded the same way a legacy one is.
   lifecycle?: 'active' | 'legacy' | 'deprecated'
+  // Prompt-length pricing. A request whose prompt -- all of its input tokens,
+  // cache reads and writes included -- is over `threshold` pays these rates for
+  // the whole request, output included. Only Haiku 5.5 has one (100,000 tokens);
+  // every other model bills its full context window at one rate.
+  longPrompt?: {
+    threshold: number
+    inputPer1M: number
+    outputPer1M: number
+    cacheHitPer1M: number
+    cacheWrite5mPer1M: number
+    cacheWrite1hPer1M: number
+  }
 }
 
-// Cache hits are 0.1x base input on every model EXCEPT three: Fable 5.1 and
-// Mythos 5.1 read at 0.025x ($0.25/MTok) and Opus 5.5 reads at 0.05x
-// ($0.20/MTok). Derive displays from cacheHitPer1M rather than multiplying input
-// by 0.1 -- that shortcut is now wrong on three models.
+/** The input, output and cache-read rates a request of `promptTokens` pays. */
+export function ratesForPrompt(
+  model: ModelPricing,
+  promptTokens: number,
+): { inputPer1M: number; outputPer1M: number; cacheHitPer1M: number } {
+  const tier = model.longPrompt && promptTokens > model.longPrompt.threshold ? model.longPrompt : model
+  return { inputPer1M: tier.inputPer1M, outputPer1M: tier.outputPer1M, cacheHitPer1M: tier.cacheHitPer1M }
+}
+
+// Cache hits are 0.1x base input on every model EXCEPT four: Fable 5.1 and
+// Mythos 5.1 read at 0.025x ($0.25/MTok), and Opus 5.5 ($0.20/MTok) and Sonnet 5.5
+// ($0.10/MTok, cut from $0.20 on 2026-10-07) read at 0.05x. Derive displays from
+// cacheHitPer1M rather than multiplying input by 0.1 -- that shortcut is now
+// wrong on four models.
 export const CACHE_HIT_MULTIPLIER_DEFAULT = 0.1
 export const CACHE_HIT_MULTIPLIER_FABLE_5_1 = 0.025
 export const CACHE_HIT_MULTIPLIER_OPUS_5_5 = 0.05
+export const CACHE_HIT_MULTIPLIER_SONNET_5_5 = 0.05
 
 /** Cache-read discount off base input, as a share (0.9 = 90% off). */
 export function cacheDiscountShare(model: ModelPricing): number {
@@ -267,10 +294,11 @@ export const MODELS: Record<ModelId, ModelPricing> = {
   'sonnet-5-5': {
     id: 'sonnet-5-5',
     name: 'Sonnet 5.5',
-    // Same $2/$10 as Sonnet 5, including cache and batch rates.
+    // Same $2/$10, cache writes and batch rates as Sonnet 5. The cache read was
+    // cut to $0.10 (0.05x base input) on 2026-10-07, half Sonnet 5's $0.20.
     inputPer1M: 2,
     outputPer1M: 10,
-    cacheHitPer1M: 0.2,
+    cacheHitPer1M: 0.1,
     cacheWrite5mPer1M: 2.5,
     cacheWrite1hPer1M: 4,
     contextWindow: '1M',
@@ -282,7 +310,8 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     lifecycle: 'active',
     notes:
       'Current Sonnet-tier flagship (released 2026-09-28): best combination of speed and intelligence. ' +
-      'Same $2/$10 and tokenizer as Sonnet 5, so migrating is free at the posted rate. Half the price of ' +
+      'Same $2/$10 and tokenizer as Sonnet 5, and cache reads cost half as much ($0.10, 0.05x, since ' +
+      '2026-10-07), so migrating is a saving on any cached workload. Half the price of ' +
       'Opus 5.5 ($4/$20). Min cacheable prompt drops to 512 tokens (Sonnet 5: 1,024) and the tool-use system ' +
       'prompt to 286 tokens (Sonnet 5: 354). Adaptive thinking on by default, effort defaults to high and ' +
       'is recalibrated -- re-run your effort sweep. thinking {type:"disabled"} returns 400: the lowest ' +
@@ -345,11 +374,44 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     maxOutput: '64K',
     fastModeCapable: false,
     minCacheTokens: 1024,
-    lifecycle: 'legacy',
+    lifecycle: 'deprecated',
     notes:
-      'Legacy. Extended thinking. 200K context. Min cacheable prompt 1,024 tokens. ' +
-      'Earliest retirement: 2026-09-29. Migrate to Sonnet 5.5 for the 1M-context window ' +
-      'unless your workload is pinned.',
+      'Deprecated on 2026-09-30; retirement scheduled for 2026-11-30 on the Claude API. ' +
+      'Extended thinking. 200K context. Min cacheable prompt 1,024 tokens. ' +
+      "Anthropic's recommended replacement is Sonnet 5.5: a third cheaper ($2/$10) with a 1M window.",
+  },
+  'haiku-5-5': {
+    id: 'haiku-5-5',
+    name: 'Haiku 5.5',
+    // The first tiered model: $0.10/$0.50 for prompts up to 100,000 tokens.
+    inputPer1M: 0.1,
+    outputPer1M: 0.5,
+    cacheHitPer1M: 0.01,
+    cacheWrite5mPer1M: 0.125,
+    cacheWrite1hPer1M: 0.2,
+    contextWindow: '1M',
+    maxOutput: '128K',
+    fastModeCapable: false,
+    // Claude 4.7+ tokenizer: ~30% more tokens than Haiku 4.5 for the same text.
+    tokenizerOverhead: 1.3,
+    minCacheTokens: 512,
+    lifecycle: 'active',
+    longPrompt: {
+      threshold: 100_000,
+      inputPer1M: 0.5,
+      outputPer1M: 2.5,
+      cacheHitPer1M: 0.05,
+      cacheWrite5mPer1M: 0.625,
+      cacheWrite1hPer1M: 1,
+    },
+    notes:
+      'Current Haiku (released 2026-10-07), for high-volume, latency-sensitive work: classification, ' +
+      'extraction, routing, subagents. Priced by prompt length: $0.10/$0.50 up to 100,000 prompt tokens, ' +
+      '$0.50/$2.50 above -- the prompt counts cache reads and writes, and a request over the line pays the ' +
+      'higher rate on all of it. 40x below Opus 5.5 and 20x below Sonnet 5.5 per token in the low tier. ' +
+      '1M context, 128K output, min cacheable prompt 512 (Haiku 4.5: 4,096). Adaptive thinking on by ' +
+      'default, effort defaults to medium. budget_tokens, sampling params, prefill and computer_20250124 ' +
+      '(Claude API, Google Cloud) return 400. No Fast Mode. Earliest retirement: 2027-10-07.',
   },
   haiku: {
     id: 'haiku',
@@ -363,11 +425,11 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     maxOutput: '64K',
     fastModeCapable: false,
     minCacheTokens: 4096,
-    lifecycle: 'active',
+    lifecycle: 'legacy',
     notes:
-      'Extended thinking. No adaptive thinking. Fastest latency. ' +
-      'Min cacheable prompt 4,096 tokens -- the highest of any current model, so short ' +
-      'system prompts get no cache discount here. Earliest retirement: 2026-10-15.',
+      'Legacy since the Haiku 5.5 launch (not deprecated). Extended thinking. 200K context. ' +
+      'Min cacheable prompt 4,096 tokens, so short system prompts get no cache discount here. ' +
+      'Haiku 5.5 is 10x cheaper per token up to 100K prompt tokens. Earliest retirement: 2026-10-15.',
   },
   'mythos-5-1': {
     id: 'mythos-5-1',
@@ -386,10 +448,11 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     inviteOnly: true,
     lifecycle: 'active',
     notes:
-      'Fable 5.1 offered under Project Glasswing: same capabilities, limits, and pricing, ' +
+      'Fable 5.1 for verified organizations: same capabilities, limits, and pricing, ' +
       'including the $0.25/MTok (0.025x) cache-read rate. Unlike Mythos 5 it runs safeguards ' +
       'that depend on the access program, so stop_reason "refusal" can occur. ' +
-      'Approved Glasswing customers only; not offered on Claude Platform on AWS. ' +
+      "Available only through Anthropic's verification programs (e.g. the Cyber Verification " +
+      'Program); not offered on Claude Platform on AWS. ' +
       'Min cacheable prompt 512 tokens. Successor to Mythos 5.',
   },
   'mythos-5': {
@@ -467,6 +530,11 @@ export const TOKEN_ESTIMATES = {
   outputTokensPerTurn: 500,
   historyGrowthPerTurn: 1500,
   cacheHitRate: 0.7,
+}
+
+/** A per-1M rate for display: "$2" when whole, "$0.10" otherwise. */
+export function formatRate(rate: number): string {
+  return Number.isInteger(rate) ? `$${rate}` : `$${rate.toFixed(2)}`
 }
 
 export function formatDollars(amount: number): string {

@@ -81,11 +81,11 @@ Anthropic's target is under **200 lines** per CLAUDE.md file; this guide aims fo
 | 300 lines | ~2,100 | $0.006 | $0.18 | $19.80 |
 | 500 lines | ~3,500 | $0.011 | $0.33 | $36.30 |
 
-> The cost columns use the **uncached** input rate ($3/MTok on Sonnet 4.6) -- the worst case, as on a cold cache. With 80% cache hits the blended rate is $0.84/MTok (80% at $0.30, 20% at $3), so real costs and real savings from trimming are about 28% of these figures. The cache is not free: cached tokens still cost 10% of full price on Sonnet 4.6 (5% on Opus 5.5, 2.5% on Fable 5.1).
+> The cost columns use the **uncached** input rate ($3/MTok on Sonnet 4.6) -- the worst case, as on a cold cache. With 80% cache hits the blended rate is $0.84/MTok (80% at $0.30, 20% at $3), so real costs and real savings from trimming are about 28% of these figures. The cache is not free: cached tokens still cost 10% of full price on Sonnet 4.6 (5% on Opus 5.5 and Sonnet 5.5, 2.5% on Fable 5.1).
 
 **On Opus 5.5**, multiply these numbers by ~1.33x (Opus 5.5 input is $4/MTok vs Sonnet 4.6's $3/MTok; legacy Opus 5 / 4.8 / 4.7 / 4.6 at $5/MTok is ~1.67x). A 500-line CLAUDE.md on Opus 5.5 costs about $48.40/month just for the CLAUDE.md itself across 110 sessions ($60.50 on legacy Opus 5). **Opus 5.5 adds another ~20-35% on top** because its tokenizer (the same one shipped with Opus 4.7 and used by every Opus since) uses more tokens for the same text.
 
-One caching caveat that depends on size: a `cache_control` block is silently ignored -- no error, no discount -- if the prefix it marks is shorter than the model's minimum cacheable prompt. That floor is **512 tokens on Opus 5.5, Opus 5 and Sonnet 5.5**, down from 1,024 on Opus 4.8, 2,048 on Opus 4.7, and 4,096 on Opus 4.6. Sonnet 5 and Sonnet 4.6 sit at 1,024; Haiku 4.5 at 4,096. Practical effect: a ~100-line CLAUDE.md (~700 tokens) that was too short to cache on Opus 4.8 or Sonnet 5 does cache on Opus 5.5, Opus 5 and Sonnet 5.5, while a 50-line one (~350 tokens) still caches on none of them.
+One caching caveat that depends on size: a `cache_control` block is silently ignored -- no error, no discount -- if the prefix it marks is shorter than the model's minimum cacheable prompt. That floor is **512 tokens on Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5**, down from 1,024 on Opus 4.8, 2,048 on Opus 4.7, and 4,096 on Opus 4.6. Sonnet 5 and Sonnet 4.6 sit at 1,024; legacy Haiku 4.5 at 4,096. Practical effect: a ~100-line CLAUDE.md (~700 tokens) that was too short to cache on Opus 4.8, Sonnet 5 or Haiku 4.5 does cache on Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5, while a 50-line one (~350 tokens) still caches on none of them.
 
 ### What Belongs in CLAUDE.md
 
@@ -335,7 +335,7 @@ src/
 6. Post-deploy: verify monitoring dashboards
 ```
 
-**Token count: ~2,660 tokens per turn. Over 30 turns with 80% caching: ~$0.045 (Sonnet 5.5) / ~$0.077 (Opus 5.5)**
+**Token count: ~2,660 tokens per turn. Over 30 turns with 80% caching: ~$0.038 (Sonnet 5.5) / ~$0.077 (Opus 5.5)**
 
 ### After: 62 Lines (Optimized)
 
@@ -384,7 +384,7 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 - Squash merge, 1+ review required
 ```
 
-**Token count: ~434 tokens per turn. Over 30 turns with 80% caching: ~$0.007 (Sonnet 5.5) / ~$0.012 (Opus 5.5)**
+**Token count: ~434 tokens per turn. Over 30 turns with 80% caching: ~$0.006 (Sonnet 5.5) / ~$0.012 (Opus 5.5)**
 
 ### What Was Cut and Why
 
@@ -407,11 +407,11 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 |--------|:------:|:-----:|:-----------:|
 | Lines | 380 | 62 | **84% fewer** |
 | Tokens per turn | ~2,660 | ~434 | **84% fewer** |
-| 30-turn Sonnet 5.5 cost | $0.045 | $0.007 | **$0.037 saved/session** |
+| 30-turn Sonnet 5.5 cost | $0.038 | $0.006 | **$0.032 saved/session** |
 | 30-turn Opus 5.5 cost | $0.077 | $0.012 | **$0.064 saved/session** |
 | Monthly Opus 5.5 cost (110 sessions) | $8.43 | $1.37 | **$7.05 saved/month** |
 
-> Costs use the blended rate from [Guide 01](01-understanding-costs.md#key-formulas): 80% of tokens at the cache-hit price ($0.20/MTok on both Sonnet 5.5 and Opus 5.5) and 20% at full input price ($2 and $4/MTok).
+> Costs use the blended rate from [Guide 01](01-understanding-costs.md#key-formulas): 80% of tokens at the cache-hit price ($0.10/MTok on Sonnet 5.5, $0.20/MTok on Opus 5.5) and 20% at full input price ($2 and $4/MTok), a blended $0.48 and $0.96/MTok.
 
 ---
 
@@ -679,7 +679,7 @@ Don't read the full files -- just tell me file names and line numbers.
 
 By asking for a summary, you signal Claude to delegate the heavy search to a subagent and return only the distilled result.
 
-For simple subagent tasks, set `model: haiku` in the subagent definition, as Anthropic's costs page suggests.
+For simple subagent tasks, set `model: haiku` in the subagent definition, as Anthropic's costs page suggests. On the Anthropic API that alias is Haiku 5.5 (Claude Code v2.1.293+), priced at $0.10/$0.50 per 1M up to 100K prompt tokens and $0.50/$2.50 above, so a subagent that returns file names and line numbers instead of reading whole files stays in the cheap tier. On Bedrock, Google Cloud, Microsoft Foundry and Claude Platform on AWS the alias still means legacy Haiku 4.5.
 
 ### When Subagents Are Not Worth It
 
