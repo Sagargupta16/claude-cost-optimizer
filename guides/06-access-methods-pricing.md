@@ -44,13 +44,13 @@ All platforms provide access to the same Claude models with the same intelligenc
 
 The Anthropic API is the baseline. All other platforms price relative to it.
 
-### Standard Pricing (per 1M tokens, verified 2026-09-29)
+### Standard Pricing (per 1M tokens, verified 2026-10-09)
 
 | Model | Input | Output | Cache Hit | 5m Cache Write | 1h Cache Write | Context | Max Output |
 |-------|:-----:|:------:|:---------:|:--------------:|:--------------:|:-------:|:----------:|
 | **Fable 5.1** (most capable) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 1M | 128K |
 | **Fable 5** (legacy) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
-| **Mythos 5.1** (Glasswing only) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 1M | 128K |
+| **Mythos 5.1** (verification required) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 1M | 128K |
 | **Mythos 5** (Glasswing, legacy) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
 | **Opus 5.5** (recommended default Opus) | $4.00 | $20.00 | **$0.20** | $5.00 | $8.00 | 1M | 128K |
 | **Opus 5** (legacy) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
@@ -62,11 +62,13 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 | **Opus 5.5 Fast Mode** (research preview) | $8.00 (2x) | $40.00 (2x) | -- | -- | -- | 1M (included) | 128K |
 | **Opus 5 Fast Mode** (beta) | $10.00 (2x) | $50.00 (2x) | -- | -- | -- | 1M (included) | 128K |
 | **Opus 4.8 Fast Mode** (beta) | $10.00 (2x) | $50.00 (2x) | -- | -- | -- | 1M (included) | 128K |
-| **Sonnet 5.5** (recommended Sonnet) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1M | 128K |
+| **Sonnet 5.5** (recommended Sonnet) | $2.00 | $10.00 | **$0.10** | $2.50 | $4.00 | 1M | 128K |
 | **Sonnet 5** (legacy) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | 1M | 128K |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K |
-| **Sonnet 4.5** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
-| **Haiku 4.5** | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
+| **Sonnet 4.5** (deprecated; retirement scheduled for 2026-11-30) | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 200K | 64K |
+| **Haiku 5.5** (prompt <= 100K tokens) | $0.10 | $0.50 | **$0.01** | $0.125 | $0.20 | 1M | 128K |
+| **Haiku 5.5** (prompt > 100K tokens) | $0.50 | $2.50 | $0.05 | $0.625 | $1.00 | 1M | 128K |
+| **Haiku 4.5** (legacy) | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
 | **Mythos Preview** (deprecated, no retirement date) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- |
 
 > **Opus 5.5** (`claude-opus-5-5`, released 2026-09-22): the recommended default. Anthropic's models-overview page now says "start with Claude Opus 5.5 for most workloads"; Fable 5.1 is for demanding reasoning and long-horizon work. **$4/$20, 20% below Opus 5** -- the first Opus release to lower the rate -- with cache hits at $0.20 (**0.05x** base input, 95% off), 5m / 1h cache writes at $5 / $8, Batch $2/$10, and Fast Mode (research preview, Claude API only) at $8/$40. 1M context (default and max), 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), min cacheable prompt 512, knowledge cutoff Jun 2026, same tokenizer as Opus 4.7+. Available on all five platforms: `claude-opus-5-5` on the Claude API, Google Cloud, Microsoft Foundry and Claude Platform on AWS; `anthropic.claude-opus-5-5` on Bedrock. Earliest retirement is not sooner than 2027-09-22.
@@ -77,7 +79,7 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 > - **Forced `tool_choice` (`any` / `tool`) returns 400** -- use `auto` plus strict tool use or structured outputs. Non-default sampling params and assistant prefill also return 400; thinking blocks are tied to the model and conversation; `computer_20251124` is rejected on the Claude API and Google Cloud (use `computer_toolset_20260801`).
 > - **No Priority Tier.** Opus 4.8 keeps it.
 >
-> **Sonnet 5.5** (`claude-sonnet-5-5`, released 2026-09-28): the current Sonnet flagship, at **$2/$10 -- identical to Sonnet 5**, including caching (hit $0.20 = 0.1x, 5m / 1h writes $2.50 / $4.00) and Batch ($1/$5). Same tokenizer as Sonnet 5, so migrating is free at the posted rate. 1M context at standard rates, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), min cacheable prompt **512** (Sonnet 5 was 1,024), knowledge cutoff Jun 2026, no Fast Mode. Available on all five platforms: `claude-sonnet-5-5` on the Claude API, Google Cloud, Microsoft Foundry and Claude Platform on AWS; `anthropic.claude-sonnet-5-5` on Bedrock. Earliest retirement is not sooner than 2027-09-28. Sonnet 5 is now legacy (still Active, not deprecated).
+> **Sonnet 5.5** (`claude-sonnet-5-5`, released 2026-09-28): the current Sonnet flagship, at **$2/$10, the same as Sonnet 5**, with the same cache writes (5m / 1h $2.50 / $4.00) and Batch ($1/$5). Cache reads are no longer the same: on 2026-10-07 Anthropic cut Sonnet 5.5's cache hit from $0.20 to **$0.10 (0.05x base input, 95% off)**, half Sonnet 5's $0.20. Same tokenizer as Sonnet 5, so migrating costs nothing extra at the posted rate and halves the cache-read bill. 1M context at standard rates, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), min cacheable prompt **512** (Sonnet 5 was 1,024), knowledge cutoff Jun 2026, no Fast Mode. Available on all five platforms: `claude-sonnet-5-5` on the Claude API, Google Cloud, Microsoft Foundry and Claude Platform on AWS; `anthropic.claude-sonnet-5-5` on Bedrock. Earliest retirement is not sooner than 2027-09-28. Sonnet 5 is now legacy (still Active, not deprecated).
 >
 > **Five breaking changes versus Sonnet 5** (each returns a 400 when old code is carried over):
 > - `thinking: {type: "disabled"}` and manual `budget_tokens` return 400. Adaptive thinking is on by default (effort `high`) and reasoning bills as output at $10/MTok. The lowest setting is `thinking: {type: "between_tools"}`, which turns off up-front thinking and is accepted only at `low`, `medium` and `high` effort (`xhigh`/`max` + `between_tools` = 400) -- send it on routine turns.
@@ -88,16 +90,27 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 >
 > Non-default `temperature` / `top_p` / `top_k` also return 400. **Effort levels are recalibrated**: the same level does not produce the same amount of thinking as on Sonnet 5, so re-run your effort sweep instead of carrying a setting over (Anthropic's starting points: `high` in general, `medium` for well-specified agentic coding and multistep tool use).
 >
-> **Claude Code `sonnet` alias cost gotcha**: the alias resolves by provider, and only the Anthropic API maps it to Sonnet 5.5. Sonnet 5.5 needs Claude Code v2.1.284 or later.
+> **Haiku 5.5** (`claude-haiku-5-5`, released 2026-10-07): the current Haiku and the **first model priced by prompt length**. A request whose prompt is **<= 100,000 tokens** pays **$0.10/$0.50** (cache hit $0.01, 5m / 1h writes $0.125 / $0.20, Batch $0.05/$0.25); a request **over 100,000 tokens** pays **$0.50/$2.50** on all of it (cache hit $0.05, writes $0.625 / $1.00, Batch $0.25/$1.25). Prompt length counts every input token, cache reads and cache writes included, and output bills at the tier the request falls in. **The cliff**: a 100,000-token prompt costs $0.010 of input, a 100,001-token prompt $0.050 (5x), so keep Haiku 5.5 prompts under 100K. Versus Haiku 4.5 ($1/$5) it is 10x cheaper per token at <= 100K and 2x above; it uses the newer Claude 4.7+ tokenizer (the same text is ~30% more tokens than on Haiku 4.5), so per task that is roughly **7.7x cheaper at <= 100K** (10 / 1.3) and ~1.5x above (2 / 1.3). 1M context, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), min cacheable prompt **512** (Haiku 4.5: 4,096), adaptive thinking on by default at effort `medium`, knowledge cutoff Jun 2026, no Fast Mode. Available on all five platforms: `claude-haiku-5-5` on the Claude API, Google Cloud, Microsoft Foundry and Claude Platform on AWS; `anthropic.claude-haiku-5-5` on Bedrock. Earliest retirement is not sooner than 2027-10-07. Haiku 4.5 is now legacy (still Active, not deprecated; earliest retirement not sooner than 2026-10-15).
 >
-> | Provider | `sonnet` resolves to | Rate and context |
-> |----------|----------------------|------------------|
-> | Anthropic API | **Sonnet 5.5** | $2/$10, 1M |
-> | Claude Platform on AWS | Sonnet 4.6 | $3/$15, 1M |
-> | Amazon Bedrock, Google Cloud | **Sonnet 4.5** | $3/$15, 200K |
-> | Microsoft Foundry | **Sonnet 4.5** | $3/$15, 200K |
+> **Five breaking changes versus Haiku 4.5** (each returns a 400 when old code is carried over):
+> - Manual extended thinking (`budget_tokens`) -- use adaptive thinking. On the API, `thinking: {type: "disabled"}` still works at `high` effort or below; Claude Code cannot turn thinking off on Haiku 5.5.
+> - Non-default `temperature` / `top_p` / `top_k`.
+> - Assistant prefill -- end `messages` with a user turn.
+> - `computer_20250124` on the Claude API and Google Cloud -- use `computer_toolset_20260801`.
+> - Editing earlier turns invalidates thinking blocks -- keep conversations append-only.
 >
-> On Bedrock, Google Cloud and Foundry, `sonnet` therefore costs **1.5x Sonnet 5.5 for a smaller window**. Pin it with `--model claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) or `ANTHROPIC_DEFAULT_SONNET_MODEL`.
+> Also changed: responses can begin with `thinking` blocks (select content blocks by `type`), thinking text is omitted by default, and safety classifiers can decline (`stop_reason: "refusal"`, no server-side fallback). Forced tool use (`any` / `tool`) is still supported.
+>
+> **Claude Code `sonnet` and `haiku` alias cost gotcha**: both aliases resolve by provider, and only the Anthropic API maps them to Sonnet 5.5 and Haiku 5.5. Sonnet 5.5 needs Claude Code v2.1.284 or later; the `haiku` alias needs v2.1.293 or later to reach Haiku 5.5.
+>
+> | Provider | `sonnet` resolves to | Rate and context | `haiku` resolves to | Rate and context |
+> |----------|----------------------|------------------|---------------------|------------------|
+> | Anthropic API | **Sonnet 5.5** | $2/$10, 1M | **Haiku 5.5** | $0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above; 1M |
+> | Claude Platform on AWS | Sonnet 4.6 | $3/$15, 1M | Haiku 4.5 | $1/$5, 200K |
+> | Amazon Bedrock, Google Cloud | **Sonnet 4.5** | $3/$15, 200K | **Haiku 4.5** | $1/$5, 200K |
+> | Microsoft Foundry | **Sonnet 4.5** | $3/$15, 200K | **Haiku 4.5** | $1/$5, 200K |
+>
+> On Bedrock, Google Cloud and Foundry, `sonnet` therefore costs **1.5x Sonnet 5.5 for a smaller window**, and resolves to Sonnet 4.5, which is now deprecated (retirement scheduled for 2026-11-30). Pin it with `--model claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) or `ANTHROPIC_DEFAULT_SONNET_MODEL`. Off the Anthropic API, `haiku` costs **10x Haiku 5.5 per token** for prompts up to 100K; pin `ANTHROPIC_DEFAULT_HAIKU_MODEL` to `claude-haiku-5-5` (Bedrock: `anthropic.claude-haiku-5-5`), which also sets the model Claude Code uses for background functionality.
 >
 > **Opus 5** (GA 2026-07-24, legacy since the Opus 5.5 launch): the previous Opus flagship, at the **identical posted price to Opus 4.8** ($5/$25). 1M context at standard rates across the whole window, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), knowledge cutoff May 2026. Earliest retirement is not sooner than 2027-07-24.
 >
@@ -112,35 +125,37 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 
 > **Fable 5 / Mythos 5** (GA 2026-06-09): the Mythos-class tier above Opus, both at $10/$50 (2x Opus 5). **Fable 5** is generally available on every platform (Claude API, Claude Platform on AWS, Bedrock, Vertex AI, Microsoft Foundry) and includes safety classifiers that can refuse a request (`stop_reason: "refusal"`, HTTP 200; pre-output refusals are unbilled; the beta `fallbacks` parameter retries another model server-side and fallback credit refunds the cache-switch cost). **Mythos 5** is the same model without the classifiers, limited to approved [Project Glasswing](https://anthropic.com/glasswing) customers. Both require 30-day data retention (no zero-data-retention option), have always-on adaptive thinking, and support the Batch API but not Fast Mode.
 >
+> **Mythos 5.1** is now "Verification required": available to organizations verified through Anthropic's verification programs, such as the Cyber Verification Program, and no longer described as Glasswing-only. Same specs and pricing as Fable 5.1. IDs: `claude-mythos-5-1` (Bedrock: `anthropic.claude-mythos-5-1`), offered on the Claude API, Bedrock, Google Cloud and Microsoft Foundry -- not Claude Platform on AWS.
+>
 > **Mythos Preview** was superseded by Mythos 5 and is **deprecated** -- still functional, no longer recommended, and Anthropic publishes no retirement date for it. It is the invite-only defensive-cybersecurity research preview for Glasswing partners (11 founding members plus 40+ critical-infrastructure organizations).
 
 > **Sonnet 5 pricing is settled**: $2/$10 per MTok is now the standard rate. The launch pricing was labelled introductory through 2026-08-31, but Anthropic made it permanent and cancelled the increase to $3/$15, so budget $2/$10 indefinitely.
 
-> **1M context at standard rates**: Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 charge the standard per-token rate across the full 1M window -- no long-context premium. Opus 4.5, Sonnet 4.5, Opus 4.1, and Haiku 4.5 are 200K-context only. (Opus 4.8 is 200K-context on Microsoft Foundry only.)
+> **1M context at standard rates**: Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 charge the standard per-token rate across the full 1M window -- no long-context premium. Opus 4.5, Sonnet 4.5, Opus 4.1, and Haiku 4.5 are 200K-context only. (Opus 4.8 is 200K-context on Microsoft Foundry only.) **Haiku 5.5 is the exception**: it has a 1M window but is the one model from Claude 4.6 on priced by prompt length -- $0.10/$0.50 up to 100,000 prompt tokens, $0.50/$2.50 for the whole request above that.
 >
-> **Opus 4.7+ tokenizer**: The tokenizer introduced with Opus 4.7 (and used by Opus 4.8, Opus 5 and Opus 5.5) uses up to **35% more tokens** for the same text. The posted rate does not change with it, but effective cost rises proportionally. Budget accordingly.
+> **Opus 4.7+ tokenizer**: The tokenizer introduced with Opus 4.7 (and used by Opus 4.8, Opus 5 and Opus 5.5) uses up to **35% more tokens** for the same text. The posted rate does not change with it, but effective cost rises proportionally. Budget accordingly. Haiku 5.5 uses the newer Claude 4.7+ tokenizer too: the same text is ~30% more tokens than on Haiku 4.5.
 >
 > **Minimum cacheable prompt length** (per model, in tokens): a `cache_control` block below the threshold is **silently ignored** -- no error, no discount, and you keep paying full input price.
 >
 > | Model | Minimum cacheable prompt |
 > |-------|:------------------------:|
-> | Opus 5.5, Opus 5, Sonnet 5.5, Fable 5, Mythos 5 | 512 |
+> | Opus 5.5, Opus 5, Sonnet 5.5, Haiku 5.5, Fable 5, Mythos 5 | 512 |
 > | Opus 4.8, Opus 4.1, Sonnet 5, Sonnet 4.6, Sonnet 4.5 | 1,024 |
 > | Opus 4.7, Mythos Preview | 2,048 |
-> | Opus 4.6, Opus 4.5, Haiku 4.5 | 4,096 |
+> | Opus 4.6, Opus 4.5, Haiku 4.5 (legacy) | 4,096 |
 >
-> **Tool-use overhead**: Tool definitions add a system-prompt token cost on every call. The base tool-use system prompt is **286 tokens** with `tool_choice: auto` or `none` and **406 tokens** with `any` or `tool` (Opus 5.5 and Sonnet 5.5 reject forced `any`/`tool`, so only the 286-token figure applies there; legacy Sonnet 5 is 354 / 474). Add this to your `tools` array (names + descriptions + schemas) when budgeting.
+> **Tool-use overhead**: Tool definitions add a system-prompt token cost on every call. The base tool-use system prompt is **286 tokens** with `tool_choice: auto` or `none` and **406 tokens** with `any` or `tool` (Opus 5.5 and Sonnet 5.5 reject forced `any`/`tool`, so only the 286-token figure applies there; Haiku 5.5 supports forced tool use, so both apply; legacy Sonnet 5 is 354 / 474). Add this to your `tools` array (names + descriptions + schemas) when budgeting.
 
 ### Additional Pricing Modifiers
 
 | Modifier | Effect | Details |
 |----------|--------|---------|
 | **Batch API** | 50% discount on input AND output | Non-real-time, async results. Stacks with prompt caching. NOT compatible with Fast Mode or Priority Tier. |
-| **Data residency** (`inference_geo: "us"`) | 1.1x multiplier on every category | Applies to Opus 4.6, Sonnet 4.6, and all later models (including Opus 5.5, Opus 5, Sonnet 5.5 and Sonnet 5) on Claude API (1P) and Claude Platform on AWS. Earlier models error if the parameter is set. |
+| **Data residency** (`inference_geo: "us"`) | 1.1x multiplier on every category | Applies to Opus 4.6, Sonnet 4.6, and all later models (including Opus 5.5, Opus 5, Sonnet 5.5, Sonnet 5 and Haiku 5.5) on Claude API (1P) and Claude Platform on AWS. Earlier models error if the parameter is set. |
 | **Fast Mode** (beta) | 2x each model's base ($8 / $40 on Opus 5.5, $10 / $50 on Opus 5 and 4.8) | **Opus 5.5, Opus 5 and Opus 4.8 only**, all at 2x; on Opus 5.5 it is a research preview on the Claude API. Header `anthropic-beta: fast-mode-2026-02-01`, `speed: "fast"`. Up to 2.5x output tokens/sec (throughput, not time-to-first-token). Opus 4.7 with `speed: "fast"` now **returns an error**; Opus 4.6 silently runs at standard speed and standard rates (`usage.speed` returns `"standard"`). The old 6x tier no longer exists. Claude API + Managed Agents only: not on Bedrock, Vertex AI, Microsoft Foundry, Claude Platform on AWS, Batch API, or Priority Tier. Switching speeds invalidates the prompt cache. Dedicated rate limits surface in `anthropic-fast-*` response headers. |
 | **Cache write (5-min TTL)** | 1.25x base input price | Content cached for 5 minutes. Pays off after 1 reuse. |
 | **Cache write (1-hour TTL)** | 2x base input price | Content cached for 1 hour. Pays off after 2 reuses. |
-| **Cache hit / refresh** | 0.1x base input price on most models; **0.05x on Opus 5.5**; **0.025x on Fable 5.1 and Mythos 5.1** | 90% off vs uncached input on most models, 95% on Opus 5.5, 97.5% on Fable 5.1 / Mythos 5.1. Read the per-model rate; never derive it as input x 0.1. |
+| **Cache hit / refresh** | 0.1x base input price on most models; **0.05x on Opus 5.5 and Sonnet 5.5**; **0.025x on Fable 5.1 and Mythos 5.1** | 90% off vs uncached input on most models, 95% on Opus 5.5 and Sonnet 5.5, 97.5% on Fable 5.1 / Mythos 5.1. On Haiku 5.5 it is 0.1x of the request's own tier ($0.01 at <= 100K prompt tokens, $0.05 above). Read the per-model rate; never derive it as input x 0.1. |
 
 ### Batch API Pricing
 
@@ -161,8 +176,10 @@ The Batch API is the single biggest discount available. For any workload that do
 | **Sonnet 5.5** | $1.00 | $5.00 | 50% |
 | **Sonnet 5** (legacy) | $1.00 | $5.00 | 50% |
 | **Sonnet 4.6** | $1.50 | $7.50 | 50% |
-| **Sonnet 4.5** | $1.50 | $7.50 | 50% |
-| **Haiku 4.5** | $0.50 | $2.50 | 50% |
+| **Sonnet 4.5** (deprecated) | $1.50 | $7.50 | 50% |
+| **Haiku 5.5** (prompt <= 100K tokens) | $0.05 | $0.25 | 50% |
+| **Haiku 5.5** (prompt > 100K tokens) | $0.25 | $1.25 | 50% |
+| **Haiku 4.5** (legacy) | $0.50 | $2.50 | 50% |
 
 > Batch API is NOT available on Claude Platform on AWS. It IS available on Anthropic API, Bedrock, and Vertex AI.
 
@@ -185,7 +202,7 @@ Tokens billed at standard model rates (caching multipliers apply identically). *
 
 ## AWS Bedrock Pricing
 
-AWS Bedrock provides Claude access through two endpoint types with different pricing. **Fable 5.1 (the most capable widely released model) and Opus 5.5 (the recommended default Opus) are both available on Bedrock** as `anthropic.claude-fable-5-1` and `anthropic.claude-opus-5-5`, as is Sonnet 5.5 (`anthropic.claude-sonnet-5-5`), alongside Fable 5, Opus 5 (`anthropic.claude-opus-5`), Opus 4.8 and Opus 4.7. Anthropic also offers two Bedrock integration paths: the new Claude in Amazon Bedrock (Mantle) endpoint, and the legacy InvokeModel/Converse API.
+AWS Bedrock provides Claude access through two endpoint types with different pricing. **Fable 5.1 (the most capable widely released model) and Opus 5.5 (the recommended default Opus) are both available on Bedrock** as `anthropic.claude-fable-5-1` and `anthropic.claude-opus-5-5`, as are Sonnet 5.5 (`anthropic.claude-sonnet-5-5`) and Haiku 5.5 (`anthropic.claude-haiku-5-5`), alongside Fable 5, Opus 5 (`anthropic.claude-opus-5`), Opus 4.8 and Opus 4.7. Anthropic also offers two Bedrock integration paths: the new Claude in Amazon Bedrock (Mantle) endpoint, and the legacy InvokeModel/Converse API.
 
 ### Global Endpoints
 
@@ -200,16 +217,18 @@ Global endpoints match Anthropic API pricing exactly:
 | **Opus 4.8** (open access, GA) | $5.00 | $25.00 | $0.50 |
 | **Opus 4.7** (open access, GA) | $5.00 | $25.00 | $0.50 |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 |
-| **Sonnet 5.5** (GA) | $2.00 | $10.00 | $0.20 |
+| **Sonnet 5.5** (GA) | $2.00 | $10.00 | **$0.10** |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 |
-| **Sonnet 4.5** | $3.00 | $15.00 | $0.30 |
-| **Haiku 4.5** | $1.00 | $5.00 | $0.10 |
+| **Sonnet 4.5** (deprecated) | $3.00 | $15.00 | $0.30 |
+| **Haiku 5.5** (GA, prompt <= 100K tokens) | $0.10 | $0.50 | $0.01 |
+| **Haiku 5.5** (GA, prompt > 100K tokens) | $0.50 | $2.50 | $0.05 |
+| **Haiku 4.5** (legacy) | $1.00 | $5.00 | $0.10 |
 | **Mythos 5** (Glasswing allowlist) | $10.00 | $50.00 | $1.00 |
 | **Mythos Preview** (deprecated; regional `us-east-1` only) | $25.00 | $125.00 | $2.50 |
 
 ### Regional Endpoints (us/eu/jp/apac/au inference profiles)
 
-Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models** (Opus 5, Opus 5.5 and Sonnet 5.5 included). Earlier models retain their existing pricing.
+Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models** (Opus 5, Opus 5.5, Sonnet 5.5 and Haiku 5.5 included). Earlier models retain their existing pricing.
 
 | Model | Regional Input | Regional Output | Premium |
 |-------|:--------------:|:---------------:|:-------:|
@@ -223,8 +242,10 @@ Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 
 | **Opus 4.5** | $5.50 | $27.50 | +10% |
 | **Sonnet 5.5** | $2.20 | $11.00 | +10% |
 | **Sonnet 4.6** | $3.30 | $16.50 | +10% |
-| **Sonnet 4.5** | $3.30 | $16.50 | +10% |
-| **Haiku 4.5** | $1.10 | $5.50 | +10% |
+| **Sonnet 4.5** (deprecated) | $3.30 | $16.50 | +10% |
+| **Haiku 5.5** (prompt <= 100K tokens) | $0.11 | $0.55 | +10% |
+| **Haiku 5.5** (prompt > 100K tokens) | $0.55 | $2.75 | +10% |
+| **Haiku 4.5** (legacy) | $1.10 | $5.50 | +10% |
 
 ### Bedrock Features
 
@@ -252,8 +273,9 @@ The new **Claude in Amazon Bedrock (Mantle)** endpoint at `https://bedrock-mantl
 | Opus 4.1 | -- | `anthropic.claude-opus-4-1-20250805-v1:0` |
 | Sonnet 5.5 | `anthropic.claude-sonnet-5-5` | Check the Bedrock console for inference profiles |
 | Sonnet 4.6 | `anthropic.claude-sonnet-4-6` | `anthropic.claude-sonnet-4-6` |
-| Sonnet 4.5 | -- | `anthropic.claude-sonnet-4-5-20250929-v1:0` |
-| Haiku 4.5 | `anthropic.claude-haiku-4-5` | `anthropic.claude-haiku-4-5-20251001-v1:0` |
+| Sonnet 4.5 (deprecated) | -- | `anthropic.claude-sonnet-4-5-20250929-v1:0` |
+| Haiku 5.5 | `anthropic.claude-haiku-5-5` | Check the Bedrock console for inference profiles |
+| Haiku 4.5 (legacy) | `anthropic.claude-haiku-4-5` | `anthropic.claude-haiku-4-5-20251001-v1:0` |
 | Mythos Preview (deprecated) | `anthropic.claude-mythos-preview` | (Bedrock Marketplace allowlist required) |
 
 ### Bedrock Mantle: features supported and NOT supported
@@ -283,7 +305,7 @@ Claude Platform on AWS is **Anthropic-operated** (different from partner-operate
 
 ### Inference geography
 
-For Opus 4.6, Sonnet 4.6, and later models (including Opus 5, Opus 5.5 and Sonnet 5.5), setting `inference_geo: "us"` applies a **1.1x pricing multiplier** to all token categories. `inference_geo: "global"` (default) uses standard pricing.
+For Opus 4.6, Sonnet 4.6, and later models (including Opus 5, Opus 5.5, Sonnet 5.5 and Haiku 5.5), setting `inference_geo: "us"` applies a **1.1x pricing multiplier** to all token categories. `inference_geo: "global"` (default) uses standard pricing.
 
 ### What's NOT available on Claude Platform on AWS
 
@@ -316,10 +338,12 @@ Global endpoints match Anthropic API pricing exactly:
 | **Opus 4.7** | $5.00 | $25.00 | $0.50 |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 |
-| **Sonnet 5.5** | $2.00 | $10.00 | $0.20 |
+| **Sonnet 5.5** | $2.00 | $10.00 | **$0.10** |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 |
-| **Sonnet 4.5** | $3.00 | $15.00 | $0.30 |
-| **Haiku 4.5** | $1.00 | $5.00 | $0.10 |
+| **Sonnet 4.5** (deprecated) | $3.00 | $15.00 | $0.30 |
+| **Haiku 5.5** (prompt <= 100K tokens) | $0.10 | $0.50 | $0.01 |
+| **Haiku 5.5** (prompt > 100K tokens) | $0.50 | $2.50 | $0.05 |
+| **Haiku 4.5** (legacy) | $1.00 | $5.00 | $0.10 |
 
 ### Regional and Multi-Region Endpoints
 
@@ -335,8 +359,10 @@ Both regional endpoints (single GCP region) and multi-region endpoints (dynamic 
 | **Opus 4.5** | $5.50 | $27.50 | +10% |
 | **Sonnet 5.5** | $2.20 | $11.00 | +10% |
 | **Sonnet 4.6** | $3.30 | $16.50 | +10% |
-| **Sonnet 4.5** | $3.30 | $16.50 | +10% |
-| **Haiku 4.5** | $1.10 | $5.50 | +10% |
+| **Sonnet 4.5** (deprecated) | $3.30 | $16.50 | +10% |
+| **Haiku 5.5** (prompt <= 100K tokens) | $0.11 | $0.55 | +10% |
+| **Haiku 5.5** (prompt > 100K tokens) | $0.55 | $2.75 | +10% |
+| **Haiku 4.5** (legacy) | $1.10 | $5.50 | +10% |
 
 ### Vertex AI Model IDs
 
@@ -351,8 +377,9 @@ Both regional endpoints (single GCP region) and multi-region endpoints (dynamic 
 | Opus 4.1 | `claude-opus-4-1@20250805` |
 | Sonnet 5.5 | `claude-sonnet-5-5` |
 | Sonnet 4.6 | `claude-sonnet-4-6` |
-| Sonnet 4.5 | `claude-sonnet-4-5@20250929` |
-| Haiku 4.5 | `claude-haiku-4-5@20251001` |
+| Sonnet 4.5 (deprecated) | `claude-sonnet-4-5@20250929` |
+| Haiku 5.5 | `claude-haiku-5-5` |
+| Haiku 4.5 (legacy) | `claude-haiku-4-5@20251001` |
 
 ### Vertex AI Features
 
@@ -376,6 +403,8 @@ Claude Code subscriptions bundle access into predictable monthly (or annual) pri
 | **Max 20x** | $200/mo | (annual not currently published) | 20x Pro usage | ~$6.67/day |
 
 > **Annual Pro plan saves 17%** vs monthly. If you'll use Claude for >2 months in a year, annual is a no-brainer. Math: $200/yr ÷ 12 = $16.67/mo vs $20/mo monthly = $40/yr saved.
+
+> **Max and Team now include monthly API credits (since 2026-10-07)**: $100 on Max 5x, $200 on Max 20x, $20 per Team Standard seat and $100 per Team Premium seat (Team credits pooled, capped at $500 a month). They pay for the Claude API in the Claude Console, Managed Agents, the Agent SDK and the playground -- **not Claude Code** -- and expire at the end of each billing cycle with no rollover. Pro is not eligible. Details in [Guide 09](09-subscription-value.md#monthly-api-credits-on-max-and-team).
 
 ### What Is Included
 
@@ -438,17 +467,38 @@ Opus 5, Opus 4.8, Opus 4.7, and Opus 4.6 share the same base pricing and are **G
 
 ### Sonnet 5.5 Pricing Across All Platforms (per 1M tokens)
 
-Sonnet 5.5 is available on all five platforms at Sonnet 5's price. Regional rows apply the same +10% as the other models.
+Sonnet 5.5 is available on all five platforms at Sonnet 5's input, output, cache-write and Batch rates; its cache hit has been $0.10 (0.05x) since 2026-10-07, half Sonnet 5's $0.20. Regional rows apply the same +10% as the other models.
 
 | Platform | Endpoint | Input | Output | Cache Hit | Batch Input | Batch Output |
 |----------|----------|:-----:|:------:|:---------:|:-----------:|:------------:|
-| **Anthropic API** | Direct | $2.00 | $10.00 | $0.20 | $1.00 | $5.00 |
-| **Claude Platform on AWS** | CCU billing (global) | $2.00 | $10.00 | $0.20 | -- (no Batch) | -- |
-| **Claude Platform on AWS** | `inference_geo: "us"` | $2.20 | $11.00 | $0.22 | -- | -- |
-| **AWS Bedrock** | Global | $2.00 | $10.00 | $0.20 | $1.00 | $5.00 |
-| **AWS Bedrock** | Regional | $2.20 | $11.00 | $0.22 | $1.10 | $5.50 |
-| **Google Vertex AI** | Global | $2.00 | $10.00 | $0.20 | $1.00 | $5.00 |
-| **Google Vertex AI** | Regional / Multi-region | $2.20 | $11.00 | $0.22 | $1.10 | $5.50 |
+| **Anthropic API** | Direct | $2.00 | $10.00 | $0.10 | $1.00 | $5.00 |
+| **Claude Platform on AWS** | CCU billing (global) | $2.00 | $10.00 | $0.10 | -- (no Batch) | -- |
+| **Claude Platform on AWS** | `inference_geo: "us"` | $2.20 | $11.00 | $0.11 | -- | -- |
+| **AWS Bedrock** | Global | $2.00 | $10.00 | $0.10 | $1.00 | $5.00 |
+| **AWS Bedrock** | Regional | $2.20 | $11.00 | $0.11 | $1.10 | $5.50 |
+| **Google Vertex AI** | Global | $2.00 | $10.00 | $0.10 | $1.00 | $5.00 |
+| **Google Vertex AI** | Regional / Multi-region | $2.20 | $11.00 | $0.11 | $1.10 | $5.50 |
+
+### Haiku 5.5 Pricing Across All Platforms (per 1M tokens)
+
+Haiku 5.5 is available on all five platforms. Each request is priced on its own by prompt length: up to 100,000 prompt tokens (cache reads and writes count toward the limit) it pays the first row of each pair, above that the second row for the whole request. Regional rows apply the same +10% as the other models.
+
+| Platform | Endpoint | Prompt tier | Input | Output | Cache Hit | Batch Input | Batch Output |
+|----------|----------|-------------|:-----:|:------:|:---------:|:-----------:|:------------:|
+| **Anthropic API** | Direct | <= 100K | $0.10 | $0.50 | $0.01 | $0.05 | $0.25 |
+| **Anthropic API** | Direct | > 100K | $0.50 | $2.50 | $0.05 | $0.25 | $1.25 |
+| **Claude Platform on AWS** | CCU billing (global) | <= 100K | $0.10 | $0.50 | $0.01 | -- (no Batch) | -- |
+| **Claude Platform on AWS** | CCU billing (global) | > 100K | $0.50 | $2.50 | $0.05 | -- (no Batch) | -- |
+| **Claude Platform on AWS** | `inference_geo: "us"` | <= 100K | $0.11 | $0.55 | $0.011 | -- | -- |
+| **Claude Platform on AWS** | `inference_geo: "us"` | > 100K | $0.55 | $2.75 | $0.055 | -- | -- |
+| **AWS Bedrock** | Global | <= 100K | $0.10 | $0.50 | $0.01 | $0.05 | $0.25 |
+| **AWS Bedrock** | Global | > 100K | $0.50 | $2.50 | $0.05 | $0.25 | $1.25 |
+| **AWS Bedrock** | Regional | <= 100K | $0.11 | $0.55 | $0.011 | $0.055 | $0.275 |
+| **AWS Bedrock** | Regional | > 100K | $0.55 | $2.75 | $0.055 | $0.275 | $1.375 |
+| **Google Vertex AI** | Global | <= 100K | $0.10 | $0.50 | $0.01 | $0.05 | $0.25 |
+| **Google Vertex AI** | Global | > 100K | $0.50 | $2.50 | $0.05 | $0.25 | $1.25 |
+| **Google Vertex AI** | Regional / Multi-region | <= 100K | $0.11 | $0.55 | $0.011 | $0.055 | $0.275 |
+| **Google Vertex AI** | Regional / Multi-region | > 100K | $0.55 | $2.75 | $0.055 | $0.275 | $1.375 |
 
 ### Sonnet 4.6 Pricing Across All Platforms (per 1M tokens)
 
@@ -460,7 +510,7 @@ Sonnet 5.5 is available on all five platforms at Sonnet 5's price. Regional rows
 | **Google Vertex AI** | Global | $3.00 | $15.00 | $0.30 | -- | -- |
 | **Google Vertex AI** | Regional | $3.30 | $16.50 | -- | -- | -- |
 
-### Haiku 4.5 Pricing Across All Platforms (per 1M tokens)
+### Haiku 4.5 (Legacy) Pricing Across All Platforms (per 1M tokens)
 
 | Platform | Endpoint | Input | Output | Cache Hit | Batch Input | Batch Output |
 |----------|----------|:-----:|:------:|:---------:|:-----------:|:------------:|
@@ -565,6 +615,8 @@ The Batch API is the single most impactful discount. Any workload that can toler
 
 **Good news**: Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 all bill the full 1M context window at **standard per-token rates**. There is no longer a 2x input / 1.5x output premium for crossing the 200K threshold. (This earlier pricing applied to Opus 4.1 and older.)
 
+**The exception is Haiku 5.5**, the one model from Claude 4.6 on that is priced by prompt length. A request over 100,000 prompt tokens -- counting cache reads and cache writes -- pays $0.50/$2.50 on all of its tokens instead of $0.10/$0.50, even when part of the prompt is a cache hit. A 100,000-token prompt costs $0.010 of input; a 100,001-token prompt costs $0.050. On Haiku 5.5, long context is a 5x step, not a flat rate.
+
 **The catch**: While the rate is flat, the absolute token count still grows with context. A 500K-token input at $5/MTok is $2.50 per call -- small per call, but it adds up across a long session, and every fresh cache write on that content costs 1.25-2x more in absolute dollars.
 
 | Scenario | Input Tokens | Input Cost (Opus 5) | Output Cost (10K output) |
@@ -599,7 +651,7 @@ Fast Mode is 2x each model's standard rate ($8/$40 per MTok on Opus 5.5, $10/$50
 
 ### Strategy 5: Cache Effectively (Save 90-97.5% on Repeated Input)
 
-Prompt caching gives you a 90% discount on input tokens that have been seen before on most models, 95% on Opus 5.5 (0.05x) and 97.5% on Fable 5.1 and Mythos 5.1 (0.025x). The key is to structure your requests so that stable content (system prompts, reference documents, schemas) comes first and changes as little as possible between requests.
+Prompt caching gives you a 90% discount on input tokens that have been seen before on most models, 95% on Opus 5.5 and Sonnet 5.5 (0.05x) and 97.5% on Fable 5.1 and Mythos 5.1 (0.025x). The key is to structure your requests so that stable content (system prompts, reference documents, schemas) comes first and changes as little as possible between requests.
 
 | Token Type | Opus Price | Relative Cost |
 |------------|:----------:|:-------------:|
@@ -615,7 +667,7 @@ Prompt caching gives you a 90% discount on input tokens that have been seen befo
 - Use 5-min TTL for content that changes infrequently
 - Use 1-hour TTL only for content reused across many requests
 - The cache write cost is paid once; the savings compound over every subsequent request
-- Respect the per-model minimum cacheable prompt length. Opus 5.5, Opus 5 and Sonnet 5.5 need only **512 tokens** (down from 1,024 on Opus 4.8 and Sonnet 5, 2,048 on Opus 4.7, and 4,096 on Opus 4.6), so prefixes that were too short to cache before now qualify. Below the threshold the `cache_control` block is silently ignored -- no error, no discount.
+- Respect the per-model minimum cacheable prompt length. Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5 need only **512 tokens** (down from 1,024 on Opus 4.8 and Sonnet 5, 2,048 on Opus 4.7, and 4,096 on Opus 4.6 and Haiku 4.5), so prefixes that were too short to cache before now qualify. Below the threshold the `cache_control` block is silently ignored -- no error, no discount.
 
 ---
 
@@ -658,7 +710,7 @@ The 10% premium on regional endpoints applies to every token. Over time, this ad
 
 ### 3. US Data Residency Premium
 
-The 1.1x multiplier for US data residency (`inference_geo: us-only` on the Claude API) applies to Opus 4.6 and newer models (including Opus 5.5, 5, 4.8, 4.7, and Sonnet 5.5):
+The 1.1x multiplier for US data residency (`inference_geo: us-only` on the Claude API) applies to Opus 4.6 and newer models (including Opus 5.5, 5, 4.8, 4.7, Sonnet 5.5 and Haiku 5.5):
 
 | Model | Standard Input | US Residency Input | Extra Cost |
 |-------|:--------------:|:------------------:|:----------:|
@@ -668,6 +720,10 @@ The 1.1x multiplier for US data residency (`inference_geo: us-only` on the Claud
 | Opus 5 / 4.8 / 4.7 / 4.6 | $25.00 (output) | $27.50 (output) | +$2.50/MTok |
 | Sonnet 5.5 | $2.00 | $2.20 | +$0.20/MTok |
 | Sonnet 5.5 | $10.00 (output) | $11.00 (output) | +$1.00/MTok |
+| Haiku 5.5 (prompt <= 100K) | $0.10 | $0.11 | +$0.01/MTok |
+| Haiku 5.5 (prompt <= 100K) | $0.50 (output) | $0.55 (output) | +$0.05/MTok |
+| Haiku 5.5 (prompt > 100K) | $0.50 | $0.55 | +$0.05/MTok |
+| Haiku 5.5 (prompt > 100K) | $2.50 (output) | $2.75 (output) | +$0.25/MTok |
 
 This is the same 10% premium as regional endpoints on Bedrock/Vertex. If you are already paying for regional endpoints for data residency, adding US data residency on the Anthropic API side doubles the compliance premium.
 
@@ -725,10 +781,16 @@ Assumptions: 1M requests/month, average 2K input + 500 output tokens per request
 | **Anthropic API** | Opus, batch | $11,250 |
 | **Anthropic API** | Sonnet, standard | $13,500 |
 | **Anthropic API** | Sonnet, batch | $6,750 |
-| **Anthropic API** | Haiku, standard | $4,500 |
-| **Anthropic API** | Haiku, batch | $2,250 |
-| **Bedrock Global** | Haiku, batch | $2,250 |
-| **Bedrock Regional** | Haiku, batch | $2,475 |
+| **Anthropic API** | Haiku 5.5, standard (2K prompts, <= 100K tier) | $450 |
+| **Anthropic API** | Haiku 5.5, batch | $225 |
+| **Bedrock Global** | Haiku 5.5, batch | $225 |
+| **Bedrock Regional** | Haiku 5.5, batch | $247.50 |
+| **Anthropic API** | Haiku 4.5 (legacy), standard | $4,500 |
+| **Anthropic API** | Haiku 4.5 (legacy), batch | $2,250 |
+| **Bedrock Global** | Haiku 4.5 (legacy), batch | $2,250 |
+| **Bedrock Regional** | Haiku 4.5 (legacy), batch | $2,475 |
+
+> Haiku 5.5 rows: 2,000M input x $0.10 + 500M output x $0.50 = $200 + $250 = $450; batch halves it to $225; Bedrock regional adds 10% ($247.50). Every request here is 2K tokens, far under the 100K tier line. If the 2K / 500 token counts were measured on Haiku 4.5, the same text is ~30% more tokens on Haiku 5.5, so budget about $585 standard ($450 x 1.3) -- still 7.7x below Haiku 4.5's $4,500.
 
 ### Scenario: Team of 5 Developers
 
@@ -752,16 +814,16 @@ Here is the concrete recommendation for minimizing Claude costs, ordered by impa
 
 1. **Use Claude Code subscriptions** -- the subscription model is almost always cheaper than API rates for interactive work
 2. **Start with Pro ($20/mo, or $200/yr for 17% off)** and upgrade only if you consistently hit limits
-3. **Use Haiku for routine tasks** -- 4x cheaper than Opus 5.5 (5x cheaper than legacy Opus 5), handles 80% of coding tasks
+3. **Use Haiku 5.5 for routine tasks** -- 40x cheaper per token than Opus 5.5 while the prompt stays at or under 100K tokens (8x above), handles 80% of coding tasks
 4. **Keep sessions short** -- start new sessions rather than letting context grow past 200K
 
 ### For Programmatic / Application Use
 
 1. **Use the Batch API** for everything that does not need real-time responses -- **50% off**
 2. **Use global endpoints** on Bedrock and Vertex AI -- **10% savings** over regional
-3. **Use Haiku** as your default model and route to Sonnet/Opus only when complexity demands it
+3. **Use Haiku 5.5** as your default model, keep its prompts under 100K tokens, and route to Sonnet/Opus only when complexity demands it
 4. **Cache aggressively** -- structure prompts so stable content comes first, aim for 70%+ cache hit rates
-5. **Watch cumulative context growth** -- 1M context is priced at standard rates on Opus 5.5/5/4.8/4.7/4.6 and Sonnet 5.5/5/4.6 (no premium), but absolute token count still grows with context, and the Opus 4.7+ tokenizer (used by Opus 4.8, Opus 5 and Opus 5.5) inflates the count further
+5. **Watch cumulative context growth** -- 1M context is priced at standard rates on Opus 5.5/5/4.8/4.7/4.6 and Sonnet 5.5/5/4.6 (no premium; Haiku 5.5 is the exception and bills $0.50/$2.50 once a prompt passes 100K tokens), but absolute token count still grows with context, and the Opus 4.7+ tokenizer (used by Opus 4.8, Opus 5 and Opus 5.5) inflates the count further
 6. **Never use Fast Mode** unless you have proven that standard latency is hurting your business metrics
 
 ### The Optimal Stack
@@ -770,7 +832,7 @@ For most teams, the cheapest configuration is:
 
 ```
 Interactive work:  Claude Code Max 5x ($100/mo per developer)
-Automation:        Anthropic Batch API with Haiku ($0.50/$2.50 per MTok)
+Automation:        Anthropic Batch API with Haiku 5.5 ($0.05/$0.25 per MTok, prompts up to 100K)
 Complex tasks:     Anthropic API with Sonnet 5.5 ($2/$10 per MTok)
 Rare, hard tasks:  Anthropic API with Opus 5.5 ($4/$20 per MTok)
 Data residency:    Bedrock/Vertex Regional (accept the 10% premium)
@@ -792,7 +854,7 @@ As of 2026-05, Claude Code subscriptions are priced in **USD globally** with no 
 | Max 5x | $100/mo | -- |
 | Max 20x | $200/mo | -- |
 
-This means the effective cost relative to local purchasing power varies significantly by country. For developers in regions with lower costs of living, the API pay-per-token model with cheaper models (Haiku at $1/$5) may be more cost-effective than a subscription.
+This means the effective cost relative to local purchasing power varies significantly by country. For developers in regions with lower costs of living, the API pay-per-token model with cheaper models (Haiku 5.5 at $0.10/$0.50 up to 100K prompt tokens) may be more cost-effective than a subscription.
 
 ### Cloud Provider Committed-Use Discounts
 
@@ -813,17 +875,18 @@ Anthropic periodically runs promotional events that double usage limits during o
 ## Key Takeaways
 
 1. **Global endpoints on Bedrock and Vertex AI are the same price as the Anthropic API** -- use them if you need cloud billing integration without paying more
-2. **Regional endpoints cost 10% more everywhere** -- only use them for data residency compliance. Scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models (Opus 5.5 and Sonnet 5.5 included).
+2. **Regional endpoints cost 10% more everywhere** -- only use them for data residency compliance. Scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models (Opus 5.5, Sonnet 5.5 and Haiku 5.5 included).
 3. **The Batch API saves 50%** -- the single biggest discount available, for any workload that can wait
-4. **1M context bills at standard rates on Opus 5.5/5/4.8/4.7/4.6 and Sonnet 5.5/5/4.6** -- no long-context premium. (Earlier "2x over 200K" applied to Opus 4.1 and older.) Absolute cost still grows with token count, so trim aggressively anyway.
+4. **1M context bills at standard rates on Opus 5.5/5/4.8/4.7/4.6 and Sonnet 5.5/5/4.6** -- no long-context premium. (Earlier "2x over 200K" applied to Opus 4.1 and older.) Haiku 5.5 is the exception: over 100K prompt tokens the whole request bills at $0.50/$2.50. Absolute cost still grows with token count, so trim aggressively anyway.
 5. **Fast Mode is 2x standard on Opus 5.5 ($8/$40, research preview), Opus 5 and Opus 4.8 ($10/$50) only**. Opus 4.7 errors on `speed: "fast"`, Opus 4.6 silently runs standard, and the old 6x tier is gone. Almost never worth it for development work.
 6. **Pro plan annual saves 17%** -- $200/yr vs $240/yr monthly equivalent, no usage difference.
 7. **Claude Platform on AWS** uses CCU billing at $0.01/CCU but matches per-token rates -- pick it over Bedrock for same-day Anthropic feature parity (no Fast Mode or Batch though).
-6. **Cache hits save 90% on most models, 95% on Opus 5.5 and 97.5% on Fable 5.1 / Mythos 5.1** -- structure your prompts to maximize cache reuse
+6. **Cache hits save 90% on most models, 95% on Opus 5.5 and Sonnet 5.5, and 97.5% on Fable 5.1 / Mythos 5.1** -- structure your prompts to maximize cache reuse
 7. **Claude Code subscriptions beat API rates for interactive development** -- the math almost always works out in favor of a subscription
 8. **The cheapest token is the one you don't send** -- all the strategies in this repo (context optimization, model selection, workflow patterns) compound with platform-level savings
 9. **Opus 5.5 (released 2026-09-22) is the first Opus to cut the price** -- $4/$20, 20% below Opus 5 and 4.8, with cache hits at 0.05x instead of 0.1x, on all five platforms. Thinking is always on and default effort is `medium`, so your output token count can move in either direction; forced `tool_choice`, prefill and non-default sampling params now return 400, and there is no Priority Tier. Migrate, then re-baseline cost per task.
-10. **Sonnet 5.5 (released 2026-09-28) costs exactly what Sonnet 5 did** -- $2/$10, same cache rates, same tokenizer -- and halves the cache floor to 512. Carried-over code can 400 (`thinking: disabled`, forced `tool_choice`, `computer_20251124` on the Claude API and Google Cloud), and effort levels are recalibrated, so re-run your effort sweep. In Claude Code on Bedrock, Google Cloud or Foundry, the `sonnet` alias still means Sonnet 4.5 at $3/$15 with 200K context: pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) or you pay 1.5x for a smaller window.
+10. **Sonnet 5.5 (released 2026-09-28) costs what Sonnet 5 did, except cache reads** -- $2/$10, same cache writes and Batch, same tokenizer, but cache hits at $0.10 (0.05x) since 2026-10-07, half Sonnet 5's $0.20 -- and halves the cache floor to 512. Carried-over code can 400 (`thinking: disabled`, forced `tool_choice`, `computer_20251124` on the Claude API and Google Cloud), and effort levels are recalibrated, so re-run your effort sweep. In Claude Code on Bedrock, Google Cloud or Foundry, the `sonnet` alias still means Sonnet 4.5 at $3/$15 with 200K context, and Sonnet 4.5 is deprecated (retirement scheduled for 2026-11-30): pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) or you pay 1.5x for a smaller window.
+11. **Haiku 5.5 (released 2026-10-07) is the first model priced by prompt length** -- $0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above, with cache reads and writes counted toward the 100K. At or under the line it is 10x cheaper per token than legacy Haiku 4.5 (~7.7x per task after its ~30% larger token count) and 40x cheaper than Opus 5.5. Carried-over Haiku 4.5 code can 400 (`budget_tokens`, non-default sampling params, prefill, `computer_20250124`). In Claude Code the `haiku` alias reaches Haiku 5.5 only on the Anthropic API (v2.1.293+); elsewhere pin `ANTHROPIC_DEFAULT_HAIKU_MODEL`.
 
 ---
 

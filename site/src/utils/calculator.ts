@@ -1,4 +1,4 @@
-import { type ModelId, type ModelPricing, MODELS, FAST_MODE_MULTIPLIER, TOKEN_ESTIMATES } from './pricing'
+import { type ModelId, type ModelPricing, MODELS, FAST_MODE_MULTIPLIER, TOKEN_ESTIMATES, ratesForPrompt, formatRate } from './pricing'
 
 /** Fast Mode premium for a model -- per-model rate, falling back to the global default. */
 function fastModeMultiplier(model: ModelPricing): number {
@@ -57,9 +57,11 @@ function computeSessionCost(
   const stableInputPerTurn = claudeMdTokens + systemTokens + mcpTokens
   const cacheRate = t.cacheHitRate
 
-  let totalInputTokens = 0
-  let totalCachedTokens = 0
-  let totalOutputTokens = 0
+  // Costs accumulate per turn because a tiered model (Haiku 5.5) prices each
+  // request by its own prompt length, and the prompt grows with history.
+  let inputCost = 0
+  let cacheCost = 0
+  let outputCost = 0
 
   let claudeMdInput = 0
   let mcpInput = 0
@@ -78,9 +80,13 @@ function computeSessionCost(
     const turnFileTokens = fileTokensPerTurn
     const turnOutput = t.outputTokensPerTurn
 
-    totalCachedTokens += stableCached
-    totalInputTokens += stableUncached + turnFileTokens + historyTokens
-    totalOutputTokens += turnOutput
+    const rates = ratesForPrompt(pricing, stableInputPerTurn + turnFileTokens + historyTokens)
+    const turnInputCost = ((stableUncached + turnFileTokens + historyTokens) / 1_000_000) * rates.inputPer1M
+    const turnCacheCost = (stableCached / 1_000_000) * rates.cacheHitPer1M
+    const turnOutputCost = (turnOutput / 1_000_000) * rates.outputPer1M
+    inputCost += turnInputCost
+    cacheCost += turnCacheCost
+    outputCost += turnOutputCost
 
     const claudeMdFraction = claudeMdTokens / stableInputPerTurn
     const mcpFraction = mcpTokens / stableInputPerTurn
@@ -91,21 +97,12 @@ function computeSessionCost(
     historyInput += historyTokens
     outputTotal += turnOutput
 
-    perTurn.push(
-      (((stableUncached + turnFileTokens + historyTokens) / 1_000_000) * pricing.inputPer1M +
-        (stableCached / 1_000_000) * pricing.cacheHitPer1M +
-        (turnOutput / 1_000_000) * pricing.outputPer1M) *
-        turnMultiplier,
-    )
+    perTurn.push((turnInputCost + turnCacheCost + turnOutputCost) * turnMultiplier)
 
     // Adjust for cache pricing proportionally
     void claudeMdFraction
     void mcpFraction
   }
-
-  const inputCost = (totalInputTokens / 1_000_000) * pricing.inputPer1M
-  const cacheCost = (totalCachedTokens / 1_000_000) * pricing.cacheHitPer1M
-  const outputCost = (totalOutputTokens / 1_000_000) * pricing.outputPer1M
 
   let sessionTotal = inputCost + cacheCost + outputCost
 
@@ -169,8 +166,8 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
   const optimizedClaudeMdLines = Math.min(inputs.claudeMdLines, 80)
   const optimizedFileReads = Math.round(inputs.fileReadsPerTurn * 0.7)
 
-  // If Opus or Sonnet, 30% of work delegated to Haiku
-  const isHaiku = inputs.model === 'haiku'
+  // If Opus or Sonnet, 30% of work delegated to Haiku 5.5
+  const isHaiku = inputs.model === 'haiku-5-5' || inputs.model === 'haiku'
   const haikuFraction = isHaiku ? 0 : 0.3
   const primaryFraction = 1 - haikuFraction
 
@@ -199,7 +196,7 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
         turnsPerSession: Math.round(inputs.turnsPerSession * haikuFraction),
         fastMode: false,
       },
-      'haiku',
+      'haiku-5-5',
     )
   }
 
@@ -239,6 +236,8 @@ export function calculate(inputs: CalculatorInputs): CalculatorResult {
   }
 }
 
+const HAIKUS: ReadonlySet<ModelId> = new Set<ModelId>(['haiku-5-5', 'haiku'])
+
 function generateRecommendations(
   inputs: CalculatorInputs,
   breakdown: CostBreakdown,
@@ -263,9 +262,9 @@ function generateRecommendations(
     })
   }
 
-  if (inputs.model !== 'haiku') {
+  if (!HAIKUS.has(inputs.model)) {
     recs.push({
-      text: `Delegate simple tasks (tests, docs, formatting) to Haiku 4.5 -- saves 20-40% on delegated work`,
+      text: `Delegate simple tasks (tests, docs, formatting) to Haiku 5.5 subagents -- $0.10/$0.50 per 1M while each prompt stays under 100K tokens, 20x below Sonnet 5.5`,
       impact: 30,
     })
   }
@@ -378,19 +377,50 @@ function modelRecommendations(inputs: CalculatorInputs): { text: string; impact:
 
   if (model.minCacheTokens >= 4096) {
     recs.push({
-      text: `${model.name} needs ${model.minCacheTokens.toLocaleString()}+ tokens before a prompt caches at all. Below that you pay full input price every turn -- Opus 5.5, Sonnet 5.5 and Fable 5.1 cache from 512 tokens`,
+      text: `${model.name} needs ${model.minCacheTokens.toLocaleString()}+ tokens before a prompt caches at all. Below that you pay full input price every turn -- Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 cache from 512 tokens`,
       impact: 12,
     })
   }
 
   const sonnetMigration = legacySonnetRecommendation(inputs.model)
   if (sonnetMigration) recs.push(sonnetMigration)
+  if (inputs.model === 'haiku') recs.push(haikuMigrationRecommendation())
+  const tierWarning = promptTierRecommendation(inputs)
+  if (tierWarning) recs.push(tierWarning)
 
   return recs
 }
 
-// Sonnet 5.5 is the same $2/$10 as Sonnet 5 and a third below Sonnet 4.6 / 4.5's
-// $3/$15, with a 512-token cache floor, so moving up is free or a price cut.
+function haikuMigrationRecommendation(): { text: string; impact: number } {
+  const legacy = MODELS.haiku
+  const target = MODELS['haiku-5-5']
+  return {
+    text: `Migrate to Haiku 5.5 -- ${formatRate(target.inputPer1M)}/${formatRate(target.outputPer1M)} per 1M vs ${formatRate(legacy.inputPer1M)}/${formatRate(legacy.outputPer1M)} while each prompt stays under 100K tokens (10x per token; it counts ~30% more tokens for the same text), with a 1M window and prompts caching from ${target.minCacheTokens} tokens instead of ${legacy.minCacheTokens.toLocaleString()}. Check first: budget_tokens, sampling params and prefill return 400`,
+    impact: 40,
+  }
+}
+
+/** Warn when later turns cross a tiered model's prompt-length line (Haiku 5.5: 100K). */
+function promptTierRecommendation(inputs: CalculatorInputs): { text: string; impact: number } | null {
+  const tier = MODELS[inputs.model].longPrompt
+  if (!tier) return null
+  const t = TOKEN_ESTIMATES
+  const basePrompt =
+    inputs.claudeMdLines * t.tokensPerClaudeMdLine +
+    t.systemPromptTokens +
+    inputs.mcpServers * t.tokensPerMcpServer +
+    inputs.fileReadsPerTurn * t.tokensPerFileRead
+  const firstTurnOver = Math.max(0, Math.ceil((tier.threshold - basePrompt) / t.historyGrowthPerTurn))
+  if (firstTurnOver >= inputs.turnsPerSession) return null
+  return {
+    text: `From turn ${firstTurnOver + 1} the prompt passes ${tier.threshold.toLocaleString()} tokens, so every request after that pays ${formatRate(tier.inputPer1M)}/${formatRate(tier.outputPer1M)} instead of ${formatRate(MODELS[inputs.model].inputPer1M)}/${formatRate(MODELS[inputs.model].outputPer1M)} (5x). Run /compact or /clear before then`,
+    impact: 35,
+  }
+}
+
+// Sonnet 5.5 is the same $2/$10 as Sonnet 5 (with half its cache-read price) and a
+// third below Sonnet 4.6 / 4.5's $3/$15, with a 512-token cache floor, so moving up
+// is always a price cut.
 const LEGACY_SONNETS: ReadonlySet<ModelId> = new Set<ModelId>(['sonnet-5', 'sonnet', 'sonnet-4-5'])
 
 function legacySonnetRecommendation(id: ModelId): { text: string; impact: number } | null {
@@ -398,10 +428,14 @@ function legacySonnetRecommendation(id: ModelId): { text: string; impact: number
   const model = MODELS[id]
   const target = MODELS['sonnet-5-5']
   const saving = pctBelow(target.inputPer1M, model.inputPer1M)
+  const cacheNote =
+    target.cacheHitPer1M < model.cacheHitPer1M
+      ? ` with cache reads at $${target.cacheHitPer1M.toFixed(2)} vs $${model.cacheHitPer1M.toFixed(2)}`
+      : ''
   const price =
     saving > 0
-      ? `${saving}% cheaper ($${target.inputPer1M}/$${target.outputPer1M} vs $${model.inputPer1M}/$${model.outputPer1M})`
-      : `the same $${target.inputPer1M}/$${target.outputPer1M}`
+      ? `${saving}% cheaper ($${target.inputPer1M}/$${target.outputPer1M} vs $${model.inputPer1M}/$${model.outputPer1M})${cacheNote}`
+      : `the same $${target.inputPer1M}/$${target.outputPer1M}${cacheNote}`
   return {
     text: `Migrate to Sonnet 5.5 -- ${price}, and prompts cache from ${target.minCacheTokens} tokens instead of ${model.minCacheTokens.toLocaleString()}. Check first: thinking {type:"disabled"} returns 400 (send between_tools) and forced tool_choice returns 400`,
     impact: saving > 0 ? 30 : 10,

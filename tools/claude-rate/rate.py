@@ -22,9 +22,10 @@ Usage:
 
 No external dependencies. Pure Python 3.10+ stdlib.
 
-Pricing data verified 2026-09-29 against:
+Pricing data verified 2026-10-09 against:
     https://platform.claude.com/docs/en/about-claude/pricing
     https://platform.claude.com/docs/en/about-claude/models/overview
+    https://platform.claude.com/docs/en/models/haiku-5-5/overview
     https://platform.claude.com/docs/en/models/sonnet-5-5/overview
     https://platform.claude.com/docs/en/models/opus-5-5/overview
 """
@@ -44,15 +45,19 @@ from typing import Any
 
 # -- Pricing data (mirrors site/src/utils/pricing.ts) ------------------------
 
-# Models priced as of 2026-09-29. Prices are USD per 1M tokens.
+# Models priced as of 2026-10-09. Prices are USD per 1M tokens.
 # `fast_mode` marks the models that honor `speed: "fast"` (a flat 2x of the
 # model's own base on both input and output). Since Opus 5.5's release on
 # 2026-09-22 that is Opus 5.5, Opus 5 and Opus 4.8 only: Opus 4.7 errors on
 # `speed: "fast"`, and Opus 4.6 silently downgrades to standard speed at
 # standard rates. The old 6x tier no longer exists.
 # `cache_hit` has three multipliers: 0.1x input on most models, 0.05x on
-# Opus 5.5 ($0.20/MTok), and 0.025x on Fable 5.1 / Mythos 5.1 ($0.25/MTok) --
-# read the field, never recompute it as input * 0.1.
+# Opus 5.5 ($0.20/MTok) and Sonnet 5.5 ($0.10/MTok since 2026-10-07), and 0.025x
+# on Fable 5.1 / Mythos 5.1 ($0.25/MTok) -- read the field, never recompute it as
+# input * 0.1.
+# `long_prompt` (Haiku 5.5 only) is a second price tier: a request whose prompt,
+# cache reads and writes included, is over `threshold` tokens pays those rates on
+# the whole request.
 MODELS: dict[str, dict[str, Any]] = {
     "fable-5-1": {
         "name": "Fable 5.1",
@@ -139,12 +144,13 @@ MODELS: dict[str, dict[str, Any]] = {
         "fast_mode": False,
         "lifecycle": "legacy",
     },
-    # Same $2/$10 and tokenizer as Sonnet 5; the cache floor drops to 512 tokens.
+    # Same $2/$10 and tokenizer as Sonnet 5; the cache floor drops to 512 tokens,
+    # and the cache read was cut to $0.10 (0.05x) on 2026-10-07.
     "sonnet-5-5": {
         "name": "Sonnet 5.5",
         "input": 2.00,
         "output": 10.00,
-        "cache_hit": 0.20,
+        "cache_hit": 0.10,
         "cache_5m_write": 2.50,
         "cache_1h_write": 4.00,
         "context_window": 1_000_000,
@@ -178,6 +184,27 @@ MODELS: dict[str, dict[str, Any]] = {
         "fast_mode": False,
         "lifecycle": "legacy",
     },
+    # Tiered: $0.10/$0.50 up to 100,000 prompt tokens, $0.50/$2.50 above.
+    "haiku-5-5": {
+        "name": "Haiku 5.5",
+        "input": 0.10,
+        "output": 0.50,
+        "cache_hit": 0.01,
+        "cache_5m_write": 0.125,
+        "cache_1h_write": 0.20,
+        "context_window": 1_000_000,
+        "tokenizer_overhead": 1.3,
+        "fast_mode": False,
+        "lifecycle": "active",
+        "long_prompt": {
+            "threshold": 100_000,
+            "input": 0.50,
+            "output": 2.50,
+            "cache_hit": 0.05,
+            "cache_5m_write": 0.625,
+            "cache_1h_write": 1.00,
+        },
+    },
     "haiku-4-5": {
         "name": "Haiku 4.5",
         "input": 1.00,
@@ -188,7 +215,7 @@ MODELS: dict[str, dict[str, Any]] = {
         "context_window": 200_000,
         "tokenizer_overhead": 1.0,
         "fast_mode": False,
-        "lifecycle": "active",
+        "lifecycle": "legacy",
     },
 }
 
@@ -1118,6 +1145,18 @@ def badge_url(grade: str) -> str:
 # -- Cost estimation ---------------------------------------------------------
 
 
+def _rates_for_prompt(model: dict[str, Any], prompt_tokens: float) -> dict[str, Any]:
+    """The input, output and cache-read rates a request of `prompt_tokens` pays.
+
+    Haiku 5.5 is priced by prompt length: a prompt over its threshold pays the
+    long-prompt rates on the whole request. Every other model has one rate.
+    """
+    tier = model.get("long_prompt")
+    if tier and prompt_tokens > tier["threshold"]:
+        return tier
+    return model
+
+
 def estimate_costs(claude_md_chars: int, mcp_count: int) -> dict[str, dict[str, float]]:
     """Estimate per-session and per-month cost for each active model.
 
@@ -1129,26 +1168,25 @@ def estimate_costs(claude_md_chars: int, mcp_count: int) -> dict[str, dict[str, 
     system_prompt_tokens = SYSTEM_PROMPT_TOKENS + claude_md_tokens + mcp_tokens
 
     turns = 30
-    input_tokens = (
-        system_prompt_tokens * turns
-        + (turns * (turns - 1) * HISTORY_GROWTH_PER_TURN) / 2
-        + TOKENS_PER_FILE_READ * turns
-    )
-    output_tokens = OUTPUT_TOKENS_PER_TURN * turns
-
-    cached = input_tokens * CACHE_HIT_RATE
-    uncached = input_tokens * (1 - CACHE_HIT_RATE)
-
     sessions_per_day = 3
     working_days = 22
 
     out: dict[str, dict[str, float]] = {}
     for mid, m in MODELS.items():
         overhead = m["tokenizer_overhead"]
-        input_cost = (uncached * overhead / 1_000_000) * m["input"]
-        cache_cost = (cached * overhead / 1_000_000) * m["cache_hit"]
-        output_cost = (output_tokens * overhead / 1_000_000) * m["output"]
-        per_session = input_cost + cache_cost + output_cost
+        # Per turn, because a tiered model prices each request by its own prompt
+        # length; for flat-rate models this sums to the same session total.
+        per_session = 0.0
+        for turn in range(turns):
+            prompt = (
+                system_prompt_tokens + turn * HISTORY_GROWTH_PER_TURN + TOKENS_PER_FILE_READ
+            ) * overhead
+            rates = _rates_for_prompt(m, prompt)
+            per_session += (
+                prompt * (1 - CACHE_HIT_RATE) / 1_000_000 * rates["input"]
+                + prompt * CACHE_HIT_RATE / 1_000_000 * rates["cache_hit"]
+                + OUTPUT_TOKENS_PER_TURN * overhead / 1_000_000 * rates["output"]
+            )
         out[mid] = {
             "name": m["name"],
             "per_session": round(per_session, 2),
@@ -1198,7 +1236,7 @@ def rate(project: Path) -> RateResult:
 # -- Output formatters -------------------------------------------------------
 
 _BAR_WIDTH = 20
-_PRICING_VERIFIED_DATE = "2026-09-29"
+_PRICING_VERIFIED_DATE = "2026-10-09"
 
 
 def _ratio_color(ratio: float) -> str:

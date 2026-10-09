@@ -8,11 +8,13 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 // -------------------------------------------------------------------
-// Pricing tables -- verified 2026-09-29
+// Pricing tables -- verified 2026-10-09
 //
 // cacheHitPerMillion has three multipliers: 0.1x input by default, 0.025x on
-// Fable 5.1 / Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok).
-// Always read the field; never derive it.
+// Fable 5.1 / Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok) and
+// Sonnet 5.5 ($0.10/MTok since 2026-10-07). Always read the field; never derive it.
+// longPrompt (Haiku 5.5 only): a request whose prompt is over `threshold` tokens,
+// cache reads and writes included, pays those rates on the whole request.
 // -------------------------------------------------------------------
 
 interface ModelPricing {
@@ -21,6 +23,12 @@ interface ModelPricing {
   cacheHitPerMillion: number;
   /** Prefixes shorter than this are silently not cached (no error, full input price). */
   minCacheTokens: number;
+  longPrompt?: {
+    threshold: number;
+    inputPerMillion: number;
+    outputPerMillion: number;
+    cacheHitPerMillion: number;
+  };
 }
 
 const PRICING: Record<string, ModelPricing> = {
@@ -35,17 +43,27 @@ const PRICING: Record<string, ModelPricing> = {
   "opus-4.8": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 1024 },
   "opus-4.7": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 2048 },
   "opus-4.6": { inputPerMillion: 5, outputPerMillion: 25, cacheHitPerMillion: 0.5, minCacheTokens: 4096 },
-  // "sonnet" = Sonnet 5.5 (released 2026-09-28): the same $2/$10 as Sonnet 5 but a
-  // 512-token cache floor. "sonnet-5" is legacy Sonnet 5 at its permanent $2/$10 (the
-  // scheduled rise to $3/$15 on 2026-09-01 was cancelled); Sonnet 4.6 stays at $3/$15
-  sonnet: { inputPerMillion: 2, outputPerMillion: 10, cacheHitPerMillion: 0.2, minCacheTokens: 512 },
+  // "sonnet" = Sonnet 5.5 (released 2026-09-28): the same $2/$10 as Sonnet 5, a
+  // 512-token cache floor, and a $0.10 cache read (0.05x, cut on 2026-10-07). "sonnet-5"
+  // is legacy Sonnet 5 at its permanent $2/$10 (the scheduled rise to $3/$15 on
+  // 2026-09-01 was cancelled); Sonnet 4.6 stays at $3/$15
+  sonnet: { inputPerMillion: 2, outputPerMillion: 10, cacheHitPerMillion: 0.1, minCacheTokens: 512 },
   "sonnet-5": { inputPerMillion: 2, outputPerMillion: 10, cacheHitPerMillion: 0.2, minCacheTokens: 1024 },
   "sonnet-4.6": { inputPerMillion: 3, outputPerMillion: 15, cacheHitPerMillion: 0.3, minCacheTokens: 1024 },
-  haiku: { inputPerMillion: 1, outputPerMillion: 5, cacheHitPerMillion: 0.1, minCacheTokens: 4096 },
+  // "haiku" = Haiku 5.5 (released 2026-10-07), priced by prompt length: $0.10/$0.50
+  // up to 100,000 prompt tokens, $0.50/$2.50 above. "haiku-4.5" is legacy Haiku 4.5.
+  haiku: {
+    inputPerMillion: 0.1,
+    outputPerMillion: 0.5,
+    cacheHitPerMillion: 0.01,
+    minCacheTokens: 512,
+    longPrompt: { threshold: 100_000, inputPerMillion: 0.5, outputPerMillion: 2.5, cacheHitPerMillion: 0.05 },
+  },
+  "haiku-4.5": { inputPerMillion: 1, outputPerMillion: 5, cacheHitPerMillion: 0.1, minCacheTokens: 4096 },
 };
 
 const MODEL_IDS = Object.keys(PRICING);
-const UNKNOWN_MODEL_HINT = `Use one of: ${MODEL_IDS.join(", ")} ("opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5.5, "sonnet-5" is legacy Sonnet 5, "fable" is Fable 5.1).`;
+const UNKNOWN_MODEL_HINT = `Use one of: ${MODEL_IDS.join(", ")} ("opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5.5, "sonnet-5" is legacy Sonnet 5, "haiku" is Haiku 5.5, "haiku-4.5" is legacy Haiku 4.5, "fable" is Fable 5.1).`;
 
 // -------------------------------------------------------------------
 // Helpers
@@ -54,6 +72,12 @@ const UNKNOWN_MODEL_HINT = `Use one of: ${MODEL_IDS.join(", ")} ("opus" is Opus 
 /** Rough token estimate: ~4 characters per token. */
 function estimateTokens(text: string): number {
   return Math.ceil(text.length / 4);
+}
+
+/** The rates a request with a `promptTokens`-token prompt pays (Haiku 5.5 has two tiers). */
+function ratesFor(pricing: ModelPricing, promptTokens: number): ModelPricing {
+  const tier = pricing.longPrompt;
+  return tier && promptTokens > tier.threshold ? { ...pricing, ...tier } : pricing;
 }
 
 function costForTokens(tokens: number, ratePerMillion: number): number {
@@ -85,9 +109,10 @@ function estimateCost(args: {
   }
 
   const tokens = estimateTokens(args.text);
-  const inputCost = costForTokens(tokens, pricing.inputPerMillion);
+  const passRates = ratesFor(pricing, tokens);
+  const inputCost = costForTokens(tokens, passRates.inputPerMillion);
   const outputEstimate = Math.ceil(tokens * 0.3); // rough output assumption
-  const outputCost = costForTokens(outputEstimate, pricing.outputPerMillion);
+  const outputCost = costForTokens(outputEstimate, passRates.outputPerMillion);
   const singlePassCost = inputCost + outputCost;
 
   const result: Record<string, unknown> = {
@@ -111,10 +136,11 @@ function estimateCost(args: {
       const historyTokens = tokens + (t - 1) * 1500;
       const cachedTokens = Math.floor(historyTokens * 0.7);
       const freshTokens = historyTokens - cachedTokens;
+      const rates = ratesFor(pricing, historyTokens);
       const turnInputCost =
-        costForTokens(freshTokens, pricing.inputPerMillion) +
-        costForTokens(cachedTokens, pricing.cacheHitPerMillion);
-      const turnOutputCost = costForTokens(500, pricing.outputPerMillion);
+        costForTokens(freshTokens, rates.inputPerMillion) +
+        costForTokens(cachedTokens, rates.cacheHitPerMillion);
+      const turnOutputCost = costForTokens(500, rates.outputPerMillion);
       totalCost += turnInputCost + turnOutputCost;
     }
     result.projected_turns = args.turns;
@@ -157,11 +183,12 @@ function sessionEstimate(args: {
     const cachedTokens = Math.floor(stableTokens * cacheHitRate);
     const freshTokens = turnInputTokens - cachedTokens;
 
+    const rates = ratesFor(pricing, turnInputTokens);
     const turnInputCost =
-      costForTokens(freshTokens, pricing.inputPerMillion) +
-      costForTokens(cachedTokens, pricing.cacheHitPerMillion);
+      costForTokens(freshTokens, rates.inputPerMillion) +
+      costForTokens(cachedTokens, rates.cacheHitPerMillion);
     const turnOutputTokens = 500;
-    const turnOutputCost = costForTokens(turnOutputTokens, pricing.outputPerMillion);
+    const turnOutputCost = costForTokens(turnOutputTokens, rates.outputPerMillion);
 
     totalInputCost += turnInputCost;
     totalOutputCost += turnOutputCost;
@@ -244,8 +271,10 @@ function compareModels(args: {
   > = {};
 
   for (const [name, pricing] of Object.entries(PRICING)) {
-    const ic = costForTokens(input_tokens, pricing.inputPerMillion);
-    const oc = costForTokens(output_tokens, pricing.outputPerMillion);
+    // input_tokens is treated as one request's prompt, which sets Haiku 5.5's tier.
+    const rates = ratesFor(pricing, input_tokens);
+    const ic = costForTokens(input_tokens, rates.inputPerMillion);
+    const oc = costForTokens(output_tokens, rates.outputPerMillion);
     results[name] = {
       input_cost: formatUsd(ic),
       output_cost: formatUsd(oc),
@@ -354,7 +383,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
     {
       name: "compare_models",
       description:
-        "Compare cost across Fable 5.1, Fable 5, Opus 5.5, legacy Opus snapshots (Opus 5, 4.8, 4.7, 4.6), Sonnet 5.5, Sonnet 5, Sonnet 4.6, and Haiku 4.5 for a given token count. Shows which model is cheapest and savings percentages.",
+        "Compare cost across Fable 5.1, Fable 5, Opus 5.5, legacy Opus snapshots (Opus 5, 4.8, 4.7, 4.6), Sonnet 5.5, Sonnet 5, Sonnet 4.6, Haiku 5.5, and legacy Haiku 4.5 for a given token count, treated as one request (so Haiku 5.5 pays its $0.50/$2.50 tier when input_tokens is over 100,000). Shows which model is cheapest and savings percentages.",
       inputSchema: {
         type: "object" as const,
         properties: {

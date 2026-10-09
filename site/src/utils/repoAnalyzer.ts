@@ -1,4 +1,4 @@
-import { MODELS, TOKEN_ESTIMATES, type ModelId } from './pricing'
+import { MODELS, TOKEN_ESTIMATES, type ModelId, ratesForPrompt } from './pricing'
 
 export interface RepoInput {
   owner: string
@@ -752,8 +752,6 @@ export async function analyzeRepo(
   const outputTokensSession = TOKEN_ESTIMATES.outputTokensPerTurn * turns
 
   const cacheHitRate = TOKEN_ESTIMATES.cacheHitRate
-  const cachedInput = inputTokensSession * cacheHitRate
-  const uncachedInput = inputTokensSession * (1 - cacheHitRate)
 
   const tokenEstimate = {
     systemPromptTokens,
@@ -768,10 +766,18 @@ export async function analyzeRepo(
   const costEstimate = {} as Record<ModelId, { perSession: number; perMonth: number }>
   for (const modelId of Object.keys(MODELS) as ModelId[]) {
     const model = MODELS[modelId]
-    const inputCost = (uncachedInput / 1_000_000) * model.inputPer1M
-    const cacheCost = (cachedInput / 1_000_000) * model.cacheHitPer1M
-    const outputCost = (outputTokensSession / 1_000_000) * model.outputPer1M
-    const perSession = inputCost + cacheCost + outputCost
+    // Per turn, because a tiered model (Haiku 5.5) prices each request by its
+    // own prompt length; for flat-rate models this equals the session totals.
+    let perSession = 0
+    for (let turn = 0; turn < turns; turn++) {
+      const prompt =
+        systemPromptTokens + turn * TOKEN_ESTIMATES.historyGrowthPerTurn + TOKEN_ESTIMATES.tokensPerFileRead
+      const rates = ratesForPrompt(model, prompt)
+      perSession +=
+        ((prompt * (1 - cacheHitRate)) / 1_000_000) * rates.inputPer1M +
+        ((prompt * cacheHitRate) / 1_000_000) * rates.cacheHitPer1M +
+        (TOKEN_ESTIMATES.outputTokensPerTurn / 1_000_000) * rates.outputPer1M
+    }
     costEstimate[modelId] = {
       perSession: Math.round(perSession * 100) / 100,
       perMonth: Math.round(perSession * sessionsPerDay * workingDays * 100) / 100,

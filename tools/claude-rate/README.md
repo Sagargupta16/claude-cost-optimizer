@@ -45,7 +45,7 @@ No external dependencies. Pure Python 3.10+ stdlib.
 claude-rate -- Claude / AI setup audit
 ============================================================
 Project: /home/sagar/work/my-project
-Verified against Anthropic pricing as of: 2026-09-29
+Verified against Anthropic pricing as of: 2026-10-09
 
   CLAUDE.md                [############--------]  12/20  250 lines primary (over the 200-line guidance); ~3,223 tokens total across 1 file(s)
     ! 250 lines -- over Anthropic's 200-line guidance for CLAUDE.md. Longer files consume more context and reduce adherence. Move workflow-specific instructions into skills or path-scoped .claude/rules/ so they load on demand.
@@ -68,9 +68,10 @@ Estimated monthly cost (30 turns/session, 3 sessions/day, 22 days, 70% cache hit
   Opus 4.8       $ 2.79/session  ->  $ 184.10/month
   Opus 4.7       $ 2.79/session  ->  $ 184.10/month
   Opus 4.6       $ 2.07/session  ->  $ 136.37/month
-  Sonnet 5.5     $ 1.07/session  ->  $  70.91/month
+  Sonnet 5.5     $ 0.99/session  ->  $  65.42/month
   Sonnet 5       $ 1.07/session  ->  $  70.91/month
   Sonnet 4.6     $ 1.24/session  ->  $  81.82/month
+  Haiku 5.5      $ 0.05/session  ->  $   3.55/month
   Haiku 4.5      $ 0.41/session  ->  $  27.27/month
 
 Badge URL:  https://img.shields.io/badge/Claude%20Cost%20Grade-D-orange
@@ -157,7 +158,7 @@ jobs:
 ```bash
 claude-rate . --json | jq '.grade, .cost_estimate."sonnet-5-5".per_month'
 # "B"
-# 99.77
+# 91.55
 ```
 
 ## Why a separate tool from the web analyzer?
@@ -173,17 +174,19 @@ The web analyzer (built in [../../site/](../../site/), not yet live on the deplo
 
 ## Pricing data
 
-All cost estimates use Anthropic's published rates **verified 2026-09-29**:
+All cost estimates use Anthropic's published rates **verified 2026-10-09**:
 
 - Fable 5.1: $10/$50 per 1M tokens (1M context, most capable model); Fable 5: $10/$50 (legacy)
 - Opus 5.5: $4/$20 per 1M tokens (1M context, released 2026-09-22) -- Anthropic's recommended starting model for most workloads, and 20% below Opus 5
 - Opus 5 / 4.8 / 4.7 / 4.6: $5/$25 per 1M tokens (1M context, all legacy)
-- Sonnet 5.5: $2/$10 per 1M tokens (1M context, released 2026-09-28) -- the current Sonnet flagship, same rate and tokenizer as Sonnet 5
+- Sonnet 5.5: $2/$10 per 1M tokens (1M context, released 2026-09-28) -- the current Sonnet flagship, same rate and tokenizer as Sonnet 5, but its cache read is $0.10 (cut on 2026-10-07), half Sonnet 5's $0.20
 - Sonnet 5: $2/$10 per 1M tokens (1M context, legacy) -- the permanent standard rate; the increase to $3/$15 was cancelled
 - Sonnet 4.6: $3/$15 per 1M tokens (1M context, legacy)
-- Haiku 4.5: $1/$5 per 1M tokens (200K context)
-- Cache hit: three multipliers -- 0.1x base input on most models, 0.05x on Opus 5.5 ($0.20/1M), 0.025x on Fable 5.1 ($0.25/1M); 5m write: 1.25x; 1h write: 2x
-- Opus 5.5 / 5 / 4.8 / 4.7 cost estimates include the +35% tokenizer overhead; Fable 5.1, Fable 5, Sonnet 5.5 and Sonnet 5 include +30%
+- Haiku 5.5 (`haiku-5-5`): $0.10/$0.50 per 1M tokens up to 100K prompt tokens, $0.50/$2.50 above (1M context, released 2026-10-07) -- the current Haiku and the first model priced by prompt length
+- Haiku 4.5 (`haiku-4-5`): $1/$5 per 1M tokens (200K context, legacy)
+- Cache hit: three multipliers -- 0.1x base input on most models (Haiku 5.5: $0.01/1M, or $0.05 over 100K), 0.05x on Opus 5.5 ($0.20/1M) and Sonnet 5.5 ($0.10/1M), 0.025x on Fable 5.1 ($0.25/1M); 5m write: 1.25x; 1h write: 2x
+- Opus 5.5 / 5 / 4.8 / 4.7 cost estimates include the +35% tokenizer overhead; Fable 5.1, Fable 5, Sonnet 5.5, Sonnet 5 and Haiku 5.5 include +30%
+- Haiku 5.5 is priced turn by turn, the way Anthropic bills each request on its own: a turn whose estimated prompt (after the tokenizer overhead) is over 100,000 tokens is priced at $0.50/$2.50 for input, cache and output alike. The example above stays under 100K on every turn
 
 ### Opus 5.5 cost gotchas
 
@@ -198,13 +201,24 @@ Opus 5.5 is 20% cheaper per token than Opus 5 ($4/$20 vs $5/$25), but re-baselin
 
 ### Sonnet 5.5 cost gotchas
 
-Sonnet 5.5 costs the same as Sonnet 5 ($2/$10) and uses the same tokenizer, so migrating is free at the posted rate. What still moves the bill:
+Sonnet 5.5 costs the same as Sonnet 5 ($2/$10) and uses the same tokenizer, so migrating is free at the posted rate, and since 2026-10-07 cached reads cost half as much ($0.10 vs $0.20 per 1M, 0.05x base input). What still moves the bill:
 
 - **Adaptive thinking is on by default** (effort `high`) and reasoning bills as output at $10/1M. `thinking: {type: "disabled"}` and `budget_tokens` return a 400; send `thinking: {type: "between_tools"}` at `high` effort or below to stop up-front thinking on routine turns.
 - **Effort levels are recalibrated.** The same level does not produce the same amount of thinking as on Sonnet 5, so re-run your effort sweep. Anthropic's starting points: `high` in general, `medium` for well-specified agentic coding.
 - **Forced `tool_choice` (`any` / `tool`) returns a 400**, as do non-default `temperature` / `top_p` / `top_k`. Use `auto` with strict tool use or structured outputs.
 - **Minimum cacheable prompt is 512 tokens** (1,024 on Sonnet 5), so short system prompts that never cached on Sonnet 5 now do.
-- **In Claude Code, `sonnet` is Sonnet 5.5 only on the Anthropic API.** On Bedrock, Google Cloud and Foundry it is Sonnet 4.5 ($3/$15, 200K context), and on Claude Platform on AWS it is Sonnet 4.6 ($3/$15). Pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) or set `ANTHROPIC_DEFAULT_SONNET_MODEL`. Needs Claude Code v2.1.284 or later.
+- **In Claude Code, `sonnet` is Sonnet 5.5 only on the Anthropic API.** On Bedrock, Google Cloud and Foundry it is Sonnet 4.5 ($3/$15, 200K context; deprecated, retirement scheduled for 2026-11-30), and on Claude Platform on AWS it is Sonnet 4.6 ($3/$15). Pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) or set `ANTHROPIC_DEFAULT_SONNET_MODEL`. Needs Claude Code v2.1.284 or later.
+
+### Haiku 5.5 cost gotchas
+
+Haiku 5.5 is 10x cheaper per token than Haiku 4.5 up to 100K prompt tokens and 2x above, but:
+
+- **The 100K line is a cliff.** A request's prompt length counts all of its input tokens, including cache reads and writes, and a request over 100,000 tokens pays the higher prices for all of it, output included. A 100,000-token prompt costs $0.010 of input; a 100,001-token prompt costs $0.050 (5x). Short subagent and classification calls are where it wins.
+- **~30% more tokens for the same text** than Haiku 4.5 (newer tokenizer), so per task it is roughly 7.7x cheaper at <=100K (10 / 1.3) and ~1.5x above (2 / 1.3).
+- **Adaptive thinking is on by default** (effort `medium`). In Claude Code you cannot turn it off on Haiku 5.5.
+- **Code carried over from Haiku 4.5 can return 400**: `budget_tokens`, non-default `temperature` / `top_p` / `top_k`, and assistant prefill are all rejected.
+- **Minimum cacheable prompt is 512 tokens** (Haiku 4.5: 4,096).
+- **In Claude Code, `haiku` is Haiku 5.5 only on the Anthropic API** (v2.1.293 or later). On Claude Platform on AWS, Bedrock, Google Cloud and Foundry it is Haiku 4.5 ($1/$5, 200K context). Set `ANTHROPIC_DEFAULT_HAIKU_MODEL` to pin it; that also sets the model for background functionality.
 
 ### Fast Mode
 
@@ -215,6 +229,7 @@ Sources:
 - [platform.claude.com/docs/en/about-claude/models/overview](https://platform.claude.com/docs/en/about-claude/models/overview)
 - [platform.claude.com/docs/en/models/opus-5-5/overview](https://platform.claude.com/docs/en/models/opus-5-5/overview)
 - [platform.claude.com/docs/en/models/sonnet-5-5/overview](https://platform.claude.com/docs/en/models/sonnet-5-5/overview)
+- [platform.claude.com/docs/en/models/haiku-5-5/overview](https://platform.claude.com/docs/en/models/haiku-5-5/overview)
 
 ## Limitations
 

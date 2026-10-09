@@ -114,7 +114,7 @@ Subagent (Haiku):
   - Context discarded after returning results
 ```
 
-**Why this saves money**: The Grep results (potentially thousands of lines) load into the cheap subagent's context, not the expensive Opus 5.5 context. The main context only receives the summarized result.
+**Why this saves money**: The Grep results (potentially thousands of lines) load into the cheap subagent's context, not the expensive Opus 5.5 context. The main context only receives the summarized result. Haiku 5.5 is priced by prompt length -- $0.10/$0.50 per 1M up to 100K prompt tokens, $0.50/$2.50 above, with cache reads and writes counting toward the 100K -- so a search subagent that returns file names and line numbers instead of file contents stays in the cheap tier, 40x below Opus 5.5 per token.
 
 ### Pattern 2: Parallel Implementation
 
@@ -148,7 +148,7 @@ Main context (Opus): "Given the project structure, dependency list, API surface,
 and data model summary, design a caching strategy."
 ```
 
-**Why this saves money**: Opus 5.5 only processes the summaries, not the raw files. The heavy reading is done by Haiku 4.5 at 1/4 the cost (1/5 of legacy Opus 5).
+**Why this saves money**: Opus 5.5 only processes the summaries, not the raw files. The heavy reading is done by Haiku 5.5 at 1/40 of Opus 5.5's per-token rate while each subagent's prompt stays at or under 100K tokens (1/8 above).
 
 ### CLAUDE.md Subagent Guidelines
 
@@ -162,7 +162,7 @@ Add this to your CLAUDE.md to encourage cost-efficient delegation:
 - Subagents should return concise summaries, not raw file contents
 ```
 
-To pin the cheap model rather than asking for it, set `model: haiku` in the subagent's definition frontmatter -- Anthropic's costs page (code.claude.com/docs/en/costs) recommends exactly that for simple subagent tasks. The same page warns about the opposite end: agent teams use about **7x the tokens** of a standard session when teammates run in plan mode, so fan out deliberately.
+To pin the cheap model rather than asking for it, set `model: haiku` in the subagent's definition frontmatter -- Anthropic's costs page (code.claude.com/docs/en/costs) recommends exactly that for simple subagent tasks. On the Anthropic API `haiku` is Haiku 5.5 (Claude Code v2.1.293+); on Bedrock, Google Cloud, Microsoft Foundry and Claude Platform on AWS it is still legacy Haiku 4.5, so set `ANTHROPIC_DEFAULT_HAIKU_MODEL` there (Bedrock: `anthropic.claude-haiku-5-5`). Two Haiku 5.5 properties suit subagents: short subagent calls stay in the cheap under-100K tier, and its 512-token cache floor (Haiku 4.5: 4,096) means a subagent's short system prompt actually caches instead of paying full input price on every call. The same page warns about the opposite end: agent teams use about **7x the tokens** of a standard session when teammates run in plan mode, so fan out deliberately.
 
 **Estimated savings**: 20-40% for sessions involving multi-file work.
 
@@ -273,6 +273,8 @@ Do not add tests unless I ask.
 ### Hooks: Filter Output Before Claude Reads It
 
 A command controls what Claude is asked; a hook controls what Claude reads back. Anthropic's costs page gives the example of a `PreToolUse` hook that filters test output down to the failures, which it says cuts tens of thousands of tokens to hundreds. The same idea applies to any noisy command (builds, linters, installs): let the hook strip the passing lines so only the signal enters context. Anthropic publishes the token range, not a session-level percentage, so measure your own before and after with `/usage`.
+
+Filtering matters more on Haiku 5.5 subagents: unfiltered test or build output can push a subagent's prompt past 100K tokens, and then the whole request bills at $0.50/$2.50 instead of $0.10/$0.50. Trimmed output keeps short subagent calls in the cheap tier, and a short, stable system prompt above Haiku 5.5's 512-token floor keeps caching.
 
 ---
 
@@ -659,10 +661,12 @@ Use Haiku for commit messages since they are simple summarization tasks.
 50 changes/day x $0.02/commit (Sonnet) = $1.00/day = $22/month
 
 With manual commits at logical boundaries:
-10 commits/day x $0.01/commit (Haiku) = $0.10/day = $2.20/month
+10 commits/day x $0.001/commit (Haiku 5.5) = $0.01/day = $0.22/month
 
-Savings: $19.80/month per developer
+Savings: $21.78/month per developer
 ```
+
+The Haiku 5.5 figure is Sonnet 5.5's $0.02 at one-twentieth, their per-token ratio below 100K prompt tokens; a commit diff sits far under that line. On legacy Haiku 4.5 ($0.01/commit) the manual-commit line is $2.20/month.
 
 ---
 
@@ -681,7 +685,7 @@ The most cost-effective Claude Code technique is knowing when not to use it at a
 | Delete a file | $0.01-0.02 | 2 seconds | **Manual** |
 | Add a blank line | $0.01 | 1 second | **Manual** |
 
-**Rule of thumb**: If you can do it faster than typing the prompt, do it manually. Claude Code's minimum cost per turn is ~$0.01 (Haiku). If the task takes under 30 seconds to do manually, it is not worth the token cost or the latency of waiting for a response.
+**Rule of thumb**: If you can do it faster than typing the prompt, do it manually. Claude Code's minimum cost per turn is ~$0.001 on Haiku 5.5 (~$0.01 on legacy Haiku 4.5). If the task takes under 30 seconds to do manually, it is not worth the token cost or the latency of waiting for a response.
 
 ### Tasks Better Suited to Other Tools
 

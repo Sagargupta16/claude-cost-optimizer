@@ -32,10 +32,10 @@ Every other guide in this series optimizes for cost. This one covers the speed d
 
 | Rank | Lever | Cost impact | Speed impact | How |
 |:----:|-------|-------------|--------------|-----|
-| 1 | **Keep the cache warm** | Cheaper (0.1x input on hits; 0.05x on Opus 5.5, 0.025x on Fable 5.1) | Up to 85% latency reduction on long prompts | Turns inside the cache TTL (5 minutes, or 1 hour on a subscription's main conversation); no mid-session model, effort or fast-mode switches ([Guide 08](08-prompt-caching.md)) |
+| 1 | **Keep the cache warm** | Cheaper (0.1x input on hits; 0.05x on Opus 5.5 and Sonnet 5.5, 0.025x on Fable 5.1) | Up to 85% latency reduction on long prompts | Turns inside the cache TTL (5 minutes, or 1 hour on a subscription's main conversation); no mid-session model, effort or fast-mode switches ([Guide 08](08-prompt-caching.md)) |
 | 2 | **Shorter context** | Cheaper (fewer input tokens per turn) | Faster (less input to process each turn) | `/compact`, fresh sessions per task, small CLAUDE.md, `permissions.deny` `Read(...)` rules ([Guide 02](02-context-optimization.md)) |
-| 3 | **Route down to Haiku / Sonnet** | 2x (Sonnet 5.5) to 4x (Haiku) cheaper than Opus 5.5 per token | Faster -- smaller models have lower latency | Task routing: Haiku for simple, Sonnet for standard ([Guide 03](03-model-selection.md), [Guide 10](10-task-routing.md)) |
-| 4 | **Lower effort / fewer thinking tokens** | Cheaper (thinking tokens are billed output) | Faster (less thinking before the answer) | `effort` parameter on Opus 5.5 / Fable 5.1 / Fable 5 / Opus 5 / Opus 4.8 / Sonnet 5.5 (plus `thinking: {type: "between_tools"}` on Sonnet 5.5) |
+| 3 | **Route down to Haiku / Sonnet** | 2x (Sonnet 5.5) to 40x (Haiku 5.5 at $0.10/$0.50 up to 100K prompt tokens; 8x at $0.50/$2.50 above) cheaper than Opus 5.5 per token | Faster -- smaller models have lower latency | Task routing: Haiku for simple, Sonnet for standard ([Guide 03](03-model-selection.md), [Guide 10](10-task-routing.md)) |
+| 4 | **Lower effort / fewer thinking tokens** | Cheaper (thinking tokens are billed output) | Faster (less thinking before the answer) | `effort` parameter on Opus 5.5 / Fable 5.1 / Fable 5 / Opus 5 / Opus 4.8 / Sonnet 5.5 / Haiku 5.5 (plus `thinking: {type: "between_tools"}` on Sonnet 5.5) |
 | 5 | **Fast Mode** (Opus 5.5 / Opus 5 / Opus 4.8 only) | **2x premium** on each | Up to 2.5x output tokens per second | `anthropic-beta: fast-mode-2026-02-01`, `speed: "fast"` |
 
 Levers 1-4 are free or negative-cost: they make you faster **and** cheaper. Only lever 5 costs money. Exhaust the first four before reaching for it.
@@ -55,7 +55,7 @@ Fast Mode is a research preview that trades money for output-generation speed: u
 | **Opus 4.8** | $5 / $25 | $10 / $50 | **2x** | Supported, legacy model |
 | **Opus 4.7** | $5 / $25 | -- | -- | **Removed** -- `speed: "fast"` returns an error, with no fallback to standard |
 | **Opus 4.6** | $5 / $25 | -- | -- | **Removed** -- `speed: "fast"` is accepted but silently runs standard speed at standard rates (`usage.speed` comes back `"standard"`) |
-| Fable 5.1, Fable 5, Mythos 5.1, Mythos 5, Sonnet (any), Haiku, Opus 4.5 | -- | -- | -- | **No Fast Mode** |
+| Fable 5.1, Fable 5, Mythos 5.1, Mythos 5, Sonnet (any), Haiku (any, Haiku 5.5 included), Opus 4.5 | -- | -- | -- | **No Fast Mode** |
 
 Three immediate conclusions:
 
@@ -88,7 +88,7 @@ Cache multipliers stack on the Fast Mode rate, not the standard rate. On Opus 5.
 | 1-hour cache write | 2x | $8 x 2 = **$16.00** |
 | Cache hit | 0.05x | $8 x 0.05 = **$0.40** |
 
-Note that a cache hit on Opus 5.5 Fast Mode ($0.40/1M) costs double a standard Opus 5.5 hit ($0.20/1M): the premium multiplies through everything, cache discounts included. On Opus 5 and Opus 4.8 Fast Mode ($10/1M input, 0.1x hits) the same rows are $12.50, $20.00 and $1.00 -- a hit there costs the same as a cache **miss** on standard Haiku 4.5 ($1.00/1M).
+Note that a cache hit on Opus 5.5 Fast Mode ($0.40/1M) costs double a standard Opus 5.5 hit ($0.20/1M): the premium multiplies through everything, cache discounts included. On Opus 5 and Opus 4.8 Fast Mode ($10/1M input, 0.1x hits) the same rows are $12.50, $20.00 and $1.00 -- a hit there costs the same as a cache **miss** on standard legacy Haiku 4.5 ($1.00/1M), and 10x a Haiku 5.5 miss up to 100K prompt tokens ($0.10/1M).
 
 The bigger trap: **switching between fast and standard speed invalidates the prompt cache.** Fast and standard requests use separate cache pools. If you toggle `speed` mid-session, your next turn pays full cache-write price on the entire accumulated prefix -- at Fast Mode rates if you switched to fast. In Claude Code, turning on fast mode invalidates the cache once per conversation. Pick a speed at the start of a session and keep it.
 
@@ -150,7 +150,7 @@ For a human actively blocked on the output, this clears easily. For anything els
 
 | Situation | Why Fast Mode loses | Use instead |
 |-----------|--------------------|-------------|
-| The task is simple enough for Haiku | Haiku is faster **and** 4x cheaper than standard Opus 5.5 -- strictly better than paying 2x on Opus | Route to Haiku ([Guide 10](10-task-routing.md)) |
+| The task is simple enough for Haiku | Haiku 5.5 is faster **and** 40x cheaper per token than standard Opus 5.5 while the prompt stays at or under 100K tokens (8x above) -- strictly better than paying 2x on Opus | Route to Haiku 5.5 ([Guide 10](10-task-routing.md)) |
 | TTFT is the bottleneck | Fast Mode does not improve time-to-first-token | Warm cache, shorter context, lower effort |
 | Nobody is waiting (overnight runs, CI, scheduled jobs) | You are paying 2x to save time nobody experiences | Standard speed, or Batch API for 50% off ([Guide 06](06-access-methods-pricing.md)) |
 | You would run it on Opus 4.7 or 4.6 | Fast Mode was removed there: 4.7 errors outright, 4.6 silently serves standard speed | Opus 5.5 if Fast Mode is truly needed |
@@ -189,7 +189,8 @@ Model choice is itself a speed lever -- generally the strongest one after cachin
 
 | Model | Price (in/out per 1M) | Context | Max output | Latency class | Fast Mode | Speed-per-dollar takeaway |
 |-------|:---------------------:|:-------:|:----------:|---------------|:---------:|---------------------------|
-| **Haiku 4.5** | $1 / $5 | 200K | 64K | Fastest in the lineup | No | Best speed AND best price -- the default for simple tasks |
+| **Haiku 5.5** | $0.10 / $0.50 up to 100K prompt tokens; $0.50 / $2.50 above | 1M | 128K | Fastest in the lineup; thinking on by default, default effort `medium` | No | Best speed AND best price -- the default for simple tasks, as long as prompts stay at or under 100K |
+| **Haiku 4.5** (legacy) | $1 / $5 | 200K | 64K | Fast (Haiku 5.5 is now the fastest) | No | Legacy. Haiku 5.5 is 10x cheaper per token up to 100K prompt tokens, ~7.7x per task after its ~30% larger token count |
 | **Sonnet 5.5** | $2 / $10 | 1M | 128K | Fast; thinking on by default, default effort `high` | No | Anthropic calls it "the best combination of speed and intelligence" -- the pick for standard dev work |
 | **Sonnet 5** (legacy) | $2 / $10 | 1M | 128K | Fast | No | Same price as Sonnet 5.5 -- no cost reason to stay |
 | **Opus 5.5** | $4 / $20 | 1M | 128K | Moderate; thinking always on, default effort `medium` | Yes (2x, $8 / $40) | The default Opus and the cheapest Fast Mode host; standard speed for most Opus work |
@@ -197,11 +198,11 @@ Model choice is itself a speed lever -- generally the strongest one after cachin
 | **Opus 4.8** | $5 / $25 | 1M | 128K | Moderate | Yes (2x) | Legacy. Same price and same 2x Fast Mode as Opus 5 -- no speed or cost reason to stay |
 | **Fable 5.1 / Fable 5** | $10 / $50 | 1M | 128K | Slower (always-on adaptive thinking adds a pre-answer phase) | No | Maximum capability (Fable 5.1); speed levers are effort + caching only |
 
-**The strictly-better rule:** for any task Haiku 4.5 can handle, Haiku beats Opus Fast Mode on **both** axes -- it is faster (lowest latency in the lineup) and 8x cheaper than Opus 5.5 Fast Mode ($1/$5 vs $8/$40). Paying a Fast Mode premium to speed up a task you could have routed down is the most expensive way to solve a routing problem.
+**The strictly-better rule:** for any task Haiku 5.5 can handle, Haiku beats Opus Fast Mode on **both** axes -- it is faster (lowest latency in the lineup) and 80x cheaper per token than Opus 5.5 Fast Mode up to 100K prompt tokens ($0.10/$0.50 vs $8/$40), still 16x above ($0.50/$2.50). Paying a Fast Mode premium to speed up a task you could have routed down is the most expensive way to solve a routing problem.
 
 Fast Mode only enters the picture when the task genuinely needs Opus-level capability **and** output speed matters. That intersection is narrow.
 
-One tokenizer note: Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Fable 5, Sonnet 5.5, and Sonnet 5 all use the newer tokenizer, which produces up to ~30-35% more tokens for the same text than pre-4.7 models. More tokens means proportionally more generation time and cost -- factor it into any throughput comparison against older benchmarks. Opus 5.5 and Opus 5 share the Opus 4.7-generation tokenizer exactly, so migrating from 4.7 or later needs no token re-baselining (thinking and effort defaults are a separate re-baseline).
+One tokenizer note: Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Fable 5, Sonnet 5.5, Sonnet 5, and Haiku 5.5 all use the newer tokenizer, which produces up to ~30-35% more tokens for the same text than pre-4.7 models (Haiku 5.5: ~30% more than Haiku 4.5). More tokens means proportionally more generation time and cost -- factor it into any throughput comparison against older benchmarks. Opus 5.5 and Opus 5 share the Opus 4.7-generation tokenizer exactly, so migrating from 4.7 or later needs no token re-baselining (thinking and effort defaults are a separate re-baseline).
 
 ---
 
@@ -217,6 +218,7 @@ Thinking tokens are billed as output tokens, and they are generated **before** y
 | **Opus 4.8** | Adaptive thinking, **off** unless you ask for it; `effort` defaults to **high** on all surfaces | Lower `effort` explicitly for routine work |
 | **Sonnet 5.5** | Adaptive thinking, **on by default**; `effort` defaults to **high** and is recalibrated versus Sonnet 5; `thinking: {type: "disabled"}` and `budget_tokens` return 400 | `thinking: {type: "between_tools"}` turns off up-front thinking (accepted only at `low`, `medium` and `high` effort); re-run your effort sweep instead of carrying Sonnet 5's setting over |
 | **Sonnet 5** (legacy) | Adaptive thinking; `effort` defaults to **high** on the Claude API and Claude Code | Lower `effort` for routine work |
+| **Haiku 5.5** | Adaptive thinking, **on by default**; `effort` defaults to **medium**; manual `budget_tokens` returns 400 | Lower `effort`; on the API, `thinking: {type: "disabled"}` still works at `high` effort or below; Claude Code cannot turn thinking off on Haiku 5.5 |
 
 Practical implications:
 
@@ -224,6 +226,7 @@ Practical implications:
 - **On legacy Opus 5, the default costs you both speed and money.** Thinking is on unless you disable it, and effort starts at high. The same request that returned straight text on Opus 4.8 generates a thinking phase first, billed as output at $25/1M. For routine tasks, lower effort or disable thinking outright.
 - **On Opus 4.8, the default costs you speed.** Effort defaults to high everywhere. For routine tasks (renames, small edits, formatting-adjacent work), lowering effort cuts thinking tokens, which cuts both the pre-answer wait and the output bill.
 - **On Sonnet 5.5, `between_tools` is the lowest thinking setting.** `thinking: {type: "disabled"}` returns 400, and reasoning bills as output at $10/1M. To stop up-front thinking on routine turns, send `thinking: {type: "between_tools"}` at `high` effort or below (it is rejected at `xhigh` and `max`). Effort levels are recalibrated, so the setting you tuned on Sonnet 5 does not carry over; Anthropic's starting points are `high` in general and `medium` for well-specified agentic coding and multistep tool use.
+- **On Haiku 5.5, thinking is on by default but the API can still switch it off.** `thinking: {type: "disabled"}` works at `high` effort or below (manual `budget_tokens` returns 400); in Claude Code it cannot be turned off, so lower effort there instead. Reasoning bills as output at $0.50/1M up to 100K prompt tokens ($2.50 above).
 - **On Fable 5.1 and Fable 5, effort is your only thinking dial.** You cannot turn thinking off. If Fable feels slow, check whether the task justifies high effort before assuming you need a different model.
 - **What Anthropic measured (published runs, directional, not guarantees).** On research work (Fable 5), `medium` matched the default's accuracy at 70-85% of its cost, and `low` gave up 1-3 points for a third to a half off. On long-horizon coding, Opus 5 gave up about 2 points at `medium` for half the cost. Running at `low` and re-running only the failures at the default reached ~93% pass for ~$0.70/task, versus 91.7% for $1.39 running everything at the default.
 - **This lever removes tokens instead of streaming them faster.** Thinking happens before your visible answer, so heavy thinking feels like a slow start even though it is output generation under the hood. Fast Mode may stream thinking tokens faster, but you pay the premium on every one of them; lowering effort deletes them entirely -- faster AND cheaper.
@@ -234,7 +237,7 @@ Rule of thumb: match effort to task difficulty the same way you match model to t
 
 ## Caching as a Latency Tool
 
-[Guide 08](08-prompt-caching.md) covers prompt caching as a cost lever (90% off cached input on most models, 95% on Opus 5.5, 97.5% on Fable 5.1). It is equally a **latency** lever: Anthropic publishes up to **85% latency reduction** for long prompts served from cache, because the cached prefix is not reprocessed at all.
+[Guide 08](08-prompt-caching.md) covers prompt caching as a cost lever (90% off cached input on most models, 95% on Opus 5.5 and Sonnet 5.5, 97.5% on Fable 5.1). It is equally a **latency** lever: Anthropic publishes up to **85% latency reduction** for long prompts served from cache, because the cached prefix is not reprocessed at all.
 
 Cache hits primarily improve TTFT -- exactly the bottleneck Fast Mode cannot fix. In a typical Claude Code session, the system prompt, CLAUDE.md, tool schemas, and conversation history form a long stable prefix. When that prefix is a cache hit, the model starts responding almost immediately instead of re-reading tens of thousands of tokens first.
 
@@ -271,11 +274,11 @@ Work top to bottom. Stop at the first row that applies -- the levers are ordered
 | Symptom | Diagnosis | Lever | Cost impact |
 |---------|-----------|-------|:-----------:|
 | Nobody is actually waiting on this | You do not have a speed problem | Batch API ([Guide 06](06-access-methods-pricing.md)) | **-50%** |
-| Slow start, long pause before first token | Cold cache or oversized context | Warm the cache; turns inside the TTL; keep model and effort fixed mid-session; check `/usage` for the `Prompt cache (main)` line ([Guide 08](08-prompt-caching.md)) | Cheaper (0.1x on hits, less on Opus 5.5 / Fable 5.1) |
+| Slow start, long pause before first token | Cold cache or oversized context | Warm the cache; turns inside the TTL; keep model and effort fixed mid-session; check `/usage` for the `Prompt cache (main)` line ([Guide 08](08-prompt-caching.md)) | Cheaper (0.1x on hits, less on Opus 5.5 / Sonnet 5.5 / Fable 5.1) |
 | Still slow to start, cache is warm | Context bloat | `/compact`, fresh session, trim CLAUDE.md, `permissions.deny` `Read(...)` rules ([Guide 02](02-context-optimization.md)) | Cheaper |
 | Latency regressed after moving from Opus 5 to Opus 5.5 | You had thinking disabled on Opus 5; Opus 5.5 always thinks | Lower `effort` (thinking can't be disabled on Opus 5.5) | Cheaper (fewer billed thinking tokens) |
 | Slow start on Fable 5.1 / Opus 5.5 / Opus 5 / Opus 4.8, small context | Thinking-heavy startup | Lower `effort` for routine tasks | Cheaper |
-| Task is simple (rename, boilerplate, summary, syntax) | Over-modeled | Route to Haiku 4.5 -- faster AND 4x cheaper than Opus 5.5 | **-75% vs Opus 5.5** |
+| Task is simple (rename, boilerplate, summary, syntax) | Over-modeled | Route to Haiku 5.5 -- faster AND 40x cheaper per token than Opus 5.5 while the prompt stays at or under 100K tokens (8x above) | **-97.5% vs Opus 5.5** (-87.5% above 100K) |
 | Task is standard dev work on Opus | Over-modeled | Route to Sonnet 5.5 ($2/$10) | **-50% vs Opus 5.5** |
 | Long output streams too slowly, task truly needs Opus, a human is blocked, deadline math clears | The one Fast Mode case | Fast Mode on **Opus 5.5** ($8/$40, the cheapest Fast Mode; 4.7 errors, 4.6 silently ignores it); one speed for the whole session | **+100%** |
 | All of the above and you are on Bedrock/Vertex/Foundry | Fast Mode unavailable | Back to the free levers; consider Claude API direct if the case is chronic | -- |
@@ -288,7 +291,7 @@ Work top to bottom. Stop at the first row that applies -- the levers are ordered
 
 2. **Diagnose TTFT vs OTPS before spending anything.** Fast Mode only accelerates output streaming (up to 2.5x OTPS). If your pain is the wait before tokens appear, the fix is caching (up to 85% latency reduction), smaller context, or lower effort -- all free or cheaper.
 
-3. **For tasks Haiku can do, Haiku beats Fast Mode on both speed and cost.** It has the lowest latency in the lineup at $1/$5 -- 8x cheaper than Opus 5.5 Fast Mode ($8/$40). Routing down is strictly better than paying up.
+3. **For tasks Haiku can do, Haiku beats Fast Mode on both speed and cost.** Haiku 5.5 has the lowest latency in the lineup at $0.10/$0.50 up to 100K prompt tokens -- 80x cheaper per token than Opus 5.5 Fast Mode ($8/$40), and still 16x cheaper above 100K ($0.50/$2.50). Routing down is strictly better than paying up.
 
 4. **Fast Mode is a flat 2x on Opus 5.5 ($8/$40), Opus 5 and Opus 4.8 ($10/$50), and unavailable everywhere else.** Opus 5.5 Fast costs less than Opus 5 Fast. The 6x tier is gone: Opus 4.7 errors on `speed: "fast"`, and Opus 4.6 accepts it but silently serves standard speed at standard rates. Check `usage.speed` in the response if you suspect a pipeline is still asking for Fast Mode on a model that no longer honors it.
 

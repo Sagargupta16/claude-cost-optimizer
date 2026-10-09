@@ -47,13 +47,15 @@ Rates, model IDs, context windows, cache behaviour, and retirement dates live in
 rate or model list. It is separate because this file loads in full every session, so a smaller
 one costs fewer tokens and is followed better (Anthropic's guidance: under 200 lines).
 
-Verified **2026-09-29**. The facts most often got wrong:
+Verified **2026-10-09**. The facts most often got wrong:
 
 - **Opus 5.5 ($4/$20) is the current Opus flagship**; Opus 5 ($5/$25) is legacy.
-- **Sonnet 5.5 ($2/$10) is the current Sonnet flagship**, the same price as Sonnet 5 (legacy), which
-  stays $2/$10 permanently: the rise to $3/$15 on 2026-09-01 was cancelled.
+- **Sonnet 5.5 ($2/$10) is the current Sonnet flagship.** Sonnet 5 (legacy) has the same $2/$10,
+  permanently (the rise to $3/$15 was cancelled), but Sonnet 5.5's cache read is half: $0.10 vs $0.20.
+- **Haiku 5.5 is priced by prompt length**: $0.10/$0.50 up to 100,000 prompt tokens (cache reads
+  and writes count), $0.50/$2.50 above, on the whole request. Never quote one Haiku 5.5 rate.
 - **Cache hit has three multipliers: 0.1x base input, except Fable 5.1 and Mythos 5.1 (0.025x)
-  and Opus 5.5 (0.05x).** Never derive a cache rate as `input * 0.1`; read the per-model rate.
+  and Opus 5.5 and Sonnet 5.5 (0.05x).** Never derive a cache rate as `input * 0.1`; read the per-model rate.
 
 After a rate change, update every file listed at the end of that doc, then run
 `python scripts/check-pricing-sync.py`. CI runs it on every PR.

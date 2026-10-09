@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.15.0] - 2026-10-09
+
+Claude Haiku 5.5 is added, and it is the first Claude model whose price depends on how long the prompt is, so every tool's cost math now picks a tier per request. Five other changes Anthropic shipped since 1.14.0 are folded in. Every fact was read from a live Anthropic page on 2026-10-09.
+
+### Added
+- **Claude Haiku 5.5** (`claude-haiku-5-5`, Bedrock `anthropic.claude-haiku-5-5`, released 2026-10-07, earliest retirement 2027-10-07) across every pricing table, guide, tool and the web calculator. **$0.10/$0.50 per 1M for prompts up to 100,000 tokens, $0.50/$2.50 above** -- the prompt counts cache reads and writes, and a request over the line pays the higher rates on all of it, output included, so a 100,001-token prompt costs 5x a 100,000-token one per token. Cache reads are 0.1x of each tier ($0.01 / $0.05), Batch is half ($0.05/$0.25 or $0.25/$1.25). 1M context, 128K output, a 512-token cache floor (Haiku 4.5: 4,096), adaptive thinking with effort defaulting to `medium`, no Fast Mode. Per token in the low tier it is 10x below Haiku 4.5, 20x below Sonnet 5.5 and 40x below Opus 5.5; it uses the Claude 4.7+ tokenizer, so the same text is ~30% more tokens than on Haiku 4.5 (about 7.7x cheaper per task, not 10x). In every tool the `haiku` key now means Haiku 5.5, with an explicit legacy Haiku 4.5 key.
+- **Tiered pricing in the tools.** `pricing.ts` gains a `longPrompt` tier and a `ratesForPrompt()` helper; the calculator and repo analyzer now cost each turn at its own tier (a 30-turn session at the default estimates stays under 100K, a long one crosses it). claude-rate, token-estimator, mcp-cost-server and the VS Code extension apply the same per-request rule; usage-analyzer prices each logged request by its own prompt, including cache reads and writes. For every flat-rate model the per-turn sums equal the old session totals exactly.
+- **Calculator:** a "Migrate to Haiku 5.5" recommendation for Haiku 4.5 users, a warning naming the turn where a Haiku 5.5 session crosses 100K, and the 30% "simple tasks" share now delegates to Haiku 5.5.
+- **Haiku 5.5's breaking changes vs Haiku 4.5:** `budget_tokens`, non-default sampling params and assistant prefill return 400, `computer_20250124` is rejected on the Claude API and Google Cloud, and editing earlier turns invalidates thinking blocks.
+- **Max and Team plans now include monthly API credits** (2026-10-07): Max 5x $100, Max 20x $200, Team $20 per Standard and $100 per Premium seat, pooled and capped at $500. They do not cover Claude Code, apply to the Claude Console only, and do not roll over.
+- **Claude Code `haiku` alias:** Haiku 5.5 only on the Anthropic API (v2.1.293+); Haiku 4.5 on Claude Platform on AWS, Bedrock, Google Cloud and Foundry. Added beside the `sonnet` alias gotcha, with `ANTHROPIC_DEFAULT_HAIKU_MODEL` as the pin.
+- usage-analyzer gains a Haiku 3.5 row ($0.80/$4), so its version-first IDs no longer fall through to Haiku 5.5's rate.
+
+### Changed
+- **Sonnet 5.5's cache read was cut to $0.10 (0.05x) on 2026-10-07**, half Sonnet 5's $0.20. 1.14.0 called Sonnet 5.5 "identical to Sonnet 5, including caching"; that is no longer true, and every such line is fixed. The 0.05x cache group is now Opus 5.5 and Sonnet 5.5.
+- **Sonnet 4.5 is deprecated** (2026-09-30); retirement is scheduled for 2026-11-30 on the Claude API, and the recommended replacement is Sonnet 5.5. Note that Claude Code's `sonnet` alias still resolves to Sonnet 4.5 on Bedrock, Google Cloud and Foundry.
+- **Haiku 4.5 is legacy** (still Active, earliest retirement 2026-10-15).
+- **Mythos 5.1** is now available through Anthropic's verification programs (such as the Cyber Verification Program) rather than described as Glasswing-only, and has its own model page.
+
 ## [1.14.0] - 2026-09-29
 
 Claude Sonnet 5.5 is added and becomes the recommended Sonnet. It costs exactly what Sonnet 5 does, so no dollar figure in the repo moves; what changes is which model the advice points at, the cache floor, and five ways old Sonnet 5 code now fails. Every fact was read from a live Anthropic page on 2026-09-29.

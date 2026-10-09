@@ -49,13 +49,15 @@ With tool search off, if you have 10 MCP servers connected with ~1,500 tokens of
 On Opus 5.5:  750K tokens x $4.00/1M = $3.00 just for MCP schemas (+~35% if new tokenizer inflates schema)
 On Opus 5:    750K tokens x $5.00/1M = $3.75 (legacy)
 On Sonnet 5.5: 750K tokens x $2.00/1M = $1.50 just for MCP schemas
+On Haiku 5.5:  750K tokens x $0.10/1M = $0.075 while each request stays <= 100K prompt tokens
+               (750K x $0.50/1M = $0.375 once the requests are over 100K)
 ```
 
 With tool search on (the default), that per-turn schema load does not happen: only tool names and server instructions ride along until a tool is used. This is why the old advice that "adding a server breaks the cache" is out of date -- with tool search on, connecting or removing a server does **not** invalidate the prompt cache. It still does when tool search is off, and so does enabling or disabling a plugin that provides MCP servers.
 
-Add the tool-use system prompt on top of the schemas themselves: **286 tokens** with `tool_choice: auto` or `none`, **406 tokens** with `any` or `tool` (Opus 5.5 and Sonnet 5.5 reject forced `any`/`tool`, so only 286 applies there). Individual built-in tools cost more (the bash tool adds 325 input tokens on Opus 5 / 4.8 / 4.7, 244 on Opus 4.6 and earlier; the text editor tool adds 700).
+Add the tool-use system prompt on top of the schemas themselves: **286 tokens** with `tool_choice: auto` or `none`, **406 tokens** with `any` or `tool` (Opus 5.5 and Sonnet 5.5 reject forced `any`/`tool`, so only 286 applies there; Haiku 5.5 supports forced tool use, so both apply). Individual built-in tools cost more (the bash tool adds 325 input tokens on Opus 5 / 4.8 / 4.7, 244 on Opus 4.6 and earlier; the text editor tool adds 700).
 
-With prompt caching, the actual cost is much lower: cached schema tokens bill at 0.1x base input on most models (0.05x on Opus 5.5, 0.025x on Fable 5.1). But the first turn and any cache misses still pay full price. Note that the minimum cacheable prompt on Opus 5.5, Opus 5 and Sonnet 5.5 is only **512 tokens** (Opus 4.8 and Sonnet 5 needed 1,024, Opus 4.7 needed 2,048, Opus 4.6 needed 4,096), so even a single small MCP server's schemas are now big enough to cache.
+With prompt caching, the actual cost is much lower: cached schema tokens bill at 0.1x base input on most models (0.05x on Opus 5.5 and Sonnet 5.5, 0.025x on Fable 5.1). But the first turn and any cache misses still pay full price. Note that the minimum cacheable prompt on Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5 is only **512 tokens** (Opus 4.8 and Sonnet 5 needed 1,024, Opus 4.7 needed 2,048, Opus 4.6 and Haiku 4.5 needed 4,096), so even a single small MCP server's schemas are now big enough to cache.
 
 ### Tool Search (Deferred Tools)
 
@@ -165,9 +167,11 @@ Main context savings = avoided context pollution from search results
 }
 ```
 
-Anthropic's costs page gives the same advice: set `model: haiku` in the subagent configuration for simple subagent tasks. Without it, a subagent can inherit your session's model, so a switch to Opus applies to it too. The `sonnet` alias resolves by provider: on Bedrock, Google Cloud and Microsoft Foundry it means Sonnet 4.5 ($3/$15, 200K), not Sonnet 5.5 ($2/$10), so pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) there -- see [Guide 06](06-access-methods-pricing.md#anthropic-api-direct-pricing).
+Anthropic's costs page gives the same advice: set `model: haiku` in the subagent configuration for simple subagent tasks. Without it, a subagent can inherit your session's model, so a switch to Opus applies to it too. The `sonnet` alias resolves by provider: on Bedrock, Google Cloud and Microsoft Foundry it means Sonnet 4.5 ($3/$15, 200K; deprecated, retirement scheduled for 2026-11-30), not Sonnet 5.5 ($2/$10), so pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) there -- see [Guide 06](06-access-methods-pricing.md#anthropic-api-direct-pricing).
 
-On Opus 5.5 subagents, adaptive thinking is **always on** -- `thinking: {type: "disabled"}` returns a 400 -- and reasoning tokens bill as **output** at $20/MTok. A fan-out of ten search subagents on Opus 5.5 pays for ten sets of reasoning tokens, so lower the effort level (default `medium`) or, better, route subagents that just grep and summarize to Haiku. On legacy Opus 5, thinking is on by default at $25/MTok and can be disabled only at effort `high` or below. Also note that `max_tokens` caps thinking plus visible text together, so a subagent with a tight `max_tokens` and high effort can burn its budget reasoning and return nothing usable.
+The `haiku` alias resolves by provider too. On the Anthropic API it means **Haiku 5.5** (Claude Code v2.1.293+): $0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above, and the 100K counts cache reads and writes. That makes Haiku 5.5 the right subagent model for short search, classification, extraction and routing calls, and the wrong one for a subagent that reads half the repo: past 100K its rates rise 5x. On Claude Platform on AWS, Bedrock, Google Cloud and Foundry, `haiku` still means legacy Haiku 4.5 ($1/$5, 200K); pin `ANTHROPIC_DEFAULT_HAIKU_MODEL` to `claude-haiku-5-5` (Bedrock: `anthropic.claude-haiku-5-5`), which also sets the model for background functionality. Haiku 5.5 thinks by default too (effort `medium`, and Claude Code cannot turn it off), but its reasoning bills as output at $0.50/MTok up to 100K prompt tokens.
+
+On Opus 5.5 subagents, adaptive thinking is **always on** -- `thinking: {type: "disabled"}` returns a 400 -- and reasoning tokens bill as **output** at $20/MTok. A fan-out of ten search subagents on Opus 5.5 pays for ten sets of reasoning tokens, so lower the effort level (default `medium`) or, better, route subagents that just grep and summarize to Haiku 5.5. On legacy Opus 5, thinking is on by default at $25/MTok and can be disabled only at effort `high` or below. Also note that `max_tokens` caps thinking plus visible text together, so a subagent with a tight `max_tokens` and high effort can burn its budget reasoning and return nothing usable.
 
 Subagents also cache on a shorter clock: on a Claude subscription the main conversation gets a one-hour cache TTL, but subagents get five minutes (tunable with `subagentPromptCacheTtl` / `CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL`).
 
@@ -219,7 +223,7 @@ If you are billed for Managed Agents rather than raw tokens, budget the session 
 4. **Cap tool output** -- warning above 10,000 tokens, default cap 25,000 (`MAX_MCP_OUTPUT_TOKENS`)
 5. **Subagents save money on large searches** but cost more for simple one-off queries
 6. **Use `claude -p --max-budget-usd`** (print mode only) to prevent runaway costs in automated/SDK workflows
-7. **Haiku subagents** (`model: haiku`) are ideal for search/exploration tasks at 4x lower cost than Opus 5.5
+7. **Haiku 5.5 subagents** (`model: haiku` on the Anthropic API) are ideal for search/exploration tasks at 40x lower per-token cost than Opus 5.5 while the prompt stays at or under 100K tokens (8x above)
 8. **Agent teams use ~7x the tokens** of a standard session when teammates run in plan mode -- keep them small
 9. **With tool search on, adding or removing a server keeps the cache** in Claude Code; on your own API calls, the `mid-conversation-tool-changes-2026-07-01` beta on Opus 5 does the same for changed tool definitions, and on the Sonnet tier mid-conversation tool changes need Sonnet 5.5 (Sonnet 5 does not support them)
-10. **Opus 5.5 always thinks** and reasoning tokens bill as output at $20/MTok -- lower the effort level, or route subagents that only search and summarize to Haiku
+10. **Opus 5.5 always thinks** and reasoning tokens bill as output at $20/MTok -- lower the effort level, or route subagents that only search and summarize to Haiku 5.5

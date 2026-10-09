@@ -20,7 +20,7 @@ import os
 import sys
 from pathlib import Path
 
-# Claude model pricing per 1M tokens (verified 2026-09-29; Sonnet 5.5 released 2026-09-28)
+# Claude model pricing per 1M tokens (verified 2026-10-09; Haiku 5.5 released 2026-10-07)
 # "fable" = Fable 5.1 (most capable, 2.5x Opus 5.5); "opus" = Opus 5.5, the
 # recommended default Opus at $4/$20 (20% below Opus 5); "opus-5" and
 # "opus-4.8"/"opus-4.7"/"opus-4.6" = legacy at $5/$25. Opus 5.5 runs adaptive
@@ -30,8 +30,13 @@ from pathlib import Path
 # The 4.7+ tokenizer (also used by Opus 4.8, Opus 5, Opus 5.5, Fable 5, Sonnet 5.5,
 # Sonnet 5 and Sonnet 4.6) consumes up to ~35% more tokens for the same source text.
 # cache_hit has three multipliers: 0.1x input by default, 0.025x on Fable 5.1 /
-# Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok). Read the rate from
-# this table; never compute input * 0.1.
+# Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok) and Sonnet 5.5
+# ($0.10/MTok since 2026-10-07). Read the rate from this table; never compute
+# input * 0.1.
+# "haiku" = Haiku 5.5, priced by prompt length: "long_prompt" holds the rates for a
+# request whose prompt (input plus cache reads and writes) is over "threshold".
+# "haiku-4.5" = legacy Haiku 4.5; "haiku-3.5" = Haiku 3.5, retired except on
+# Google Cloud.
 # Pricing keys. Named so the detection table below and MODEL_PRICING cannot drift.
 FABLE = "fable"
 FABLE_5 = "fable-5"
@@ -49,6 +54,8 @@ SONNET_5 = "sonnet-5"
 SONNET_4_6 = "sonnet-4.6"
 SONNET_4_5 = "sonnet-4.5"
 HAIKU = "haiku"
+HAIKU_4_5 = "haiku-4.5"
+HAIKU_3_5 = "haiku-3.5"
 
 MODEL_PRICING = {
     FABLE: {"input": 10.00, "output": 50.00, "cache_hit": 0.25},
@@ -60,11 +67,18 @@ MODEL_PRICING = {
     OPUS_4_6: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     OPUS_4_5: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
     OPUS_4_1: {"input": 15.00, "output": 75.00, "cache_hit": 1.50},
-    SONNET: {"input": 2.00, "output": 10.00, "cache_hit": 0.20},
+    SONNET: {"input": 2.00, "output": 10.00, "cache_hit": 0.10},
     SONNET_5: {"input": 2.00, "output": 10.00, "cache_hit": 0.20},
     SONNET_4_6: {"input": 3.00, "output": 15.00, "cache_hit": 0.30},
     SONNET_4_5: {"input": 3.00, "output": 15.00, "cache_hit": 0.30},
-    HAIKU: {"input": 1.00, "output": 5.00, "cache_hit": 0.10},
+    HAIKU: {
+        "input": 0.10,
+        "output": 0.50,
+        "cache_hit": 0.01,
+        "long_prompt": {"threshold": 100_000, "input": 0.50, "output": 2.50, "cache_hit": 0.05},
+    },
+    HAIKU_4_5: {"input": 1.00, "output": 5.00, "cache_hit": 0.10},
+    HAIKU_3_5: {"input": 0.80, "output": 4.00, "cache_hit": 0.08},
 }
 
 # Fallback: default model for cost estimation when not specified in data
@@ -113,10 +127,22 @@ def format_cost(cost: float) -> str:
 
 
 def calculate_cost(
-    input_tokens: int, output_tokens: int, model: str = DEFAULT_MODEL
+    input_tokens: int,
+    output_tokens: int,
+    model: str = DEFAULT_MODEL,
+    prompt_tokens: int | None = None,
 ) -> float:
-    """Calculate total cost for given token counts."""
+    """Calculate total cost for given token counts.
+
+    `prompt_tokens` is one request's full prompt (input plus cache reads and
+    writes) and picks the price tier on a tiered model (Haiku 5.5); it defaults
+    to `input_tokens`.
+    """
     pricing = MODEL_PRICING.get(model, MODEL_PRICING[DEFAULT_MODEL])
+    tier = pricing.get("long_prompt")
+    request = input_tokens if prompt_tokens is None else prompt_tokens
+    if tier and request > tier["threshold"]:
+        pricing = tier
     input_cost = (input_tokens / 1_000_000) * pricing["input"]
     output_cost = (output_tokens / 1_000_000) * pricing["output"]
     return input_cost + output_cost
@@ -145,6 +171,10 @@ _MODEL_MARKERS: tuple[tuple[tuple[str, ...], str], ...] = (
     (("opus-4-5", "opus-4.5"), OPUS_4_5),
     (("opus-4-1", "opus-4.1", "opus-4-2025"), OPUS_4_1),
     (("opus",), OPUS),
+    # "haiku-5-5" before the legacy rows; Haiku 3.5's IDs put the version first.
+    (("haiku-5-5", "haiku-5.5", "haiku5.5", "haiku5-5"), HAIKU),
+    (("haiku-4-5", "haiku-4.5"), HAIKU_4_5),
+    (("3-5-haiku", "haiku-3-5", "haiku-3.5"), HAIKU_3_5),
     (("haiku",), HAIKU),
     (("sonnet-5-5", "sonnet-5.5", "sonnet5.5", "sonnet5-5"), SONNET),
     (("sonnet-5", "sonnet5"), SONNET_5),
@@ -237,6 +267,9 @@ def _extract_from_records(records: list[dict], file_path: Path) -> dict | None:
     model = DEFAULT_MODEL
     tool_calls = []
     timestamps = []
+    # (input, output, prompt) per request: a tiered model prices each request by
+    # its own prompt length, which counts cache reads and writes.
+    requests: list[tuple[int, int, int]] = []
 
     for record in records:
         # Records may be non-dict (e.g. a JSON file that is a list of lists or
@@ -245,13 +278,20 @@ def _extract_from_records(records: list[dict], file_path: Path) -> dict | None:
             continue
         # Try common field patterns for token usage
         usage = record.get("usage", {})
+        rec_in = rec_out = rec_cache = 0
         if isinstance(usage, dict):
-            total_input += usage.get("input_tokens", 0)
-            total_output += usage.get("output_tokens", 0)
+            rec_in += usage.get("input_tokens", 0)
+            rec_out += usage.get("output_tokens", 0)
+            rec_cache += usage.get("cache_read_input_tokens", 0)
+            rec_cache += usage.get("cache_creation_input_tokens", 0)
 
         # Alternative: top-level token fields
-        total_input += record.get("input_tokens", 0)
-        total_output += record.get("output_tokens", 0)
+        rec_in += record.get("input_tokens", 0)
+        rec_out += record.get("output_tokens", 0)
+        total_input += rec_in
+        total_output += rec_out
+        if rec_in or rec_out:
+            requests.append((rec_in, rec_out, rec_in + rec_cache))
 
         # Count turns (messages from the assistant)
         role = record.get("role", "")
@@ -291,7 +331,9 @@ def _extract_from_records(records: list[dict], file_path: Path) -> dict | None:
         "total_tokens": total_input + total_output,
         "turns": max(turn_count, 1),
         "model": model,
-        "cost": calculate_cost(total_input, total_output, model),
+        "cost": sum(
+            calculate_cost(i, o, model, prompt_tokens=prompt) for i, o, prompt in requests
+        ),
         "tool_calls": tool_calls,
         "first_timestamp": min(timestamps) if timestamps else None,
         "last_timestamp": max(timestamps) if timestamps else None,
@@ -324,7 +366,9 @@ def _extract_from_single(data: dict, file_path: Path) -> dict | None:
         "total_tokens": total,
         "turns": max(turns, 1),
         "model": model,
-        "cost": calculate_cost(input_tokens, output_tokens, model),
+        # An aggregate has no per-request prompt size, so a tiered model is
+        # priced at its lower tier here.
+        "cost": calculate_cost(input_tokens, output_tokens, model, prompt_tokens=0),
         "tool_calls": [],
         "first_timestamp": None,
         "last_timestamp": None,
@@ -455,9 +499,10 @@ def generate_recommendations(sessions: list[dict]) -> list[str]:
     elif models_used == {"opus"}:
         recommendations.append(
             "You're using Opus 5.5 exclusively. Consider Sonnet 5.5 for standard "
-            "coding tasks and Haiku 4.5 for simple lookups to save 50-75% per "
-            "token on those turns (Sonnet 5.5 is half the rate, Haiku 4.5 a "
-            "quarter). On the Opus 5.5 turns you keep, effort is the only "
+            "coding tasks and Haiku 5.5 for simple lookups to save 50-97.5% per "
+            "token on those turns (Sonnet 5.5 is half the rate, Haiku 5.5 a "
+            "fortieth while each prompt stays under 100K tokens). On the Opus 5.5 "
+            "turns you keep, effort is the only "
             "thinking control (thinking cannot be disabled); it defaults to "
             "medium, and those reasoning tokens bill as output."
         )

@@ -71,7 +71,9 @@ You don't need Opus for everything. Quick rule:
 |------|-------|-----|
 | Architecture, complex refactors | Opus 5.5 | Anthropic's recommended start for most workloads |
 | Feature implementation, debugging | Sonnet 5.5 | Good balance, 2x cheaper than Opus 5.5 |
-| Tests, docs, formatting, renames | Haiku 4.5 | Fast, 4x cheaper than Opus 5.5 |
+| Tests, docs, formatting, renames | Haiku 5.5 | Fastest, 40x cheaper per token than Opus 5.5 while the prompt stays under 100K tokens |
+
+Haiku 5.5 is priced by prompt length: $0.10/$0.50 per 1M up to 100K prompt tokens, $0.50/$2.50 above (cache reads and writes count toward the 100K), so keep its prompts short. `/model haiku` selects Haiku 5.5 on the Anthropic API (Claude Code v2.1.293+); on Bedrock, Google Cloud, Microsoft Foundry and Claude Platform on AWS it still means legacy Haiku 4.5 ($1/$5).
 
 Switch models mid-session:
 

@@ -41,14 +41,26 @@ case "$TOOL" in
     ;;
 esac
 
-# Per-model rates in dollars per 1M tokens (verified 2026-09-29).
+# Per-model rates in dollars per 1M tokens (verified 2026-10-09).
 # Defaults to the "opus" alias (Opus 5.5) when no model is set; unrecognized
 # model strings fall through to the legacy Opus rate.
 MODEL="${HOOK_MODEL_ID:-${ANTHROPIC_MODEL:-opus}}"
 case "$MODEL" in
-  *haiku*)
+  *haiku-4-5*|*haiku-4.5*)
+    # Legacy Haiku 4.5. Must match before the generic Haiku branch below.
     RATE_INPUT=1
     RATE_OUTPUT=5
+    ;;
+  *3-5-haiku*|*haiku-3-5*|*haiku-3.5*)
+    # Haiku 3.5, retired except on Google Cloud.
+    RATE_INPUT=0.80
+    RATE_OUTPUT=4
+    ;;
+  *haiku*)
+    # Haiku 5.5 is $0.10/$0.50 up to 100,000 prompt tokens ($0.50/$2.50 above).
+    # A per-call estimate here is far below that line, so the low tier applies.
+    RATE_INPUT=0.10
+    RATE_OUTPUT=0.50
     ;;
   *sonnet-4-6*|*sonnet-4.6*|*sonnet-4-5*|*sonnet-4.5*)
     # Legacy Sonnet 4.6 / 4.5 keep $3/$15.

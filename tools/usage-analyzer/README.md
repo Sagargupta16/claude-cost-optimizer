@@ -92,7 +92,7 @@ Useful for piping into other tools or dashboards.
 
 ## Models and Pricing
 
-Cost estimates use current Claude API pricing (as of 2026-09-29, after the Opus 5.5 release on 2026-09-22 and the Sonnet 5.5 release on 2026-09-28). The analyzer reads the `model` field out of your session records and matches it against these keys:
+Cost estimates use current Claude API pricing (as of 2026-10-09, after the Opus 5.5 release on 2026-09-22, the Sonnet 5.5 release on 2026-09-28 and the Haiku 5.5 release on 2026-10-07). The analyzer reads the `model` field out of your session records and matches it against these keys:
 
 | Model | Detected from | Input (per 1M) | Output (per 1M) | Cache Hit (per 1M) |
 |-------|---------------|:--------------:|:---------------:|:------------------:|
@@ -105,19 +105,25 @@ Cost estimates use current Claude API pricing (as of 2026-09-29, after the Opus 
 | Opus 4.6 (`opus-4.6`, legacy) | `opus-4-6`, `opus-4.6` | $5.00 | $25.00 | $0.50 |
 | Opus 4.5 (`opus-4.5`, legacy) | `opus-4-5`, `opus-4.5` | $5.00 | $25.00 | $0.50 |
 | Opus 4.1 / Opus 4 (`opus-4.1`, retired on the Claude API) | `opus-4-1`, `opus-4.1`, `opus-4-2025` | $15.00 | $75.00 | $1.50 |
-| Sonnet 5.5 (`sonnet`) | `sonnet-5-5`, `sonnet-5.5`, or a `sonnet` string no row below matches | $2.00 | $10.00 | $0.20 |
+| Sonnet 5.5 (`sonnet`) | `sonnet-5-5`, `sonnet-5.5`, or a `sonnet` string no row below matches | $2.00 | $10.00 | **$0.10** |
 | Sonnet 5 (`sonnet-5`, legacy) | `sonnet-5`, `sonnet5` | $2.00 | $10.00 | $0.20 |
 | Sonnet 4.6 (`sonnet-4.6`, legacy) | `sonnet-4-6`, `sonnet-4.6` | $3.00 | $15.00 | $0.30 |
-| Sonnet 4.5 (`sonnet-4.5`, legacy) | `sonnet-4-5`, `sonnet-4.5` | $3.00 | $15.00 | $0.30 |
-| Haiku 4.5 (`haiku`) | `haiku` | $1.00 | $5.00 | $0.10 |
+| Sonnet 4.5 (`sonnet-4.5`, deprecated) | `sonnet-4-5`, `sonnet-4.5` | $3.00 | $15.00 | $0.30 |
+| Haiku 5.5 (`haiku`), prompt <= 100K tokens | `haiku-5-5`, `haiku-5.5`, or a `haiku` string no row below matches | $0.10 | $0.50 | $0.01 |
+| Haiku 5.5 (`haiku`), prompt > 100K tokens | same as the row above | $0.50 | $2.50 | $0.05 |
+| Haiku 4.5 (`haiku-4.5`, legacy) | `haiku-4-5`, `haiku-4.5` | $1.00 | $5.00 | $0.10 |
+| Haiku 3.5 (`haiku-3.5`) | `3-5-haiku`, `haiku-3-5`, `haiku-3.5` | $0.80 | $4.00 | $0.08 |
 
 Notes:
 
 - `opus` is Opus 5.5 (released 2026-09-22), Anthropic's recommended default Opus. Opus 5 moved to legacy with that launch and keeps its own `opus-5` key at $5/$25. Because `opus-5` is a substring of `opus-5-5`, the analyzer tests for Opus 5.5 first.
 - `sonnet` is Sonnet 5.5 (released 2026-09-28), the current Sonnet flagship at the same $2/$10 as Sonnet 5. Sonnet 5 moved to legacy with that launch and keeps its own `sonnet-5` key. Because `sonnet-5` is a substring of `sonnet-5-5`, the analyzer tests for Sonnet 5.5 first.
+- Sonnet 4.5 is deprecated; retirement scheduled for 2026-11-30 on the Claude API. Migrate to Sonnet 5.5.
+- `haiku` is Haiku 5.5 (released 2026-10-07). Haiku 4.5 is legacy (not deprecated) under its own `haiku-4.5` key, and Haiku 3.5 IDs (`claude-3-5-haiku-...`) map to `haiku-3.5`. Every one of those IDs contains `haiku`, so the analyzer tests `haiku-5-5`, then `haiku-4-5`, then `3-5-haiku`, and only then falls back to Haiku 5.5 for any other `haiku` string.
+- Haiku 5.5 is priced per request, as Anthropic bills it: each usage record's prompt is its input plus cache reads and cache writes, and a record over 100,000 prompt tokens is priced at $0.50/$2.50 (cache hit $0.05) for the whole request. A JSON session summary carries no per-request prompt size, so it is priced at the lower tier.
 - Opus 4.8 is a legacy model (same $5/$25 rate as Opus 5, retirement no sooner than 2027-05-28) and is still the server-side fallback target for Opus 5 cyber-classifier refusals.
-- Cache hits have three multipliers: 0.1x base input by default, 0.025x on Fable 5.1 and Mythos 5.1, and 0.05x on Opus 5.5.
-- Mythos 5.1 is Glasswing-only and prices identically to Fable 5.1, so it maps to the `fable` key; Mythos 5 maps to `fable-5`. (Mythos Preview is deprecated.)
+- Cache hits have three multipliers: 0.1x base input by default, 0.025x on Fable 5.1 and Mythos 5.1, and 0.05x on Opus 5.5 and Sonnet 5.5.
+- Mythos 5.1 is available to organizations verified through Anthropic's verification programs (such as the Cyber Verification Program) and prices identically to Fable 5.1, so it maps to the `fable` key; Mythos 5 maps to `fable-5`. (Mythos Preview is deprecated.)
 - Sonnet 5 is $2/$10 permanently -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15.
 - Sessions whose records carry no recognizable model name fall back to Sonnet pricing, which keeps unknown-model estimates conservative rather than inflated.
 

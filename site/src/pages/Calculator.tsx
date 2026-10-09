@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { type ModelId, MODELS, FAST_MODE_MULTIPLIER, formatDollars } from '../utils/pricing'
+import { type ModelId, MODELS, FAST_MODE_MULTIPLIER, formatDollars, formatRate } from '../utils/pricing'
 import { calculate, resultToMarkdown, type CalculatorInputs } from '../utils/calculator'
 import { BeforeAfterChart, CostPerTurnChart, ModelComparisonChart } from '../components/charts'
 import styles from './Calculator.module.css'
@@ -78,7 +78,10 @@ function Calculator() {
                   <span className={styles.radioText}>
                     {MODELS[id].name}
                     <span className={styles.radioMeta}>
-                      ${MODELS[id].inputPer1M}/${MODELS[id].outputPer1M} per 1M
+                      {formatRate(MODELS[id].inputPer1M)}/{formatRate(MODELS[id].outputPer1M)} per 1M
+                      {MODELS[id].longPrompt
+                        ? ` up to ${(MODELS[id].longPrompt.threshold / 1000).toLocaleString()}K prompt tokens`
+                        : ''}
                     </span>
                   </span>
                 </label>

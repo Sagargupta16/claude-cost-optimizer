@@ -44,14 +44,14 @@ Estimate token count and cost for a given text input.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `text` | string | yes | The text to estimate tokens for |
-| `model` | string | no | `fable` (Fable 5.1), `fable-5`, `opus` (Opus 5.5), `opus-5`, `opus-4.8`, `opus-4.7`, `opus-4.6`, `sonnet` (Sonnet 5.5), `sonnet-5`, `sonnet-4.6`, or `haiku` (default: `sonnet`) |
+| `model` | string | no | `fable` (Fable 5.1), `fable-5`, `opus` (Opus 5.5), `opus-5`, `opus-4.8`, `opus-4.7`, `opus-4.6`, `sonnet` (Sonnet 5.5), `sonnet-5`, `sonnet-4.6`, `haiku` (Haiku 5.5), or `haiku-4.5` (legacy Haiku 4.5) (default: `sonnet`) |
 | `turns` | number | no | Project cost over this many conversation turns |
 
 **Example usage:**
 
 > "Estimate the cost of sending this 500-line file to Opus over 10 turns."
 
-Returns token count, single-pass input/output cost, and (if `turns` specified) a projected multi-turn total that accounts for cumulative history growth and a 70% cache hit rate.
+Returns token count, single-pass input/output cost, and (if `turns` specified) a projected multi-turn total that accounts for cumulative history growth and a 70% cache hit rate. On Haiku 5.5 the single pass and each projected turn are priced at the tier their own prompt falls in.
 
 ### session_estimate
 
@@ -62,7 +62,7 @@ Estimate total cost for an entire Claude Code session.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `turns` | number | yes | Number of conversation turns |
-| `model` | string | no | `fable` (Fable 5.1), `fable-5`, `opus` (Opus 5.5), `opus-5`, `opus-4.8`, `opus-4.7`, `opus-4.6`, `sonnet` (Sonnet 5.5), `sonnet-5`, `sonnet-4.6`, or `haiku` (default: `sonnet`) |
+| `model` | string | no | `fable` (Fable 5.1), `fable-5`, `opus` (Opus 5.5), `opus-5`, `opus-4.8`, `opus-4.7`, `opus-4.6`, `sonnet` (Sonnet 5.5), `sonnet-5`, `sonnet-4.6`, `haiku` (Haiku 5.5), or `haiku-4.5` (legacy Haiku 4.5) (default: `sonnet`) |
 | `claude_md_lines` | number | no | Lines in your CLAUDE.md (default: 0) |
 | `mcp_servers` | number | no | Number of configured MCP servers (default: 0) |
 
@@ -96,11 +96,11 @@ Compare cost across every model in the pricing table for a given workload.
 
 > "Compare model costs for 100K input tokens and 5K output tokens."
 
-Returns cost for each model, identifies the cheapest option, and shows the percentage saved versus the most expensive model.
+Returns cost for each model, identifies the cheapest option, and shows the percentage saved versus the most expensive model. `input_tokens` is treated as one request's prompt, so Haiku 5.5 is priced at $0.50/$2.50 when it is over 100,000.
 
 ## Pricing Reference
 
-All estimates use current API pricing (verified 2026-09-29, per 1M tokens):
+All estimates use current API pricing (verified 2026-10-09, per 1M tokens):
 
 | Model | Input | Output | Cache Hit | Min cacheable prompt |
 |-------|-------|--------|-----------|---------------------:|
@@ -111,11 +111,13 @@ All estimates use current API pricing (verified 2026-09-29, per 1M tokens):
 | Opus 4.8 (alias: `opus-4.8`, legacy) | $5.00 | $25.00 | $0.50 | 1,024 |
 | Opus 4.7 (alias: `opus-4.7`, legacy) | $5.00 | $25.00 | $0.50 | 2,048 |
 | Opus 4.6 (alias: `opus-4.6`, legacy) | $5.00 | $25.00 | $0.50 | 4,096 |
-| Sonnet 5.5 (alias: `sonnet`) | $2.00 | $10.00 | $0.20 | 512 |
+| Sonnet 5.5 (alias: `sonnet`) | $2.00 | $10.00 | **$0.10** | 512 |
 | Sonnet 5 (alias: `sonnet-5`, legacy) | $2.00 | $10.00 | $0.20 | 1,024 |
-| Haiku 4.5 (alias: `haiku`) | $1.00 | $5.00 | $0.10 | 4,096 |
+| Haiku 5.5 (alias: `haiku`), prompt <= 100K tokens | $0.10 | $0.50 | $0.01 | 512 |
+| Haiku 5.5 (alias: `haiku`), prompt > 100K tokens | $0.50 | $2.50 | $0.05 | 512 |
+| Haiku 4.5 (alias: `haiku-4.5`, legacy) | $1.00 | $5.00 | $0.10 | 4,096 |
 
-Cache hits have three multipliers: 0.1x base input by default, 0.025x on Fable 5.1 and Mythos 5.1, and 0.05x on Opus 5.5.
+Cache hits have three multipliers: 0.1x base input by default, 0.025x on Fable 5.1 and Mythos 5.1, and 0.05x on Opus 5.5 and Sonnet 5.5.
 
 Token estimation uses a ~4 characters per token approximation. This is a reasonable average for English text and code but will vary with content type.
 
@@ -123,7 +125,9 @@ Token estimation uses a ~4 characters per token approximation. This is a reasona
 
 **Opus 5.5 note.** Opus 5.5 (released 2026-09-22) costs 20% less per token than Opus 5, but adaptive thinking is always on and reasoning tokens bill as output, so the ~500 output tokens per turn assumed above is a floor, not an average. Effort is the only control: it defaults to `medium` (Opus 5 defaulted to `high`), and `thinking: {type: "disabled"}` or a `budget_tokens` setting returns a 400. On legacy Opus 5 (`opus-5`), setting `thinking` to disabled is legal only at effort `high` or below; pairing it with `xhigh` or `max` returns a 400.
 
-**Sonnet 5.5 note.** Sonnet 5.5 (released 2026-09-28) has the same $2/$10 and tokenizer as Sonnet 5, but adaptive thinking is on by default (effort `high`) and reasoning tokens bill as output, so the ~500 output tokens per turn is a floor here too. `thinking: {type: "disabled"}` returns a 400; the lowest setting is `thinking: {type: "between_tools"}`, accepted at effort `high` or below. Effort levels are recalibrated, so re-run your effort sweep rather than carrying a Sonnet 5 setting over.
+**Haiku 5.5 note.** Haiku 5.5 (released 2026-10-07) is priced by prompt length: $0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above. Anthropic prices each request on its own and counts cache reads and writes in the prompt length, so this server checks each request (each projected turn in a multi-turn estimate) against the 100,000-token threshold and prices the whole request, output included, at that tier. A 100,000-token prompt costs $0.010 of input; a 100,001-token one costs $0.050. Haiku 5.5 also counts ~30% more tokens than Haiku 4.5 for the same text, which this server's ~4 characters per token estimate does not model.
+
+**Sonnet 5.5 note.** Sonnet 5.5 (released 2026-09-28) has the same $2/$10 and tokenizer as Sonnet 5, and since 2026-10-07 half the cache-read price ($0.10 vs $0.20), but adaptive thinking is on by default (effort `high`) and reasoning tokens bill as output, so the ~500 output tokens per turn is a floor here too. `thinking: {type: "disabled"}` returns a 400; the lowest setting is `thinking: {type: "between_tools"}`, accepted at effort `high` or below. Effort levels are recalibrated, so re-run your effort sweep rather than carrying a Sonnet 5 setting over.
 
 Fast Mode is 2x each model's own base rate -- $8/$40 on Opus 5.5 and $10/$50 on Opus 5 and Opus 4.8, the only models that support it -- and this server does not model it. The old 6x tier on Opus 4.7 / 4.6 no longer exists: Opus 4.7 errors on `speed: "fast"`, and Opus 4.6 silently runs at standard speed and standard rates.
 

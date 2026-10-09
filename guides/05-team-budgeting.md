@@ -35,7 +35,7 @@ Not every developer uses Claude Code the same way. Set budgets based on role and
 
 | Role | Typical Usage | Recommended Budget | Rationale |
 |------|---------------|:------------------:|-----------|
-| **Junior Developer** | High-frequency simple tasks, learning | $30-60/month | Lots of small queries; should use Haiku 4.5 heavily |
+| **Junior Developer** | High-frequency simple tasks, learning | $30-60/month | Lots of small queries; should use Haiku 5.5 heavily |
 | **Mid-Level Developer** | Mixed task complexity | $50-100/month | Component creation, bug fixes, test writing |
 | **Senior Developer** | Lower frequency, higher complexity | $60-120/month | Architecture work, complex debugging (Opus 5.5 usage) |
 | **Tech Lead** | Architecture, reviews, planning | $70-150/month | Higher Opus 5.5 usage justified for strategic decisions |
@@ -91,13 +91,15 @@ Monthly Cost = (Simple Tasks x Simple Cost) +
                (Complex Tasks x Complex Cost)
 
 Where (per developer per day):
-  Simple Tasks  = ~15-25 tasks/day   x $0.01 avg (Haiku 4.5)  = $0.15-0.25/day
+  Simple Tasks  = ~15-25 tasks/day   x $0.0013 avg (Haiku 5.5) = $0.02-0.03/day
   Medium Tasks  = ~8-15 tasks/day    x $0.07 avg (Sonnet 5.5)  = $0.56-1.05/day
   Complex Tasks = ~2-5 tasks/day     x $0.10 avg (Opus 5.5)    = $0.20-0.50/day
 
-  Daily Total   = $0.91-1.80/day
-  Monthly Total = $20-40/developer (optimized)
+  Daily Total   = $0.78-1.58/day
+  Monthly Total = $17-35/developer (optimized)
 ```
+
+> **Haiku 5.5 simple tasks**: Haiku 5.5 bills $0.10/$0.50 per 1M up to 100K prompt tokens and $0.50/$2.50 above, so these figures assume every simple-task prompt stays under 100K. The $0.0013 average is the old $0.01 Haiku 4.5 average divided by ~7.7, the per-task gap once Haiku 5.5's ~30% larger token counts are included (10x per token / 1.3). On legacy Haiku 4.5 the simple-task line is $0.15-0.25/day and the monthly total $20-40.
 
 > **Note**: The Opus average cost per complex task has dropped from ~$0.40 (at old Opus 4.1 $15/$75 pricing) to ~$0.13 (at the $5/$25 shared by legacy Opus 5, 4.8, 4.7, and 4.6) and ~$0.10 on Opus 5.5 ($4/$20, 20% lower). This significantly reduces the cost of architecture, debugging, and multi-file work. The ~$0.10 figure assumes a modest effort level; on Opus 5.5 thinking is always on and its tokens bill as output at $20/MTok, so complex tasks run at `xhigh` or `max` effort land higher.
 
@@ -112,7 +114,7 @@ Team size:                    _____ developers
 Working days/month:           _____ (default: 22)
 
 Per Developer (daily averages):
-  Simple tasks (Haiku 4.5):   _____ tasks x $0.01 = $_____ /day
+  Simple tasks (Haiku 5.5):   _____ tasks x $0.0013 = $_____ /day
   Medium tasks (Sonnet 5.5):  _____ tasks x $0.07 = $_____ /day
   Complex tasks (Opus 5.5):   _____ tasks x $0.10 = $_____ /day
 
@@ -217,6 +219,8 @@ Not every task should go through Claude Code. Here is a decision framework for t
 | **Claude API** (direct) | Batch processing, CI/CD pipelines, automated code review | $0.005-0.30/call | Variable |
 | **Manual coding** | Trivial changes, domain-expert knowledge, creative design | $0 (but developer time) | Depends on task |
 
+> **Plan API credits (since 2026-10-07)**: Max and Team plans now include a monthly Claude API credit -- $100 on Max 5x, $200 on Max 20x, and on Team $20 per Standard seat and $100 per Premium seat, pooled per month and **capped at $500**. A 5-seat Standard team gets 5 x $20 = $100 a month; a 10-seat Premium team would earn 10 x $100 = $1,000 but is capped at $500. The credit covers the Claude API, Claude Managed Agents, the Claude Agent SDK and the playground, through the Claude API in the Claude Console only (not Bedrock, Google Cloud, Microsoft Foundry or Claude Platform on AWS). It does **not** cover Claude Code or extra usage in the Claude apps, and it expires at the end of each billing cycle with no rollover. New subscribers can claim it after 7 days; Free, Pro and Enterprise are not eligible. For budgeting, count it against the **Claude API** row above (CI code review, batch jobs), never against interactive Claude Code spend.
+
 ### Decision Matrix
 
 ```
@@ -316,6 +320,8 @@ NET BENEFIT:
   $2,740/month per developer (Max 20x plan)
 ```
 
+The Max plans' monthly API credit ($100 on Max 5x, $200 on Max 20x) does not reduce C: it does not cover Claude Code, only Claude API work in the Console (see [Plan API credits](#claude-code-vs-claude-api-vs-manual-coding)).
+
 Even with conservative estimates (half the tasks, half the time saved), the ROI is still over 500%. The question is not whether Claude Code is worth it -- it is how to maximize the ROI by minimizing waste.
 
 ### ROI by Task Type
@@ -403,11 +409,11 @@ When planning sprints, estimate Claude Code costs alongside development time:
 Feature: User notification preferences
   - Frontend component (Sonnet 5.5, ~$0.10)
   - API endpoint (Sonnet 5.5, ~$0.07)
-  - Database migration (Haiku 4.5, ~$0.02)
+  - Database migration (Haiku 5.5, ~$0.003)
   - Unit tests (Sonnet 5.5, ~$0.10)
   - Integration test (Sonnet 5.5, ~$0.07)
-  - Code review assist (Haiku 4.5, ~$0.03)
-  Estimated Claude Code cost: ~$0.39
+  - Code review assist (Haiku 5.5, ~$0.004)
+  Estimated Claude Code cost: ~$0.35
 
 Feature: Payment system overhaul
   - Architecture design (Opus 5.5, ~$0.22)
@@ -417,6 +423,8 @@ Feature: Payment system overhaul
   - Security review (Opus 5.5, ~$0.16)
   Estimated Claude Code cost: ~$1.28
 ```
+
+The two Haiku 5.5 items assume prompts under 100K tokens and are the old Haiku 4.5 estimates ($0.02 and $0.03) divided by ~7.7; on legacy Haiku 4.5 the first feature is ~$0.39.
 
 ---
 
@@ -428,7 +436,7 @@ Feature: Payment system overhaul
 
 | Action | Impact |
 |--------|--------|
-| Set Sonnet 5.5 as the team default model (pin `claude-sonnet-5-5`: outside the Anthropic API the `sonnet` alias means an older $3/$15 Sonnet, see [Guide 03](03-model-selection.md#the-sonnet-alias-depends-on-your-provider)) | Prevents Opus overuse from day one |
+| Set Sonnet 5.5 as the team default model (pin `claude-sonnet-5-5`: outside the Anthropic API the `sonnet` alias means an older $3/$15 Sonnet and `haiku` means legacy Haiku 4.5, see [Guide 03](03-model-selection.md#the-sonnet-alias-depends-on-your-provider)) | Prevents Opus overuse from day one |
 | Share a standard CLAUDE.md template | Consistent costs across the team |
 | Create a shared command library | Standardized workflows, pre-set models |
 | Weekly informal cost review | Catch problems early |
@@ -514,7 +522,7 @@ Day 1: Read These Guides (30 minutes total)
   [ ] This guide's ROI section (understand the economics)
 
 Week 1: Practice
-  [ ] Use Haiku 4.5 for at least 50% of your tasks
+  [ ] Use Haiku 5.5 for at least 50% of your tasks
   [ ] Use plan mode for any task touching 3+ files
   [ ] Use /compact after every planning phase
   [ ] Write one complete prompt (no follow-up corrections needed)

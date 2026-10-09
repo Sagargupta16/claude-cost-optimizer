@@ -17,7 +17,7 @@ The first two items are **fixed overhead per turn**. The third **grows linearly*
 - A 300-line CLAUDE.md in the same session is loaded 30 times.
 - The difference compounds with every turn.
 
-> **Note on prompt caching**: Claude Code caches stable content (system prompt, CLAUDE.md, earlier conversation turns) between turns. Cached tokens cost ~90% less (95% on Opus 5.5, 97.5% on Fable 5.1). The token counts below represent **pre-cache** (raw) values. Actual billed costs will be lower for the CLAUDE.md portion after the first turn, but the relative differences between sizes still hold because larger files occupy more cache space and reduce room for caching conversation history.
+> **Note on prompt caching**: Claude Code caches stable content (system prompt, CLAUDE.md, earlier conversation turns) between turns. Cached tokens cost ~90% less (95% on Opus 5.5 and Sonnet 5.5, 97.5% on Fable 5.1). The token counts below represent **pre-cache** (raw) values. Actual billed costs will be lower for the CLAUDE.md portion after the first turn, but the relative differences between sizes still hold because larger files occupy more cache space and reduce room for caching conversation history.
 
 ---
 
@@ -145,7 +145,8 @@ Based on cost-efficiency data, here are guidelines for how many file reads to bu
 
 | Model | Small Files (1 KB) | Medium Files (10 KB) | Large Files (100 KB) |
 |-------|:------------------:|:-------------------:|:-------------------:|
-| Haiku 4.5 | 20+ (negligible cost) | 10-15 | 1-2 (delegate to subagent) |
+| Haiku 5.5 | 20+ (negligible cost) | 10-15 | 1-2 (delegate to subagent), and keep the prompt under 100K tokens or every token in the request pays 5x |
+| Haiku 4.5 (legacy) | 20+ (negligible cost) | 10-15 | 1-2 (delegate to subagent) |
 | Sonnet 5.5 | 15-20 | 5-10 | 1 (delegate to subagent) |
 | Opus 5.5 | 10-15 | 5-8 | 1-2 (delegate to subagent) |
 
@@ -155,7 +156,7 @@ Based on cost-efficiency data, here are guidelines for how many file reads to bu
 
 ### How Context Grows
 
-Claude Code uses the model's full context window: **1M tokens on Opus 5.5 and Opus 5 (at standard rates, no long-context premium), Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6**, and **200K on Haiku 4.5**. As a session progresses, the context fills with conversation history. Here is how context utilization typically grows (200K baseline shown, since most sessions stay well under the 1M cap):
+Claude Code uses the model's full context window: **1M tokens on Opus 5.5 and Opus 5 (at standard rates, no long-context premium), Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6**, **1M on Haiku 5.5, which is not at one rate -- a request whose prompt is over 100K tokens pays $0.50/$2.50 instead of $0.10/$0.50**, and **200K on Haiku 4.5 (legacy)**. As a session progresses, the context fills with conversation history. Here is how context utilization typically grows (200K baseline shown, since most sessions stay well under the 1M cap):
 
 | Turn | Typical Context Fill | Cumulative Input Tokens Billed | Per-Turn Input Cost (Sonnet 4.6) |
 |:----:|:--------------------:|:------------------------------:|:------------------------------:|
