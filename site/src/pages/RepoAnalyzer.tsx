@@ -14,8 +14,12 @@ type Status = 'idle' | 'loading' | 'done' | 'error'
 
 const DEMO_REPO = 'Sagargupta16/claude-cost-optimizer'
 
-const LOCAL_CMD =
-  'curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- .'
+const RATE_PY = 'https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py'
+// No install: the script is streamed into Python (3.10+), nothing is written to disk.
+const LOCAL_CMDS = [
+  { label: 'macOS / Linux', cmd: `curl -sSL ${RATE_PY} | python3 - . --user --usage --fix` },
+  { label: 'Windows PowerShell', cmd: `irm ${RATE_PY} | python - . --user --usage --fix` },
+] as const
 
 const INVALID_URL_ERROR = 'Invalid repo URL. Use https://github.com/owner/repo or owner/repo'
 const NOT_FOUND_ERROR =
@@ -130,23 +134,35 @@ function AnalyzerInput(props: Readonly<AnalyzerInputProps>) {
 }
 
 /** Local / private repos: the CLI covers what the web analyzer can't see. */
-function LocalCliCallout() {
+function LocalCmd({ label, cmd }: Readonly<{ label: string; cmd: string }>) {
   const [copied, setCopied] = useState(false)
-  const handleCopy = useCallback(() => copyWithFeedback(LOCAL_CMD, setCopied), [])
+  const handleCopy = useCallback(() => copyWithFeedback(cmd, setCopied), [cmd])
+  return (
+    <div className={styles.localCmdRow}>
+      <code className={styles.localCmd} aria-label={`${label} command`}>{cmd}</code>
+      <button type="button" onClick={handleCopy} className={styles.localCopyBtn} aria-label={`Copy the ${label} command`}>
+        {copied ? 'Copied' : 'Copy'}
+      </button>
+    </div>
+  )
+}
+
+function LocalCliCallout() {
   return (
     <div className={styles.localCallout}>
       <div className={styles.localText}>
         <strong>Private or local repo?</strong> Run <code>claude-rate</code> in
         any project directory -- same rubric, plus local-only checks
         (gitignored settings.local.json, leaked secrets, files you have not
-        pushed):
+        pushed), your <code>~/.claude</code> setup and your real usage. One
+        command, nothing to install, only Python 3.10+:
       </div>
-      <div className={styles.localCmdRow}>
-        <code className={styles.localCmd}>{LOCAL_CMD}</code>
-        <button type="button" onClick={handleCopy} className={styles.localCopyBtn}>
-          {copied ? 'Copied' : 'Copy'}
-        </button>
-      </div>
+      {LOCAL_CMDS.map((c) => (
+        <div key={c.label} className={styles.localCmdGroup}>
+          <span className={styles.localCmdLabel}>{c.label}</span>
+          <LocalCmd label={c.label} cmd={c.cmd} />
+        </div>
+      ))}
     </div>
   )
 }

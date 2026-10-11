@@ -56,21 +56,27 @@ Technical accuracy is never sacrificed. Code in commits and PRs is written norma
 
 ## Rate your setup
 
-### Locally, in 5 seconds (recommended)
+### Locally, one command (recommended)
 
-`claude-rate` runs on your filesystem -- no signup, no GitHub upload, no network round-trip. Pick whichever runner fits your shell:
+`claude-rate` runs on your filesystem -- no signup, no install, no GitHub upload. The only requirement is Python 3.10 or later (preinstalled on most Linux distributions; on macOS it comes with the Xcode Command Line Tools). The command streams the script straight into Python, so nothing is installed or written to disk. Run it in your project directory:
 
-```bash
-# curl one-shot (no Node, no install)
-curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- .
+Windows PowerShell:
 
-# curl, persistent install
-curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- --install
+```powershell
+irm https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python - . --user --usage --fix
 ```
 
-Add `--fix` to print copy-pasteable fix commands, `--strict` to fail CI when the grade drops below B, or `--json` for machine-readable output. See [tools/claude-rate/README.md](tools/claude-rate/README.md) for the full breakdown.
+macOS, Linux, Git Bash, or Windows cmd (on Windows, `python` instead of `python3`):
 
-`claude-rate . --user --usage` (one-shot: `sh -s -- . --user --usage`) also grades your user-level setup -- global instructions, skill listing, user MCP servers, user settings -- and your measured usage from local Claude Code transcripts: cache hit rate, context size, and list-price spend per model (last 30 days by default). All of it is read locally; nothing leaves your machine.
+```bash
+curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python3 - . --user --usage --fix
+```
+
+It grades the project, your user-level setup in `~/.claude` and your last 30 days of Claude Code usage, then prints the fixes. Drop `--user --usage` to grade only the project. To keep a `claude-rate` command on macOS or Linux, run `curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- --install`.
+
+`--fix` prints copy-pasteable fix commands; add `--strict` to fail CI when the grade drops below B, or `--json` for machine-readable output. See [tools/claude-rate/README.md](tools/claude-rate/README.md) for the full breakdown.
+
+`--user` and `--usage` grade your user-level setup -- global instructions, skill listing, user MCP servers, user settings -- and your measured usage from local Claude Code transcripts: cache hit rate, context size, and list-price spend per model (last 30 days by default). All of it is read locally; nothing leaves your machine.
 
 The local rater works on private and uncommitted repos and inspects things the web analyzer can't reach: `settings.local.json`, whether your `Read(...)` deny rules cover the lock files actually on disk, and secrets in your working tree. The [web analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer) applies the same 7-category rubric (CLAUDE.md, file-read exclusions, settings, MCP, hooks, security, skills/agents/commands) to any public repo.
 

@@ -28,8 +28,8 @@ The other Python tools use stdlib only -- no install needed.
 ```bash
 # Rate the entire project's Claude/AI setup (recommended starting point)
 python claude-rate/rate.py .
-# Or via curl (no clone needed):
-curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- .
+# Or with no clone and no install (PowerShell: irm https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python - .):
+curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python3 - .
 
 # Estimate tokens for a file
 python token-estimator/estimate.py path/to/file.py

@@ -16,15 +16,25 @@ Unlike the [web analyzer](https://sagargupta16.github.io/claude-cost-optimizer/a
 
 ## Quick start
 
-Pick whichever runner fits your shell:
+### One command, nothing installed
 
-### curl one-shot (no Node, no install)
+The only requirement is Python 3.10 or later (preinstalled on most Linux distributions; on macOS it comes with the Xcode Command Line Tools). The script is streamed straight into Python, so nothing is installed or written to disk. Run it in your project directory:
 
-```bash
-curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- .
+Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python - . --user --usage --fix
 ```
 
-### curl, persistent install
+macOS, Linux, Git Bash, or Windows cmd (on Windows, `python` instead of `python3`):
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python3 - . --user --usage --fix
+```
+
+Drop `--user --usage` to grade only the project.
+
+### Persistent install (macOS, Linux, Git Bash)
 
 ```bash
 curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- --install
@@ -46,8 +56,8 @@ The project grade only sees one directory. Two flags grade the rest, all from lo
 
 ```bash
 claude-rate . --user --usage --fix
-# one-shot, no install:
-curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- . --user --usage --fix
+# no install (PowerShell: irm https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python - . --user --usage --fix):
+curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python3 - . --user --usage --fix
 ```
 
 - **`--user`** grades `~/.claude` (or `$CLAUDE_CONFIG_DIR`), which loads in every project: always-loaded instructions (`CLAUDE.md` plus `rules/` files without `paths:` frontmatter, which load at launch), the skill listing (every skill's description is in context each turn unless it sets `disable-model-invocation: true`), user and local MCP servers from `~/.claude.json`, cost controls in user settings, and user-level `Read(...)` deny rules. It reads counts and setting names only, never values.
