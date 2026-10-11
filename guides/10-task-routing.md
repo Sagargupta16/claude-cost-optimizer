@@ -9,12 +9,14 @@ This guide introduces a three-tier routing framework that goes beyond model sele
 ## The Three Tiers
 
 ```
-Tier 0: No LLM needed           $0.000    <1ms
-Tier 1: Haiku / Sonnet          $0.005    ~1s
-Tier 2: Opus 5.5 + multi-turn   $0.040    ~5s
+Tier 0: No LLM needed           $0 per task
+Tier 1: Haiku / Sonnet          $0.0008 / $0.012 per task
+Tier 2: Opus 5.5 + multi-turn   $0.025 per task
 ```
 
-Most developers operate entirely in Tier 2. Moving 30-50% of your tasks to Tier 0 or Tier 1 is where the biggest savings come from.
+Per-task costs are the average turn of a 30-turn Claude Code session at this repo's calculator defaults, with a warm cache (computed in [Cost Impact: Real Numbers](#cost-impact-real-numbers): $0.0228, $0.3693 and $0.7387 per session on Haiku 5.5, Sonnet 5.5 and Opus 5.5, divided by 30).
+
+Most developers operate entirely in Tier 2. Each task you move down costs nothing in Tier 0, and 1/20 (Sonnet 5.5 to Haiku 5.5) to 1/40 (Opus 5.5 to Haiku 5.5) per token in Tier 1, so the saving is that gap times the share of tasks you move (rates from [Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing): $0.10 / $2 and $0.10 / $4 per 1M input, the same ratios on output).
 
 ---
 
@@ -60,11 +62,11 @@ This uses Claude only as a command runner (minimal output tokens) rather than a 
 
 ## Tier 1: Cheap Model for Simple Tasks
 
-Tasks that need some reasoning but not deep analysis. Haiku 5.5 handles these at $0.10/$0.50 per 1M tokens up to 100K prompt tokens, $0.50/$2.50 above. The 100K counts the whole prompt, cached history included, so Tier 1 means short, self-contained calls: at or under the line Haiku 5.5 is 40x cheaper per token than Opus 5.5, above it only 8x. Anthropic positions it for high-volume, latency-sensitive work such as classification, extraction, routing and subagent tasks.
+Tasks that need some reasoning but not deep analysis. Haiku 5.5 handles these at $0.10/$0.50 per 1M tokens up to 100K prompt tokens, $0.50/$2.50 above. The 100K counts the whole prompt, cached history included, so Tier 1 means short, self-contained calls: at or under the line Haiku 5.5 is 40x cheaper per token than Opus 5.5, above it only 8x. Anthropic positions it for high-volume, latency-sensitive work such as classification, extraction, routing and subagent tasks. Per answered question the gap is smaller than per token: Anthropic measured Haiku 5.5 at about 1/20 of Opus 5.5's cost per GPQA Diamond question, at 85% accuracy vs 91% ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)).
 
 ### Tier 1 Tasks
 
-| Task | Why Haiku works | Cost vs Opus 5.5 (Haiku 5.5, prompt <= 100K) |
+| Task | Why Haiku works | Cost vs Opus 5.5 per token (Haiku 5.5, prompt <= 100K) |
 |------|----------------|:------------:|
 | Write a single unit test | Pattern-based, one file | 40x cheaper |
 | Add error handling to a function | Wrap in try/catch, type errors | 40x cheaper |
@@ -86,6 +88,8 @@ Switch models before the task:
 write tests for src/utils/parser.ts
 ```
 
+Switch at the start of a task, not deep into one. A model switch starts a fresh cache, so the new model rewrites the whole conversation before it answers. Anthropic's [2026-04-30 post on Claude Code's caching](https://claude.com/blog/lessons-from-building-claude-code-prompt-caching-is-everything) says switching to Haiku 100K tokens into an Opus conversation costs more than letting Opus answer. Re-priced for Haiku 5.5, that holds only above 100K: a 5-minute cache write on Haiku 5.5 is $0.125 per 1M up to 100K prompt tokens, below the $0.20 Opus 5.5 cache read, but $0.625 above, 3.1x the Opus read (computed: 0.625 / 0.20; rates from [Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing)).
+
 Or use pre-assigned custom commands:
 
 ```markdown
@@ -102,7 +106,7 @@ The `haiku` alias means Haiku 5.5 only on the Anthropic API (Claude Code v2.1.29
 
 ## Tier 2: Full Power for Complex Work
 
-Tasks that require deep reasoning, multi-file awareness, or architectural understanding. This is where Opus 5.5 earns its cost. Anthropic's models overview now says to "start with Claude Opus 5.5 for most workloads", and at $4/$20 it is 20% cheaper per token than the Opus 5 it replaced. Fable 5.1 ($10/$50, 2.5x Opus 5.5) is for the most demanding reasoning and long-horizon work.
+Tasks that require deep reasoning, multi-file awareness, or architectural understanding. This is where Opus 5.5 earns its cost. Anthropic's models overview now says to "start with Claude Opus 5.5 for most workloads", and at $4/$20 it is 20% cheaper per token than the Opus 5 it replaced. Fable 5.1 ($10/$50, 2.5x Opus 5.5) is for the most demanding reasoning and long-horizon work. On long-horizon coding, check before escalating: on SWE-bench Pro, Opus 5.5 at its default `medium` effort matched Fable 5.1 at its default (92.8% vs 92.3%, inside noise) for about a fifth of the cost per solved task ($0.22 vs $1.19), and Opus 5.5 at `low` solved 87.4% for $0.12 ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)).
 
 ### Tier 2 Tasks
 
@@ -158,19 +162,19 @@ Is the task deterministic?
 
 ## Cost Impact: Real Numbers
 
-A developer who runs 90 tasks/day (3 sessions x 30 turns):
+A developer who runs 90 tasks/day (3 sessions x 30 turns, one task per turn):
 
 | Routing Strategy | Distribution | Daily Cost | Monthly Cost |
 |-----------------|:------------|:----------:|:------------:|
-| **All Opus 5.5** | 100% Tier 2 | $6.84 | $150.48 |
-| **Manual model switching** | 30% Haiku, 70% Opus 5.5 | $5.07 | $111.54 |
-| **Three-tier routing** | 20% Tier 0, 40% Tier 1, 40% Tier 2 | $3.08 | $67.76 |
+| **All Opus 5.5** | 100% Tier 2 | $2.216 | $48.75 |
+| **Manual model switching** | 30% Haiku 5.5, 70% Opus 5.5 | $1.572 | $34.58 |
+| **Three-tier routing** | 20% Tier 0, 40% Tier 1 (20% Haiku 5.5, 20% Sonnet 5.5), 40% Tier 2 | $1.122 | $24.68 |
 
-**Savings with three-tier routing: $83/month (55%)**
+**Savings with three-tier routing: $24.07/month (49%)**
 
-The biggest win is Tier 0. Every task you handle with a CLI tool instead of an API call is effectively free.
+The biggest win per task is Tier 0. Every task you handle with a CLI tool instead of an API call is effectively free.
 
-> These figures take the earlier $5/$25 Opus 5 estimate ($8.55/day all-Opus) and scale the Opus share by 0.8 for Opus 5.5's $4/$20, which is 20% cheaper per token; the Haiku and Sonnet shares are unchanged. On legacy Opus 5 the same three rows were $188.10, $137.94 and $82.72 a month. The Haiku share is still the Haiku 4.5 estimate. On Haiku 5.5 (prompts up to 100K tokens) the same task costs roughly 7.7x less (10x cheaper per token, divided by ~1.3 for its larger token count), which takes the manual-switching Haiku share from about $0.28 to $0.04 a day and that row from $5.07 to about $4.82 a day ($106 a month): $5.07 - 0.7 x $6.84 = $5.07 - $4.788 = $0.282; $0.282 / 7.7 = $0.0366; $4.788 + $0.0366 = $4.8246 a day; x 22 days = $106.14. The three-tier row falls too, by an amount that depends on how its Tier 1 share splits between Haiku and Sonnet. They do **not** account for thinking: on Opus 5.5 it is always on and reasoning tokens bill as output at $20/MTok. The default effort is `medium`, so lower it further for routine Tier 2 work -- and routing down to Tier 0 and Tier 1 still removes the most cost.
+> **How these are computed.** Each task is priced as the average turn of a 30-turn session at this repo's calculator defaults (3,500-token system prompt, 100-line CLAUDE.md, two MCP servers, one 2,000-token file read, 1,500 tokens of history added per turn, 500 output tokens per turn), billed the way Claude Code caches a conversation: each turn reads the previous request from cache and writes only the new exchange at 1.25x ([Claude Code prompt caching](https://code.claude.com/docs/en/prompt-caching)). That 30-turn session costs $0.7387 on Opus 5.5, $0.3693 on Sonnet 5.5 and $0.0228 on Haiku 5.5 (whose prompts stay under its 100K tier line: the last one is 52,700 tokens), so a day is 3 x (share x session cost) summed over the models: all Opus 3 x $0.7387 = $2.216; manual switching 3 x (0.7 x $0.7387 + 0.3 x $0.0228) = $1.572; three-tier 3 x (0.4 x $0.7387 + 0.2 x $0.0228 + 0.2 x $0.3693) = $1.122. Monthly is 22 working days. On legacy Opus 5 ($5/$25) the all-Opus row is $3.427 a day, $75.39 a month. The three-tier row moves with its Tier 1 split: all Haiku 5.5 gives $0.914 a day ($20.10 a month), all Sonnet 5.5 $1.330 ($29.25). Opus 5.5, Sonnet 5.5 and Haiku 5.5 share one tokenizer, so a task is the same token count on each. This pricing ignores one thing that works against routing: a mid-session model switch re-writes the whole conversation on the new model (see [How to Stay in Tier 1](#how-to-stay-in-tier-1)), so route at the start of a task. The figures also do **not** account for thinking: on Opus 5.5 it is always on and reasoning tokens bill as output at $20/MTok. The default effort is `medium`, so lower it further for routine Tier 2 work -- and routing down to Tier 0 and Tier 1 still removes the most cost.
 
 ---
 

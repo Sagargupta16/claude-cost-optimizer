@@ -4,7 +4,7 @@
 
 `claude-rate` scans your project directory and grades your Claude Code (and adjacent AI tooling) configuration for cost-efficiency. Get a 0-100 score, an A+ to F letter grade, a per-category breakdown, copy-pasteable fix suggestions, and an estimated monthly spend on every active model tier.
 
-Unlike the web analyzer in [../../site/](../../site/) (which only sees what's on GitHub, and isn't live on the deployed site yet), `claude-rate` runs on the actual filesystem and inspects things the web tool can't:
+Unlike the [web analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer) (which only sees what's on GitHub), `claude-rate` runs on the actual filesystem and inspects things the web tool can't:
 
 - Real MCP server count from `.mcp.json`
 - Hook configuration in `.claude/settings.json`
@@ -12,6 +12,7 @@ Unlike the web analyzer in [../../site/](../../site/) (which only sees what's on
 - Accidentally-committed secrets in `CLAUDE.md`, `.mcp.json`, or settings
 - Untracked `.env` / credential files missing from `.gitignore`
 - cost-mode skill installation, custom slash commands, subagents
+- With `--user` and `--usage`: your user-level setup in `~/.claude` and your measured usage from local transcripts ([below](#your-whole-setup-and-your-real-usage))
 
 ## Quick start
 
@@ -39,7 +40,57 @@ python tools/claude-rate/rate.py /path/to/project
 
 No external dependencies. Pure Python 3.10+ stdlib.
 
-## Example output
+## Your whole setup and your real usage
+
+The project grade only sees one directory. Two flags grade the rest, all from local files:
+
+```bash
+claude-rate . --user --usage --fix
+# one-shot, no install:
+curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- . --user --usage --fix
+```
+
+- **`--user`** grades `~/.claude` (or `$CLAUDE_CONFIG_DIR`), which loads in every project: always-loaded instructions (`CLAUDE.md` plus `rules/` files without `paths:` frontmatter, which load at launch), the skill listing (every skill's description is in context each turn unless it sets `disable-model-invocation: true`), user and local MCP servers from `~/.claude.json`, cost controls in user settings, and user-level `Read(...)` deny rules. It reads counts and setting names only, never values.
+- **`--usage [DAYS]`** reads your Claude Code transcripts (`~/.claude/projects/**/*.jsonl`, last 30 days by default) and grades what actually happened: the share of prompt tokens read from cache, median and p90 prompt size, and the share of list-price spend on legacy models. It reads only token counts and model names, dedupes the per-content-block records by message id, and prices each request the way Anthropic bills it (5-minute and 1-hour cache writes, the Haiku 5.5 prompt-length tier, Fast Mode at 2x). The dollar total is list price: on a Pro or Max plan you pay the plan price, so use it to compare models and habits.
+
+Example against a sample `~/.claude` (14 skills, 5 user MCP servers, 6 sessions of synthetic transcripts):
+
+```
+Your Claude Code setup (user scope)
+------------------------------------------------------------
+  Global instructions      [################----]  20/25  ~2,345 tokens in 2 always-loaded file(s)
+  Skill listing            [################----]  16/20  14 skill(s) in ~/.claude/skills and 0 enabled plugin(s), ~1,093 listing tokens
+  MCP servers (user)       [###############-----]  15/20  5 user, 0 local (this project)
+  Settings (user)          [########------------]   8/20  model=opus; cost controls: none
+  Read deny rules (user)   [--------------------]   0/15  0 Read(...) rule(s) in user permissions.deny
+  Score: 59/100  (C)
+  * [Skill listing] Run /skill-doctor in a session: it lists what each skill costs and how often it is used. ...
+
+Your measured usage (last 30 days)
+------------------------------------------------------------
+  Cache hit rate           [############--------]  30/50  86.1% of prompt tokens were cache reads
+  Context size             [################----]  24/30  median prompt 67,154 tokens, p90 105,210; 15% of requests over 100K
+  Model mix                [###############-----]  15/20  24% of list-price spend on legacy models
+  Score: 69/100  (C)
+  * [Model mix] 24% of list-price spend (40 requests) ran on legacy Opus 4.7 ($5/$25 per 1M). Opus 5.5 is $4/$20; pin it ...
+  240 requests in 6 session file(s); list-price total $16.33, 21% of it output
+    Opus 5.5           160 requests  $     12.29   75%
+    Opus 4.7            40 requests  $      3.88   24%
+    Haiku 5.5           40 requests  $      0.16    1%
+```
+
+| Scope | Category | Max | Full marks when |
+|-------|----------|----:|-----------------|
+| `--user` | Global instructions | 25 | Always-loaded user instructions stay small (they load in every session of every project) |
+| `--user` | Skill listing | 20 | The skill and plugin descriptions in context each turn stay small |
+| `--user` | MCP servers (user) | 20 | Few servers at user and local scope |
+| `--user` | Settings (user) | 20 | A default model is pinned and a cost control Claude Code reads is set (`/effort` per model under `modelSettings`, `fastMode: false`, `availableModels` with `enforceAvailableModels`). A top-level `effortLevel` does not count: Opus 5.5 and later ignore it |
+| `--user` | Read deny rules (user) | 15 | Deny rules for `.env`, dependencies and build output apply in every project |
+| `--usage` | Cache hit rate | 50 | 95% or more of prompt tokens are cache reads |
+| `--usage` | Context size | 30 | Median prompt under 50,000 tokens |
+| `--usage` | Model mix | 20 | No list-price spend on legacy models |
+
+## Example output (project)
 
 ```
 claude-rate -- Claude / AI setup audit
@@ -47,7 +98,7 @@ claude-rate -- Claude / AI setup audit
 Project: /home/sagar/work/my-project
 Verified against Anthropic pricing as of: 2026-10-09
 
-  CLAUDE.md                [############--------]  12/20  250 lines primary (over the 200-line guidance); ~3,223 tokens total across 1 file(s)
+  CLAUDE.md                [############--------]  12/20  250 lines primary (over the 200-line guidance); ~3,098 tokens total across 1 file(s)
     ! 250 lines -- over Anthropic's 200-line guidance for CLAUDE.md. Longer files consume more context and reduce adherence. Move workflow-specific instructions into skills or path-scoped .claude/rules/ so they load on demand.
   File-read exclusions     [################----]  12/15  6 Read deny rule(s); lock files covered
     ! `.claudeignore` is not read by Claude Code -- it appears nowhere in Claude Code's documentation. Move its patterns into permissions.deny as Read(...) rules.
@@ -60,19 +111,19 @@ Verified against Anthropic pricing as of: 2026-10-09
 
 Total: 50/100  (D)
 
-Estimated monthly cost (30 turns/session, 3 sessions/day, 22 days, 70% cache hit)
-  Fable 5.1      $ 4.75/session  ->  $ 313.39/month
-  Fable 5        $ 5.37/session  ->  $ 354.57/month
-  Opus 5.5       $ 2.06/session  ->  $ 135.88/month
-  Opus 5         $ 2.79/session  ->  $ 184.10/month
-  Opus 4.8       $ 2.79/session  ->  $ 184.10/month
-  Opus 4.7       $ 2.79/session  ->  $ 184.10/month
-  Opus 4.6       $ 2.07/session  ->  $ 136.37/month
-  Sonnet 5.5     $ 0.99/session  ->  $  65.42/month
-  Sonnet 5       $ 1.07/session  ->  $  70.91/month
-  Sonnet 4.6     $ 1.24/session  ->  $  81.82/month
-  Haiku 5.5      $ 0.05/session  ->  $   3.55/month
-  Haiku 4.5      $ 0.41/session  ->  $  27.27/month
+Estimated monthly cost (30 turns/session, 3 sessions/day, 22 days; each turn reads the last one from cache)
+  Fable 5.1      $ 2.10/session  ->  $ 138.64/month
+  Fable 5        $ 2.94/session  ->  $ 193.87/month
+  Opus 5.5       $ 0.95/session  ->  $  62.82/month
+  Opus 5         $ 1.47/session  ->  $  96.93/month
+  Opus 4.8       $ 1.47/session  ->  $  96.93/month
+  Opus 4.7       $ 1.47/session  ->  $  96.93/month
+  Opus 4.6       $ 1.13/session  ->  $  74.57/month
+  Sonnet 5.5     $ 0.48/session  ->  $  31.41/month
+  Sonnet 5       $ 0.59/session  ->  $  38.77/month
+  Sonnet 4.6     $ 0.68/session  ->  $  44.74/month
+  Haiku 5.5      $ 0.03/session  ->  $   1.94/month
+  Haiku 4.5      $ 0.23/session  ->  $  14.91/month
 
 Badge URL:  https://img.shields.io/badge/Claude%20Cost%20Grade-D-orange
 Markdown:  ![Claude Cost Grade](https://img.shields.io/badge/Claude%20Cost%20Grade-D-orange)
@@ -127,6 +178,8 @@ options:
   --json         Emit machine-readable JSON
   --fix          Show copy-pasteable fix suggestions
   --strict       Exit with status 1 if grade is below B (CI-friendly)
+  --user         Also grade your user-level setup (~/.claude)
+  --usage [DAYS] Also grade measured usage from local transcripts (default 30 days)
   --version      Print version
 ```
 
@@ -157,13 +210,13 @@ jobs:
 
 ```bash
 claude-rate . --json | jq '.grade, .cost_estimate."sonnet-5-5".per_month'
-# "B"
-# 91.55
+# "D"
+# 31.41
 ```
 
 ## Why a separate tool from the web analyzer?
 
-The web analyzer (built in [../../site/](../../site/), not yet live on the deployed site) is aimed at **public repos** -- paste a GitHub URL, get a grade. But it can only see what's exposed via the GitHub Contents API. It can't:
+The [web analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer) is aimed at **public repos** -- paste a GitHub URL, get a grade. But it can only see what's exposed via the GitHub Contents API. It can't:
 
 - See your local `.claude/settings.local.json` (gitignored)
 - Detect untracked secrets that haven't been pushed yet
@@ -185,7 +238,8 @@ All cost estimates use Anthropic's published rates **verified 2026-10-09**:
 - Haiku 5.5 (`haiku-5-5`): $0.10/$0.50 per 1M tokens up to 100K prompt tokens, $0.50/$2.50 above (1M context, released 2026-10-07) -- the current Haiku and the first model priced by prompt length
 - Haiku 4.5 (`haiku-4-5`): $1/$5 per 1M tokens (200K context, legacy)
 - Cache hit: three multipliers -- 0.1x base input on most models (Haiku 5.5: $0.01/1M, or $0.05 over 100K), 0.05x on Opus 5.5 ($0.20/1M) and Sonnet 5.5 ($0.10/1M), 0.025x on Fable 5.1 ($0.25/1M); 5m write: 1.25x; 1h write: 2x
-- Opus 5.5 / 5 / 4.8 / 4.7 cost estimates include the +35% tokenizer overhead; Fable 5.1, Fable 5, Sonnet 5.5, Sonnet 5 and Haiku 5.5 include +30%
+- Every model on the Claude 4.7+ tokenizer (Opus 4.7 and later, Fable, Sonnet 5 and 5.5, Haiku 5.5) includes a +30% tokenizer overhead: Anthropic's [pricing page](https://platform.claude.com/docs/en/about-claude/pricing) puts it at approximately 30% more tokens for the same text. Opus 4.6, Sonnet 4.6 and Haiku 4.5 use the previous tokenizer
+- Each turn is billed the way Claude Code caches a conversation ([prompt caching docs](https://code.claude.com/docs/en/prompt-caching)): turn 1 writes the whole prompt at the 5-minute write rate (1.25x input), and every later turn reads the previous request from cache and writes only the new ~1,500-token exchange
 - Haiku 5.5 is priced turn by turn, the way Anthropic bills each request on its own: a turn whose estimated prompt (after the tokenizer overhead) is over 100,000 tokens is priced at $0.50/$2.50 for input, cache and output alike. The example above stays under 100K on every turn
 
 ### Opus 5.5 cost gotchas
@@ -195,7 +249,7 @@ Opus 5.5 is 20% cheaper per token than Opus 5 ($4/$20 vs $5/$25), but re-baselin
 - **Adaptive thinking is always on.** `thinking: {type: "disabled"}` and `budget_tokens` both return a 400, so effort is the only control. Code that disabled thinking on Opus 5 now pays for thinking tokens, billed as output at $20/1M.
 - **`effort` defaults to `medium`** (Opus 5 defaulted to `high`; all five levels are supported). A request that omits effort now thinks less than it did on Opus 5.
 - **Forced `tool_choice` (`any` / `tool`) returns a 400**, as do non-default sampling params and assistant prefill. Use `auto` with strict tool use or structured outputs.
-- **`max_tokens` is a backstop, not a knob.** In Anthropic's published runs a 16,384 cap ended 15% of Opus 5's coding attempts unsolved; use 64,000 for agentic work.
+- **`max_tokens` is a backstop, not a knob.** On Anthropic's repository-task benchmark a 16,384 cap ended about a quarter of Opus 5.5's attempts and 43% of Fable 5.1's ([cost guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)); use 64,000 for agentic work.
 - **Prompts written for an older model make the new one over-work.** In Anthropic's published runs, prompts written for Opus 4.8 cost 36% more per ticket on Opus 5 for no accuracy gain; audited, they were 14% cheaper and more accurate. Prune inherited instructions.
 - **Minimum cacheable prompt is 512 tokens** on Opus 5.5 and Opus 5 (1,024 on Opus 4.8, 2,048 on Opus 4.7, 4,096 on Opus 4.6). A `cache_control` block below the floor is silently ignored: no error, no `cache_creation_input_tokens`, full input price.
 
@@ -233,9 +287,9 @@ Sources:
 
 ## Limitations
 
-- **Heuristic scoring.** Token estimates assume 30 turns/session, 3 sessions/day, 22 working days/month, 70% cache hit rate. Your actual usage may differ; treat the dollar numbers as order-of-magnitude.
+- **Heuristic scoring.** Token estimates assume 30 turns/session, 3 sessions/day, 22 working days/month, ~1,500 new tokens and 500 output tokens per turn, with each turn reading the previous request from cache. Your actual usage may differ; treat the dollar numbers as order-of-magnitude.
 - **Static analysis only.** It reads files; it doesn't trace actual API calls. Use [usage-analyzer](../usage-analyzer/) for measured per-session costs.
-- **Stdlib only.** Intentional -- no `tiktoken`, no `requests`, runs anywhere Python 3.10+ runs. Token counts are estimated from character count (~4 chars/token), which is accurate within ~10% for English + code.
+- **Stdlib only.** Intentional -- no `tiktoken`, no `requests`, runs anywhere Python 3.10+ runs. Token counts are estimated as characters / 4, then multiplied by the tokenizer overhead. Anthropic's [models overview](https://platform.claude.com/docs/en/about-claude/models/overview) puts the current tokenizer at about 2.5 characters per token (1M tokens is roughly 2.5M characters), so these counts can run low: treat them as a floor.
 
 ## License
 

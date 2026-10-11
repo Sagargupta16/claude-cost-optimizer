@@ -3,7 +3,8 @@
  *
  * Token estimation uses character-based heuristics rather than a real
  * tokenizer. This keeps the extension dependency-free and fast, at the
- * cost of ~10-15% accuracy variance compared to the actual BPE tokenizer.
+ * cost of accuracy: the ratios are not calibrated against Claude's tokenizer
+ * (Anthropic: about 2.5 characters per token on Claude 4.7 and later).
  */
 
 export interface CostBreakdown {

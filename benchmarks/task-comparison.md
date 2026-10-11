@@ -244,7 +244,7 @@ Assuming a developer performs roughly similar tasks 5 times per week:
 | Monthly cost (80 tasks) | $62.20 | $35.60 | **$26.60/month** |
 | Annual cost (960 tasks) | $746.40 | $427.20 | **$319.20/year** |
 
-> These estimates assume Sonnet 4.6 pricing for all tasks. Mixing in Haiku for simple tasks (scenarios 1 and 2) would increase savings to 55-65%. See [Model Comparison](model-comparison.md) for model-specific analysis.
+> These estimates assume Sonnet 4.6 pricing for all tasks. Running scenarios 1 and 2 on Haiku 5.5 instead would raise total savings from 43% to about 58%, if Haiku 5.5 completes both tasks (computed: Sonnet 4.6 $3/$15 vs Haiku 5.5 $0.10/$0.50 is 30x per token, and Haiku 5.5's tokenizer produces about 30% more tokens for the same text, so 30 / 1.3 = 23x per task; their $0.51 optimized cost becomes $0.022, and $0.022 + $0.42 + $0.85 = $1.29 vs $3.11; [pricing](https://platform.claude.com/docs/en/about-claude/pricing)). See [Model Comparison](model-comparison.md) for model-specific analysis.
 
 ---
 

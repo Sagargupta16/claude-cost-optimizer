@@ -59,7 +59,7 @@ If you want to help but don't know where to start, here are specific things we n
 - **Skill improvements** -- better cost-mode prompts, new intensity levels, edge case handling in `skills/cost-mode/SKILL.md`
 - **CLAUDE.md templates** for: Flutter, Svelte, Vue, Angular, Elixir, C#/.NET
 - **Benchmark data** comparing costs between Opus, Sonnet, and Haiku for real tasks
-- **Case studies** from teams that reduced costs by 30%+ on production projects
+- **Case studies** from teams with measured before/after spend on production projects (/usage, Console or OpenTelemetry numbers)
 - **Pricing corrections** if any numbers in the guides are outdated
 - **Tool improvements** to the token estimator, usage analyzer, or Repo Analyzer
 - **Typo fixes and wording improvements** in any guide -- always welcome
@@ -82,7 +82,7 @@ If you want to help but don't know where to start, here are specific things we n
 | Data | Use tables over bullet lists for comparisons |
 | Code blocks | Always tag the language: ` ```bash `, ` ```python `, ` ```json ` |
 | Links | Relative paths for internal links: `guides/02-context-optimization.md` |
-| Numbers | Be specific: "saves 30-50%" not "saves a lot" |
+| Numbers | Be specific and sourced: "cost per session fell from $1.84 to $1.21 over 5 sessions (/usage)" or "cache reads bill 0.05x on Opus 5.5 (pricing page)", not "saves 30-50%" |
 | Tone | Direct and practical, not marketing copy |
 
 ### Python (for tools)

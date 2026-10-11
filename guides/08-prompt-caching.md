@@ -1,6 +1,6 @@
 # Guide 08: Prompt Caching
 
-> **Prompt caching is the single largest automatic discount on your Claude Code bill.** It reduces input token costs by 90% on repeated content on most models -- **95% on Opus 5.5 and Sonnet 5.5 (0.05x) and 97.5% on Fable 5.1 and Mythos 5.1 (0.025x)** -- and it happens without any configuration. Understanding how it works, what breaks it, and how to maximize hit rates can save you hundreds of dollars per month.
+> **Prompt caching is the single largest automatic discount on your Claude Code bill.** It reduces input token costs by 90% on repeated content on most models -- **95% on Opus 5.5 and Sonnet 5.5 (0.05x) and 97.5% on Fable 5.1 and Mythos 5.1 (0.025x)** -- and it happens without any configuration. On Anthropic's benchmarks caching cut agent-loop cost by a factor of 2.7 to 5.3, and 83% on a small triage agent (88% with input trimming); on DeepResearch Bench II it took Fable 5.1 from $37.94 to $7.12 per task ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). This guide covers how it works, what breaks it, and how to keep the hit rate high.
 
 ---
 
@@ -48,7 +48,7 @@ Turn N prompt (simplified):
 └─────────────────────────────────────────────────┘
 ```
 
-In this example, 46,550 tokens (system prompt + CLAUDE.md + tool schemas + conversation history) are cache hits. Only the new user message and tool results (1,600 tokens) are charged at full input price.
+In this example, 46,550 tokens (system prompt + CLAUDE.md + tool schemas + conversation history) are cache hits. Only the new user message and tool results (1,600 tokens) are new, and Claude Code writes them to cache at 1.25x the input price so the next turn can read them: "the prefix is the entire previous request and only the latest exchange is new" ([Claude Code prompt caching](https://code.claude.com/docs/en/prompt-caching)).
 
 This is why caching is so powerful in Claude Code specifically. The structure of each turn naturally creates a long, stable prefix: system prompt, then CLAUDE.md, then tool schemas, then the entire conversation history up to this point. Only the newest content at the end is different.
 
@@ -194,7 +194,7 @@ By turn 50, the vast majority of your input tokens are cache hits. Only the newe
 
 ## What Breaks the Cache
 
-Because caching relies on exact prefix matching, anything that changes the prefix invalidates the cache from that point forward. Here are the specific actions that break it in Claude Code -- and one that famously does not:
+Because caching relies on exact prefix matching, anything that changes the prefix invalidates the cache from that point forward. A break can cost more than no caching at all: in Anthropic's measured triage run, a cache-busting 25-token status line at the front of the system prompt made the run cost $4.24 instead of $0.59 (7.2x, computed 4.24 / 0.59), more than running with caching off ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). Here are the specific actions that break it in Claude Code -- and one that famously does not:
 
 ### 1. Editing CLAUDE.md Mid-Session (Keeps the Cache)
 
@@ -295,7 +295,7 @@ To choose it yourself, set the `promptCacheTtl` setting or the `CLAUDE_CODE_PROM
 
 This applies wherever Claude Code uses the 5-minute TTL: an API key, a cloud provider, usage credits, and every subagent. A subscription's main conversation gets an hour, so the long-break bullet below only bites there after 60 minutes. The 5-minute window is more generous than it sounds for Claude Code workflows:
 
-- **Active coding sessions**: Turns typically happen every 30-90 seconds. The cache stays warm throughout.
+- **Active coding sessions**: no published figure gives the typical gap between turns. Every turn sent within 5 minutes of the previous request reads the cache, and `/usage` shows whether yours is warm or cold.
 - **Reviewing output**: Even if you spend 3-4 minutes reading Claude's response before your next message, the cache holds.
 - **Short breaks**: A quick coffee break or Slack check (under 5 minutes) does not break the cache.
 - **Long breaks**: A 15-minute meeting, lunch, or context switch causes a full cache expiration.
@@ -351,6 +351,8 @@ You need at least 2 cache hits to break even with extended TTL.
 
 In Claude Code this choice is made for you (see [How Claude Code Picks the Cache TTL](#how-claude-code-picks-the-cache-ttl)) unless you set `promptCacheTtl`. It matters most if you are on an API key and considering `1h`, or building custom tooling on the API.
 
+**What Anthropic measured.** With no pauses between turns, the 5-minute default cost 15% less per session than the 1-hour cache on Sonnet 5 and 15% to 18% less on Opus 5.5; the 1-hour cache wins once about 1 turn in 20 follows a 5-to-60-minute pause. On Fable 5.1 a `max_tokens: 0` keep-alive every 4 minutes beat both: $2.29 per session vs $2.42 on the 5-minute cache and $3.09 on the 1-hour cache, with no pauses ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), "Cache duration").
+
 ---
 
 ## Maximizing Cache Hit Rate
@@ -366,13 +368,14 @@ Pick the model (and, on most models, the effort level) before the session starts
 ```
 Cached history at turn 25:  ~75,000 tokens
 Remaining turns:            25
-Cache miss cost per turn:   75,000 x ($3.00 - $0.30) / 1,000,000 = $0.2025
-Total extra cost:           ~$0.2025 (the turn after the break)
-                            Subsequent turns rebuild the cache, so the penalty
-                            is primarily one full-price turn.
+Cache miss cost per turn:   75,000 x ($3.75 write - $0.30 read) / 1,000,000 = $0.2588
+Total extra cost:           ~$0.26 (the turn after the break)
+                            Claude Code writes the whole prompt back to cache on
+                            that turn, so later turns read it again and the
+                            penalty is one re-write.
 ```
 
-The immediate penalty is roughly $0.20 on Sonnet 4.6, $0.29 on Opus 5.5 (75,000 x ($4.00 - $0.20)), or $0.34 on legacy Opus 5 for the first turn after the break. Subsequent turns rebuild the cache quickly.
+The immediate penalty is about $0.26 on Sonnet 4.6, $0.36 on Opus 5.5 (75,000 x ($5.00 - $0.20)), or $0.43 on legacy Opus 5 (75,000 x ($6.25 - $0.50)) for the first turn after the break. Subsequent turns read the rebuilt cache.
 
 ### 2. Keep MCP Server Configuration Constant (If Tool Search Is Off)
 
@@ -382,14 +385,14 @@ If you use different MCP servers for different types of work, use project-scoped
 
 ### 3. Work in Focused Sessions
 
-Many rapid turns on the same topic maximize caching:
+Many rapid turns on the same topic maximize caching. Across Anthropic's API traffic (14 days ending 2026-08-23, 303,003 organization-days from 106,487 organizations), agent loops read a median 84.2% of their input from cache (upper quartile 91.7%). Coding organizations read a median 88.5% (90.9% once a conversation has 25 or more prior tool calls), with the upper quartile at 93.4% and the top decile at 95.9% or more ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), benchmark reference 17). If `/usage` shows your hit share well below those, something in your prefix is changing.
 
 | Pattern | Cache Efficiency | Why |
 |---------|:----------------:|-----|
-| 50 turns in 30 minutes | ~90% hit rate | Turns are close together, prefix stays warm |
-| 50 turns over 4 hours | ~60% hit rate | Breaks between turns cause TTL expirations |
-| 5 separate 10-turn sessions | ~75% hit rate | Each session rebuilds cache from scratch, but sessions are focused |
-| 50 single-turn conversations | ~0% hit rate | No caching benefit at all -- every turn is a cold start |
+| Many turns close together | 88.5% median (coding agent loops on Anthropic's API) | Prefix stays warm |
+| Turns with long gaps | One full re-write per gap longer than the TTL (5 min on an API key, 1 hour for a subscription's main conversation) | At 100K tokens on Opus 5.5 a re-write costs $0.50 vs $0.02 to read |
+| Several short sessions in one directory | Not measured | A new session reads the system prompt from cache only within the TTL and only if its git status snapshot matches |
+| Single-turn conversations | Low (Anthropic measured a median 34.6% for API traffic with no tool definitions) | Only the shared system prompt and tools can hit, within the TTL |
 
 ### 4. Use /compact Strategically
 
@@ -400,6 +403,8 @@ Many rapid turns on the same topic maximize caching:
 
 **When /compact hurts caching:**
 - If you compact too frequently (every 5-10 turns), you repeatedly pay cache write costs without accumulating enough cached turns to justify it.
+
+**Time unavoidable cache breaks to a compaction boundary.** Compaction rebuilds the conversation layer anyway, so a change that breaks the cache costs least right after it. In Anthropic's measured run (Sonnet 5), changing effort and adding a tool right after the first compaction cost $0.75 per session, against $0.95 for the same change mid-session. Making the change on the compaction request itself cost $0.92, because that summarization pass then cost $0.21 instead of $0.04 ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), "Mid-session changes and compaction").
 
 **Rule of thumb**: Compact when context exceeds 80,000-100,000 tokens, or at natural breakpoints in your work (finishing a feature, switching to a different file).
 
@@ -420,97 +425,108 @@ What does matter is size, because the root file loads in full on every session. 
 **Stable prefix**: System prompt (3,500) + CLAUDE.md (1,050) + Tool schemas (4,000) = 8,550 tokens
 
 ```
-Turn  1: 8,550 tokens at cache write (1.25x)
-         + 100 tokens new input
-         Total input cost:  8,550 x $3.75/1M + 100 x $3.00/1M
-                          = $0.0321 + $0.0003 = $0.0324
+Turn  1: 8,550 prefix + 100 tokens new input, all written to cache (1.25x)
+         Total input cost:  8,650 x $3.75/1M = $0.0324
          Output: 700 tokens x $15.00/1M = $0.0105
          Turn total: $0.043
 
 Turn 10: 8,550 prefix + 27,000 history = 35,550 cached tokens
-         + 3,000 new tokens (latest turn exchange + tool results)
-         Input cost:  35,550 x $0.30/1M + 3,000 x $3.00/1M
-                    = $0.0107 + $0.0090 = $0.0197
+         + 3,000 new tokens (latest turn exchange + tool results),
+           written to cache at 1.25x
+         Input cost:  35,550 x $0.30/1M + 3,000 x $3.75/1M
+                    = $0.0107 + $0.0113 = $0.0219
          Output: 700 tokens x $15.00/1M = $0.0105
-         Turn total: $0.030
+         Turn total: $0.032
 
 Turn 25: 8,550 prefix + 72,000 history = 80,550 cached tokens
-         + 3,000 new tokens
-         Input cost:  80,550 x $0.30/1M + 3,000 x $3.00/1M
-                    = $0.0242 + $0.0090 = $0.0332
+         + 3,000 new tokens written at 1.25x
+         Input cost:  80,550 x $0.30/1M + 3,000 x $3.75/1M
+                    = $0.0242 + $0.0113 = $0.0354
          Output: 700 tokens x $15.00/1M = $0.0105
-         Turn total: $0.044
+         Turn total: $0.046
 
 Turn 50: 8,550 prefix + 147,000 history = 155,550 cached tokens
-         + 3,000 new tokens
-         Input cost:  155,550 x $0.30/1M + 3,000 x $3.00/1M
-                    = $0.0467 + $0.0090 = $0.0557
+         + 3,000 new tokens written at 1.25x
+         Input cost:  155,550 x $0.30/1M + 3,000 x $3.75/1M
+                    = $0.0467 + $0.0113 = $0.0579
          Output: 700 tokens x $15.00/1M = $0.0105
-         Turn total: $0.066
+         Turn total: $0.068
+
+All 50 turns:  4,093,950 tokens read    x $0.30/1M  = $1.23
+               155,650 tokens written   x $3.75/1M  = $0.58
+               35,000 output tokens     x $15.00/1M = $0.53
+               96.3% of the 4,249,600 input tokens read from cache
 ```
 
-**Total session cost: ~$2.20 on Sonnet 4.6**
+**Total session cost: $2.34 on Sonnet 4.6** (computed: $1.23 + $0.58 + $0.53)
 
 ### Scenario 2: 50-Turn Session with Poor Caching
 
 **Setup**: Same session, but the developer runs with MCP tool search off (`ENABLE_TOOL_SEARCH=false`) and connects or removes an MCP server at turns 10, 20, 30, and 40. Also takes a 20-minute break at turn 15 on an API key (5-minute TTL, so the cache expires). Switches from Sonnet to Opus 5.5 at turn 35.
 
-Each of these events forces a full-price reprocessing of the entire accumulated context:
+Each of these events makes Claude Code re-write the whole accumulated prefix to cache at 1.25x instead of reading it. The extra cost is the write minus the read it replaces (prefix sizes from Scenario 1: 8,550 + (turn - 1) x 3,000):
 
 ```
 Turn 10 (after MCP server change, tool search off):
-  Full-price reprocessing of ~30,000 tokens
-  Extra cost: 30,000 x ($3.00 - $0.30) / 1M = $0.081
+  Re-write of the 35,550-token prefix
+  Extra cost: 35,550 x ($3.75 - $0.30) / 1M = $0.123
 
 Turn 15 (after 20-min break, cache expired):
-  Cache write on ~45,000 tokens
-  Extra cost: 45,000 x ($3.75 - $0.30) / 1M = $0.155
+  Re-write of the 50,550-token prefix
+  Extra cost: 50,550 x ($3.75 - $0.30) / 1M = $0.174
 
 Turn 20 (after MCP server change):
-  Full-price reprocessing of ~60,000 tokens
-  Extra cost: 60,000 x ($3.00 - $0.30) / 1M = $0.162
+  Re-write of the 65,550-token prefix
+  Extra cost: 65,550 x ($3.75 - $0.30) / 1M = $0.226
 
 Turn 30 (after MCP server change):
-  Full-price reprocessing of ~90,000 tokens
-  Extra cost: 90,000 x ($3.00 - $0.30) / 1M = $0.243
+  Re-write of the 95,550-token prefix
+  Extra cost: 95,550 x ($3.75 - $0.30) / 1M = $0.330
 
 Turn 35 (model switch to Opus 5.5, new cache):
-  Full-price reprocessing of ~105,000 tokens on Opus 5.5
-  Extra cost: 105,000 x ($4.00 - $0.20) / 1M = $0.399
+  Re-write of the 110,550-token prefix on Opus 5.5
+  Extra cost: 110,550 x ($5.00 - $0.20) / 1M = $0.531
 
 Turn 40 (after MCP server change, still on Opus 5.5):
-  Full-price reprocessing of ~120,000 tokens
-  Extra cost: 120,000 x ($4.00 - $0.20) / 1M = $0.456
+  Re-write of the 125,550-token prefix
+  Extra cost: 125,550 x ($5.00 - $0.20) / 1M = $0.603
 ```
 
-**Estimated total with all cache breaks: ~$3.60** -- the ~$2.20 good-caching session from Scenario 1, plus ~$1.50 of cache-break penalties, minus ~$0.11 because Opus 5.5's $0.20 cache hits make turns 35-50 slightly cheaper than they were on Sonnet 4.6.
+**Total with all cache breaks: $4.23** (computed) -- the $2.34 good-caching session from Scenario 1, plus $1.99 of cache-break penalties, minus $0.10 because on warm turns 35-50 Opus 5.5's $0.20 cache hits (Sonnet 4.6: $0.30) save more than its $5.00 writes and $20 output (Sonnet 4.6: $3.75 and $15) add.
 
-That is about 1.6x the cost of the same 50-turn session with good caching. Note what is **not** on the list: editing CLAUDE.md mid-session would have cost nothing.
+That is 1.8x the cost of the same 50-turn session with good caching. Note what is **not** on the list: editing CLAUDE.md mid-session would have cost nothing.
 
 ### Comparison Table: Cache Hit Rate Impact
 
-**50-turn session on Sonnet 4.6, average 3,000 new tokens per turn, 700 output tokens per turn**
+**Scenario 1's 50-turn session on Sonnet 4.6: 4,249,600 input tokens, 3,000 new tokens per turn, 700 output tokens per turn. The hit rate is the share of input tokens read from cache, the figure `/usage` reports.**
 
 | Cache Hit Rate | Input Cost | Output Cost | Total Session Cost | vs No Caching |
 |:--------------:|:----------:|:-----------:|:------------------:|:-------------:|
-| **90%** (good) | $1.15 | $0.53 | **$1.68** | **63% savings** |
-| **75%** (decent) | $1.78 | $0.53 | **$2.31** | **49% savings** |
-| **50%** (poor) | $2.73 | $0.53 | **$3.26** | **28% savings** |
-| **25%** (bad) | $3.68 | $0.53 | **$4.21** | **7% savings** |
-| **0%** (no caching) | $4.52 | $0.53 | **$5.05** | baseline |
+| **96.3%** (warm all session, Scenario 1) | $1.81 | $0.525 | **$2.34** | **82% savings** |
+| **90%** | $2.74 | $0.525 | **$3.27** | **75% savings** |
+| **75%** | $4.94 | $0.525 | **$5.47** | **59% savings** |
+| **50%** | $8.61 | $0.525 | **$9.13** | **31% savings** |
+| **25%** | $12.27 | $0.525 | **$12.80** | **4% savings** |
+| **0%** (every token written, none read) | $15.94 | $0.525 | **$16.46** | **24% more** |
+| **No caching** (1x input) | $12.75 | $0.525 | **$13.27** | baseline |
 
-> Output tokens are never cached -- they are always generated fresh. Caching only affects input tokens. This is why the output cost ($0.53) is constant across all rows.
+*Computed: input = 4,249,600 x (hit share x $0.30 + (1 - hit share) x $3.75) / 1M, because Claude Code writes every token it does not read from cache, at 1.25x; with no caching all of them bill at $3.00. Below a 21.7% hit share, caching costs more than none ((3.75 - 3.00) / (3.75 - 0.30)). Anthropic's production medians, 84.2% for agent loops and 88.5% for coding, fall between the 75% and 90% rows ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), benchmark reference 17).*
+
+> Output tokens are never cached -- they are always generated fresh. Caching only affects input tokens. This is why the output cost ($0.525) is constant across all rows.
 
 **Monthly impact (5 sessions/day, 22 working days = 110 sessions):**
 
 | Cache Hit Rate | Monthly Cost (Sonnet 4.6) | Monthly Cost (legacy Opus 5) |
 |:--------------:|:---------------------:|:-------------------:|
-| **90%** | $185 | $308 |
-| **75%** | $254 | $423 |
-| **50%** | $359 | $598 |
-| **0%** | $556 | $926 |
+| **96.3%** (warm) | $257 | $428 |
+| **90%** | $359 | $599 |
+| **75%** | $601 | $1,002 |
+| **50%** | $1,004 | $1,674 |
+| **No caching** | $1,460 | $2,434 |
 
-The difference between 90% and 0% cache hit rate is **$371/month on Sonnet** and **$618/month on legacy Opus 5**. Opus 5.5 lands below the Opus 5 column at every row, because its input ($4 vs $5), output ($20 vs $25) and cache-hit ($0.20 vs $0.50) rates are all lower. Good caching hygiene is one of the most impactful cost optimizations available.
+*Computed: 110 x the session cost at that hit share; legacy Opus 5 at $5/$25, $0.50 read, $6.25 write.*
+
+The difference between the warm session and no caching is **$1,203/month on Sonnet 4.6** and **$2,005/month on legacy Opus 5**, and slipping from 96.3% to 90% alone costs $102 and $170 a month. Opus 5.5 lands below the Opus 5 column at every row, because its input ($4 vs $5), output ($20 vs $25) and cache-hit ($0.20 vs $0.50) rates are all lower. Good caching hygiene is one of the most impactful cost optimizations available.
 
 ---
 
@@ -589,7 +605,7 @@ Bad:  Ask question 1, go do something else for 10 minutes, ask question 2,
 
 Some developers flip effort up and down (or bounce between models) every few turns, thinking it saves money. On most models each change is a full cache break. (Editing CLAUDE.md, the old suspect, is not: it keeps the cache, and the edit only applies after `/clear`, `/compact`, or restart.)
 
-**The math**: If your session has accumulated 60,000 tokens of cached history on Sonnet 4.6 and you change the effort level, the next turn reprocesses all 60,000 tokens at full price. That is an extra $0.16 for that single turn. Do this 4 times in a session and you have wasted $0.64 -- more than many entire sessions cost.
+**The math**: If your session has accumulated 60,000 tokens of cached history on Sonnet 4.6 and you change the effort level, the next turn re-writes all 60,000 tokens to cache at 1.25x instead of reading them: 60,000 x ($3.75 - $0.30) / 1M = an extra $0.21 for that single turn. Do this 4 times in a session and you have wasted $0.83 -- more than a whole 30-turn Opus 5.5 session costs at this repo's calculator defaults ($0.74).
 
 **Better approach**: Pick the model and effort before the session starts. On Opus 5.5 and Fable 5.1 (API key or subscription), effort changes keep the cache, so there you can adjust freely.
 
@@ -640,7 +656,7 @@ With compacting before break:
 
 ## Key Takeaways
 
-1. **Prompt caching gives you a 90% discount on repeated input tokens -- 95% on Opus 5.5 and Sonnet 5.5, and 97.5% on Fable 5.1 / Mythos 5.1.** In a typical multi-turn session, 80-90% of input tokens are cache hits. This is the largest automatic cost reduction in Claude Code.
+1. **Prompt caching bills repeated input at 10% of the input price -- 5% on Opus 5.5 and Sonnet 5.5, 2.5% on Fable 5.1 / Mythos 5.1.** Across Anthropic's API traffic, coding agent loops read a median 88.5% of their input from cache (upper quartile 93.4%). This is the largest automatic cost reduction in Claude Code.
 
 2. **Know the real cache breakers.** Switching models, changing effort (except on Opus 5.5 and Fable 5.1 with an API key or subscription), turning on fast mode (once per conversation), and MCP changes with tool search off all force a rebuild. Editing CLAUDE.md mid-session does not -- but the edit only applies after `/clear`, `/compact`, or restart. `/usage` shows a `Prompt cache (main)` line with your hit share and the likely cause of misses.
 
@@ -650,7 +666,7 @@ With compacting before break:
 
 5. **Run /compact before long breaks.** If you are stepping away for longer than the TTL, compacting first (while the cache is warm) reduces the cache write cost when you return. `/clear` costs nothing; `/rewind` returns to an already-cached prefix.
 
-6. **The difference between good and poor caching is $370+/month.** On Sonnet with 110 sessions/month, the gap between 90% and 0% cache hit rate is $371. Good caching hygiene is not optional -- it is one of the highest-ROI optimizations you can make.
+6. **On this guide's 50-turn Sonnet 4.6 session, caching is the difference between $257 and $1,460 a month** (110 sessions, computed in [the comparison table](#comparison-table-cache-hit-rate-impact)). Slipping from the warm 96.3% hit share to 90% alone costs $102 a month. Good caching hygiene is not optional -- it is one of the highest-ROI optimizations you can make.
 
 7. **Know your model's minimum cacheable prompt length.** Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5 cache from 512 tokens, Opus 4.8 and Sonnet 5 from 1,024, Opus 4.7 from 2,048, legacy Haiku 4.5 from 4,096. Below the floor, `cache_control` is silently ignored -- you pay full price every turn with no error. If you build custom API tooling, check `cache_read_input_tokens` in the `usage` block to confirm the cache is real.
 

@@ -59,7 +59,7 @@ The extension uses a character-based heuristic rather than a real BPE tokenizer:
 - Prose files average ~3.5 characters per token
 - The ratio is blended based on how many syntax characters the file contains
 
-This is fast and dependency-free, with roughly 10-15% variance compared to the actual tokenizer. For precise counts, use the `tools/token-estimator` CLI which uses tiktoken.
+This is fast and dependency-free but not calibrated against Claude's tokenizer: Anthropic gives about 2.5 characters per token for general text on the current tokenizer (1M tokens is roughly 2.5M characters, per the [models overview](https://platform.claude.com/docs/en/about-claude/models/overview)), below the 3.5-4 used here. For exact counts use the [token counting API](https://platform.claude.com/docs/en/build-with-claude/token-counting).
 
 ## Pricing Data
 

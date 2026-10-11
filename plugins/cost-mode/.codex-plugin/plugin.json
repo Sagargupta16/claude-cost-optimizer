@@ -1,6 +1,6 @@
 {
   "name": "cost-mode",
-  "version": "1.15.0",
+  "version": "1.16.0",
   "description": "Cost-conscious mode for Claude Code. Cuts filler, suggests cheaper models, encourages efficient patterns.",
   "author": {
     "name": "Sagar Gupta",
@@ -13,7 +13,7 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Cost Mode",
-    "shortDescription": "Save 30-60% on Claude Code costs.",
+    "shortDescription": "Concise answers and cheaper-model routing for Claude Code.",
     "longDescription": "Cost-conscious mode that enforces concise responses, suggests cheaper models for simple tasks, and encourages efficient workflow patterns. Three intensity levels: lite, standard, strict.",
     "developerName": "Sagar Gupta",
     "category": "Productivity",

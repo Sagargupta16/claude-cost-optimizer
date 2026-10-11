@@ -52,14 +52,14 @@ Keep it focused:
 **What to cut**: verbose explanations, full API docs, things Claude can figure out from the code.
 
 There is no character cap: CLAUDE.md files in the directories above your working directory load in full at launch. Anthropic's guidance is to "target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence." Every line costs tokens in every session, so move situational content somewhere that loads on demand:
-- **Skills** for workflow-specific instructions (PR reviews, DB migrations)
+- **Skills** for workflow-specific instructions (PR reviews, DB migrations). A skill's body loads only when it runs, but its description sits in the skill listing on every turn; `/skill-doctor` (Claude Code v2.1.252+) reports what each skill costs and how often it is used, so you can turn off the ones you never invoke ([skills docs](https://code.claude.com/docs/en/skills))
 - **Path-scoped rules** in `.claude/rules/` (with `paths:` frontmatter) or a **subdirectory CLAUDE.md** for rules that apply to one part of the tree; both load when Claude reads a matching file
 
 `@path` imports help you organize a long file, but imported files still load at launch, so they do not cut tokens.
 
 Grab a template: [minimal](../templates/CLAUDE.md/minimal.md) | [standard](../templates/CLAUDE.md/standard.md) | [by stack](../templates/CLAUDE.md/by-stack/)
 
-**Savings: 10-20%** from a lean CLAUDE.md that loads every turn.
+**Savings: about 3% of a 30-turn session** for trimming 500 lines to 150 (computed with this repo's cache-aware calculator model at its defaults, 7 tokens per line: $0.769 vs $0.742 per Opus 5.5 session, because CLAUDE.md is written to the cache once and then read at 0.05x input). The bigger win is adherence: Anthropic says longer files "consume more context and reduce adherence".
 
 ---
 
@@ -86,7 +86,7 @@ Switch models mid-session:
 
 **Opus 5.5 caveat** (released 2026-09-22, $4/$20, 20% below Opus 5's $5/$25): adaptive thinking is **always on** -- `thinking: {type: "disabled"}` returns a 400, so effort is the only control. Default effort is `medium` (Opus 5 defaulted to `high`), and reasoning tokens bill as output at $20/1M. Code that disabled thinking on Opus 5 now pays for thinking it did not pay for before, so re-baseline cost after migrating and lower it with `/effort`. `max_tokens` caps thinking plus text together, so a small cap can be spent on thinking before the answer is written. Details in [Guide 01](01-understanding-costs.md#token-pricing).
 
-**Savings: 20-40%** by matching model to task complexity.
+**Savings: 97.5% per token on each task you move from Opus 5.5 to Haiku 5.5** (prompts up to 100K tokens; 87.5% above). Your bill falls by that times the share of spend you move: move 30% and the bill drops 29% (computed from the [Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing): 1 - $0.10/$4 = 97.5%, 1 - $0.50/$4 = 87.5%, 0.30 x 0.975 = 29%). Anthropic measured the per-answer gap at about 1/20 rather than 1/40: on GPQA Diamond, Haiku 5.5 cost about a twentieth of Opus 5.5 per question, at 85% accuracy vs 91% ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)).
 
 ---
 
@@ -105,13 +105,13 @@ This makes Claude think through the approach before writing code. The result:
 
 Exit plan mode with `/plan` again when you're ready to code. You can also press Shift+Tab to cycle into plan mode.
 
-**Savings: 15-25%** from reduced iterative turns.
+**Savings: no published figure.** Plan mode keeps the prompt cache (its instructions arrive as messages, per Claude Code's [prompt-caching page](https://code.claude.com/docs/en/prompt-caching)), and Anthropic's [costs page](https://code.claude.com/docs/en/costs) recommends it to avoid expensive re-work.
 
 ---
 
 ## Step 5: Start fresh sessions often (0 minutes)
 
-Every turn, Claude resends the entire conversation history. By turn 30, you're paying for 30x the accumulated context.
+Every turn, Claude resends the entire conversation history. Claude Code bills the unchanged part as a cache read (0.05x input on Opus 5.5 and Sonnet 5.5, 0.1x on most other models), so a long session pays a cache read of its whole history on every turn, and a full cache re-write after any pause longer than the cache TTL.
 
 Best practice:
 - **Start a new session** when switching tasks
@@ -119,9 +119,9 @@ Best practice:
 - **Compact** long sessions with `/compact` to summarize history. While the prompt cache is warm the summary request reads from cache, so it costs a fraction of the context size; after a break longer than the cache TTL it reprocesses the full history uncached
 - **Clear** with `/clear` when the old context is no longer needed -- it costs nothing
 
-A 50-turn session costs 3-5x more per turn than a 10-turn session doing the same work.
+A 50-turn session sends 2.9x more input tokens per turn than a 10-turn one (45,950 vs 15,950 at this repo's calculator defaults). With a warm cache most of that bills at the cache-read rate, so the per-turn dollar gap is about 1.1x on Opus 5.5 ($0.027 vs $0.024 per turn, computed with the cache-aware calculator model). What costs is a cache miss on a long session: re-writing 100K tokens on Opus 5.5 is $0.50, against $0.02 to read them (100K x $5/1M 5-minute write vs 100K x $0.20/1M read, [Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing)).
 
-**Savings: 20-40%** from shorter, focused sessions.
+**Savings:** one 80-turn session split into eight 10-turn sessions sends 77% fewer input tokens (5.48M vs 1.28M at calculator defaults); billed with Claude Code's prefix caching that is about 23% less spend ($2.51 vs $1.93 on Opus 5.5, computed).
 
 ---
 
@@ -157,4 +157,4 @@ python tools/badge-generator/generate.py /path/to/your/project
 
 ---
 
-**Total time: ~5 minutes. Expected savings: 30-60%.**
+**Total time: ~5 minutes.** Each step above carries its own sourced figure; check the combined result on your own sessions with `/usage`.

@@ -1,11 +1,13 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, type KeyboardEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   parseRepoUrl,
   analyzeRepo,
   type AnalysisResult,
 } from '../utils/repoAnalyzer'
-import { MODELS, type ModelId } from '../utils/pricing'
+import { copyWithFeedback } from '../utils/clipboard'
+import { AnalysisReport } from '../components/analyzer/AnalysisReport'
+import { AnalyzerLoading } from '../components/analyzer/AnalyzerLoading'
 import styles from './RepoAnalyzer.module.css'
 
 type Status = 'idle' | 'loading' | 'done' | 'error'
@@ -15,37 +17,145 @@ const DEMO_REPO = 'Sagargupta16/claude-cost-optimizer'
 const LOCAL_CMD =
   'curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- .'
 
-// Anthropic's guidance: "target under 200 lines per CLAUDE.md file".
-const CLAUDE_MD_LINE_GUIDANCE = 200
+const INVALID_URL_ERROR = 'Invalid repo URL. Use https://github.com/owner/repo or owner/repo'
+const NOT_FOUND_ERROR =
+  'Repository not found. Make sure the repo is public and the URL is correct.'
+const NETWORK_ERROR = 'Failed to analyze repo. Check your network connection and try again.'
 
-function lineBarColor(lineCount: number): string {
-  if (lineCount > CLAUDE_MD_LINE_GUIDANCE) return 'var(--error-red)'
-  if (lineCount > 100) return 'var(--warning-yellow)'
-  return 'var(--accent-green)'
+/** Analysis state plus the action that runs one. Never leaves a promise unhandled. */
+function useRepoAnalysis() {
+  const [status, setStatus] = useState<Status>('idle')
+  const [error, setError] = useState('')
+  const [result, setResult] = useState<AnalysisResult | null>(null)
+
+  const fail = useCallback((message: string) => {
+    setError(message)
+    setStatus('error')
+  }, [])
+
+  const succeed = useCallback(
+    (analysis: AnalysisResult) => {
+      if (!analysis.repoExists) {
+        fail(NOT_FOUND_ERROR)
+        return
+      }
+      setResult(analysis)
+      setStatus('done')
+    },
+    [fail],
+  )
+
+  const analyze = useCallback(
+    (url: string, branch: string) => {
+      const parsed = parseRepoUrl(url)
+      if (!parsed) {
+        fail(INVALID_URL_ERROR)
+        return
+      }
+      setStatus('loading')
+      setError('')
+      setResult(null)
+      analyzeRepo({ ...parsed, branch: branch || parsed.branch }).then(succeed, () =>
+        fail(NETWORK_ERROR),
+      )
+    },
+    [fail, succeed],
+  )
+
+  return { status, error, result, analyze }
 }
 
-function lockFilesLabel(present: string[], uncovered: string[]): string {
-  if (present.length === 0) return 'None at root'
-  if (uncovered.length > 0) return `Not covered: ${uncovered.join(', ')}`
-  return 'Covered'
+interface AnalyzerInputProps {
+  url: string
+  branch: string
+  loading: boolean
+  error: string
+  showDemo: boolean
+  onUrlChange: (url: string) => void
+  onBranchChange: (branch: string) => void
+  onAnalyze: () => void
+  onDemo: () => void
 }
 
-function categoryColor(score: number, maxScore: number): string {
-  const pct = maxScore > 0 ? score / maxScore : 0
-  if (pct >= 0.8) return 'var(--accent-green)'
-  if (pct >= 0.5) return 'var(--warning-yellow)'
-  return 'var(--error-red)'
+function AnalyzerInput(props: Readonly<AnalyzerInputProps>) {
+  const { url, branch, loading, error, showDemo, onUrlChange, onBranchChange, onAnalyze, onDemo } = props
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && !loading) onAnalyze()
+  }
+
+  return (
+    <div className={styles.inputSection}>
+      <div className={styles.inputRow}>
+        <input
+          type="text"
+          aria-label="GitHub repo URL"
+          placeholder="https://github.com/owner/repo or owner/repo"
+          value={url}
+          onChange={(e) => onUrlChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className={styles.urlInput}
+        />
+        <input
+          type="text"
+          aria-label="Branch"
+          placeholder="Branch (optional)"
+          value={branch}
+          onChange={(e) => onBranchChange(e.target.value)}
+          onKeyDown={handleKeyDown}
+          className={styles.branchInput}
+        />
+        <button
+          type="button"
+          onClick={onAnalyze}
+          disabled={loading || !url.trim()}
+          className={styles.analyzeButton}
+        >
+          {loading ? 'Analyzing...' : 'Analyze'}
+        </button>
+      </div>
+      {error && <p className={styles.error}>{error}</p>}
+      <div className={styles.hintRow}>
+        <p className={styles.hint}>
+          Uses GitHub's public API (no auth needed for public repos). Rate limit: 60 requests/hour.
+        </p>
+        {showDemo && (
+          <button type="button" className={styles.tryDemo} onClick={onDemo}>
+            Try it on our repo
+          </button>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/** Local / private repos: the CLI covers what the web analyzer can't see. */
+function LocalCliCallout() {
+  const [copied, setCopied] = useState(false)
+  const handleCopy = useCallback(() => copyWithFeedback(LOCAL_CMD, setCopied), [])
+  return (
+    <div className={styles.localCallout}>
+      <div className={styles.localText}>
+        <strong>Private or local repo?</strong> Run <code>claude-rate</code> in
+        any project directory -- same rubric, plus local-only checks
+        (gitignored settings.local.json, leaked secrets, files you have not
+        pushed):
+      </div>
+      <div className={styles.localCmdRow}>
+        <code className={styles.localCmd}>{LOCAL_CMD}</code>
+        <button type="button" onClick={handleCopy} className={styles.localCopyBtn}>
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+    </div>
+  )
 }
 
 function RepoAnalyzer() {
   const [searchParams] = useSearchParams()
   const [url, setUrl] = useState('')
   const [branch, setBranch] = useState('')
-  const [status, setStatus] = useState<Status>('idle')
-  const [error, setError] = useState('')
-  const [result, setResult] = useState<AnalysisResult | null>(null)
-  const [copied, setCopied] = useState(false)
-  const [cmdCopied, setCmdCopied] = useState(false)
+  const { status, error, result, analyze } = useRepoAnalysis()
 
   // Auto-fill from ?repo= query param
   useEffect(() => {
@@ -55,62 +165,8 @@ function RepoAnalyzer() {
     }
   }, [searchParams])
 
-  const handleAnalyze = useCallback(async () => {
-    const parsed = parseRepoUrl(url)
-    if (!parsed) {
-      setError('Invalid repo URL. Use https://github.com/owner/repo or owner/repo')
-      setStatus('error')
-      return
-    }
-    if (branch) parsed.branch = branch
-
-    setStatus('loading')
-    setError('')
-    setResult(null)
-
-    try {
-      const analysis = await analyzeRepo(parsed)
-
-      if (!analysis.repoExists) {
-        setError(
-          'Repository not found. Make sure the repo is public and the URL is correct.',
-        )
-        setStatus('error')
-        return
-      }
-
-      setResult(analysis)
-      setStatus('done')
-    } catch {
-      setError('Failed to analyze repo. Check your network connection and try again.')
-      setStatus('error')
-    }
-  }, [url, branch])
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') handleAnalyze()
-    },
-    [handleAnalyze],
-  )
-
-  const handleCopyBadge = useCallback(() => {
-    if (!result) return
-    const encodedGrade = encodeURIComponent(result.grade.letter)
-    const encodedColor = result.grade.color.replace('#', '')
-    const md = `[![Claude Cost Optimizer Grade](https://img.shields.io/badge/claude_cost_optimizer-${encodedGrade}-${encodedColor}?style=for-the-badge)](https://sagargupta16.github.io/claude-cost-optimizer/analyzer)`
-    navigator.clipboard.writeText(md).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
-  }, [result])
-
-  const handleCopyCmd = useCallback(() => {
-    navigator.clipboard.writeText(LOCAL_CMD).then(() => {
-      setCmdCopied(true)
-      setTimeout(() => setCmdCopied(false), 2000)
-    })
-  }, [])
+  const handleAnalyze = useCallback(() => analyze(url, branch), [analyze, url, branch])
+  const handleDemo = useCallback(() => setUrl(DEMO_REPO), [])
 
   return (
     <div className={styles.analyzer}>
@@ -122,436 +178,22 @@ function RepoAnalyzer() {
         hooks, skills, agents, commands, and secrets.
       </p>
 
-      <div className={styles.inputSection}>
-        <div className={styles.inputRow}>
-          <input
-            type="text"
-            placeholder="https://github.com/owner/repo or owner/repo"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className={styles.urlInput}
-          />
-          <input
-            type="text"
-            placeholder="Branch (optional)"
-            value={branch}
-            onChange={(e) => setBranch(e.target.value)}
-            onKeyDown={handleKeyDown}
-            className={styles.branchInput}
-          />
-          <button
-            onClick={handleAnalyze}
-            disabled={status === 'loading' || !url.trim()}
-            className={styles.analyzeButton}
-          >
-            {status === 'loading' ? 'Analyzing...' : 'Analyze'}
-          </button>
-        </div>
-        {status === 'error' && <p className={styles.error}>{error}</p>}
-        <div className={styles.hintRow}>
-          <p className={styles.hint}>
-            Uses GitHub's public API (no auth needed for public repos). Rate limit: 60 requests/hour.
-          </p>
-          {!result && (
-            <button
-              className={styles.tryDemo}
-              onClick={() => {
-                setUrl(DEMO_REPO)
-              }}
-            >
-              Try it on our repo
-            </button>
-          )}
-        </div>
-      </div>
+      <AnalyzerInput
+        url={url}
+        branch={branch}
+        loading={status === 'loading'}
+        error={status === 'error' ? error : ''}
+        showDemo={!result}
+        onUrlChange={setUrl}
+        onBranchChange={setBranch}
+        onAnalyze={handleAnalyze}
+        onDemo={handleDemo}
+      />
 
-      {/* Local / private repos: the CLI covers what the web analyzer can't see */}
-      <div className={styles.localCallout}>
-        <div className={styles.localText}>
-          <strong>Private or local repo?</strong> Run <code>claude-rate</code> in
-          any project directory -- same rubric, plus local-only checks
-          (gitignored settings.local.json, leaked secrets, files you have not
-          pushed):
-        </div>
-        <div className={styles.localCmdRow}>
-          <code className={styles.localCmd}>{LOCAL_CMD}</code>
-          <button onClick={handleCopyCmd} className={styles.localCopyBtn}>
-            {cmdCopied ? 'Copied' : 'Copy'}
-          </button>
-        </div>
-      </div>
+      <LocalCliCallout />
 
-      {status === 'loading' && (
-        <div className={styles.loading}>
-          <div className={styles.spinner} />
-          <span>Fetching repo tree and files from GitHub...</span>
-        </div>
-      )}
-
-      {result && (
-        <div className={styles.results}>
-          {/* Grade header */}
-          <div className={styles.gradeSection}>
-            <div className={styles.gradeCard}>
-              <span
-                className={styles.gradeLetter}
-                style={{ color: result.grade.color }}
-              >
-                {result.grade.letter}
-              </span>
-              <span className={styles.gradeScore}>
-                {result.grade.score} / 100
-              </span>
-              <span className={styles.repoName}>{result.repo}</span>
-              <span className={styles.branchName}>{result.branch}</span>
-            </div>
-          </div>
-
-          {/* Score breakdown */}
-          <div className={styles.panel}>
-            <h2 className={styles.panelTitle}>Score Breakdown</h2>
-            <div className={styles.categoryList}>
-              {result.categories.map((c) => (
-                <div key={c.name} className={styles.categoryRow}>
-                  <span className={styles.categoryName}>{c.name}</span>
-                  <div className={styles.categoryBar}>
-                    <div
-                      className={styles.categoryFill}
-                      style={{
-                        width: `${c.maxScore > 0 ? (c.score / c.maxScore) * 100 : 0}%`,
-                        backgroundColor: categoryColor(c.score, c.maxScore),
-                      }}
-                    />
-                  </div>
-                  <span className={styles.categoryScore}>
-                    {c.score}/{c.maxScore}
-                  </span>
-                  <span className={styles.categoryDetail}>{c.detail}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Files found */}
-          <div className={styles.panel}>
-            <h2 className={styles.panelTitle}>Files Detected</h2>
-            <div className={styles.fileList}>
-              {result.files.map((f) => (
-                <div
-                  key={f.path}
-                  className={`${styles.fileItem} ${f.found ? styles.fileFound : styles.fileMissing}`}
-                >
-                  <span className={styles.fileIcon}>
-                    {f.found ? '+' : '-'}
-                  </span>
-                  <span className={styles.filePath}>{f.path}</span>
-                  {f.found && (
-                    <span className={styles.fileSize}>
-                      {f.size.toLocaleString()} bytes
-                    </span>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Analysis details grid */}
-          <div className={styles.detailsGrid}>
-            {/* CLAUDE.md */}
-            <div className={styles.panel}>
-              <h2 className={styles.panelTitle}>CLAUDE.md</h2>
-              {result.claudeMd.found ? (
-                <div className={styles.statList}>
-                  <div className={styles.stat}>
-                    <span className={styles.statLabel}>Lines (guidance: under 200)</span>
-                    <span
-                      className={`${styles.statValue} ${result.claudeMd.overGuidance ? styles.statDanger : ''}`}
-                    >
-                      {result.claudeMd.lineCount} / {CLAUDE_MD_LINE_GUIDANCE}
-                    </span>
-                  </div>
-                  <div className={styles.stat}>
-                    <span className={styles.statLabel}>Characters</span>
-                    <span className={styles.statValue}>
-                      {result.claudeMd.charCount.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className={styles.stat}>
-                    <span className={styles.statLabel}>
-                      Est. tokens ({result.claudeMdAll.fileCount} file{result.claudeMdAll.fileCount === 1 ? '' : 's'})
-                    </span>
-                    <span className={styles.statValue}>
-                      ~{result.claudeMdAll.totalTokens.toLocaleString()}
-                    </span>
-                  </div>
-                  <div className={styles.charBar}>
-                    <div
-                      className={styles.charFill}
-                      style={{
-                        width: `${Math.min((result.claudeMd.lineCount / CLAUDE_MD_LINE_GUIDANCE) * 100, 100)}%`,
-                        backgroundColor: lineBarColor(result.claudeMd.lineCount),
-                      }}
-                    />
-                  </div>
-                </div>
-              ) : (
-                <p className={styles.notFound}>Not found</p>
-              )}
-            </div>
-
-            {/* File-read exclusions: Read(...) rules in permissions.deny */}
-            <div className={styles.panel}>
-              <h2 className={styles.panelTitle}>File-read exclusions</h2>
-              <div className={styles.statList}>
-                <div className={styles.stat}>
-                  <span className={styles.statLabel}>Read deny rules</span>
-                  <span
-                    className={`${styles.statValue} ${result.fileReadExclusions.readDenyRules.length > 0 ? styles.statGood : styles.statWarn}`}
-                  >
-                    {result.fileReadExclusions.readDenyRules.length}
-                  </span>
-                </div>
-                {result.fileReadExclusions.readDenyRules.length > 0 ? (
-                  <div className={styles.entryList}>
-                    {result.fileReadExclusions.readDenyRules.slice(0, 10).map((r) => (
-                      <code key={r} className={styles.entry}>
-                        {r}
-                      </code>
-                    ))}
-                    {result.fileReadExclusions.readDenyRules.length > 10 && (
-                      <span className={styles.moreEntries}>
-                        +{result.fileReadExclusions.readDenyRules.length - 10} more
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <p className={styles.notFound}>No Read deny rules in permissions.deny</p>
-                )}
-                <div className={styles.stat}>
-                  <span className={styles.statLabel}>Lock files</span>
-                  <span
-                    className={`${styles.statValue} ${result.fileReadExclusions.lockFilesUncovered.length > 0 ? styles.statWarn : styles.statGood}`}
-                  >
-                    {lockFilesLabel(result.fileReadExclusions.lockFilesPresent, result.fileReadExclusions.lockFilesUncovered)}
-                  </span>
-                </div>
-                {result.fileReadExclusions.ignoreFileFound && (
-                  <>
-                    <div className={styles.stat}>
-                      <span className={styles.statLabel}>.claudeignore</span>
-                      <span className={`${styles.statValue} ${styles.statDanger}`}>
-                        Not read by Claude Code
-                      </span>
-                    </div>
-                    <p className={styles.notFound}>
-                      It appears nowhere in Claude Code's documentation and scores
-                      nothing. Its patterns as Read deny rules:
-                    </p>
-                    <div className={styles.entryList}>
-                      {result.fileReadExclusions.ignoreFileRules.slice(0, 10).map((r) => (
-                        <code key={r} className={styles.entry}>
-                          {r}
-                        </code>
-                      ))}
-                      {result.fileReadExclusions.ignoreFileRules.length > 10 && (
-                        <span className={styles.moreEntries}>
-                          +{result.fileReadExclusions.ignoreFileRules.length - 10} more
-                        </span>
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            </div>
-
-            {/* Settings */}
-            <div className={styles.panel}>
-              <h2 className={styles.panelTitle}>Settings</h2>
-              {result.settings.found ? (
-                <div className={styles.statList}>
-                  <div className={styles.stat}>
-                    <span className={styles.statLabel}>Default model</span>
-                    <span
-                      className={`${styles.statValue} ${result.settings.hasModel ? styles.statGood : styles.statWarn}`}
-                    >
-                      {result.settings.hasModel ? 'Configured' : 'Not set'}
-                    </span>
-                  </div>
-                  <div className={styles.stat}>
-                    <span className={styles.statLabel}>Cost controls</span>
-                    <span
-                      className={`${styles.statValue} ${result.settings.hasCostControls ? styles.statGood : styles.statWarn}`}
-                    >
-                      {result.settings.hasCostControls ? 'Set' : 'Not set'}
-                    </span>
-                  </div>
-                  <div className={styles.stat}>
-                    <span className={styles.statLabel}>MCP servers</span>
-                    <span className={styles.statValue}>
-                      {result.settings.mcpServerCount}
-                    </span>
-                  </div>
-                  <div className={styles.stat}>
-                    <span className={styles.statLabel}>Hooks</span>
-                    <span className={styles.statValue}>
-                      {result.settings.hasHooks
-                        ? `${result.settings.hookCount} entries, ${result.tooling.hookScripts} scripts`
-                        : 'None'}
-                    </span>
-                  </div>
-                </div>
-              ) : (
-                <p className={styles.notFound}>Not found</p>
-              )}
-            </div>
-
-            {/* Skills, agents, commands */}
-            <div className={styles.panel}>
-              <h2 className={styles.panelTitle}>Skills, Agents, Commands</h2>
-              <div className={styles.statList}>
-                <div className={styles.stat}>
-                  <span className={styles.statLabel}>cost-mode skill</span>
-                  <span
-                    className={`${styles.statValue} ${result.tooling.costModeInstalled ? styles.statGood : styles.statWarn}`}
-                  >
-                    {result.tooling.costModeInstalled ? 'Installed' : 'Not installed'}
-                  </span>
-                </div>
-                <div className={styles.stat}>
-                  <span className={styles.statLabel}>Skills</span>
-                  <span className={styles.statValue}>
-                    {result.tooling.skills.length}
-                  </span>
-                </div>
-                <div className={styles.stat}>
-                  <span className={styles.statLabel}>Subagents</span>
-                  <span className={styles.statValue}>
-                    {result.tooling.agentCount}
-                  </span>
-                </div>
-                <div className={styles.stat}>
-                  <span className={styles.statLabel}>Slash commands</span>
-                  <span className={styles.statValue}>
-                    {result.tooling.commandCount}
-                  </span>
-                </div>
-                {result.tooling.skills.length > 0 && (
-                  <div className={styles.entryList}>
-                    {result.tooling.skills.slice(0, 8).map((s) => (
-                      <code key={s} className={styles.entry}>
-                        {s}
-                      </code>
-                    ))}
-                    {result.tooling.skills.length > 8 && (
-                      <span className={styles.moreEntries}>
-                        +{result.tooling.skills.length - 8} more
-                      </span>
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Security */}
-            <div className={styles.panel}>
-              <h2 className={styles.panelTitle}>Security</h2>
-              <div className={styles.statList}>
-                <div className={styles.stat}>
-                  <span className={styles.statLabel}>.env committed</span>
-                  <span
-                    className={`${styles.statValue} ${result.security.envTracked ? styles.statDanger : styles.statGood}`}
-                  >
-                    {result.security.envTracked ? 'Yes -- rotate secrets' : 'No'}
-                  </span>
-                </div>
-                <div className={styles.stat}>
-                  <span className={styles.statLabel}>API keys in config</span>
-                  <span
-                    className={`${styles.statValue} ${result.security.keyLeakFiles.length > 0 ? styles.statDanger : styles.statGood}`}
-                  >
-                    {result.security.keyLeakFiles.length > 0
-                      ? result.security.keyLeakFiles.join(', ')
-                      : 'None detected'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Token & Cost estimates */}
-          <div className={styles.panel}>
-            <h2 className={styles.panelTitle}>
-              Cost Estimate (30-turn session, 3 sessions/day, 22 days/month)
-            </h2>
-            <div className={styles.tokenSummary}>
-              <div className={styles.tokenStat}>
-                <span className={styles.tokenLabel}>System prompt</span>
-                <span className={styles.tokenValue}>
-                  ~{result.tokenEstimate.systemPromptTokens.toLocaleString()} tokens
-                </span>
-              </div>
-              <div className={styles.tokenStat}>
-                <span className={styles.tokenLabel}>Per turn (avg)</span>
-                <span className={styles.tokenValue}>
-                  ~{result.tokenEstimate.perTurnTokens.toLocaleString()} tokens
-                </span>
-              </div>
-            </div>
-
-            <table className={styles.costTable}>
-              <thead>
-                <tr>
-                  <th>Model</th>
-                  <th>Per Session</th>
-                  <th>Per Month</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(Object.keys(MODELS) as ModelId[])
-                  .filter((id) => !MODELS[id].inviteOnly)
-                  .map((id) => (
-                  <tr key={id}>
-                    <td>{MODELS[id].name}</td>
-                    <td className={styles.mono}>
-                      ${result.costEstimate[id].perSession.toFixed(2)}
-                    </td>
-                    <td className={styles.mono}>
-                      ${result.costEstimate[id].perMonth.toFixed(2)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Recommendations */}
-          <div className={styles.panel}>
-            <h2 className={styles.panelTitle}>Recommendations</h2>
-            <ul className={styles.recommendations}>
-              {result.recommendations.map((rec) => (
-                <li key={rec} className={styles.recommendation}>
-                  {rec}
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          {/* Badge */}
-          <div className={styles.panel}>
-            <h2 className={styles.panelTitle}>Your Badge</h2>
-            <div className={styles.badgePreview}>
-              <img
-                src={`https://img.shields.io/badge/claude_cost_optimizer-${encodeURIComponent(result.grade.letter)}-${result.grade.color.replace('#', '')}?style=for-the-badge`}
-                alt={`Grade: ${result.grade.letter}`}
-              />
-            </div>
-            <button onClick={handleCopyBadge} className={styles.copyButton}>
-              {copied ? 'Copied!' : 'Copy Badge Markdown'}
-            </button>
-          </div>
-        </div>
-      )}
+      {status === 'loading' && <AnalyzerLoading />}
+      {result && <AnalysisReport result={result} />}
     </div>
   )
 }

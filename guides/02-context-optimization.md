@@ -1,6 +1,6 @@
 # Guide 02: Context Optimization
 
-> Every token in your input is a token you pay for. This guide covers practical strategies to reduce input tokens without sacrificing Claude's ability to help you. Applied together, these techniques can reduce input costs by 30-50%.
+> Every token in your input is a token you pay for. This guide covers practical strategies to reduce input tokens without sacrificing Claude's ability to help you. No combined measurement exists for them; the measured ones: with caching on, Anthropic's input trimming (image resizing plus tool search) took a further 26% off a short run and 21% off a long one ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)), and reading a CSV through code execution instead of the prompt cut a request 79% in Anthropic's [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization).
 
 ---
 
@@ -33,7 +33,7 @@ Turn 30 input: 100,000 tokens   (all of the above + 29 turns of history)
 
 Every token you can keep out of the input -- by trimming CLAUDE.md, ignoring irrelevant files, avoiding unnecessary file reads, and compacting history -- saves you money on *every subsequent turn*.
 
-The math is straightforward: remove 1,000 tokens of recurring input, and over a 30-turn session you save 30,000 input tokens. At Sonnet 4.6 pricing with 80% cache rate, that is about $0.03 per session. Do that across 5 sessions a day for a month, and it adds up to $3.30 from just that one cut. Now multiply by the 10-20 cuts this guide will show you.
+The math is straightforward: remove 1,000 tokens of recurring input, and over a 30-turn session you send 30,000 fewer input tokens. Claude Code writes those tokens to the cache once (1.25x input) and reads them on the other 29 turns, so on Sonnet 4.6 the cut saves 1,000 x ($3.75 + 29 x $0.30) / 1M = $0.012 per session, $1.37 a month at 5 sessions a day for 22 days; on Opus 5.5 ($5 write, $0.20 read) it is $0.011 and $1.19 ([formula](01-understanding-costs.md#claudemd-cost-over-a-session)). Every pause longer than the cache TTL adds one more write of the whole prefix, so the cut is worth more on sessions with breaks. Each cut in this guide adds to that.
 
 ---
 
@@ -47,7 +47,7 @@ This makes CLAUDE.md the highest-leverage optimization target because:
 
 1. It affects **every turn** in **every session**
 2. It is under your direct control
-3. Most CLAUDE.md files contain 2-3x more content than Claude actually needs
+3. Many CLAUDE.md files carry content Claude rarely needs; Anthropic's target is under 200 lines per file
 
 ### What Actually Loads (No Character Cap)
 
@@ -55,6 +55,7 @@ Claude Code does not truncate CLAUDE.md, and there is no per-file or total chara
 
 - **In full, at launch**: every CLAUDE.md and CLAUDE.local.md in the directory hierarchy above your working directory.
 - **On demand**: CLAUDE.md files in subdirectories load when Claude reads files there. Rules in `.claude/rules/` with `paths:` frontmatter load when Claude reads a matching file. Skills load when invoked.
+- **Every turn, even unused**: each skill's description in the skill listing ("Every skill in the skill listing adds to your context on every turn, whether or not Claude ever uses it"; `description` plus `when_to_use` is cut at 1,536 characters). Run `/skill-doctor` (Claude Code v2.1.252+) to see what each skill costs and how often it is used; it flags skills that have never been invoked and says where to turn them off ([skills docs](https://code.claude.com/docs/en/skills)).
 - **The one real truncation**: auto memory. Only the first 200 lines or 25KB of `MEMORY.md`, whichever comes first, load at session start.
 
 Anthropic's size guidance, verbatim: "target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence." So the reason to stay small is token cost in every session plus adherence, not a cutoff. `@path` imports help organize a long file, but imported files still load at launch, so they do not reduce tokens.
@@ -73,17 +74,17 @@ What this means in practice:
 
 Anthropic's target is under **200 lines** per CLAUDE.md file; this guide aims for about **150 lines** to leave headroom. Nothing is cut off past either number -- every extra line just costs tokens on every turn. Here is the cost breakdown by size:
 
-| CLAUDE.md Size | Tokens Per Turn | Cost Per Turn (Sonnet 4.6) | 30-Turn Session Cost | Monthly (110 sessions) |
-|:--------------:|:---------------:|:---------------------:|:--------------------:|:---------------------:|
-| 50 lines | ~350 | $0.001 | $0.03 | $3.30 |
-| 100 lines | ~700 | $0.002 | $0.06 | $6.60 |
-| **150 lines** | **~1,050** | **$0.003** | **$0.09** | **$9.90** |
-| 300 lines | ~2,100 | $0.006 | $0.18 | $19.80 |
-| 500 lines | ~3,500 | $0.011 | $0.33 | $36.30 |
+| CLAUDE.md Size | Tokens Per Turn | 30-Turn Session, Warm Cache (Sonnet 4.6) | 30-Turn Session, Warm Cache (Opus 5.5) | 30-Turn Session, No Cache (Sonnet 4.6) | Monthly, Warm Cache (Opus 5.5, 110 sessions) |
+|:--------------:|:---------------:|:----------------------------------------:|:--------------------------------------:|:--------------------------------------:|:--------------------------------------------:|
+| 50 lines | ~350 | $0.0044 | $0.0038 | $0.03 | $0.42 |
+| 100 lines | ~700 | $0.0087 | $0.0076 | $0.06 | $0.83 |
+| **150 lines** | **~1,050** | **$0.013** | **$0.011** | **$0.09** | **$1.25** |
+| 300 lines | ~2,100 | $0.026 | $0.023 | $0.19 | $2.49 |
+| 500 lines | ~3,500 | $0.044 | $0.038 | $0.32 | $4.16 |
 
-> The cost columns use the **uncached** input rate ($3/MTok on Sonnet 4.6) -- the worst case, as on a cold cache. With 80% cache hits the blended rate is $0.84/MTok (80% at $0.30, 20% at $3), so real costs and real savings from trimming are about 28% of these figures. The cache is not free: cached tokens still cost 10% of full price on Sonnet 4.6 (5% on Opus 5.5 and Sonnet 5.5, 2.5% on Fable 5.1).
+> Computed with Claude Code's prefix caching ([Guide 01 formula](01-understanding-costs.md#claudemd-cost-over-a-session)): the file is written to the cache once and read on the other 29 turns, so a session costs tokens x (write + 29 x read). Sonnet 4.6: $3.75 + 29 x $0.30 = $12.45 per 1M tokens; Opus 5.5: $5 + 29 x $0.20 = $10.80, which puts Opus 5.5 below Sonnet 4.6 here because its cache reads cost 0.05x. "No cache" is 30 x $3 = $90 per 1M, every turn at full input price. Each pause longer than the cache TTL adds one re-write: 3,500 tokens x $5/1M = $0.0175 on Opus 5.5 for a 500-line file.
 
-**On Opus 5.5**, multiply these numbers by ~1.33x (Opus 5.5 input is $4/MTok vs Sonnet 4.6's $3/MTok; legacy Opus 5 / 4.8 / 4.7 / 4.6 at $5/MTok is ~1.67x). A 500-line CLAUDE.md on Opus 5.5 costs about $48.40/month just for the CLAUDE.md itself across 110 sessions ($60.50 on legacy Opus 5). **Opus 5.5 adds another ~20-35% on top** because its tokenizer (the same one shipped with Opus 4.7 and used by every Opus since) uses more tokens for the same text.
+**On legacy Opus 5** ($6.25 write, $0.50 read) the warm-cache cost is 1.9x the Opus 5.5 column: a 500-line CLAUDE.md costs $4.16/month on Opus 5.5 and $7.99 on legacy Opus 5 across 110 sessions. **Opus 5.5 adds about 30% on top** because its tokenizer (the same one shipped with Opus 4.7 and used by every Opus since) produces more tokens for the same text ([Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing)).
 
 One caching caveat that depends on size: a `cache_control` block is silently ignored -- no error, no discount -- if the prefix it marks is shorter than the model's minimum cacheable prompt. That floor is **512 tokens on Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5**, down from 1,024 on Opus 4.8, 2,048 on Opus 4.7, and 4,096 on Opus 4.6. Sonnet 5 and Sonnet 4.6 sit at 1,024; legacy Haiku 4.5 at 4,096. Practical effect: a ~100-line CLAUDE.md (~700 tokens) that was too short to cache on Opus 4.8, Sonnet 5 or Haiku 4.5 does cache on Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5, while a 50-line one (~350 tokens) still caches on none of them.
 
@@ -95,7 +96,7 @@ Include only information Claude needs on **most turns**:
 |---------|-----|
 | Tech stack (language, framework, versions) | Affects every code suggestion |
 | Build/test/lint commands | Claude runs these frequently |
-| Project structure overview (5-10 lines max) | Helps Claude find files |
+| Project structure overview (10 lines max) | Helps Claude find files |
 | Critical coding conventions | Prevents repeated corrections |
 | Error handling patterns | Applies to most code written |
 
@@ -335,7 +336,7 @@ src/
 6. Post-deploy: verify monitoring dashboards
 ```
 
-**Token count: ~2,660 tokens per turn. Over 30 turns with 80% caching: ~$0.038 (Sonnet 5.5) / ~$0.077 (Opus 5.5)**
+**Token count: ~2,660 tokens per turn. Over 30 turns with prefix caching: ~$0.014 (Sonnet 5.5) / ~$0.029 (Opus 5.5)**
 
 ### After: 62 Lines (Optimized)
 
@@ -384,7 +385,7 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 - Squash merge, 1+ review required
 ```
 
-**Token count: ~434 tokens per turn. Over 30 turns with 80% caching: ~$0.006 (Sonnet 5.5) / ~$0.012 (Opus 5.5)**
+**Token count: ~434 tokens per turn. Over 30 turns with prefix caching: ~$0.0023 (Sonnet 5.5) / ~$0.0047 (Opus 5.5)**
 
 ### What Was Cut and Why
 
@@ -407,11 +408,11 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 |--------|:------:|:-----:|:-----------:|
 | Lines | 380 | 62 | **84% fewer** |
 | Tokens per turn | ~2,660 | ~434 | **84% fewer** |
-| 30-turn Sonnet 5.5 cost | $0.038 | $0.006 | **$0.032 saved/session** |
-| 30-turn Opus 5.5 cost | $0.077 | $0.012 | **$0.064 saved/session** |
-| Monthly Opus 5.5 cost (110 sessions) | $8.43 | $1.37 | **$7.05 saved/month** |
+| 30-turn Sonnet 5.5 cost | $0.014 | $0.0023 | **$0.012 saved/session** |
+| 30-turn Opus 5.5 cost | $0.029 | $0.0047 | **$0.024 saved/session** |
+| Monthly Opus 5.5 cost (110 sessions) | $3.16 | $0.52 | **$2.64 saved/month** |
 
-> Costs use the blended rate from [Guide 01](01-understanding-costs.md#key-formulas): 80% of tokens at the cache-hit price ($0.10/MTok on Sonnet 5.5, $0.20/MTok on Opus 5.5) and 20% at full input price ($2 and $4/MTok), a blended $0.48 and $0.96/MTok.
+> Costs use Claude Code's prefix caching ([Guide 01](01-understanding-costs.md#key-formulas)): the file is written once at the 5-minute cache-write rate and read on the other 29 turns, tokens x (write + 29 x read): $2.50 + 29 x $0.10 = $5.40 per 1M on Sonnet 5.5, $5 + 29 x $0.20 = $10.80 on Opus 5.5. For example, 2,660 x $10.80 / 1M = $0.029.
 
 ---
 
@@ -487,10 +488,11 @@ find ./node_modules -type f 2>/dev/null | wc -l
 When Claude uses the Read tool on a file, the entire file content becomes part of the conversation history. A 500-line file is approximately 5,000 tokens -- and those tokens persist for every remaining turn.
 
 ```
-Reading a 500-line file on turn 5 of a 30-turn session:
-= 5,000 tokens x 25 remaining turns
-= 125,000 extra input tokens
-= $0.375 on Sonnet 4.6 (uncached) or ~$0.105 (with 80% caching: 100K cached at $0.30/1M + 25K fresh at $3/1M)
+Reading a 500-line file on turn 5 of a 30-turn session (Sonnet 4.6):
+= 5,000 tokens written to the cache once, then read on the 25 later turns
+= 5,000 x $3.75/1M + 125,000 x $0.30/1M
+= $0.019 + $0.038 = $0.056 with a warm cache
+  ($0.050 on Opus 5.5; $0.375 if all 125,000 re-reads billed at the uncached $3/1M)
 ```
 
 Reading three large files carelessly can add more cost than your entire CLAUDE.md.
@@ -535,7 +537,7 @@ For finding patterns across files, Grep is much cheaper than reading entire file
 Search for all uses of deprecated_function across the src/ directory
 ```
 
-Grep results are typically 50-200 tokens vs 2,000-10,000 for full file reads.
+Grep returns only the matching lines: a 20-match search is about 200 tokens at this guide's 10 tokens per line, against about 5,000 for a full read of one 500-line file.
 
 **5. Avoid "read and understand" prompts for large files**
 
@@ -555,18 +557,22 @@ This signals Claude to scan efficiently rather than ingest the whole file into a
 
 Anthropic's costs page notes that code intelligence plugins replace grep-then-read-many-files with one go-to-definition call. If a plugin exists for your language, it is the cheapest way for Claude to find a symbol.
 
+**7. Run code over data files instead of reading them**
+
+Ask Claude to write and run a short script (`python`, `jq`, `awk`) over a CSV, log or JSON file rather than reading it into the conversation. Anthropic measured the API version of this: 25 aggregate questions over a 1,862-row CSV, answered through code execution on the uploaded file, were 25/25 correct for $0.40; with the CSV pasted into the prompt, 6/25 correct for $5.01. Code execution cost 92% less (1 - $0.40 / $5.01) and got every answer right ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)).
+
 ### File Read Cost Reference
 
-| File Size | Tokens | Per-Turn Cost (Sonnet 4.6) | 30-Turn Carry Cost |
-|:---------:|:------:|:---------------------:|:------------------:|
-| 50 lines | ~500 | $0.0015 | ~$0.013 |
-| 100 lines | ~1,000 | $0.003 | ~$0.025 |
-| 300 lines | ~3,000 | $0.009 | ~$0.076 |
-| 500 lines | ~5,000 | $0.015 | ~$0.126 |
-| 1,000 lines | ~10,000 | $0.030 | ~$0.252 |
-| 2,000 lines | ~20,000 | $0.060 | ~$0.504 |
+| File Size | Tokens | Cost to Add It (one cache write, Sonnet 4.6) | 30-Turn Carry Cost (Sonnet 4.6) | 30-Turn Carry Cost (Opus 5.5) |
+|:---------:|:------:|:--------------------------------------------:|:-------------------------------:|:-----------------------------:|
+| 50 lines | ~500 | $0.0019 | ~$0.0064 | ~$0.0055 |
+| 100 lines | ~1,000 | $0.0038 | ~$0.013 | ~$0.011 |
+| 300 lines | ~3,000 | $0.011 | ~$0.038 | ~$0.033 |
+| 500 lines | ~5,000 | $0.019 | ~$0.064 | ~$0.055 |
+| 1,000 lines | ~10,000 | $0.038 | ~$0.128 | ~$0.110 |
+| 2,000 lines | ~20,000 | $0.075 | ~$0.255 | ~$0.220 |
 
-> "Per-turn cost" is the uncached input rate ($3/MTok on Sonnet 4.6). "30-turn carry cost" is the extra input cost of keeping that file in history for 30 more turns at an 80% cache-hit blend: 80% at $0.30/MTok plus 20% at $3/MTok, which is $0.84/MTok. A higher cache-hit rate lowers it; a cold cache raises it toward the uncached rate.
+> "Cost to add it" is one 5-minute cache write ($3.75/MTok on Sonnet 4.6). "30-turn carry cost" is that write plus a cache read on each of the next 30 turns: tokens x ($3.75 + 30 x $0.30) / 1M on Sonnet 4.6, tokens x ($5 + 30 x $0.20) / 1M on Opus 5.5. A pause longer than the cache TTL adds a full re-write of the whole context, this file included.
 
 ### Keep Tool Output Small
 
@@ -589,10 +595,14 @@ Before /compact:
   Conversation history: 80,000 tokens (40 turns of detailed exchanges)
 
 After /compact:
-  Conversation summary: ~5,000-10,000 tokens (key decisions and context preserved)
+  Conversation summary: ~7,500 tokens (key decisions and context preserved;
+                        an illustrative size, it depends on the session)
 
-Savings: 70,000-75,000 tokens of input per turn going forward
+Savings: 72,500 tokens of input per turn going forward (80,000 - 7,500)
+         (with a warm cache those were cache reads: $0.0145 per turn on Opus 5.5)
 ```
+
+Claude Code also compacts on its own when the context nears the window: at about 967K tokens by default on 1M-window models. `/autocompact` sets that point anywhere from 100K to 1M and is saved per model since v2.1.288, and subagents get their own `autoCompactWindow` since v2.1.296 ([model-config page](https://code.claude.com/docs/en/model-config), [changelog](https://code.claude.com/docs/en/changelog)). On Haiku 5.5 the lowest setting, 100K, sits right at its price line ($0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above).
 
 ### When to Use /compact
 
@@ -622,7 +632,9 @@ Savings: 70,000-75,000 tokens of input per turn going forward
 
 Two cheaper alternatives: `/clear` costs nothing when you no longer need the old context, and `/rewind` returns to an already-cached prefix when you want to back out of a wrong turn.
 
-The rule of thumb: **`/compact` pays for itself after 3-5 turns** following the compaction. If you have fewer turns left, it may not be worth it. If you have 10+ turns left, it is almost always worth it.
+The rule of thumb: **with a warm cache, `/compact` pays for itself only over many later turns**, because the history it removes was already billing at the cache-read rate. Computed on Opus 5.5 for 80,000 tokens of history compacted to a 7,500-token summary: the summary request costs $0.17 (80K cache read x $0.20/1M plus 7,500 output tokens x $20/1M), re-caching the summary $0.04 (7,500 x $5/1M), and each later turn then reads 72,500 fewer cached tokens, $0.0145 less. Break-even is after about 14 turns, the same on Sonnet 5.5 (every rate halves) and about 8 on Sonnet 4.6, whose cache reads cost 0.1x. So compact to keep Claude focused and to stay under a price line such as Haiku 5.5's 100K, not to cut per-turn cost on a short remainder.
+
+What Anthropic measured: on a long triage run, pruning stale tool results at task boundaries saved 39% and compaction 32%; on a 20-issue run neither saved anything and context editing cost 74% more ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). In the [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) loop, context editing cut 12%, compaction 16%, jagged pruning 29% and moving the work into a subagent 78%.
 
 ### Custom Compact Prompts
 
@@ -655,17 +667,19 @@ With subagents:
 
 ### What Comes Back to Main Context
 
-When a subagent completes, only its **final result** is added to your main conversation. Not the files it read, not the searches it ran -- just the answer. This is typically 100-500 tokens vs the 10,000-50,000 tokens the subagent consumed internally.
+When a subagent completes, only its **final result** is added to your main conversation. Not the files it read, not the searches it ran -- just the answer ("only the relevant summary returns", per Claude Code's [sub-agents docs](https://code.claude.com/docs/en/sub-agents)). No published figure gives typical sizes; the saving is whatever the subagent read minus the summary it returns.
 
 ### Best Use Cases for Subagents
 
-| Task | Why Subagent | Token Savings |
-|------|-------------|:------------:|
-| Searching codebase for patterns | Grep results stay in subagent | 2,000-10,000 |
-| Reading multiple files for analysis | File contents stay in subagent | 5,000-30,000 |
-| Generating boilerplate | Output stays in subagent until summarized | 1,000-5,000 |
-| Running and interpreting test output | Verbose test output stays in subagent | 3,000-15,000 |
-| Exploring unfamiliar code | Discovery reads stay in subagent | 5,000-20,000 |
+| Task | Why Subagent | Main-Context Tokens Kept Out (example) |
+|------|-------------|:--------------------------------------:|
+| Searching codebase for patterns | Grep results stay in subagent | 2,000 for 200 matching lines |
+| Reading multiple files for analysis | File contents stay in subagent | 25,000 for five 500-line files |
+| Generating boilerplate | Output stays in subagent until summarized | 3,000 for a 300-line draft |
+| Running and interpreting test output | Verbose test output stays in subagent | 10,000 for 1,000 lines of output |
+| Exploring unfamiliar code | Discovery reads stay in subagent | 30,000 for ten 300-line files |
+
+> Computed at this guide's 10 tokens per line; the examples are illustrative. Each token kept out would otherwise be read from cache on every later main-context turn ($0.20/1M on Opus 5.5) and re-written after any cache miss ($5/1M), minus the summary the subagent returns. The subagent still bills its own requests, so it saves money only when it reads far more than it returns, ideally on a cheaper model.
 
 ### How to Trigger Subagent Usage
 
@@ -679,7 +693,7 @@ Don't read the full files -- just tell me file names and line numbers.
 
 By asking for a summary, you signal Claude to delegate the heavy search to a subagent and return only the distilled result.
 
-For simple subagent tasks, set `model: haiku` in the subagent definition, as Anthropic's costs page suggests. On the Anthropic API that alias is Haiku 5.5 (Claude Code v2.1.293+), priced at $0.10/$0.50 per 1M up to 100K prompt tokens and $0.50/$2.50 above, so a subagent that returns file names and line numbers instead of reading whole files stays in the cheap tier. On Bedrock, Google Cloud, Microsoft Foundry and Claude Platform on AWS the alias still means legacy Haiku 4.5.
+For simple subagent tasks, set `model: haiku` in the subagent definition, as Anthropic's costs page suggests. On the Anthropic API that alias is Haiku 5.5 (Claude Code v2.1.293+), priced at $0.10/$0.50 per 1M up to 100K prompt tokens and $0.50/$2.50 above, so a subagent that returns file names and line numbers instead of reading whole files stays in the cheap tier. On Bedrock, Google Cloud, Microsoft Foundry and Claude Platform on AWS the alias still means legacy Haiku 4.5. Do not assume delegation picks Haiku for you: the built-in Explore subagent uses the main conversation's model ([sub-agents docs](https://code.claude.com/docs/en/sub-agents)).
 
 ### When Subagents Are Not Worth It
 
@@ -694,7 +708,7 @@ For simple subagent tasks, set `model: haiku` in the subagent definition, as Ant
 
 ### Why Prompt Length Matters
 
-Your prompts are typically 20-200 tokens, which seems small compared to system prompts and history. But concise prompts have a second-order benefit: **they produce shorter conversations**, which means less history accumulation.
+Your prompts are small (every example below is under 100 tokens) next to system prompts and history. But concise prompts have a second-order benefit: **they produce shorter conversations**, which means less history accumulation.
 
 A vague prompt leads to clarification questions, false starts, and iteration -- each adding to history. A precise prompt often gets the right result in one turn.
 
@@ -715,9 +729,9 @@ Fix the null reference crash in src/middleware/auth.ts -- req.user is
 undefined when the JWT token is expired. Add a null check before line 23.
 ```
 
-The bad prompt will trigger Claude to: search for auth files, read multiple files, ask clarifying questions, and guess at the issue -- costing 3-5 turns. The good prompt leads to a 1-turn fix.
+The bad prompt will trigger Claude to: search for auth files, read multiple files, ask clarifying questions, and guess at the issue -- costing several turns (4 in the cost figure below). The good prompt leads to a 1-turn fix.
 
-**Estimated cost difference: $0.08 vs $0.02 (Sonnet) for the same outcome.**
+**Computed cost difference: $0.058 (4 turns) vs $0.028 (1 turn) on Sonnet 5.5 for the same outcome**, from a fresh session at this repo's calculator defaults with cache-aware billing. Most of the 1-turn cost is the first cache write of the 9,200-token prompt; each extra turn adds about $0.01.
 
 **Example 2: New Feature**
 
@@ -738,7 +752,7 @@ Add GET /api/admin/users endpoint in src/server/routes/admin.ts:
 - Add tests in src/server/routes/__tests__/admin.test.ts
 ```
 
-The good prompt is actually fewer tokens *and* more specific. Claude can implement it in 1-2 turns instead of 3-5 because there is no ambiguity.
+The good prompt is actually fewer tokens *and* more specific. Claude can implement it in fewer turns because there is no ambiguity (illustrative; no published measurement).
 
 ### Prompt Conciseness Rules
 
@@ -767,7 +781,7 @@ Make sure to add error handling with our standard AppError class
 Run npm test after making changes
 ```
 
-Each repetition costs ~15-30 tokens of input. Across 5 sessions a day, that is 75-150 wasted tokens per instruction per day. Not huge individually, but these add up when you have 10+ such habits.
+Each repetition costs about 22 tokens of input (the 56-character first example at about 2.5 characters per token on the current tokenizer, per Anthropic's [models overview](https://platform.claude.com/docs/en/about-claude/models/overview)). Across 5 sessions a day, that is about 110 wasted tokens per instruction per day. Not huge individually, but these add up across many such habits.
 
 ### The Solution: Put It in CLAUDE.md Once
 
@@ -778,7 +792,7 @@ Each repetition costs ~15-30 tokens of input. Across 5 sessions a day, that is 7
 - Run `npm test` after changes
 ```
 
-Three lines in CLAUDE.md (~21 tokens) that are loaded once per turn via cache, replacing 30+ tokens of repeated ad-hoc instructions.
+Three lines in CLAUDE.md (~21 tokens) that are loaded once per turn via cache, replacing about 61 tokens of repeated ad-hoc instructions each time you would have typed all three (153 characters / 2.5).
 
 ### When to Use CLAUDE.md vs Separate Files
 
@@ -835,7 +849,7 @@ Run the deployment checklist:
 ---
 ```
 
-Invoke with `/deploy` when needed. This keeps 20+ lines out of CLAUDE.md and only loads them when you explicitly ask.
+Invoke with `/deploy` when needed. This keeps the checklist out of CLAUDE.md and only loads it when you explicitly ask.
 
 ---
 
@@ -859,19 +873,19 @@ Apply these in order of impact:
 
 ### Expected Savings When Fully Applied
 
-| Strategy | Savings on Input | Effort to Implement |
+| Strategy | Savings (source) | Effort to Implement |
 |----------|:----------------:|:-------------------:|
-| CLAUDE.md under 150 lines | 10-20% | One-time, 15 minutes |
+| CLAUDE.md under 150 lines | About 3% of a 30-turn session (500 to 150 lines, derived: $0.769 vs $0.742 per Opus 5.5 session, cache-aware calculator defaults) | One-time, 15 minutes |
 | Read deny rules configured | Not measured (no published figure; depends on how often Claude would open those files) | One-time, 2 minutes |
-| /compact usage | 10-20% per long session | Ongoing habit |
-| Precise file references | 5-15% | Ongoing habit |
-| Subagent delegation | 10-25% on search-heavy sessions | Ongoing habit |
-| Concise prompts | 5-10% | Ongoing habit |
-| Nested CLAUDE.md + commands | 5-10% | One-time, 15 minutes |
-| New sessions for new tasks | 10-20% | Ongoing habit |
-| **Combined** | **30-50% reduction** | |
+| /compact usage | 32% (Anthropic long triage run; nothing on short loops) | Ongoing habit |
+| Precise file references | 1 - lines read / file length per read (50 of 2,000 lines: 97.5% fewer tokens for that read) | Ongoing habit |
+| Subagent delegation | No Claude Code figure (cookbook loop: 78%) | Ongoing habit |
+| Concise prompts | No published figure (Anthropic: vague requests "trigger broad scanning") | Ongoing habit |
+| Nested CLAUDE.md + commands | No published figure (nested files and path-scoped rules load only when Claude reads files there) | One-time, 15 minutes |
+| New sessions for new tasks | About 23% for an 80-turn day split into eight sessions (derived: $2.51 vs $1.93 on Opus 5.5); `/clear` itself costs nothing | Ongoing habit |
+| **Combined** | **Not measured combined** | |
 
-These percentages compound. A developer who was spending $15/day on Sonnet can realistically drop to $7-10/day by applying all of these strategies -- saving $110-176/month.
+Each figure applies to its own slice of spend, so they do not simply add, and no one has published a combined measurement. Sources: the [cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) (compaction), the [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) (subagent loop), and Claude Code's [costs page](https://code.claude.com/docs/en/costs) and [prompt-caching page](https://code.claude.com/docs/en/prompt-caching). Price your own before and after with `/usage`.
 
 ---
 

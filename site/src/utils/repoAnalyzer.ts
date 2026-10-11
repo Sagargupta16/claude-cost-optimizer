@@ -1,4 +1,4 @@
-import { MODELS, TOKEN_ESTIMATES, type ModelId, ratesForPrompt } from './pricing'
+import { MODELS, TOKEN_ESTIMATES, type ModelId, ratesForPrompt, turnInputCost } from './pricing'
 
 export interface RepoInput {
   owner: string
@@ -606,21 +606,21 @@ function serverCount(config: Record<string, unknown> | null): number {
 
 /** 30-turn session and monthly cost per model at 3 sessions/day, 22 days/month. */
 function estimateModelCosts(systemPromptTokens: number, turns: number) {
-  const cacheHitRate = TOKEN_ESTIMATES.cacheHitRate
   const costEstimate = {} as Record<ModelId, { perSession: number; perMonth: number }>
   for (const modelId of Object.keys(MODELS) as ModelId[]) {
     const model = MODELS[modelId]
-    // Per turn, because a tiered model (Haiku 5.5) prices each request by its
-    // own prompt length; for flat-rate models this equals the session totals.
+    // Billed per turn the way Claude Code caches (turnInputCost): the previous request is a
+    // cache read, the new exchange a cache write. Per turn also lets a tiered model (Haiku 5.5)
+    // price each request by its own prompt length.
     let perSession = 0
+    let previousPrompt = 0
     for (let turn = 0; turn < turns; turn++) {
       const prompt =
         systemPromptTokens + turn * TOKEN_ESTIMATES.historyGrowthPerTurn + TOKEN_ESTIMATES.tokensPerFileRead
-      const rates = ratesForPrompt(model, prompt)
+      const { readDollars, writeDollars } = turnInputCost(model, prompt, previousPrompt)
+      previousPrompt = prompt
       perSession +=
-        ((prompt * (1 - cacheHitRate)) / 1_000_000) * rates.inputPer1M +
-        ((prompt * cacheHitRate) / 1_000_000) * rates.cacheHitPer1M +
-        (TOKEN_ESTIMATES.outputTokensPerTurn / 1_000_000) * rates.outputPer1M
+        readDollars + writeDollars + (TOKEN_ESTIMATES.outputTokensPerTurn / 1_000_000) * ratesForPrompt(model, prompt).outputPer1M
     }
     costEstimate[modelId] = {
       perSession: Math.round(perSession * 100) / 100,
@@ -903,7 +903,7 @@ function toolingRecommendations(r: RecommendationInput): string[] {
   const recs: string[] = []
   if (!r.tooling.costModeInstalled) {
     recs.push(
-      'Install the cost-mode skill for 30-60% savings: npx skills add Sagargupta16/claude-cost-optimizer',
+      'Install the cost-mode skill for concise responses and model-routing hints: npx skills add Sagargupta16/claude-cost-optimizer',
     )
   }
   if (r.tooling.commandCount === 0) {

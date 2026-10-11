@@ -168,7 +168,7 @@ Opus 5.5 cut the price -- $4/$20, 20% below Opus 5 -- but changed where your sec
 
 **The default effort dropped to `medium`.** Opus 5 defaulted to `high`. A request that omits effort now thinks less than it did on Opus 5, which pulls the other way. Re-baseline latency and cost after migrating instead of assuming either direction.
 
-**`max_tokens` is a hard cap on thinking plus text.** If you carried over a small `max_tokens`, thinking can consume the budget before the visible answer is written. In Anthropic's published runs, a 16,384 cap ended 15% of Opus 5's coding attempts unsolved; use 64,000 for agentic work.
+**`max_tokens` is a hard cap on thinking plus text.** If you carried over a small `max_tokens`, thinking can consume the budget before the visible answer is written. In Anthropic's published runs, a 16,384-token cap ended about a quarter of Opus 5.5's attempts and 43% of Fable 5.1's; at 128,000 no Opus 5.5 turn hit the cap, and the longest ran about 61,000 tokens ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). Use 64,000 or more for agentic work.
 
 Your dial on Opus 5.5 is effort, and only effort:
 
@@ -202,7 +202,7 @@ Model choice is itself a speed lever -- generally the strongest one after cachin
 
 Fast Mode only enters the picture when the task genuinely needs Opus-level capability **and** output speed matters. That intersection is narrow.
 
-One tokenizer note: Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Fable 5, Sonnet 5.5, Sonnet 5, and Haiku 5.5 all use the newer tokenizer, which produces up to ~30-35% more tokens for the same text than pre-4.7 models (Haiku 5.5: ~30% more than Haiku 4.5). More tokens means proportionally more generation time and cost -- factor it into any throughput comparison against older benchmarks. Opus 5.5 and Opus 5 share the Opus 4.7-generation tokenizer exactly, so migrating from 4.7 or later needs no token re-baselining (thinking and effort defaults are a separate re-baseline).
+One tokenizer note: Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Fable 5, Sonnet 5.5, Sonnet 5, and Haiku 5.5 all use the newer tokenizer, which produces about 30% more tokens for the same text than pre-4.7 models ([Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing); Haiku 5.5: ~30% more than Haiku 4.5). More tokens means proportionally more generation time and cost -- factor it into any throughput comparison against older benchmarks. Opus 5.5 and Opus 5 share the Opus 4.7-generation tokenizer exactly, so migrating from 4.7 or later needs no token re-baselining (thinking and effort defaults are a separate re-baseline).
 
 ---
 
@@ -228,7 +228,7 @@ Practical implications:
 - **On Sonnet 5.5, `between_tools` is the lowest thinking setting.** `thinking: {type: "disabled"}` returns 400, and reasoning bills as output at $10/1M. To stop up-front thinking on routine turns, send `thinking: {type: "between_tools"}` at `high` effort or below (it is rejected at `xhigh` and `max`). Effort levels are recalibrated, so the setting you tuned on Sonnet 5 does not carry over; Anthropic's starting points are `high` in general and `medium` for well-specified agentic coding and multistep tool use.
 - **On Haiku 5.5, thinking is on by default but the API can still switch it off.** `thinking: {type: "disabled"}` works at `high` effort or below (manual `budget_tokens` returns 400); in Claude Code it cannot be turned off, so lower effort there instead. Reasoning bills as output at $0.50/1M up to 100K prompt tokens ($2.50 above).
 - **On Fable 5.1 and Fable 5, effort is your only thinking dial.** You cannot turn thinking off. If Fable feels slow, check whether the task justifies high effort before assuming you need a different model.
-- **What Anthropic measured (published runs, directional, not guarantees).** On research work (Fable 5), `medium` matched the default's accuracy at 70-85% of its cost, and `low` gave up 1-3 points for a third to a half off. On long-horizon coding, Opus 5 gave up about 2 points at `medium` for half the cost. Running at `low` and re-running only the failures at the default reached ~93% pass for ~$0.70/task, versus 91.7% for $1.39 running everything at the default.
+- **What Anthropic measured (published runs, directional, not guarantees).** On research work (Fable 5), `medium` matched the default's accuracy at about 70% to 87% of its cost, and `low` gave up 1 to 3 points for a third to a half off. On SWE-bench Pro, Opus 5.5 at `medium` scored about 2.5 points below `high` for about 70% of the cost; `low` scored about 8 points below for about a third, and `xhigh` 1.4 points above for 2.5x the cost of `high`. Running at `low` and re-running only the failures at `high` passed about 97% for about $0.17 per task, versus 95.3% for $0.29 running everything at `high` ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)).
 - **This lever removes tokens instead of streaming them faster.** Thinking happens before your visible answer, so heavy thinking feels like a slow start even though it is output generation under the hood. Fast Mode may stream thinking tokens faster, but you pay the premium on every one of them; lowering effort deletes them entirely -- faster AND cheaper.
 
 Rule of thumb: match effort to task difficulty the same way you match model to task tier ([Guide 10](10-task-routing.md)). High effort on a trivial task wastes seconds and dollars on every single turn.
@@ -237,13 +237,13 @@ Rule of thumb: match effort to task difficulty the same way you match model to t
 
 ## Caching as a Latency Tool
 
-[Guide 08](08-prompt-caching.md) covers prompt caching as a cost lever (90% off cached input on most models, 95% on Opus 5.5 and Sonnet 5.5, 97.5% on Fable 5.1). It is equally a **latency** lever: Anthropic publishes up to **85% latency reduction** for long prompts served from cache, because the cached prefix is not reprocessed at all.
+[Guide 08](08-prompt-caching.md) covers prompt caching as a cost lever (90% off cached input on most models, 95% on Opus 5.5 and Sonnet 5.5, 97.5% on Fable 5.1). It is equally a **latency** lever: Anthropic publishes up to **85% latency reduction** for long prompts served from cache, because the cached prefix is not reprocessed at all ([Anthropic, 2025-08-14](https://claude.com/blog/prompt-caching); its 100K-token example went from 11.5s to 2.4s).
 
 Cache hits primarily improve TTFT -- exactly the bottleneck Fast Mode cannot fix. In a typical Claude Code session, the system prompt, CLAUDE.md, tool schemas, and conversation history form a long stable prefix. When that prefix is a cache hit, the model starts responding almost immediately instead of re-reading tens of thousands of tokens first.
 
 The same hygiene that maximizes cache savings maximizes speed:
 
-- Keep turns inside the cache TTL (5 minutes on an API key, a cloud provider or usage credits; 1 hour on a subscription's main conversation).
+- Keep turns inside the cache TTL (5 minutes on an API key, a cloud provider or usage credits; 1 hour on a subscription's main conversation; subagents get 5 minutes by default). On your own API calls, the 5-minute default cost 15% less than the 1-hour cache on Sonnet 5 and 15% to 18% less on Opus 5.5 with no pauses; the 1-hour cache wins once about 1 turn in 20 follows a 5-to-60-minute pause ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence); details in [Guide 08](08-prompt-caching.md#extended-ttl-economics)).
 - Do not switch models or change effort mid-session -- effort changes keep the cache only on Opus 5.5 and Fable 5.1. (Editing CLAUDE.md mid-session does not break the cache; it applies after `/clear`, `/compact`, or restart.)
 - Do not toggle Fast Mode mid-session -- separate cache pools, full invalidation (in Claude Code, turning it on invalidates once per conversation).
 

@@ -232,6 +232,8 @@ prisma/
 
   Savings per 30-turn session: (2,800 - 1,130) x 30 = 50,100 tokens
   At Sonnet 5.5 standard rates ($2/1M input): ~$0.10 saved per session
+  With Claude Code's prompt caching (warm cache): about $0.01, since the 1,670 extra
+  tokens are written once at $2.50/1M (1.25x) and read 29 times at $0.10/1M (0.05x)
 
   More importantly, Claude gets ONLY the relevant context for the package
   it is working in, which improves output quality and reduces follow-up turns.

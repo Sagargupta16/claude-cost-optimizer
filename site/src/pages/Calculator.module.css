@@ -14,23 +14,33 @@
   font-size: 1rem;
 }
 
+/* Phones and tablets: config first, then the report. Desktop: config is a sticky rail beside it. */
 .grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1.5rem;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1.25rem;
   align-items: start;
 }
 
-@media (max-width: 768px) {
+@media (min-width: 960px) {
   .grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(320px, 400px) minmax(0, 1fr);
+  }
+
+  .inputPanel {
+    position: sticky;
+    top: 4.5rem;
+    max-height: calc(100vh - 5.5rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
   }
 }
 
 /* Input Panel */
 
-.inputPanel,
-.outputPanel {
+.inputPanel {
   background-color: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -38,6 +48,13 @@
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
+  min-width: 0;
+}
+
+@media (max-width: 480px) {
+  .inputPanel {
+    padding: 1rem;
+  }
 }
 
 .panelTitle {
@@ -51,6 +68,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1rem;
+  min-width: 0;
 }
 
 .legend {
@@ -61,27 +79,52 @@
 }
 
 .radioGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 0.4rem;
 }
 
 .radioLabel {
   display: flex;
   align-items: flex-start;
   gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.5rem 0.6rem;
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
   cursor: pointer;
   font-size: 0.9rem;
+  transition: border-color 0.15s, background-color 0.15s, transform 0.15s;
+}
+
+.radioLabel:hover {
+  border-color: var(--text-muted);
+}
+
+.radioLabel:active {
+  transform: scale(0.98);
+}
+
+.radioLabel:has(.radio:checked) {
+  border-color: var(--accent-blue);
+  background-color: var(--surface-hover);
+}
+
+.radioLabel:has(.radio:focus-visible) {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
 }
 
 .radio {
   margin-top: 0.2rem;
-  accent-color: var(--accent-green);
+  accent-color: var(--accent-blue);
 }
 
 .radioText {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .radioMeta {
@@ -96,7 +139,7 @@
   gap: 0.75rem;
 }
 
-@media (max-width: 480px) {
+@media (max-width: 360px) {
   .inputGrid {
     grid-template-columns: 1fr;
   }
@@ -108,16 +151,23 @@
   gap: 0.3rem;
   font-size: 0.85rem;
   color: var(--text-muted);
+  min-width: 0;
 }
 
 .numberInput {
   width: 100%;
+  min-height: 2.5rem;
   padding: 0.5rem 0.75rem;
   background-color: var(--bg);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   color: var(--text);
   font-size: 0.9rem;
+  transition: border-color 0.15s;
+}
+
+.numberInput:hover {
+  border-color: var(--text-muted);
 }
 
 .numberInput:focus {
@@ -129,160 +179,72 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
+  min-height: 40px;
   font-size: 0.9rem;
   color: var(--text);
   cursor: pointer;
 }
 
 .checkbox {
-  accent-color: var(--accent-green);
+  accent-color: var(--accent-blue);
   width: 1rem;
   height: 1rem;
+  flex-shrink: 0;
 }
 
-/* Output Panel */
+/* Report column: a stack of cards that rise in one after another. */
 
-.costSummary {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-}
-
-.costCard {
-  flex: 1;
-  min-width: 120px;
-  background-color: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 1rem;
+.report {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-}
-
-.optimizedCard {
-  border-color: var(--accent-green);
-}
-
-.costLabel {
-  font-size: 0.8rem;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.costValue {
-  font-size: 1.5rem;
-  font-weight: 700;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-  color: var(--text);
-}
-
-.savingsCard {
-  width: 100%;
-  background-color: rgba(63, 185, 80, 0.08);
-  border: 1px solid rgba(63, 185, 80, 0.3);
-  border-radius: var(--radius);
-  padding: 0.75rem 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
   gap: 1rem;
+  min-width: 0;
 }
 
-.savingsAmount {
-  font-weight: 700;
-  color: var(--accent-green);
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+/* backwards, not both: after the entrance the cards keep their own hover transforms. */
+.report > * {
+  animation: rise 560ms cubic-bezier(0.2, 0.7, 0.2, 1) backwards;
 }
 
-.savingsPercent {
-  font-size: 0.85rem;
-  color: var(--accent-green);
+.report > :nth-child(2) {
+  animation-delay: 80ms;
 }
 
-.subTitle {
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--text);
-  margin-top: 0.5rem;
+.report > :nth-child(3) {
+  animation-delay: 160ms;
 }
 
-/* Table */
-
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.875rem;
+.report > :nth-child(4) {
+  animation-delay: 240ms;
 }
 
-.table th,
-.table td {
-  padding: 0.5rem 0.75rem;
-  text-align: left;
-  border-bottom: 1px solid var(--border);
+.report > :nth-child(5) {
+  animation-delay: 320ms;
 }
 
-.table th {
-  font-weight: 600;
-  color: var(--text-muted);
-  font-size: 0.8rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+.report > :nth-child(6) {
+  animation-delay: 400ms;
 }
 
-.table td:nth-child(2),
-.table td:nth-child(3),
-.table th:nth-child(2),
-.table th:nth-child(3) {
-  text-align: right;
+.report > :nth-child(7) {
+  animation-delay: 480ms;
 }
 
-.totalRow {
-  font-weight: 700;
-}
-
-.totalRow td {
-  border-bottom: none;
-  padding-top: 0.75rem;
-}
-
-.mono {
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
-}
-
-/* Recommendations */
-
-.recommendations {
-  list-style: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.recommendation {
-  font-size: 0.875rem;
-  color: var(--text-muted);
-  padding: 0.6rem 0.75rem;
-  background-color: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  line-height: 1.5;
-}
-
-.recommendation::before {
-  content: '>';
-  margin-right: 0.5rem;
-  color: var(--accent-green);
-  font-weight: 700;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 /* Copy Button */
 
 .copyButton {
-  margin-top: 0.5rem;
+  min-height: 44px;
   padding: 0.6rem 1.25rem;
   background-color: var(--bg);
   color: var(--text);
@@ -290,11 +252,15 @@
   border-radius: var(--radius);
   font-size: 0.875rem;
   font-weight: 500;
-  transition: border-color 0.15s, background-color 0.15s;
+  transition: border-color 0.15s, background-color 0.15s, transform 0.15s;
   align-self: flex-start;
 }
 
 .copyButton:hover {
   border-color: var(--accent-blue);
   background-color: var(--surface-hover);
+}
+
+.copyButton:active {
+  transform: scale(0.97);
 }

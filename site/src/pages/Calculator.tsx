@@ -1,8 +1,15 @@
 import { useState, useMemo, useCallback } from 'react'
-import { type ModelId, MODELS, FAST_MODE_MULTIPLIER, formatDollars, formatRate } from '../utils/pricing'
+import { type ModelId, MODELS, FAST_MODE_MULTIPLIER, formatRate } from '../utils/pricing'
 import { calculate, resultToMarkdown, type CalculatorInputs } from '../utils/calculator'
-import { BeforeAfterChart, CostPerTurnChart, ModelComparisonChart } from '../components/charts'
+import { CostPerTurnChart, ModelComparisonChart, SpendBreakdownChart } from '../components/charts'
+import { CostHeadline } from '../components/calculator/CostHeadline'
+import { LeverChart } from '../components/calculator/LeverChart'
+import { RecommendationCards } from '../components/calculator/RecommendationCards'
+import { PICKABLE_MODELS } from '../components/calculator/models'
+import { copyWithFeedback } from '../utils/clipboard'
 import styles from './Calculator.module.css'
+
+type NumericField = Exclude<keyof CalculatorInputs, 'model' | 'fastMode'>
 
 const defaultInputs: CalculatorInputs = {
   model: 'opus-5-5',
@@ -15,35 +22,134 @@ const defaultInputs: CalculatorInputs = {
   fastMode: false,
 }
 
+const NUMBER_FIELDS: readonly { field: NumericField; label: string; min: number; max: number }[] = [
+  { field: 'turnsPerSession', label: 'Turns per session', min: 1, max: 200 },
+  { field: 'claudeMdLines', label: 'CLAUDE.md lines', min: 0, max: 1000 },
+  { field: 'sessionsPerDay', label: 'Sessions per day', min: 1, max: 50 },
+  { field: 'workingDaysPerMonth', label: 'Working days / month', min: 1, max: 31 },
+  { field: 'mcpServers', label: 'MCP servers', min: 0, max: 20 },
+  { field: 'fileReadsPerTurn', label: 'File reads per turn', min: 0, max: 20 },
+]
+
+function ModelOption({
+  id,
+  checked,
+  onPick,
+}: Readonly<{ id: ModelId; checked: boolean; onPick: (id: ModelId) => void }>) {
+  const model = MODELS[id]
+  return (
+    <label className={styles.radioLabel}>
+      <input
+        type="radio"
+        name="model"
+        value={id}
+        checked={checked}
+        onChange={() => onPick(id)}
+        className={styles.radio}
+      />
+      <span className={styles.radioText}>
+        {model.name}
+        <span className={styles.radioMeta}>
+          {formatRate(model.inputPer1M)}/{formatRate(model.outputPer1M)} per 1M
+          {model.longPrompt ? ` up to ${(model.longPrompt.threshold / 1000).toLocaleString()}K prompt tokens` : ''}
+        </span>
+      </span>
+    </label>
+  )
+}
+
+function FastModeToggle({
+  model,
+  checked,
+  onToggle,
+}: Readonly<{ model: ModelId; checked: boolean; onToggle: (on: boolean) => void }>) {
+  if (!MODELS[model].fastModeCapable) return null
+  return (
+    <label className={styles.checkboxLabel}>
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onToggle(e.target.checked)}
+        className={styles.checkbox}
+      />
+      <span>
+        Fast Mode ({MODELS[model].fastModeMultiplier ?? FAST_MODE_MULTIPLIER}x cost
+        --{' '}
+        {MODELS[model].name} research preview)
+      </span>
+    </label>
+  )
+}
+
+function ConfigPanel({
+  inputs,
+  onPick,
+  onNumber,
+  onFastMode,
+}: Readonly<{
+  inputs: CalculatorInputs
+  onPick: (id: ModelId) => void
+  onNumber: (field: NumericField, raw: string) => void
+  onFastMode: (on: boolean) => void
+}>) {
+  return (
+    <div className={styles.inputPanel}>
+      <h2 className={styles.panelTitle}>Configuration</h2>
+
+      <fieldset className={styles.fieldset}>
+        <legend className={styles.legend}>Model</legend>
+        <div className={styles.radioGroup}>
+          {PICKABLE_MODELS.map((id) => (
+            <ModelOption key={id} id={id} checked={inputs.model === id} onPick={onPick} />
+          ))}
+        </div>
+      </fieldset>
+
+      <div className={styles.inputGrid}>
+        {NUMBER_FIELDS.map(({ field, label, min, max }) => (
+          <label key={field} className={styles.inputLabel}>
+            <span>{label}</span>
+            <input
+              type="number"
+              min={min}
+              max={max}
+              value={inputs[field]}
+              onChange={(e) => onNumber(field, e.target.value)}
+              className={styles.numberInput}
+            />
+          </label>
+        ))}
+      </div>
+
+      <FastModeToggle model={inputs.model} checked={inputs.fastMode} onToggle={onFastMode} />
+    </div>
+  )
+}
+
 function Calculator() {
   const [inputs, setInputs] = useState<CalculatorInputs>(defaultInputs)
   const [copied, setCopied] = useState(false)
 
   const result = useMemo(() => calculate(inputs), [inputs])
+  const sessionsPerMonth = inputs.sessionsPerDay * inputs.workingDaysPerMonth
 
-  const updateField = useCallback(
-    <K extends keyof CalculatorInputs>(field: K, value: CalculatorInputs[K]) => {
-      setInputs((prev) => ({ ...prev, [field]: value }))
-    },
-    [],
-  )
+  const pickModel = useCallback((id: ModelId) => {
+    setInputs((prev) => ({ ...prev, model: id, fastMode: MODELS[id].fastModeCapable && prev.fastMode }))
+  }, [])
 
-  const handleNumberChange = useCallback(
-    (field: keyof CalculatorInputs) => (e: React.ChangeEvent<HTMLInputElement>) => {
-      const val = parseInt(e.target.value, 10)
-      if (!isNaN(val) && val >= 0) {
-        updateField(field, val as CalculatorInputs[typeof field])
-      }
-    },
-    [updateField],
-  )
+  const setNumber = useCallback((field: NumericField, raw: string) => {
+    const val = Number.parseInt(raw, 10)
+    if (!Number.isNaN(val) && val >= 0) {
+      setInputs((prev) => ({ ...prev, [field]: val }))
+    }
+  }, [])
+
+  const setFastMode = useCallback((on: boolean) => {
+    setInputs((prev) => ({ ...prev, fastMode: on }))
+  }, [])
 
   const handleCopy = useCallback(() => {
-    const md = resultToMarkdown(inputs, result)
-    navigator.clipboard.writeText(md).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 2000)
-    })
+    copyWithFeedback(resultToMarkdown(inputs, result), setCopied)
   }, [inputs, result])
 
   return (
@@ -54,220 +160,16 @@ function Calculator() {
       </p>
 
       <div className={styles.grid}>
-        <div className={styles.inputPanel}>
-          <h2 className={styles.panelTitle}>Configuration</h2>
+        <ConfigPanel inputs={inputs} onPick={pickModel} onNumber={setNumber} onFastMode={setFastMode} />
 
-          <fieldset className={styles.fieldset}>
-            <legend className={styles.legend}>Model</legend>
-            <div className={styles.radioGroup}>
-              {(Object.keys(MODELS) as ModelId[])
-                .filter((id) => !MODELS[id].inviteOnly)
-                .map((id) => (
-                <label key={id} className={styles.radioLabel}>
-                  <input
-                    type="radio"
-                    name="model"
-                    value={id}
-                    checked={inputs.model === id}
-                    onChange={() => {
-                      updateField('model', id)
-                      if (!MODELS[id].fastModeCapable) updateField('fastMode', false)
-                    }}
-                    className={styles.radio}
-                  />
-                  <span className={styles.radioText}>
-                    {MODELS[id].name}
-                    <span className={styles.radioMeta}>
-                      {formatRate(MODELS[id].inputPer1M)}/{formatRate(MODELS[id].outputPer1M)} per 1M
-                      {MODELS[id].longPrompt
-                        ? ` up to ${(MODELS[id].longPrompt.threshold / 1000).toLocaleString()}K prompt tokens`
-                        : ''}
-                    </span>
-                  </span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          <div className={styles.inputGrid}>
-            <label className={styles.inputLabel}>
-              <span>Turns per session</span>
-              <input
-                type="number"
-                min={1}
-                max={200}
-                value={inputs.turnsPerSession}
-                onChange={handleNumberChange('turnsPerSession')}
-                className={styles.numberInput}
-              />
-            </label>
-
-            <label className={styles.inputLabel}>
-              <span>CLAUDE.md lines</span>
-              <input
-                type="number"
-                min={0}
-                max={1000}
-                value={inputs.claudeMdLines}
-                onChange={handleNumberChange('claudeMdLines')}
-                className={styles.numberInput}
-              />
-            </label>
-
-            <label className={styles.inputLabel}>
-              <span>Sessions per day</span>
-              <input
-                type="number"
-                min={1}
-                max={50}
-                value={inputs.sessionsPerDay}
-                onChange={handleNumberChange('sessionsPerDay')}
-                className={styles.numberInput}
-              />
-            </label>
-
-            <label className={styles.inputLabel}>
-              <span>Working days / month</span>
-              <input
-                type="number"
-                min={1}
-                max={31}
-                value={inputs.workingDaysPerMonth}
-                onChange={handleNumberChange('workingDaysPerMonth')}
-                className={styles.numberInput}
-              />
-            </label>
-
-            <label className={styles.inputLabel}>
-              <span>MCP servers</span>
-              <input
-                type="number"
-                min={0}
-                max={20}
-                value={inputs.mcpServers}
-                onChange={handleNumberChange('mcpServers')}
-                className={styles.numberInput}
-              />
-            </label>
-
-            <label className={styles.inputLabel}>
-              <span>File reads per turn</span>
-              <input
-                type="number"
-                min={0}
-                max={20}
-                value={inputs.fileReadsPerTurn}
-                onChange={handleNumberChange('fileReadsPerTurn')}
-                className={styles.numberInput}
-              />
-            </label>
-          </div>
-
-          {MODELS[inputs.model].fastModeCapable && (
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={inputs.fastMode}
-                onChange={(e) => updateField('fastMode', e.target.checked)}
-                className={styles.checkbox}
-              />
-              <span>
-                Fast Mode ({MODELS[inputs.model].fastModeMultiplier ?? FAST_MODE_MULTIPLIER}x cost
-                --{' '}
-                {MODELS[inputs.model].name} research preview)
-              </span>
-            </label>
-          )}
-        </div>
-
-        <div className={styles.outputPanel}>
-          <h2 className={styles.panelTitle}>Monthly Estimate</h2>
-
-          <div className={styles.costSummary}>
-            <div className={styles.costCard}>
-              <span className={styles.costLabel}>Current</span>
-              <span className={styles.costValue}>{formatDollars(result.monthlyCost)}</span>
-            </div>
-            <div className={`${styles.costCard} ${styles.optimizedCard}`}>
-              <span className={styles.costLabel}>Optimized</span>
-              <span className={styles.costValue}>{formatDollars(result.optimizedCost)}</span>
-            </div>
-            <div className={styles.savingsCard}>
-              <span className={styles.savingsAmount}>
-                Save {formatDollars(result.savings)}/mo
-              </span>
-              <span className={styles.savingsPercent}>
-                {Math.round(result.savingsPercent)}% reduction
-              </span>
-            </div>
-          </div>
-
-          <BeforeAfterChart
-            breakdown={result.breakdown}
-            optimizedBreakdown={result.optimizedBreakdown}
-          />
-
-          <CostPerTurnChart perTurn={result.perTurnCurrent} />
-
+        <div className={styles.report}>
+          <CostHeadline result={result} sessionsPerMonth={sessionsPerMonth} />
+          <SpendBreakdownChart breakdown={result.breakdown} optimizedBreakdown={result.optimizedBreakdown} />
+          <CostPerTurnChart inputs={inputs} perTurn={result.perTurnCurrent} />
           <ModelComparisonChart inputs={inputs} />
-
-          <h3 className={styles.subTitle}>Cost Breakdown</h3>
-          <table className={styles.table}>
-            <thead>
-              <tr>
-                <th>Category</th>
-                <th>Current</th>
-                <th>Optimized</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>CLAUDE.md</td>
-                <td className={styles.mono}>{formatDollars(result.breakdown.claudeMd)}</td>
-                <td className={styles.mono}>{formatDollars(result.optimizedBreakdown.claudeMd)}</td>
-              </tr>
-              <tr>
-                <td>MCP servers</td>
-                <td className={styles.mono}>{formatDollars(result.breakdown.mcp)}</td>
-                <td className={styles.mono}>{formatDollars(result.optimizedBreakdown.mcp)}</td>
-              </tr>
-              <tr>
-                <td>File reads</td>
-                <td className={styles.mono}>{formatDollars(result.breakdown.fileReads)}</td>
-                <td className={styles.mono}>{formatDollars(result.optimizedBreakdown.fileReads)}</td>
-              </tr>
-              <tr>
-                <td>History</td>
-                <td className={styles.mono}>{formatDollars(result.breakdown.history)}</td>
-                <td className={styles.mono}>{formatDollars(result.optimizedBreakdown.history)}</td>
-              </tr>
-              <tr>
-                <td>Output</td>
-                <td className={styles.mono}>{formatDollars(result.breakdown.output)}</td>
-                <td className={styles.mono}>{formatDollars(result.optimizedBreakdown.output)}</td>
-              </tr>
-              <tr className={styles.totalRow}>
-                <td>Total</td>
-                <td className={styles.mono}>{formatDollars(result.monthlyCost)}</td>
-                <td className={styles.mono}>{formatDollars(result.optimizedCost)}</td>
-              </tr>
-            </tbody>
-          </table>
-
-          {result.recommendations.length > 0 && (
-            <>
-              <h3 className={styles.subTitle}>Top Recommendations</h3>
-              <ul className={styles.recommendations}>
-                {result.recommendations.map((rec, i) => (
-                  <li key={i} className={styles.recommendation}>
-                    {rec}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-
-          <button onClick={handleCopy} className={styles.copyButton}>
+          <LeverChart inputs={inputs} monthlyCost={result.monthlyCost} />
+          <RecommendationCards recommendations={result.recommendations} />
+          <button type="button" onClick={handleCopy} className={styles.copyButton}>
             {copied ? 'Copied!' : 'Copy as Markdown'}
           </button>
         </div>

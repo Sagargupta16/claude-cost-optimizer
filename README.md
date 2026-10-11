@@ -1,3 +1,5 @@
+<p align="center"><img src="docs/assets/readme-header.svg" alt="Claude Cost Optimizer" width="100%"></p>
+
 # Claude Cost Optimizer
 
 ![GitHub stars](https://img.shields.io/github/stars/Sagargupta16/claude-cost-optimizer?style=flat-square&cacheSeconds=86400)
@@ -5,9 +7,9 @@
 ![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)
 ![Last Commit](https://img.shields.io/github/last-commit/Sagargupta16/claude-cost-optimizer?style=flat-square&cacheSeconds=86400)
 
-> **Save 30-90% on Claude Code costs** with an installable skill, CLI tools, and 12 deep-dive guides.
+> **Cut Claude Code costs with sourced levers**: cache reads bill at 5% of input on Opus 5.5 and Sonnet 5.5, Haiku 5.5 costs 1/40 of Opus 5.5 per token (prompts up to 100K tokens), and Batch is 50% off ([Anthropic pricing](https://platform.claude.com/docs/en/about-claude/pricing)) -- with an installable skill, CLI tools, and 12 deep-dive guides.
 >
-> **30-60% is the typical result** for a mixed real workload. **Up to 90% is the ceiling** when you stack every lever -- prompt caching, Batch API, model routing, and context discipline -- against an unoptimized all-Opus baseline. Every number is sourced: see [How far can you actually go?](#how-far-can-you-actually-go).
+> **No one has published a typical saving for a mixed Claude Code workload, so this repo does not quote one.** What is measured: prompt caching cut agent-loop cost 2.7x to 5.3x on [Anthropic's benchmarks](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), and Anthropic's [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) stacked model choice, effort and caching on one agent for a 13x lower cost per task ($0.2906 to $0.0223, 10/10 tasks passed both ways). See [How far can you actually go?](#how-far-can-you-actually-go), and price your own sessions with `/usage` or [claude-rate](#rate-your-setup).
 
 ## Install
 
@@ -27,9 +29,9 @@ npx skills add Sagargupta16/claude-cost-optimizer
 Then activate in any session:
 
 ```
-/cost-mode              # Standard (40-60% output token reduction)
-/cost-mode lite         # Professional brevity (20-40% output reduction)
-/cost-mode strict       # Telegraphic, max savings (60-70% output reduction)
+/cost-mode              # Standard: concise fragments OK
+/cost-mode lite         # Professional brevity, full sentences
+/cost-mode strict       # Telegraphic, max brevity
 /cost-mode off          # Resume normal behavior
 ```
 
@@ -68,6 +70,8 @@ curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/m
 
 Add `--fix` to print copy-pasteable fix commands, `--strict` to fail CI when the grade drops below B, or `--json` for machine-readable output. See [tools/claude-rate/README.md](tools/claude-rate/README.md) for the full breakdown.
 
+`claude-rate . --user --usage` (one-shot: `sh -s -- . --user --usage`) also grades your user-level setup -- global instructions, skill listing, user MCP servers, user settings -- and your measured usage from local Claude Code transcripts: cache hit rate, context size, and list-price spend per model (last 30 days by default). All of it is read locally; nothing leaves your machine.
+
 The local rater works on private and uncommitted repos and inspects things the web analyzer can't reach: `settings.local.json`, whether your `Read(...)` deny rules cover the lock files actually on disk, and secrets in your working tree. The [web analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer) applies the same 7-category rubric (CLAUDE.md, file-read exclusions, settings, MCP, hooks, security, skills/agents/commands) to any public repo.
 
 ### Public repos -- web tools
@@ -82,39 +86,41 @@ The local rater works on private and uncommitted repos and inspects things the w
 
 ## Before vs After
 
-Worked example, 30-turn session, priced at legacy Opus 5 rates (identical math on Opus 4.8 -- same $5/$25). On Opus 5.5, the current Opus flagship ($4/$20, cache hits at 0.05x), every line item is cheaper, so both columns come out lower. The dollar figures are arithmetic from the posted rates, not a metered bill. The MCP share of the drop assumes MCP tool search is off (full tool schemas loaded up front); under the default tool search only tool names and server instructions enter context, so that part of the saving is smaller:
+Worked example: a 30-turn session on Opus 5.5 ($4/$20 per 1M; 5-minute cache writes $5, cache reads $0.20), one 2,000-token file read, about 1,500 tokens of new conversation and 500 output tokens per turn. It is billed the way Claude Code caches a conversation ([prompt caching docs](https://code.claude.com/docs/en/prompt-caching)): turn 1 writes the whole prompt to the cache, and every later turn reads the previous request back and writes only the new exchange. The figures are arithmetic from the posted rates (the same model as the [calculator](https://sagargupta16.github.io/claude-cost-optimizer/calculator)), not a metered bill. The MCP share assumes tool search is off (full schemas up front); with the default tool search on, the "before" prefix is smaller to start with:
 
 ```
 BEFORE (no optimization):                 AFTER (5 minutes of setup):
-  CLAUDE.md:        6,200 chars           CLAUDE.md:        2,800 chars
-  Read deny rules:  none                  Read deny rules:  12 patterns
-  MCP servers:      6 active                  MCP servers:      2 active
-  System prompt:    ~15,000 tokens/turn       System prompt:    ~5,500 tokens/turn
-  Session cost:     $2.85                     Session cost:     $1.12
-  Monthly (3x/day): $188.10                   Monthly (3x/day): $73.92
+  CLAUDE.md:        6,200 chars             CLAUDE.md:        2,800 chars
+  Read deny rules:  none                    Read deny rules:  12 patterns
+  MCP servers:      6 active                MCP servers:      2 active
+  Prefix:           ~15,000 tokens          Prefix:           ~5,500 tokens
+  Session cost:     $0.82                   Session cost:     $0.72
+  Monthly (3x/day): $54.31                  Monthly (3x/day): $47.54
 
-  Savings: $114.18/month (61%)
+  Savings: $6.77/month (12%)
 ```
+
+The setup cleanup saves 12%, not more, because the prefix is a cache read on 29 of the 30 turns. Output is the bigger share: 500 tokens a turn is $0.30 of the $0.82 (37%), so halving output saves $0.15 a session, more than the whole cleanup. Without caching the same session would cost $4.95, and the cleanup would save 23%. The Read deny rules are not in these figures: what they save depends on which files your sessions would otherwise read.
 
 ---
 
 ## How Far Can You Actually Go?
 
-Short answer: **30-60% is what a typical mixed workload saves. Up to ~90% is the ceiling** when every lever stacks against a naive all-Opus, no-cache, verbose baseline. The headline numbers below are each real and sourced -- but each one applies only to the *favorable slice* of your spend, so the compound rarely holds across an entire real workload. Treat 90% as a ceiling, not a promise.
+Short answer: **there is no published typical figure for a whole Claude Code workload.** Each lever below is measured or priced by Anthropic, and each applies only to its own slice of spend. The one stacked measurement Anthropic has published is its [cookbook agent](https://platform.claude.com/cookbook/cost-optimization-cost-optimization): moving from Opus 5 at high effort to Sonnet 5 at medium with explicit cache breakpoints cut cost per task 13x ($0.2906 to $0.0223) at the same 10/10 pass rate.
 
 | Lever | Published savings | Applies to | Source |
 |-------|:-----------------:|------------|--------|
-| **Prompt caching** | **up to 90%** cost (**95%** on Opus 5.5 and Sonnet 5.5, **97.5%** on Fable 5.1), 85% latency | cached input only (0.1x input price; 0.05x on Opus 5.5 / Sonnet 5.5; 0.025x on Fable 5.1 / Mythos 5.1) | [Anthropic: Prompt caching](https://claude.com/blog/prompt-caching), [pricing docs](https://platform.claude.com/docs/en/about-claude/pricing) |
+| **Prompt caching** | **up to 90%** cost (**95%** on Opus 5.5 and Sonnet 5.5, **97.5%** on Fable 5.1), 85% latency; agent-loop cost cut 2.7x to 5.3x on Anthropic's benchmarks | cached input only (0.1x input price; 0.05x on Opus 5.5 / Sonnet 5.5; 0.025x on Fable 5.1 / Mythos 5.1) | [Anthropic: Prompt caching](https://claude.com/blog/prompt-caching), [pricing docs](https://platform.claude.com/docs/en/about-claude/pricing), [cost and intelligence guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) |
 | **Batch API** | flat **50%** off input **and** output, stacks with caching | any async (24h) work | [Anthropic: Message Batches API](https://claude.com/blog/message-batches-api), [batch docs](https://platform.claude.com/docs/en/build-with-claude/batch-processing) |
-| **Model routing** | **up to 97.5%** per token (Opus 5.5->Haiku 5.5 is 40x at <=100K prompt tokens, 8x above; legacy Haiku 4.5 was 4x); RouteLLM up to 85% at 95% quality | tasks a cheaper model handles well | [RouteLLM (arXiv 2406.18665)](https://arxiv.org/pdf/2406.18665), [LMSYS](https://lmsys.org/blog/2024-07-01-routellm/) |
+| **Model routing** | **up to 97.5%** per token (Opus 5.5->Haiku 5.5 is 40x at <=100K prompt tokens, 8x above; legacy Haiku 4.5 was 4x); measured per answer, Haiku 5.5 cost about 1/20 of Opus 5.5 per GPQA Diamond question at 85% vs 91% accuracy; RouteLLM cut cost over 85% on MT Bench (45% on MMLU, 35% on GSM8K) at 95% of GPT-4's performance | tasks a cheaper model handles well | [cost and intelligence guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), [RouteLLM (arXiv 2406.18665)](https://arxiv.org/pdf/2406.18665), [LMSYS](https://lmsys.org/blog/2024-07-01-routellm/) |
 | **Context management** | **84%** fewer tokens in a 100-turn eval | long agentic sessions | [Anthropic: Context management](https://claude.com/blog/context-management) |
-| **Subscription vs API** | **~90%+** for heavy users (Pro $20 / Max $100-200 flat; Max also includes $100-200/mo of API credits, which do not cover Claude Code) | power users vs pay-as-you-go | [ksred cost tracker](https://www.ksred.com/claude-code-pricing-guide-which-plan-actually-saves-you-money/) (n=1) |
+| **Subscription vs API** | **~95%** for one heavy user (n=1): over $15,000 of API-equivalent usage for about $800 of Max subscription (author's tracker, post dated 2026-02-23; computed: 1 - 800 / 15,000 = 94.7%). Plans are Pro $20 / Max $100-200 flat; Max's $100-200/mo of API credits do not cover Claude Code | power users vs pay-as-you-go | [ksred cost tracker](https://www.ksred.com/claude-code-pricing-guide-which-plan-actually-saves-you-money/) (n=1) |
 
 ### The honest read
 
-- **"up to 90%" is a ceiling, not a typical result.** Anthropic itself publishes 90% for caching *alone*, and the levers genuinely multiply against an unoptimized baseline. But each 90% is a best case on its favorable slice (cached input for caching; conversational traffic for routing), so a whole mixed workload lands well below the sum.
+- **Each lever's number applies to its own slice.** Cache-read pricing applies to cached input only. The 40x routing ratio applies only to tasks Haiku 5.5 completes: Anthropic measured Haiku 5.5 at about 1/20 of Opus 5.5's cost per GPQA Diamond question, at 85% accuracy vs 91% ([cost and intelligence guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). The only stacked measurement is the [cookbook's](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) 13x on one agent.
 - **The stacked total has no source.** Each lever above is individually sourced; the combined figure is not, and this repo holds no controlled multi-lever measurement. For a number that applies to your workload, run [claude-rate](#rate-your-setup) on your own repo and price only the levers you can apply.
-- **The cost-mode skill on its own delivers 30-60%** -- it does output-token reduction and model-routing hints, not batch/caching/subscription. The 90% ceiling needs the full playbook in the [guides](#guides), not just the skill.
+- **The cost-mode skill has not been benchmarked.** It trims visible output and suggests model routing. Its effect on cost is the output cut times the output share of your spend: in the token mix of Anthropic's own [/usage example](https://code.claude.com/docs/en/costs), priced at Opus 5.5 rates, output is 19% of the bill, so a 40% output cut saves about 8% (computed: 0.40 x 19.3%). Thinking bills as output and brevity rules do not shrink it; `/effort` does.
 - **Caching and batch are the firmest floors** (first-party Anthropic pricing; batch is a documented flat 50% that provably stacks with caching). Routing and subscription savings are the most workload-sensitive.
 
 > Prices verified against the [pricing reference](#pricing-reference) below (2026-10-09). Cache hit = 0.1x base input on every model **except Fable 5.1 and Mythos 5.1 (0.025x) and Opus 5.5 and Sonnet 5.5 (0.05x)**; Batch = 50% off both input and output.
@@ -128,10 +134,10 @@ Even without installing the skill, these 5 changes cut costs immediately:
 | # | Strategy | Savings | Guide |
 |---|----------|:-------:|-------|
 | 1 | **Keep CLAUDE.md under 200 lines** -- it loads in full every session; Anthropic's guidance is that longer files "consume more context and reduce adherence". Move workflow-specific instructions into skills or path-scoped `.claude/rules/` | No published figure | [Context Optimization](guides/02-context-optimization.md) |
-| 2 | **Use Haiku for simple tasks** (`--model haiku`) -- Haiku 5.5 is $0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above: 40x cheaper per token than Opus 5.5 below 100K, 8x above | 20-40% | [Model Selection](guides/03-model-selection.md) |
-| 3 | **Use Plan Mode before coding** (Shift+Tab) -- prevents wasted iterative cycles | 15-25% | [Workflow Patterns](guides/04-workflow-patterns.md) |
+| 2 | **Use Haiku for simple tasks** (`--model haiku`) -- Haiku 5.5 is $0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above: 40x cheaper per token than Opus 5.5 below 100K, 8x above | 1/40 of Opus 5.5 per moved task (per token) | [Model Selection](guides/03-model-selection.md) |
+| 3 | **Use Plan Mode before coding** (Shift+Tab) -- prevents wasted iterative cycles | No published figure | [Workflow Patterns](guides/04-workflow-patterns.md) |
 | 4 | **Add `Read(...)` deny rules** to `permissions.deny` in `.claude/settings.json` -- keep Claude's file tools out of node_modules, dist, lock files (`.claudeignore` is not a Claude Code feature) | No published figure | [Context Optimization](guides/02-context-optimization.md) |
-| 5 | **Delegate to subagents** -- isolate expensive searches from main context | 20-40% | [Workflow Patterns](guides/04-workflow-patterns.md) |
+| 5 | **Delegate to subagents** -- isolate expensive searches from main context | No Claude Code figure; [cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) subagent pattern: 78% cheaper on one agent loop | [Workflow Patterns](guides/04-workflow-patterns.md) |
 
 Full walkthrough: **[Getting Started in 5 Minutes](guides/00-getting-started.md)**
 
@@ -143,10 +149,10 @@ cost-mode is the first skill. More are planned:
 
 | Skill | Status | What It Does | Cost Impact |
 |-------|:------:|-------------|:-----------:|
-| **cost-mode** | Live | Concise responses, model routing suggestions, session awareness | 30-60% (skill alone) |
+| **cost-mode** | Live | Concise responses, model routing suggestions, session awareness | Not benchmarked ([Anthropic](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence): asking for shorter answers cut output tokens 39%, cost 14%) |
 | **deny-rules-gen** | Planned | Generates `permissions.deny` `Read(...)` rules for your project's tech stack | No published figure |
-| **context-compress** | Planned | Rewrites your CLAUDE.md to be shorter while keeping all essential info | 10-20% input reduction |
-| **cache-optimizer** | Planned | Detects cache-busting patterns and suggests fixes to maximize prompt cache hits | 10-25% input reduction |
+| **context-compress** | Planned | Rewrites your CLAUDE.md to be shorter while keeping all essential info | About 3% of a 30-turn session per 350 lines cut (derived from this repo's cache-aware calculator model), plus adherence |
+| **cache-optimizer** | Planned | Detects cache-busting patterns and suggests fixes to maximize prompt cache hits | [Anthropic](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence): one cache-busting 25-token prefix made a run 7.2x dearer ($4.24 vs $0.59) |
 | **budget-guard** | Planned | Per-session and per-day spending limits with warnings before you blow past them | Prevents overspend |
 
 Want to build one? Skills are just `SKILL.md` files -- see [CONTRIBUTING.md](CONTRIBUTING.md) and the [skills/cost-mode/](skills/cost-mode/) directory for the pattern.
@@ -236,11 +242,11 @@ Verified 2026-10-09 against Anthropic's [pricing](https://platform.claude.com/do
 
 Mythos 5.1's rates come from the pricing page; its context window, max output and cache floor are not listed there. The [Fable 5.1 model page](https://platform.claude.com/docs/en/models/fable-5-1/overview) states Mythos 5.1 "shares Claude Fable 5.1's specifications and pricing", and the [prompt-caching page](https://platform.claude.com/docs/en/build-with-claude/prompt-caching) lists it at the 512-token floor. Mythos 5.1 (`claude-mythos-5-1`, Bedrock `anthropic.claude-mythos-5-1`) is now "Verification required": available to organizations verified through Anthropic's verification programs such as the Cyber Verification Program, on the Claude API, Bedrock, Google Cloud and Microsoft Foundry (not Claude Platform on AWS).
 
-**Opus 5.5** (`claude-opus-5-5`, released 2026-09-22) is the current Opus flagship, and Anthropic's models overview now says to "start with Claude Opus 5.5 for most workloads". It costs **$4/$20 -- 20% below the $5/$25 of Opus 5 and Opus 4.8**, the first Opus release to lower the rate, and cache hits read at **$0.20, 0.05x base input (95% off)**. It is not a drop-in swap of the model string -- see [what actually changes](#migrating-to-opus-55) first. **Opus 5** (`claude-opus-5`, GA 2026-07-24) is now legacy at $5/$25. **1M context** on Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 bills at **standard rates** across the full window (no long-context premium); Haiku 5.5 also has 1M context but is the exception, billing any prompt over 100K tokens at its higher tier. **Sonnet 5.5** (`claude-sonnet-5-5`, released 2026-09-28) is the current Sonnet flagship at **$2/$10, the same as Sonnet 5**, with the same cache writes, batch ($1/$5) and tokenizer, and since 2026-10-07 its cache hits read at **$0.10, 0.05x base input (95% off)** -- half Sonnet 5's $0.20 -- so moving to it never costs more at the posted rate; it still rejects some Sonnet 5 request shapes -- see [what changes](#migrating-to-sonnet-55). **Sonnet 5** (`claude-sonnet-5`, GA 2026-06-30), now legacy, is **$2/$10 per MTok permanently** -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15, so Sonnet 5 costs half as much as Opus 5.5 (and 60% less than legacy Opus 5). **Haiku 5.5** (`claude-haiku-5-5`, Bedrock `anthropic.claude-haiku-5-5`, released 2026-10-07) is the current Haiku and the first model priced by prompt length: **$0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above**, so a 100,001-token prompt pays 5x the input and output rate of a 100,000-token one -- see [what changes](#migrating-to-haiku-55). **Haiku 4.5** is now legacy at $1/$5. **Batch API**: 50% off both input and output, and it stacks with caching -- Opus 5.5 batch is **$2/$10** (Opus 5: $2.50/$12.50), with up to 300K output via the `output-300k-2026-03-24` beta. **Fast Mode** (research preview, **Opus 5.5, Opus 5 and Opus 4.8 only**): **2x** each model's own base rate -- **$8/$40 on Opus 5.5**, $10/$50 on Opus 5 and 4.8 -- up to 2.5x output tokens/sec. **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"` for 4.6+ models): +10%. **Subscriptions**: Pro $20/mo (or **$200/yr ≈ $16.67/mo**, ~17% off), Max 5x $100/mo, Max 20x $200/mo. Since 2026-10-07 Max and Team include **monthly API credits**: $100 on Max 5x, $200 on Max 20x, and on Team $20 per Standard seat and $100 per Premium seat, pooled per month and capped at $500. They cover the Claude API (Claude Console only, not Bedrock, Google Cloud, Foundry or Claude Platform on AWS), Claude Managed Agents, the Claude Agent SDK and the playground -- **not Claude Code** or extra usage in the Claude apps -- and expire at the end of each billing cycle with no rollover. New subscribers can claim after 7 days; Free, Pro and Enterprise are not eligible. **Web search**: $10 per 1,000 searches plus token costs. **Web fetch**: free beyond token costs. **Code execution**: free with web search/fetch; otherwise 1,550 free hours/month then $0.05/hour per container. **Bash tool**: +325 input tokens on Opus 5 / 4.8 / 4.7 (+244 on Opus 4.6 and earlier). **Text editor tool**: +700 input tokens.
+**Opus 5.5** (`claude-opus-5-5`, released 2026-09-22) is the current Opus flagship, and Anthropic's models overview now says to "start with Claude Opus 5.5 for most workloads". It costs **$4/$20 -- 20% below the $5/$25 of Opus 5 and Opus 4.8**, the first Opus price cut since [Opus 4.5](https://www.anthropic.com/news/claude-opus-4-5) lowered $15/$75 to $5/$25 on 2025-11-24, and cache hits read at **$0.20, 0.05x base input (95% off)**. It is not a drop-in swap of the model string -- see [what actually changes](#migrating-to-opus-55) first. **Opus 5** (`claude-opus-5`, GA 2026-07-24) is now legacy at $5/$25. **1M context** on Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 bills at **standard rates** across the full window (no long-context premium); Haiku 5.5 also has 1M context but is the exception, billing any prompt over 100K tokens at its higher tier. **Sonnet 5.5** (`claude-sonnet-5-5`, released 2026-09-28) is the current Sonnet flagship at **$2/$10, the same as Sonnet 5**, with the same cache writes, batch ($1/$5) and tokenizer, and since 2026-10-07 its cache hits read at **$0.10, 0.05x base input (95% off)** -- half Sonnet 5's $0.20 -- so moving to it never costs more at the posted rate; it still rejects some Sonnet 5 request shapes -- see [what changes](#migrating-to-sonnet-55). **Sonnet 5** (`claude-sonnet-5`, GA 2026-06-30), now legacy, is **$2/$10 per MTok permanently** -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15, so Sonnet 5 costs half as much as Opus 5.5 (and 60% less than legacy Opus 5). **Haiku 5.5** (`claude-haiku-5-5`, Bedrock `anthropic.claude-haiku-5-5`, released 2026-10-07) is the current Haiku and the first model priced by prompt length: **$0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above**, so a 100,001-token prompt pays 5x the input and output rate of a 100,000-token one -- see [what changes](#migrating-to-haiku-55). **Haiku 4.5** is now legacy at $1/$5. **Batch API**: 50% off both input and output, and it stacks with caching -- Opus 5.5 batch is **$2/$10** (Opus 5: $2.50/$12.50), with up to 300K output via the `output-300k-2026-03-24` beta. **Fast Mode** (research preview, **Opus 5.5, Opus 5 and Opus 4.8 only**): **2x** each model's own base rate -- **$8/$40 on Opus 5.5**, $10/$50 on Opus 5 and 4.8 -- up to 2.5x output tokens/sec. **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"` for 4.6+ models): +10%. **Subscriptions**: Pro $20/mo (or **$200/yr ≈ $16.67/mo**, ~17% off), Max 5x $100/mo, Max 20x $200/mo. Since 2026-10-07 Max and Team include **monthly API credits**: $100 on Max 5x, $200 on Max 20x, and on Team $20 per Standard seat and $100 per Premium seat, pooled per month and capped at $500. They cover the Claude API (Claude Console only, not Bedrock, Google Cloud, Foundry or Claude Platform on AWS), Claude Managed Agents, the Claude Agent SDK and the playground -- **not Claude Code** or extra usage in the Claude apps -- and expire at the end of each billing cycle with no rollover. New subscribers can claim after 7 days; Free, Pro and Enterprise are not eligible. **Web search**: $10 per 1,000 searches plus token costs. **Web fetch**: free beyond token costs. **Code execution**: free with web search/fetch; otherwise 1,550 free hours/month then $0.05/hour per container. **Bash tool**: +325 input tokens on Opus 5 / 4.8 / 4.7 (+244 on Opus 4.6 and earlier). **Text editor tool**: +700 input tokens.
 
 > **Minimum cacheable prompt is a real cost lever.** A `cache_control` block below the model's threshold is silently ignored -- you pay full input price every turn and see no error. Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5 all sit at **512 tokens**, half the 1,024 threshold of Opus 4.8 and Sonnet 5 and an eighth of Haiku 4.5's 4,096, so system prompts and CLAUDE.md files that never cached on those start caching on Opus 5.x, Sonnet 5.5 and Haiku 5.5. Haiku 4.5, Opus 4.6, and Opus 4.5, all now legacy, sit at 4,096, the worst floor in the lineup.
 >
-> **Opus 5.5 / 5 / 4.8 / 4.7 tokenizer caveat**: The tokenizer introduced with Opus 4.7 may use **up to 35% more tokens** for the same fixed text. Effective per-task cost is higher than posted pricing suggests -- factor this into budgets, especially when comparing against Opus 4.6 / Sonnet 4.6. Haiku 5.5 uses the same newer tokenizer: about **30% more tokens than Haiku 4.5** for the same text.
+> **Opus 5.5 / 5 / 4.8 / 4.7 tokenizer caveat**: The tokenizer introduced with Opus 4.7 produces **about 30% more tokens** for the same text ([Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing); the [Opus 4.7 launch post](https://www.anthropic.com/news/claude-opus-4-7) put it at roughly 1.0-1.35x by content type). Effective per-task cost is higher than posted pricing suggests -- factor this into budgets, especially when comparing against Opus 4.6 / Sonnet 4.6. Haiku 5.5 uses the same newer tokenizer: about **30% more tokens than Haiku 4.5** for the same text.
 >
 > **Fast Mode (research preview)**: Now **Opus 5.5, Opus 5 and Opus 4.8 only**, via the `fast-mode-2026-02-01` beta header (`speed: "fast"`). All three are **2x** their own base rate: **$8/$40 per MTok on Opus 5.5**, $10/$50 on Opus 5 and Opus 4.8. Up to 2.5x more output tokens/second; the speed gain is on output tokens/sec, not time-to-first-token. **Opus 4.7 now returns an error** on `speed: "fast"` with no fallback, and **Opus 4.6 silently runs at standard speed and standard rates** (`usage.speed` comes back `"standard"`) -- if you were paying 6x for Fast Mode on either, that option is gone. Claude API + Managed Agents only: not on Claude Platform on AWS, Bedrock, Vertex AI, Microsoft Foundry, Batch API, or Priority Tier. Switching speeds invalidates prompt cache. [Join the waitlist](https://claude.com/fast-mode).
 >
@@ -378,7 +384,7 @@ Stars read on GitHub 2026-09-28. The savings column is each project's **own clai
 |---------|:-----:|-------------|:-------:|
 | [caveman](https://github.com/JuliusBrussee/caveman) | 108k | Brevity skill plus proxy -- strips filler from responses | Claims "cuts 65% of tokens" |
 | [claude-mem](https://github.com/thedotmack/claude-mem) | 95k | Persistent compressed context across sessions | -- |
-| [rtk](https://github.com/rtk-ai/rtk) | 82k | CLI proxy that compresses common dev-command output before Claude reads it | Claims "60-90%" on common dev commands |
+| [rtk](https://github.com/rtk-ai/rtk) | 82k | CLI proxy that compresses common dev-command output before Claude reads it | Claims "60-90%" on common dev commands; its README adds this "is not the same as cutting your bill by 90%" |
 | [claude-code-router](https://github.com/musistudio/claude-code-router) | 37k | Routes Claude Code requests across models | -- |
 | [ccusage](https://github.com/ccusage/ccusage) | 18.7k | `npx ccusage` usage and cost reports from your local logs | -- |
 | [Claude-Code-Usage-Monitor](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor) | 8.7k | Real-time usage monitor with predictions | -- |
@@ -391,7 +397,7 @@ Stars read on GitHub 2026-09-28. The savings column is each project's **own clai
 <details>
 <summary>How much does Claude Code actually cost?</summary>
 
-With Pro ($20/mo or $200/yr ≈ $16.67/mo with annual billing -- 17% off), Max 5x ($100/mo), or Max 20x ($200/mo), you get included usage. For enterprise deployments, Anthropic's own average is about **$13 per developer per active day** and **$150-250 per developer per month**, with 90% of users under $30 per active day ([Claude Code costs docs](https://code.claude.com/docs/en/costs)); run `/usage` in Claude Code to see your own session cost. Opus 5, 4.8, 4.7, and 4.6 at $5/$25 are 3x cheaper per token than Opus 4.1 ($15/$75), and Opus 5.5 at $4/$20 is cheaper still -- but the tokenizer introduced with Opus 4.7 (shared by Opus 5.5) can use up to 35% more tokens, so the effective gap for the $5/$25 models is closer to ~2x.
+With Pro ($20/mo or $200/yr ≈ $16.67/mo with annual billing -- 17% off), Max 5x ($100/mo), or Max 20x ($200/mo), you get included usage. For enterprise deployments, Anthropic's own average is about **$13 per developer per active day** and **$150-250 per developer per month**, with 90% of users under $30 per active day ([Claude Code costs docs](https://code.claude.com/docs/en/costs)); run `/usage` in Claude Code to see your own session cost. Opus 5, 4.8, 4.7, and 4.6 at $5/$25 are 3x cheaper per token than Opus 4.1 ($15/$75), and Opus 5.5 at $4/$20 is cheaper still -- but the tokenizer introduced with Opus 4.7 (shared by Opus 5.5) produces about 30% more tokens for the same text ([Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing)), so per task the gap for the $5/$25 models is about 2.3x (computed: 3 / 1.3).
 </details>
 
 <details>
@@ -409,7 +415,7 @@ No. These strategies eliminate waste (duplicate context, unnecessary file reads,
 <details>
 <summary>What's the biggest single change I can make?</summary>
 
-Install cost-mode (`npx skills add Sagargupta16/claude-cost-optimizer`) and switch to Haiku for routine tasks. Combined: 50-70% savings.
+Switch routine work to Haiku 5.5 (`/model haiku`, or `model: haiku` on subagents): each task you move costs 1/40 of Opus 5.5 per token while prompts stay under 100K tokens ([Anthropic pricing](https://platform.claude.com/docs/en/about-claude/pricing)). If routine work is 30% of your Opus 5.5 spend, that is 29% off the bill (computed: 0.30 x 0.975). Then install cost-mode (`npx skills add Sagargupta16/claude-cost-optimizer`) for shorter answers.
 </details>
 
 ---

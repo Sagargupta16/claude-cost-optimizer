@@ -1,5 +1,36 @@
 # Changelog
 
+## [1.16.0] - 2026-10-11
+
+Three things land together. Every cost estimator in the repo now bills a turn the way Claude Code actually caches a conversation, which cuts the modelled 30-turn Opus 5.5 session from $3.44 to $0.74. Every vague savings range ("30-90%", "30-60% typical", "up to 35%") is replaced with a sourced or computed number: the claim regex goes from 257 hits to 55, and each remaining hit carries its source. And the site is rebuilt around animated charts and SVG explainers, with `claude-rate` gaining `--user` and `--usage` so anyone can grade their whole setup and their real usage locally.
+
+### Added
+- **`claude-rate --user`** grades `~/.claude` (or `$CLAUDE_CONFIG_DIR`): always-loaded instructions (`CLAUDE.md` plus `rules/` files without `paths:`), the skill listing (descriptions are in context every turn unless `disable-model-invocation: true`; the fix points at `/skill-doctor`), user and local MCP servers from `~/.claude.json`, cost controls in user settings (a top-level `effortLevel` is not counted: Opus 5.5 and later ignore it), and user-level `Read(...)` deny rules. It reads counts and setting names, never values.
+- **`claude-rate --usage [DAYS]`** reads local transcripts (`~/.claude/projects/**/*.jsonl`, 30 days by default), dedupes the per-content-block records by message id, prices each request the way Anthropic bills it (5-minute and 1-hour writes, the Haiku 5.5 tier, Fast Mode at 2x), and grades cache hit rate (50), context size (30) and model mix (20), with list-price spend per model and migration and routing fixes. claude-rate is now 0.2.0.
+- **Animated SVG explainers** in `site/public/anim/`: how one Claude Code turn is billed (`token-flow.svg`), the three cache-read multipliers (`cache-multipliers.svg`) and the price ladder (`model-ladder.svg`), plus an animated README header (`docs/assets/readme-header.svg`).
+- **Calculator:** a headline figure, a what-if chart that halves one input at a time, ranked recommendation cards, and a per-turn chart split into cache reads, cache writes and output, with a caption that names turn 1's cache write.
+- **Repo analyzer:** the report is rebuilt into a grade hero, category breakdown, CLAUDE.md, cost, detail, recommendation and badge panels.
+- **Home:** a price ladder and cache-read chart computed from `pricing.ts`, and a "Before and After, in Dollars" chart of Anthropic's published runs (cookbook agent $0.2906 to $0.0223 per task; a cache-busting 25-token prefix $4.24 to $0.59 per run; memo to one-line answers $1.40 to $0.49; Opus 5.5 low-then-retry $0.29 to $0.17). Mobile nav menu, skip link, scroll-to-top on navigation.
+- **New sourced facts** across the guides, cheatsheet and skill, each with its link: caching cut agent-loop cost 2.7x to 5.3x on Anthropic's benchmarks; coding agent loops read a median 88.5% of input from cache; Haiku 5.5 answered GPQA questions at about 1/20 of Opus 5.5's cost (85% vs 91%); MCP tool search measurements; the built-in Explore subagent runs on the main model; `/skill-doctor` and the 1,536-character skill-listing cap; and the Opus 5.5 effort and retry runs.
+
+### Changed
+- **Cache-aware session billing everywhere** (site calculator, repo analyzer, `claude-rate`, MCP cost server). Claude Code's [prompt caching docs](https://code.claude.com/docs/en/prompt-caching) say "the prefix is the entire previous request and only the latest exchange is new". The old model billed history at the full input rate every turn and applied a flat 70% hit rate to the prefix only, overstating a 30-turn Opus 5.5 session about 4.6x. Now turn 1 writes the whole prompt at the 5-minute write rate (1.25x), every later turn reads the previous request and writes only the new part, and a prompt under the model's minimum cacheable length pays full input. `pricing.ts` exports `turnInputCost()`; `TOKEN_ESTIMATES.cacheHitRate` and `CACHE_HIT_RATE` are gone.
+- **Headline:** "Cache reads at 5% of input, Haiku 5.5 at 1/40 of Opus 5.5" replaces "Save 30-90%" on the site, in the meta tags, the README and the plugin and marketplace descriptions. The cost-mode skill's own effect is labelled "not measured", with Anthropic's closest measurement beside it (shorter answers: 39% fewer output tokens, 14% lower cost).
+- **Tokenizer overhead is 1.3 for every Claude 4.7+ tokenizer model** (the Opus rows were 1.35), matching the pricing page's "approximately 30% more tokens"; every "up to 35%" and "20-35%" becomes "about 30%".
+- **The README's Before vs After is re-derived:** cutting the prefix from 15,000 to 5,500 tokens saves 12% ($0.82 to $0.72 per session), not 61%, because the prefix is a cache read on 29 of 30 turns.
+- **Effort and retry figures are Opus 5.5's:** low with failures re-run at high gave about 97% at $0.17 per task vs 95.3% at $0.29 all at high; medium costs about 70% of high for about 2.5 points; a 16,384 `max_tokens` cap ended about a quarter of Opus 5.5's attempts and 43% of Fable 5.1's.
+
+### Fixed
+- **"Opus 5.5 is the first Opus release to lower the rate" was false:** Opus 4.5 cut $15/$75 to $5/$25 on 2025-11-24. 1.13.0 repeated it; it now reads "20% below Opus 5's $5/$25" everywhere.
+- **Sonnet 4.6 was listed as a new-tokenizer model**; it uses the previous tokenizer.
+- **The Home "Token Reduction by Task" chart had no source** anywhere in the repo; it is replaced by the published-runs chart. The before/after sample's token counts are now real cl100k counts (72 and 13, not 69 and 14).
+- **"7 CLI tools"** on the site is 8; the `claude-rate` README no longer says the web analyzer is not live.
+- **Claude Code's auto-compact default is about 967K tokens** (configurable 100K to 1M with `/autocompact`), not the "~10,000 tokens" the cheatsheet and guide 04 gave; `/compact` keeps a summary plus re-reads of up to 5 recent files, not "the 4 most recent messages".
+- **Guide 06's "$300 for a 10M token job"** was 10M input plus 10M output at legacy Opus 5 rates; on Opus 5.5 that job is $240, or $120 on Batch. The regional-premium tables now state their input/output split. Bedrock's no-approval quota is now 5M input and 500K output TPM, and Google Cloud single-region endpoints serve only Sonnet 4.6 and earlier.
+- **The README worked example, the context-size benchmark and guides 01, 04, 05, 08 and 10** were built on the uncached model; every figure is re-derived with its formula shown (for example, splitting a 30-turn Sonnet 4.6 session into three saves 12%, not 70%).
+- **Calculator tier warning was one turn late** when the prompt hit the 100K line exactly.
+- **SonarCloud and ruff findings on main**: shell `[[ ]]` and default cases in the hooks, a shared `copyWithFeedback` clipboard helper, extracted analyzer and usage-analyzer helpers (output byte-identical on fixtures), `node:` imports and awaited promises in the VS Code extension, and the ruff import, SIM103 and UP032 hits.
+
 ## [1.15.0] - 2026-10-09
 
 Claude Haiku 5.5 is added, and it is the first Claude model whose price depends on how long the prompt is, so every tool's cost math now picks a tier per request. Five other changes Anthropic shipped since 1.14.0 are folded in. Every fact was read from a live Anthropic page on 2026-10-09.

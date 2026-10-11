@@ -51,7 +51,7 @@ Estimate token count and cost for a given text input.
 
 > "Estimate the cost of sending this 500-line file to Opus over 10 turns."
 
-Returns token count, single-pass input/output cost, and (if `turns` specified) a projected multi-turn total that accounts for cumulative history growth and a 70% cache hit rate. On Haiku 5.5 the single pass and each projected turn are priced at the tier their own prompt falls in.
+Returns token count, single-pass input/output cost, and (if `turns` specified) a projected multi-turn total that accounts for cumulative history growth and bills each turn the way Claude Code caches a conversation: the previous request is a cache read and only the new exchange is a 5-minute cache write (1.25x input); a prompt under the model's minimum cacheable length is billed at full input. On Haiku 5.5 the single pass and each projected turn are priced at the tier their own prompt falls in.
 
 ### session_estimate
 
@@ -79,7 +79,7 @@ Returns a breakdown of cost by component (system prompt, CLAUDE.md, MCP schemas,
 - MCP servers: ~1,500 tokens per server, this tool's own assumption rather than a published figure. It models full schemas, which load up front only when tool search is off (`ENABLE_TOOL_SEARCH=false`, a custom `ANTHROPIC_BASE_URL`, or models older than the Claude 4.5 generation on Google Cloud). Tool search is on by default, and then only tool names and server instructions enter context until Claude uses a tool
 - Conversation history: ~1,500 tokens per turn (cumulative)
 - Output: ~500 tokens per turn
-- Cache hit rate: 70% on stable content (system prompt, CLAUDE.md, schemas)
+- Caching: each turn bills the way Claude Code caches a conversation: the previous request is a cache read and only the new exchange is a 5-minute cache write (1.25x input); a prompt under the model's minimum cacheable length is billed at full input ([Claude Code prompt caching](https://code.claude.com/docs/en/prompt-caching)). For reference, Anthropic measured coding agent loops on its API reading a median 88.5% of input from cache (upper quartile 93.4%, 14 days ending 2026-08-23; [cost guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence))
 
 ### compare_models
 
@@ -119,7 +119,7 @@ All estimates use current API pricing (verified 2026-10-09, per 1M tokens):
 
 Cache hits have three multipliers: 0.1x base input by default, 0.025x on Fable 5.1 and Mythos 5.1, and 0.05x on Opus 5.5 and Sonnet 5.5.
 
-Token estimation uses a ~4 characters per token approximation. This is a reasonable average for English text and code but will vary with content type.
+Token estimation uses a ~4 characters per token approximation. That ratio fits pre-4.7 models; Anthropic puts the current tokenizer at about 2.5 characters per token for general text (1M tokens is roughly 2.5M characters, per the [models overview](https://platform.claude.com/docs/en/about-claude/models/overview)), so on Claude 4.7 and later models these counts can run about 37% low (computed: 1 - 2.5/4). Use the [token counting API](https://platform.claude.com/docs/en/build-with-claude/token-counting) for exact numbers.
 
 **Minimum cacheable prompt.** A `cache_control` block on a prefix shorter than the model's floor is silently ignored: no error, no `cache_creation_input_tokens`, and full input price on every turn. Both `estimate_cost` and `session_estimate` emit a warning when your prefix falls below the floor for the selected model.
 

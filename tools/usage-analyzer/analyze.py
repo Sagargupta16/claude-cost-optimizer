@@ -27,8 +27,9 @@ from pathlib import Path
 # thinking ALWAYS ON (it cannot be disabled; effort defaults to medium), and Opus 5
 # runs it ON by default; either way reasoning tokens bill at the normal output rate.
 # "sonnet" = Sonnet 5.5 at $2/$10; "sonnet-5" = legacy Sonnet 5 at the same rate.
-# The 4.7+ tokenizer (also used by Opus 4.8, Opus 5, Opus 5.5, Fable 5, Sonnet 5.5,
-# Sonnet 5 and Sonnet 4.6) consumes up to ~35% more tokens for the same source text.
+# The 4.7+ tokenizer (also used by Opus 4.8, Opus 5, Opus 5.5, Fable 5, Fable 5.1, Sonnet 5.5,
+# Sonnet 5 and Haiku 5.5; not Sonnet 4.6) produces about 30% more tokens for the same
+# source text (https://platform.claude.com/docs/en/about-claude/pricing).
 # cache_hit has three multipliers: 0.1x input by default, 0.025x on Fable 5.1 /
 # Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok) and Sonnet 5.5
 # ($0.10/MTok since 2026-10-07). Read the rate from this table; never compute

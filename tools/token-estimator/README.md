@@ -2,7 +2,7 @@
 
 Estimate how many tokens a file or text will consume when sent to Claude, and calculate the associated cost across models.
 
-This uses the `cl100k_base` encoding from [tiktoken](https://github.com/openai/tiktoken) as an approximation for Claude's tokenizer. Actual Claude token counts may differ slightly, but this provides a reliable estimate for cost planning.
+This uses the `cl100k_base` encoding from [tiktoken](https://github.com/openai/tiktoken) as an approximation for Claude's tokenizer. Actual Claude token counts differ (Claude 4.7 and later models produce about 30% more tokens for the same text; see [Accuracy Note](#accuracy-note)), but this provides a reliable estimate for cost planning.
 
 ## Installation
 
@@ -141,4 +141,4 @@ Sonnet 5 is $2/$10 permanently -- the launch rate was labelled introductory thro
 
 ## Accuracy Note
 
-This tool uses OpenAI's `cl100k_base` tokenizer as an approximation. Claude uses a different tokenizer internally, so counts may differ. Note that the newer tokenizer (Opus 4.7 and later, including Opus 4.8, Opus 5, and Opus 5.5, plus Fable 5, Sonnet 5.5, Sonnet 5, and Sonnet 4.6) may use up to 35% more tokens for the same text, so treat these estimates as a lower bound for those models. Haiku 5.5 uses it too (~30% more tokens than Haiku 4.5), which matters most near its 100K price threshold. Opus 5.5 shares that tokenizer exactly, so token counts need no re-baselining when moving from Opus 4.7, 4.8, or 5. For cost planning purposes, this is accurate enough to make informed decisions.
+This tool uses OpenAI's `cl100k_base` tokenizer as an approximation. Claude uses a different tokenizer internally, so counts may differ. Note that the newer tokenizer (Opus 4.7 and later, including Opus 4.8, Opus 5, and Opus 5.5, plus Fable 5, Fable 5.1, Mythos 5.1, Sonnet 5.5, Sonnet 5 and Haiku 5.5) produces about 30% more tokens for the same text ([Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing); [token counting](https://platform.claude.com/docs/en/build-with-claude/token-counting) lists the Fable and Mythos models), so treat these estimates as a lower bound for those models. Sonnet 4.6 and earlier use the previous tokenizer. On Haiku 5.5 (~30% more tokens than Haiku 4.5) the gap matters most near its 100K price threshold. Opus 5.5 shares that tokenizer exactly, so token counts need no re-baselining when moving from Opus 4.7, 4.8, or 5. For cost planning purposes, this is accurate enough to make informed decisions.

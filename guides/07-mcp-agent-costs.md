@@ -46,12 +46,15 @@ With tool search off, if you have 10 MCP servers connected with ~1,500 tokens of
 ```
 15,000 tokens of MCP schemas x 50 turns = 750,000 input tokens
 
-On Opus 5.5:  750K tokens x $4.00/1M = $3.00 just for MCP schemas (+~35% if new tokenizer inflates schema)
-On Opus 5:    750K tokens x $5.00/1M = $3.75 (legacy)
-On Sonnet 5.5: 750K tokens x $2.00/1M = $1.50 just for MCP schemas
-On Haiku 5.5:  750K tokens x $0.10/1M = $0.075 while each request stays <= 100K prompt tokens
+On Opus 5.5:  750K tokens x $4.00/1M = $3.00 uncached; with caching (turn 1 written, 49 turns read)
+              15K x $5/1M + 735K x $0.20/1M = $0.22 (about 30% more if the new tokenizer inflates the schema)
+On Opus 5:    750K tokens x $5.00/1M = $3.75 uncached (legacy); cached 15K x $6.25/1M + 735K x $0.50/1M = $0.46
+On Sonnet 5.5: 750K tokens x $2.00/1M = $1.50 uncached; cached 15K x $2.50/1M + 735K x $0.10/1M = $0.11
+On Haiku 5.5:  750K tokens x $0.10/1M = $0.075 uncached while each request stays <= 100K prompt tokens
                (750K x $0.50/1M = $0.375 once the requests are over 100K)
 ```
+
+Rates from [Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing) (5-minute cache write 1.25x input; cache hit 0.05x on Opus 5.5 and Sonnet 5.5, 0.1x on Opus 5).
 
 With tool search on (the default), that per-turn schema load does not happen: only tool names and server instructions ride along until a tool is used. This is why the old advice that "adding a server breaks the cache" is out of date -- with tool search on, connecting or removing a server does **not** invalidate the prompt cache. It still does when tool search is off, and so does enabling or disabling a plugin that provides MCP servers.
 
@@ -61,7 +64,7 @@ With prompt caching, the actual cost is much lower: cached schema tokens bill at
 
 ### Tool Search (Deferred Tools)
 
-Tool search is **on by default** in Claude Code: schemas load only when Claude uses a tool, not all at once. Anthropic publishes no percentage saving for it; what it removes is the full-schema load described above for every tool you do not call. Leave it on unless you have a reason to turn it off, and remember that pointing Claude Code at a custom `ANTHROPIC_BASE_URL` also turns it off.
+Tool search is **on by default** in Claude Code: schemas load only when Claude uses a tool, not all at once. What it removes is the full-schema load described above for every tool you do not call. Anthropic has measured it on the API: with all tools loaded, a run's cost rose from $0.55 to $1.02 at 502 tools, while with tool search it stayed at $0.56 (45% less) at the same accuracy, and deferring a GitHub MCP server's toolset cut a run 20% ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). An earlier engineering post measured the Tool Search Tool cutting about 77K tokens of definitions to about 8.7K, 85% fewer ([advanced tool use, 2025-11-24](https://www.anthropic.com/engineering/advanced-tool-use)). There is no Claude Code-specific figure. Leave it on unless you have a reason to turn it off, and remember that pointing Claude Code at a custom `ANTHROPIC_BASE_URL` also turns it off.
 
 ### MCP Tool Output
 
@@ -148,15 +151,18 @@ Main context savings = avoided context pollution from search results
 
 | Pattern | Without Subagent | With Subagent | Savings |
 |---------|:----------------:|:-------------:|:-------:|
-| Large codebase search | Search results bloat main context for all remaining turns | Search results isolated, only summary returns | 20-40% |
-| Parallel research (3 agents) | Sequential searches, each adding to context | 3 small isolated contexts | 15-30% |
+| Large codebase search | Search results bloat main context for all remaining turns | Search results isolated, only summary returns | Not measured; depends on how much the subagent reads vs returns |
+| Parallel research (3 agents) | Sequential searches, each adding to context | 3 small isolated contexts | Often more, not less: multi-agent research used ~15x chat tokens; agent teams ~7x a standard session |
 | Background tasks | Block main context while waiting | Run in background, results on completion | Time saved |
+
+The one published subagent measurement is outside Claude Code: in Anthropic's [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization), moving the work into a subagent cut one agent loop's cost 78% ($1.7945 to $0.3978). Subagents save when they read far more than they return and run on a cheaper model.
 
 ### When Subagents Cost More
 
 - **Simple, one-off queries**: The overhead of spinning up a new context (system prompt, CLAUDE.md) costs more than just doing the search in the main context
 - **Tasks requiring main context knowledge**: Subagents don't inherit conversation history, so you have to re-explain context
 - **Haiku subagents for complex tasks**: If the subagent fails and you retry on a better model, you've paid twice
+- **Multi-agent fan-out**: Anthropic's multi-agent research system used about 15x the tokens of a chat (a single agent about 4x), and token usage alone explained 80% of the variance in its BrowseComp results ([multi-agent research system, 2025-06-13](https://www.anthropic.com/engineering/multi-agent-research-system)). Claude Code's agent teams use about 7x the tokens of a standard session when teammates run in plan mode ([costs page](https://code.claude.com/docs/en/costs)).
 
 ### Model Selection for Subagents
 
@@ -167,7 +173,7 @@ Main context savings = avoided context pollution from search results
 }
 ```
 
-Anthropic's costs page gives the same advice: set `model: haiku` in the subagent configuration for simple subagent tasks. Without it, a subagent can inherit your session's model, so a switch to Opus applies to it too. The `sonnet` alias resolves by provider: on Bedrock, Google Cloud and Microsoft Foundry it means Sonnet 4.5 ($3/$15, 200K; deprecated, retirement scheduled for 2026-11-30), not Sonnet 5.5 ($2/$10), so pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) there -- see [Guide 06](06-access-methods-pricing.md#anthropic-api-direct-pricing).
+Anthropic's costs page gives the same advice: set `model: haiku` in the subagent configuration for simple subagent tasks. Without it, a subagent can inherit your session's model, so a switch to Opus applies to it too. That includes the built-in **Explore** subagent: it runs on the main conversation's model, not Haiku. To explore on Haiku, define your own `Explore` subagent with `model: haiku`, or set `CLAUDE_CODE_SUBAGENT_MODEL=haiku` plus `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` (v2.1.257+); since v2.1.292 (2026-10-06) the Agent tool also takes an `effort` parameter ([sub-agents docs](https://code.claude.com/docs/en/sub-agents), [changelog](https://code.claude.com/docs/en/changelog)). The `sonnet` alias resolves by provider: on Bedrock, Google Cloud and Microsoft Foundry it means Sonnet 4.5 ($3/$15, 200K; deprecated, retirement scheduled for 2026-11-30), not Sonnet 5.5 ($2/$10), so pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) there -- see [Guide 06](06-access-methods-pricing.md#anthropic-api-direct-pricing).
 
 The `haiku` alias resolves by provider too. On the Anthropic API it means **Haiku 5.5** (Claude Code v2.1.293+): $0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above, and the 100K counts cache reads and writes. That makes Haiku 5.5 the right subagent model for short search, classification, extraction and routing calls, and the wrong one for a subagent that reads half the repo: past 100K its rates rise 5x. On Claude Platform on AWS, Bedrock, Google Cloud and Foundry, `haiku` still means legacy Haiku 4.5 ($1/$5, 200K); pin `ANTHROPIC_DEFAULT_HAIKU_MODEL` to `claude-haiku-5-5` (Bedrock: `anthropic.claude-haiku-5-5`), which also sets the model for background functionality. Haiku 5.5 thinks by default too (effort `medium`, and Claude Code cannot turn it off), but its reasoning bills as output at $0.50/MTok up to 100K prompt tokens.
 
@@ -221,7 +227,7 @@ If you are billed for Managed Agents rather than raw tokens, budget the session 
 2. **Use project-level MCP configs** instead of global to avoid loading unnecessary servers, and disable unused ones with `/mcp`
 3. **Prefer CLI tools** (`gh`, `aws`, `gcloud`, `sentry-cli`) over an MCP server when one exists -- they add no per-tool listing
 4. **Cap tool output** -- warning above 10,000 tokens, default cap 25,000 (`MAX_MCP_OUTPUT_TOKENS`)
-5. **Subagents save money on large searches** but cost more for simple one-off queries
+5. **Subagents can save money on large searches** (no Claude Code measurement; Anthropic's cookbook loop: 78%) but cost more for simple one-off queries; Anthropic's multi-agent research system used about 15x the tokens of a chat
 6. **Use `claude -p --max-budget-usd`** (print mode only) to prevent runaway costs in automated/SDK workflows
 7. **Haiku 5.5 subagents** (`model: haiku` on the Anthropic API) are ideal for search/exploration tasks at 40x lower per-token cost than Opus 5.5 while the prompt stays at or under 100K tokens (8x above)
 8. **Agent teams use ~7x the tokens** of a standard session when teammates run in plan mode -- keep them small

@@ -1,35 +1,114 @@
 .footer {
   background-color: var(--surface);
   border-top: 1px solid var(--border);
-  padding: 1.5rem;
   margin-top: auto;
 }
 
 .inner {
   max-width: var(--max-width);
   margin: 0 auto;
+  padding: 2.5rem 1.5rem 2rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 2rem;
+}
+
+.brand {
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: 0.75rem;
+  max-width: 360px;
 }
 
-.links {
-  display: flex;
-  gap: 1.5rem;
+.brandLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 44px;
+  align-self: flex-start;
+  font-weight: 700;
+  color: var(--text);
+  text-decoration: none;
+  transition: color var(--dur-fast) ease;
 }
 
-.links a {
-  color: var(--text-muted);
-  font-size: 0.875rem;
+.brandLink:hover {
+  color: var(--accent-blue);
   text-decoration: none;
 }
 
-.links a:hover {
+.blurb {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.cols {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.5rem;
+}
+
+.col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.colTitle {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  font-size: 0.875rem;
+  color: var(--text);
+  text-decoration: none;
+  transition:
+    color var(--dur-fast) ease,
+    transform var(--dur-fast) ease;
+}
+
+.link:hover {
   color: var(--accent-blue);
+  text-decoration: none;
+  transform: translateX(3px);
+}
+
+.bottom {
+  border-top: 1px solid var(--border);
+  padding: 1rem 1.5rem;
+  display: flex;
+  justify-content: center;
 }
 
 .license {
   font-size: 0.8rem;
   color: var(--text-muted);
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .inner {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 2rem 1rem 1.5rem;
+  }
+
+  .link {
+    min-height: 40px;
+  }
 }

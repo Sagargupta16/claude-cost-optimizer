@@ -2,7 +2,9 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-height: 100dvh;
   background-color: var(--bg);
+  overflow-x: clip;
 }
 
 .main {
@@ -11,4 +13,45 @@
   max-width: var(--max-width);
   margin: 0 auto;
   padding: 2rem 1.5rem;
+}
+
+.main:focus {
+  outline: none;
+}
+
+/* Each route fades up as it mounts (the wrapper is keyed by pathname). */
+.page {
+  animation: pageIn 480ms var(--ease-out) backwards;
+}
+
+.skip {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  z-index: 200;
+  padding: 0.6rem 1rem;
+  background-color: var(--accent-blue);
+  color: #0d1117;
+  font-weight: 700;
+  border-radius: var(--radius);
+  transform: translateY(-160%);
+  transition: transform var(--dur-base) var(--ease-out);
+}
+
+.skip:focus {
+  transform: none;
+  text-decoration: none;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+@media (max-width: 600px) {
+  .main {
+    padding: 1.5rem 1rem;
+  }
 }

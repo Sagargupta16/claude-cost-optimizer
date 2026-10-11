@@ -1,6 +1,6 @@
 # Guide 09: Maximizing Subscription Plan Value
 
-> **Your Claude Code subscription is a fixed monthly cost -- the value you extract from it is entirely up to you.** The difference between a well-optimized Pro plan and a poorly-used Max 20x plan can be thousands of dollars per year in wasted spend.
+> **Your Claude Code subscription is a fixed monthly cost -- the value you extract from it is entirely up to you.** The gap between a well-used Pro plan and an oversized Max 20x plan is $2,160 a year ($200 - $20 = $180 a month, x 12).
 
 Claude Code subscriptions are the most common way individual developers pay for Claude. Unlike API billing (pay-per-token), subscriptions give you a fixed monthly budget with a usage allowance. This guide covers how to choose the right plan, squeeze maximum value from it, and know when to change tiers.
 
@@ -109,7 +109,7 @@ Not all tokens are equal when it comes to your plan allowance. More capable mode
 |-------|:-----------------------:|-----------------|
 | **Haiku 5.5** | Lowest | Stretches your plan the furthest. API rate $0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above; thinking is on by default (effort `medium`) and Claude Code cannot turn it off |
 | **Sonnet 5.5** | Medium | Good balance of capability and allowance efficiency |
-| **Opus 5.5** | Highest | Burns through allowance fastest (Opus-4.7-generation tokenizer, up to ~35% more tokens than pre-4.7 models for the same text, plus thinking is always on and cannot be disabled) |
+| **Opus 5.5** | Highest | Burns through allowance fastest (Opus-4.7-generation tokenizer, about 30% more tokens than pre-4.7 models for the same text per [Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing), plus thinking is always on and cannot be disabled) |
 
 > **Key insight**: A Pro plan user who defaults to Haiku for routine tasks and only switches to Opus for complex work can get significantly more done than one who runs Opus for everything. This is the single highest-leverage optimization for subscription plans.
 
@@ -198,7 +198,7 @@ Set Haiku as your default model and only switch up when needed:
 # architecture decisions, complex debugging, and multi-file refactoring."
 ```
 
-This alone can stretch your Pro allowance 3-5x further than defaulting to Opus.
+This shifts routine work onto the model that draws least on your plan. Anthropic does not publish how each model counts against plan limits, so this guide gives no multiplier.
 
 **2. Use Plan Mode to reduce wasted output tokens**
 
@@ -234,7 +234,7 @@ With 5x the headroom, you can afford to be less aggressive about token pinching.
 
 **1. Use Opus freely for complex tasks -- but not for everything**
 
-You have room to use Opus when it matters (architecture, debugging, complex refactoring), but do not leave it as your default for all tasks. A 60/30/10 split (Haiku/Sonnet/Opus) is a good target.
+You have room to use Opus when it matters (architecture, debugging, complex refactoring), but do not leave it as your default for all tasks. Anthropic does not publish how each model draws on plan limits, so no model split can be called the right target for your allowance. Priced at API rates, a 60/30/10 split of 30-turn sessions across Haiku 5.5, Sonnet 5.5 and Opus 5.5 costs $0.20 per session against $0.74 all on Opus 5.5, 73% less (computed at this repo's calculator defaults with Claude Code's prompt caching: 0.6 x $0.0228 + 0.3 x $0.3693 + 0.1 x $0.7387). `/usage` flags any behavior that accounts for 10% or more of your recent usage ([costs page](https://code.claude.com/docs/en/costs)); start with what it flags.
 
 **2. Leverage subagents more aggressively**
 
@@ -396,25 +396,27 @@ If you only use Claude Code occasionally (a few times per week), even Pro at $20
 
 ```
 Light usage example:
-  10 sessions/month, 20 turns each, Sonnet
-  Estimated token cost: ~$8-12 at API rates
-  
+  10 sessions/month, 20 turns each, Sonnet 5.5
+  Token cost at API rates: 10 x $0.2374 = $2.37
+    (one 20-turn session at this repo's calculator defaults,
+     billed with Claude Code's prompt caching)
+
   Pro subscription: $20/mo
-  API cost:         ~$10/mo
-  Savings:          ~$10/mo with API billing
+  API cost:         $2.37/mo
+  Savings:          $17.63/mo with API billing
 ```
 
 ### Subscription vs. API Break-Even Estimates
 
-These are rough estimates -- actual break-even depends on your model mix, session length, and caching behavior.
+Computed for one workload: 30-turn Sonnet 5.5 sessions at this repo's calculator defaults (3,500-token system prompt, 100-line CLAUDE.md, two MCP servers, one 2,000-token file read, 1,500 tokens of history per turn, 500 output tokens per turn), billed the way Claude Code caches a conversation: $0.3693 per session, over 22 working days. Other model mixes, session lengths and cache hit rates move the line: the same session costs $0.7387 on Opus 5.5 and $0.0228 on Haiku 5.5.
 
-| Plan | Approx. Break-Even (API Equivalent) | Below This = API Cheaper |
+| Plan | Break-Even (API Equivalent) | Below This = API Cheaper |
 |------|:-----------------------------------:|:------------------------:|
-| Pro ($20) | ~$20 worth of API tokens/month | < 4-5 Sonnet sessions/day |
-| Max 5x ($100) | ~$100 worth of API tokens/month | < 8-10 Sonnet sessions/day |
-| Max 20x ($200) | ~$200 worth of API tokens/month | < 15-20 Sonnet sessions/day |
+| Pro ($20) | $20 of API usage/month | < 2.5 Sonnet 5.5 sessions/day (54/month; 1.2/day on Opus 5.5) |
+| Max 5x ($100) | $100 of API usage/month | < 12.3 Sonnet 5.5 sessions/day (271/month; 6.2/day on Opus 5.5) |
+| Max 20x ($200) | $200 of API usage/month | < 24.6 Sonnet 5.5 sessions/day (542/month; 12.3/day on Opus 5.5) |
 
-> **Note**: Claude Code adds overhead beyond raw token costs (system prompts, tool schemas, conversation management). The subscription absorbs this overhead, so the effective break-even is lower than raw token math suggests. Most interactive developers get better value from subscriptions.
+> **Note**: the session cost above already includes Claude Code's own overhead in this repo's model: its system prompt (3,500 tokens) and two MCP servers' tool definitions. Background requests (conversation summarization, status checks) add typically under $0.04 per session ([costs page](https://code.claude.com/docs/en/costs)). The table compares prices only: Anthropic does not publish plan limits in tokens, so whether a plan's allowance covers that many sessions is not something this math can tell you. For scale, Anthropic's enterprise average is around $13 per developer per active day and $150-250 per developer per month at API rates ([costs page](https://code.claude.com/docs/en/costs)), more than Max 5x's $100.
 
 > **Max API credits change the comparison only for Console API spend.** The break-even above is about Claude Code, and the monthly credit ($100 on Max 5x, $200 on Max 20x) cannot be spent on Claude Code. Where it matters is if you also pay for the Claude API through the Console: Max then costs you the plan price minus whatever of the credit you use. Max 5x with $60 of monthly Console API usage costs $100 - $60 = $40 more than the API bill you already had; with $100 or more of usage, Max 5x adds nothing on top. The credit does not roll over, so unused credit is not savings, and API traffic on Bedrock, Google Cloud, Foundry or Claude Platform on AWS does not count.
 
@@ -545,18 +547,20 @@ Check the [Anthropic blog](https://www.anthropic.com/news) and [Claude support p
 
 ### Time Zone Advantage
 
-If you are outside the US, your workday likely falls entirely within the off-peak window during these promotions:
+If you are in India or Asia-Pacific, your whole workday falls within the off-peak window during these promotions; in Europe half or more of it does. Each row below is arithmetic on the 8 AM - 2 PM ET weekday peak window described above, against a 9 AM - 5 PM (8-hour) workday:
 
 | Time Zone | Your 9 AM - 5 PM | Falls in US Peak? | Effective Benefit |
 |-----------|:-----------------:|:-----------------:|:----------------:|
-| US West (PT) | Partial overlap | Yes (5-11 AM PT = peak) | ~25% of workday is 2x |
-| US East (ET) | Significant overlap | Yes (8 AM - 2 PM ET = peak) | ~25% of workday is 2x |
-| UK (BST) | Minimal overlap | Partially (1-2 PM BST) | ~85% of workday is 2x |
-| Central Europe (CET) | Minimal overlap | Partially (2-3 PM CET) | ~85% of workday is 2x |
+| US West (PT) | Partial overlap | Yes (5-11 AM PT = peak) | 75% of workday is 2x (peak 9-11 AM; 6 of 8 hours off-peak) |
+| US East (ET) | Significant overlap | Yes (8 AM - 2 PM ET = peak) | 37.5% of workday is 2x (peak 9 AM - 2 PM; 3 of 8 hours off-peak) |
+| UK (BST) | Partial overlap | Yes (1-7 PM BST = peak) | 50% of workday is 2x (peak 1-5 PM; 4 of 8 hours off-peak) |
+| Central Europe (CET) | Partial overlap | Yes (2-8 PM CET = peak) | 62.5% of workday is 2x (peak 2-5 PM; 5 of 8 hours off-peak) |
 | India (IST) | No overlap | No | 100% of workday is 2x |
 | China/Singapore (SGT) | No overlap | No | 100% of workday is 2x |
 | Japan/Korea (JST) | No overlap | No | 100% of workday is 2x |
 | Australia (AEDT) | No overlap | No | 100% of workday is 2x |
+
+UK and Central Europe sit 5 and 6 hours ahead of US Eastern for most of the year; for a few weeks around the US and EU daylight-saving changes the gap is an hour smaller, which moves each European row by one hour. The 8 AM - 2 PM ET window is the shape past promotions have used; no live Anthropic page confirmed it when this table was computed (2026-10-11), so check the terms of any current promotion.
 
 > **Key insight**: For developers in Asia, India, or Australia, off-peak promotions effectively make a Pro plan function like Max 2x, and Max 5x function like Max 10x -- during the promotion period.
 
@@ -646,10 +650,12 @@ Check what percentage of your usage went to each model. Use `/usage` in Claude C
 
 | Current Mix | Optimization Opportunity |
 |-------------|------------------------|
-| 60%+ Opus | Can you shift routine tasks to Sonnet/Haiku? |
-| 80%+ Sonnet | Are there simple tasks that Haiku could handle? |
-| 70%+ Haiku | You are already efficient -- focus on workflow, not model choice |
+| Mostly Opus | Can you shift routine tasks to Sonnet/Haiku? |
+| Mostly Sonnet | Are there simple tasks that Haiku could handle? |
+| Mostly Haiku | You are already efficient -- focus on workflow, not model choice |
 | Even split | Good balance, focus on ensuring the right model is used for each task type |
+
+`/usage` flags any behavior that accounts for 10% or more of your recent usage; start with what it flags ([Claude Code costs docs](https://code.claude.com/docs/en/costs)).
 
 ### 3. Review Your Most Expensive Sessions
 
@@ -658,6 +664,7 @@ Look for sessions with unusually high token consumption. Common culprits:
 - Large file reads that inflated context unnecessarily
 - Trial-and-error coding without Plan Mode
 - Unused MCP servers (with default tool search only their tool names and server instructions load, but full schemas load when tool search is off; disable unused ones with `/mcp`, and check `/context` for what is consuming space)
+- Idle sessions that keep spending: scheduled `/loop` tasks, cross-session messages (`crossSessionInbound: hold`), and goal check-ins (at most 3 idle check-ins per goal since v2.1.246; `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` turns them off). Prompt suggestions also send a request after each response, mostly cache reads, and can be turned off. Background summarization and status calls are typically under $0.04 per session ([Claude Code costs docs](https://code.claude.com/docs/en/costs))
 
 Use the [Usage Analyzer](../tools/usage-analyzer/README.md) tool for detailed session breakdowns.
 
