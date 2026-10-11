@@ -30,7 +30,7 @@ Three things land together. Every cost estimator in the repo now bills a turn th
 - **Guide 06's "$300 for a 10M token job"** was 10M input plus 10M output at legacy Opus 5 rates; on Opus 5.5 that job is $240, or $120 on Batch. The regional-premium tables now state their input/output split. Bedrock's no-approval quota is now 5M input and 500K output TPM, and Google Cloud single-region endpoints serve only Sonnet 4.6 and earlier.
 - **The README worked example, the context-size benchmark and guides 01, 04, 05, 08 and 10** were built on the uncached model; every figure is re-derived with its formula shown (for example, splitting a 30-turn Sonnet 4.6 session into three saves 12%, not 70%).
 - **Calculator tier warning was one turn late** when the prompt hit the 100K line exactly.
-- **SonarCloud and ruff findings on main**: shell `[[ ]]` and default cases in the hooks, a shared `copyWithFeedback` clipboard helper, extracted analyzer and usage-analyzer helpers (output byte-identical on fixtures), `node:` imports and awaited promises in the VS Code extension, and the ruff import, SIM103 and UP032 hits.
+- **SonarCloud and ruff findings on main**: shell `[[ ]]` and default cases in the hooks, a shared `copyWithFeedback` clipboard helper, extracted analyzer and usage-analyzer helpers (output byte-identical on fixtures), `node:` imports and awaited promises in the VS Code extension, and the ruff import, SIM103 and UP032 hits. After the merge, the last two (a trailing-slash regex in `parseRepoUrl`, now a loop with the same result on every input tried, and a repeated `subscriptions.push` in the extension) took main from 45 open SonarCloud issues to 0.
 
 ## [1.15.0] - 2026-10-09
 

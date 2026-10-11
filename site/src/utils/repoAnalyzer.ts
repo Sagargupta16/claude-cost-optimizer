@@ -159,8 +159,14 @@ function validateRepoInput(owner: string, repo: string): RepoInput | null {
   return { owner, repo: cleanRepo, branch: '' }
 }
 
+function stripTrailingSlashes(value: string): string {
+  let end = value.length
+  while (end > 0 && value[end - 1] === '/') end--
+  return value.slice(0, end)
+}
+
 export function parseRepoUrl(input: string): RepoInput | null {
-  const trimmed = input.trim().replace(/\/+$/, '')
+  const trimmed = stripTrailingSlashes(input.trim())
 
   // https://github.com/owner/repo or github.com/owner/repo
   const urlMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/.exec(trimmed)

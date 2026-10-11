@@ -26,11 +26,11 @@ export function activate(context: vscode.ExtensionContext): void {
   // Status bar
   statusBarManager = new StatusBarManager();
   statusBarManager.activate();
-  context.subscriptions.push({ dispose: () => statusBarManager?.dispose() });
 
   // Commands return their promise so VS Code surfaces a failure instead of
   // dropping it.
   context.subscriptions.push(
+    { dispose: () => statusBarManager?.dispose() },
     vscode.commands.registerCommand("claudeCost.estimateFile", () => estimateCurrentFile()),
     vscode.commands.registerCommand("claudeCost.estimateClaudeMd", () => estimateClaudeMdCost()),
     vscode.commands.registerCommand("claudeCost.checkConfig", () => checkProjectConfig())
