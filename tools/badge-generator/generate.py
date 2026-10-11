@@ -33,7 +33,6 @@ import sys
 import urllib.parse
 from pathlib import Path
 
-
 # -- ANSI colors (disabled when NO_COLOR is set or output is not a TTY) ------
 
 
@@ -252,9 +251,7 @@ def has_cost_controls(data: dict) -> bool:
         and models
     ):
         return True
-    if data.get("autoCompactEnabled") is True:
-        return True
-    return False
+    return data.get("autoCompactEnabled") is True
 
 
 def score_settings(project: Path) -> dict:

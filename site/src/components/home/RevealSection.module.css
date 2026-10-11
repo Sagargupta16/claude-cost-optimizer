@@ -1,0 +1,19 @@
+/* Children marked data-stagger wait hidden, then fade up one after another.
+   A keyframe (not a transition) carries the delay, so hover transitions on the
+   same element stay instant once the entrance has played. */
+
+.reveal:not(.in) [data-stagger] {
+  opacity: 0;
+}
+
+.in [data-stagger] {
+  animation: fadeUp 640ms var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 80ms);
+}
+
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}

@@ -8,8 +8,8 @@
  */
 
 import * as vscode from "vscode";
-import * as path from "path";
-import * as fs from "fs";
+import * as path from "node:path";
+import * as fs from "node:fs";
 import { formatTokens } from "./costEstimator";
 
 interface ConfigFinding {
@@ -53,7 +53,7 @@ export async function checkProjectConfig(): Promise<void> {
       "Show Suggestions"
     );
     if (action === "Show Suggestions") {
-      showSuggestions(findings);
+      await showSuggestions(findings);
     }
   } else {
     vscode.window.showInformationMessage(
@@ -328,36 +328,31 @@ function statusIcon(status: "ok" | "warning" | "missing"): string {
   }
 }
 
+/** Which quick-pick action each finding offers, in the order they are listed. */
+const SUGGESTIONS: { applies: (f: ConfigFinding) => boolean; item: vscode.QuickPickItem }[] = [
+  {
+    applies: (f) => f.status === "missing" && f.label === "CLAUDE.md",
+    item: { label: "Create CLAUDE.md", description: "Add a project instructions file for Claude Code" },
+  },
+  {
+    applies: (f) => f.status !== "ok" && f.label === FILE_READ_LABEL,
+    item: {
+      label: SHOW_READ_RULES,
+      description: "Open a permissions.deny block to merge into .claude/settings.json",
+    },
+  },
+  {
+    applies: (f) => f.status === "warning" && f.label === "CLAUDE.md",
+    item: { label: "Open CLAUDE.md for editing", description: "Trim it down to reduce per-turn token costs" },
+  },
+  {
+    applies: (f) => f.status === "warning" && f.label === ".claude/settings.json",
+    item: { label: "Open .claude/settings.json", description: "Fix the invalid JSON" },
+  },
+];
+
 async function showSuggestions(findings: ConfigFinding[]): Promise<void> {
-  const items: vscode.QuickPickItem[] = [];
-
-  for (const f of findings) {
-    if (f.status === "missing" && f.label === "CLAUDE.md") {
-      items.push({
-        label: "Create CLAUDE.md",
-        description: "Add a project instructions file for Claude Code",
-      });
-    }
-    if (f.status !== "ok" && f.label === FILE_READ_LABEL) {
-      items.push({
-        label: SHOW_READ_RULES,
-        description: "Open a permissions.deny block to merge into .claude/settings.json",
-      });
-    }
-    if (f.status === "warning" && f.label === "CLAUDE.md") {
-      items.push({
-        label: "Open CLAUDE.md for editing",
-        description: "Trim it down to reduce per-turn token costs",
-      });
-    }
-    if (f.status === "warning" && f.label === ".claude/settings.json") {
-      items.push({
-        label: "Open .claude/settings.json",
-        description: "Fix the invalid JSON",
-      });
-    }
-  }
-
+  const items = findings.flatMap((f) => SUGGESTIONS.filter((s) => s.applies(f)).map((s) => s.item));
   if (items.length === 0) {
     return;
   }
@@ -365,17 +360,15 @@ async function showSuggestions(findings: ConfigFinding[]): Promise<void> {
   const selected = await vscode.window.showQuickPick(items, {
     placeHolder: "Select an action",
   });
-
-  if (!selected) {
-    return;
-  }
-
   const workspaceRoot = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  if (!workspaceRoot) {
+  if (!selected || !workspaceRoot) {
     return;
   }
+  await runSuggestion(selected.label, workspaceRoot);
+}
 
-  switch (selected.label) {
+async function runSuggestion(label: string, workspaceRoot: string): Promise<void> {
+  switch (label) {
     case "Create CLAUDE.md": {
       const doc = await vscode.workspace.openTextDocument(
         vscode.Uri.file(path.join(workspaceRoot, "CLAUDE.md")).with({

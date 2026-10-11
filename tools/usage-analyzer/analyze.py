@@ -27,8 +27,9 @@ from pathlib import Path
 # thinking ALWAYS ON (it cannot be disabled; effort defaults to medium), and Opus 5
 # runs it ON by default; either way reasoning tokens bill at the normal output rate.
 # "sonnet" = Sonnet 5.5 at $2/$10; "sonnet-5" = legacy Sonnet 5 at the same rate.
-# The 4.7+ tokenizer (also used by Opus 4.8, Opus 5, Opus 5.5, Fable 5, Sonnet 5.5,
-# Sonnet 5 and Sonnet 4.6) consumes up to ~35% more tokens for the same source text.
+# The 4.7+ tokenizer (also used by Opus 4.8, Opus 5, Opus 5.5, Fable 5, Fable 5.1, Sonnet 5.5,
+# Sonnet 5 and Haiku 5.5; not Sonnet 4.6) produces about 30% more tokens for the same
+# source text (https://platform.claude.com/docs/en/about-claude/pricing).
 # cache_hit has three multipliers: 0.1x input by default, 0.025x on Fable 5.1 /
 # Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok) and Sonnet 5.5
 # ($0.10/MTok since 2026-10-07). Read the rate from this table; never compute
@@ -259,6 +260,39 @@ def extract_session_data(file_path: Path) -> dict | None:
         return None
 
 
+def _record_usage(record: dict) -> tuple[int, int, int]:
+    """(input, output, cache read + write) tokens of one record.
+
+    Reads the `usage` mapping and the top-level token fields, which some exports
+    use instead.
+    """
+    usage = record.get("usage", {})
+    rec_in = rec_out = rec_cache = 0
+    if isinstance(usage, dict):
+        rec_in += usage.get("input_tokens", 0)
+        rec_out += usage.get("output_tokens", 0)
+        rec_cache += usage.get("cache_read_input_tokens", 0)
+        rec_cache += usage.get("cache_creation_input_tokens", 0)
+    rec_in += record.get("input_tokens", 0)
+    rec_out += record.get("output_tokens", 0)
+    return rec_in, rec_out, rec_cache
+
+
+def _record_tools(record: dict) -> list[str]:
+    """Tool names a record calls: a tool_use record itself, plus tool_use blocks in its content."""
+    tools = []
+    if record.get("type") == "tool_use" or record.get("tool_name"):
+        tools.append(record.get("tool_name") or record.get("name", "unknown"))
+    content = record.get("content", [])
+    if isinstance(content, list):
+        tools.extend(
+            block.get("name", "unknown")
+            for block in content
+            if isinstance(block, dict) and block.get("type") == "tool_use"
+        )
+    return tools
+
+
 def _extract_from_records(records: list[dict], file_path: Path) -> dict | None:
     """Extract metrics from a list of message/event records."""
     total_input = 0
@@ -271,51 +305,20 @@ def _extract_from_records(records: list[dict], file_path: Path) -> dict | None:
     # its own prompt length, which counts cache reads and writes.
     requests: list[tuple[int, int, int]] = []
 
-    for record in records:
-        # Records may be non-dict (e.g. a JSON file that is a list of lists or
-        # scalars). Skip anything we can't read as a mapping.
-        if not isinstance(record, dict):
-            continue
-        # Try common field patterns for token usage
-        usage = record.get("usage", {})
-        rec_in = rec_out = rec_cache = 0
-        if isinstance(usage, dict):
-            rec_in += usage.get("input_tokens", 0)
-            rec_out += usage.get("output_tokens", 0)
-            rec_cache += usage.get("cache_read_input_tokens", 0)
-            rec_cache += usage.get("cache_creation_input_tokens", 0)
-
-        # Alternative: top-level token fields
-        rec_in += record.get("input_tokens", 0)
-        rec_out += record.get("output_tokens", 0)
+    # Records may be non-dict (e.g. a JSON file that is a list of lists or
+    # scalars). Skip anything we can't read as a mapping.
+    for record in (r for r in records if isinstance(r, dict)):
+        rec_in, rec_out, rec_cache = _record_usage(record)
         total_input += rec_in
         total_output += rec_out
         if rec_in or rec_out:
             requests.append((rec_in, rec_out, rec_in + rec_cache))
 
-        # Count turns (messages from the assistant)
-        role = record.get("role", "")
-        if role == "assistant":
+        if record.get("role", "") == "assistant":
             turn_count += 1
-
-        # Detect model
-        record_model = record.get("model", "")
-        if record_model:
-            model = detect_model(record_model)
-
-        # Track tool usage
-        if record.get("type") == "tool_use" or record.get("tool_name"):
-            tool_name = record.get("tool_name") or record.get("name", "unknown")
-            tool_calls.append(tool_name)
-
-        # Look inside content arrays for tool_use blocks
-        content = record.get("content", [])
-        if isinstance(content, list):
-            for block in content:
-                if isinstance(block, dict) and block.get("type") == "tool_use":
-                    tool_calls.append(block.get("name", "unknown"))
-
-        # Collect timestamps
+        if record.get("model", ""):
+            model = detect_model(record["model"])
+        tool_calls.extend(_record_tools(record))
         ts = record.get("timestamp") or record.get("created_at")
         if ts:
             timestamps.append(str(ts))
@@ -375,11 +378,9 @@ def _extract_from_single(data: dict, file_path: Path) -> dict | None:
     }
 
 
-def identify_hotspots(sessions: list[dict]) -> list[str]:
-    """Identify cost hotspots and return recommendations."""
+def _per_turn_hotspots(sessions: list[dict]) -> list[str]:
+    """Sessions averaging more than 50,000 tokens a turn."""
     hotspots = []
-
-    # Check for sessions with very high per-turn token usage
     for session in sessions:
         avg_tokens = session["total_tokens"] / session["turns"]
         if avg_tokens > 50_000:
@@ -388,24 +389,31 @@ def identify_hotspots(sessions: list[dict]) -> list[str]:
                 f"tokens/turn. Consider trimming context or adding Read(...) deny "
                 f"rules under permissions.deny for large files."
             )
+    return hotspots
 
-    # Check for heavy file read patterns
-    all_tools = []
-    for session in sessions:
-        all_tools.extend(session.get("tool_calls", []))
 
-    if all_tools:
-        read_count = sum(
-            1 for t in all_tools if t.lower() in ("read", "read_file", "readfile")
+def _file_read_hotspots(sessions: list[dict]) -> list[str]:
+    """File reads making up more than 40% of all tool calls."""
+    all_tools = [tool for session in sessions for tool in session.get("tool_calls", [])]
+    if not all_tools:
+        return []
+    read_count = sum(1 for t in all_tools if t.lower() in ("read", "read_file", "readfile"))
+    total_tools = len(all_tools)
+    if read_count / total_tools <= 0.4:
+        return []
+    return [
+        (
+            f"File reads account for {read_count}/{total_tools} "
+            f"({read_count * 100 // total_tools}%) of tool calls. "
+            f"Add Read(...) deny rules under permissions.deny in "
+            f".claude/settings.json to keep large/irrelevant files out."
         )
-        total_tools = len(all_tools)
-        if total_tools > 0 and read_count / total_tools > 0.4:
-            hotspots.append(
-                f"File reads account for {read_count}/{total_tools} "
-                f"({read_count * 100 // total_tools}%) of tool calls. "
-                f"Add Read(...) deny rules under permissions.deny in "
-                f".claude/settings.json to keep large/irrelevant files out."
-            )
+    ]
+
+
+def identify_hotspots(sessions: list[dict]) -> list[str]:
+    """Identify cost hotspots and return recommendations."""
+    hotspots = _per_turn_hotspots(sessions) + _file_read_hotspots(sessions)
 
     # Check for expensive model usage on many turns
     fable_sessions = [s for s in sessions if s["model"] == "fable"]
@@ -482,13 +490,13 @@ def generate_recommendations(sessions: list[dict]) -> list[str]:
         input_ratio = total_input / (total_input + total_output)
         if input_ratio > 0.85:
             recommendations.append(
-                "Input tokens dominate your usage ({:.0f}%). Focus on reducing "
+                f"Input tokens dominate your usage ({input_ratio * 100:.0f}%). Focus on reducing "
                 "context size: trim CLAUDE.md, add Read(...) deny rules under "
-                "permissions.deny, avoid reading large files.".format(input_ratio * 100)
+                "permissions.deny, avoid reading large files."
             )
 
     # Model-specific recommendations
-    models_used = set(s["model"] for s in sessions)
+    models_used = {s["model"] for s in sessions}
     if models_used == {"fable"}:
         recommendations.append(
             "You're using Fable 5.1 exclusively ($10/$50 -- 2.5x Opus 5.5). Route "

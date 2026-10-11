@@ -1,6 +1,6 @@
 # Guide 06: Access Methods and Pricing
 
-> **Not all paths to Claude cost the same.** Understanding the pricing differences between Anthropic API, AWS Bedrock, Google Vertex AI, and Claude Code subscriptions can save you 10-50% depending on your use case.
+> **Not all paths to Claude cost the same.** Batch is 50% off, regional and US-only endpoints add 10%, and a flat subscription replaced over $15,000 of API-equivalent usage for one heavy user (n=1). Understanding the pricing differences between Anthropic API, AWS Bedrock, Google Vertex AI, and Claude Code subscriptions tells you which applies to your use case. (Sources: [Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing); the $15,000 figure is one developer's own tracker against about $800 of Max subscription, [ksred.com, 2026-02-23](https://www.ksred.com/claude-code-pricing-guide-which-plan-actually-saves-you-money/).)
 
 Most teams pick a Claude access method based on convenience or existing cloud contracts -- not cost. This is a mistake. The same workload can cost 10% more on a regional endpoint than a global one, or 50% less through the Batch API. This guide breaks down every access path, its exact pricing, and when to use each one.
 
@@ -71,7 +71,7 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 | **Haiku 4.5** (legacy) | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
 | **Mythos Preview** (deprecated, no retirement date) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- |
 
-> **Opus 5.5** (`claude-opus-5-5`, released 2026-09-22): the recommended default. Anthropic's models-overview page now says "start with Claude Opus 5.5 for most workloads"; Fable 5.1 is for demanding reasoning and long-horizon work. **$4/$20, 20% below Opus 5** -- the first Opus release to lower the rate -- with cache hits at $0.20 (**0.05x** base input, 95% off), 5m / 1h cache writes at $5 / $8, Batch $2/$10, and Fast Mode (research preview, Claude API only) at $8/$40. 1M context (default and max), 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), min cacheable prompt 512, knowledge cutoff Jun 2026, same tokenizer as Opus 4.7+. Available on all five platforms: `claude-opus-5-5` on the Claude API, Google Cloud, Microsoft Foundry and Claude Platform on AWS; `anthropic.claude-opus-5-5` on Bedrock. Earliest retirement is not sooner than 2027-09-22.
+> **Opus 5.5** (`claude-opus-5-5`, released 2026-09-22): the recommended default. Anthropic's models-overview page now says "start with Claude Opus 5.5 for most workloads"; Fable 5.1 is for demanding reasoning and long-horizon work. **$4/$20, 20% below Opus 5's $5/$25**, with cache hits at $0.20 (**0.05x** base input, 95% off), 5m / 1h cache writes at $5 / $8, Batch $2/$10, and Fast Mode (research preview, Claude API only) at $8/$40. 1M context (default and max), 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), min cacheable prompt 512, knowledge cutoff Jun 2026, same tokenizer as Opus 4.7+. Available on all five platforms: `claude-opus-5-5` on the Claude API, Google Cloud, Microsoft Foundry and Claude Platform on AWS; `anthropic.claude-opus-5-5` on Bedrock. Earliest retirement is not sooner than 2027-09-22.
 >
 > **Cost-relevant Opus 5.5 changes versus Opus 5**:
 > - **Adaptive thinking is always on.** `thinking: {type: "disabled"}` and `thinking: {type: "enabled", budget_tokens}` both return 400; effort is the only control. Code that disabled thinking on Opus 5 now pays for thinking tokens (billed as output) it did not pay for before.
@@ -133,7 +133,7 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 
 > **1M context at standard rates**: Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 charge the standard per-token rate across the full 1M window -- no long-context premium. Opus 4.5, Sonnet 4.5, Opus 4.1, and Haiku 4.5 are 200K-context only. (Opus 4.8 is 200K-context on Microsoft Foundry only.) **Haiku 5.5 is the exception**: it has a 1M window but is the one model from Claude 4.6 on priced by prompt length -- $0.10/$0.50 up to 100,000 prompt tokens, $0.50/$2.50 for the whole request above that.
 >
-> **Opus 4.7+ tokenizer**: The tokenizer introduced with Opus 4.7 (and used by Opus 4.8, Opus 5 and Opus 5.5) uses up to **35% more tokens** for the same text. The posted rate does not change with it, but effective cost rises proportionally. Budget accordingly. Haiku 5.5 uses the newer Claude 4.7+ tokenizer too: the same text is ~30% more tokens than on Haiku 4.5.
+> **Opus 4.7+ tokenizer**: The tokenizer introduced with Opus 4.7 (and used by Opus 4.8, Opus 5 and Opus 5.5) produces **about 30% more tokens** for the same text ([Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing); the [Opus 4.7 launch post](https://www.anthropic.com/news/claude-opus-4-7) put it at roughly 1.0-1.35x by content type). The posted rate does not change with it, but effective cost rises proportionally. Budget accordingly. Haiku 5.5 uses the newer Claude 4.7+ tokenizer too: the same text is ~30% more tokens than on Haiku 4.5.
 >
 > **Minimum cacheable prompt length** (per model, in tokens): a `cache_control` block below the threshold is **silently ignored** -- no error, no discount, and you keep paying full input price.
 >
@@ -228,7 +228,7 @@ Global endpoints match Anthropic API pricing exactly:
 
 ### Regional Endpoints (us/eu/jp/apac/au inference profiles)
 
-Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models** (Opus 5, Opus 5.5, Sonnet 5.5 and Haiku 5.5 included). Earlier models retain their existing pricing.
+Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models** (Opus 5, Opus 5.5, Sonnet 5.5 and Haiku 5.5 included). Earlier models retain their existing pricing. Source: Anthropic's Bedrock page says "Regional endpoints carry a 10% pricing premium over global endpoints" and that global endpoints carry "No pricing premium" ([Claude in Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock#regions), read 2026-10-11); the [pricing page](https://platform.claude.com/docs/en/about-claude/pricing) puts it the same way for "Claude 4.5 models and beyond".
 
 | Model | Regional Input | Regional Output | Premium |
 |-------|:--------------:|:---------------:|:-------:|
@@ -252,7 +252,7 @@ Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 
 - **Batch inference**: Supported, 50% discount (same as Anthropic API)
 - **Available regions** (Mantle endpoint): 27 AWS regions including us-east-1, us-east-2, us-west-1, us-west-2, eu-west-1/2/3, eu-central-1/2, eu-north-1, eu-south-1/2, ap-northeast-1/2/3, ap-south-1/2, ap-southeast-1/2/3/4, ca-central-1, ca-west-1, sa-east-1, af-south-1, il-central-1, me-central-1
 - **Endpoint types**: Global (dynamic routing across all regions, no premium), Regional (single region, +10%), or geographic inference profiles (US, EU, JP, AU at +10%)
-- **Quotas**: Default 2M input TPM, up to 4M without Anthropic approval. AWS sets RPM limits separately.
+- **Quotas**: Default 2M input TPM; you can request up to 5M input TPM and 500K output TPM without Anthropic approval ([Claude in Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock#quotas), read 2026-10-11). AWS sets RPM limits separately.
 - **Authentication**: Bedrock service role (recommended), IAM assumed roles (12-hour max), or short-lived bearer tokens
 - **Billing**: Through your AWS account, consolidated with other AWS services
 - **Committed use discounts**: Available through AWS Savings Plans
@@ -284,7 +284,7 @@ The new **Claude in Amazon Bedrock (Mantle)** endpoint at `https://bedrock-mantl
 
 **NOT supported on Bedrock Mantle**: Files API, server-side tools (code execution, web search, web fetch, advisor), Agent Skills, MCP connector, programmatic tool calling, Message Batches API, Models API, Admin API, Compliance API, Usage and Cost API, Claude Managed Agents, Fast Mode.
 
-> **Key point**: Unless you have a data residency requirement, always use global endpoints on Bedrock. You save 10% for zero effort.
+> **Key point**: Unless you have a data residency requirement, always use global endpoints on Bedrock. Regional costs 10% more, so global takes 9.1% off a regional bill (1 - 1/1.1) for zero effort.
 
 ---
 
@@ -347,7 +347,7 @@ Global endpoints match Anthropic API pricing exactly:
 
 ### Regional and Multi-Region Endpoints
 
-Both regional endpoints (single GCP region) and multi-region endpoints (dynamic routing within a geography) carry a **10% premium**:
+Both regional endpoints (single GCP region) and multi-region endpoints (dynamic routing within a geography) carry a **10% premium**: "Regional and multi-region endpoints include a 10% pricing premium over global endpoints" ([Claude on Google Cloud](https://platform.claude.com/docs/en/build-with-claude/claude-on-vertex-ai), read 2026-10-11). The same page says single-region endpoints serve Claude Sonnet 4.6 and earlier; newer models use the global or multi-region endpoints, so for them the regional rows below are the multi-region price.
 
 | Model | Regional/Multi-Region Input | Regional/Multi-Region Output | Premium |
 |-------|:---------------------------:|:----------------------------:|:-------:|
@@ -402,7 +402,7 @@ Claude Code subscriptions bundle access into predictable monthly (or annual) pri
 | **Max 5x** | $100/mo | (annual not currently published) | 5x Pro usage | ~$3.33/day |
 | **Max 20x** | $200/mo | (annual not currently published) | 20x Pro usage | ~$6.67/day |
 
-> **Annual Pro plan saves 17%** vs monthly. If you'll use Claude for >2 months in a year, annual is a no-brainer. Math: $200/yr ÷ 12 = $16.67/mo vs $20/mo monthly = $40/yr saved.
+> **Annual Pro plan saves 17%** vs monthly. If you'll use Claude for more than 10 months in a year, annual is the cheaper choice (10 x $20 = $200). Math: $200/yr ÷ 12 = $16.67/mo vs $20/mo monthly = $40/yr saved.
 
 > **Max and Team now include monthly API credits (since 2026-10-07)**: $100 on Max 5x, $200 on Max 20x, $20 per Team Standard seat and $100 per Team Premium seat (Team credits pooled, capped at $500 a month). They pay for the Claude API in the Claude Console, Managed Agents, the Agent SDK and the playground -- **not Claude Code** -- and expire at the end of each billing cycle with no rollover. Pro is not eligible. Details in [Guide 09](09-subscription-value.md#monthly-api-credits-on-max-and-team).
 
@@ -576,17 +576,19 @@ Start here: What is your primary use case?
 
 ## Cost Optimization Per Platform
 
-### Strategy 1: Use Global Endpoints (Save 10% vs Regional)
+### Strategy 1: Use Global Endpoints (Regional Costs 10% More)
 
 This is the easiest win for Bedrock and Vertex AI users. Unless you have a hard data residency requirement, always use global endpoints.
 
-| Endpoint Type | Opus Input | Opus Output | Annual Cost (10M tokens/mo) |
+| Endpoint Type | Opus 5.5 Input | Opus 5.5 Output | Annual Cost (10M input + 10M output tokens/mo) |
 |---------------|:----------:|:-----------:|:---------------------------:|
-| Global | $5.00 | $25.00 | $3,600 |
-| Regional | $5.50 | $27.50 | $3,960 |
-| **Savings** | | | **$360/year** |
+| Global | $4.00 | $20.00 | $2,880 |
+| Regional | $4.40 | $22.00 | $3,168 |
+| **Savings** | | | **$288/year** |
 
-For a team of 5 developers each using 10M output tokens/month, switching from regional to global saves **$1,800/year**.
+*Computed: 12 x (10 x $4 + 10 x $20) = $2,880; x 1.1 = $3,168. The equal input/output split is an assumption; the premium is 10% of whatever the bill is. On legacy Opus 5 ($5/$25) the same rows are $3,600 and $3,960, a $360/year saving.*
+
+For a team of 5 developers each using 10M input + 10M output tokens/month on Opus 5.5, switching from regional to global saves **$1,440/year** (5 x $288).
 
 ### Strategy 2: Use Batch API for Non-Real-Time Workloads (Save 50%)
 
@@ -605,11 +607,13 @@ The Batch API is the single most impactful discount. Any workload that can toler
 - Real-time chat interfaces
 - Latency-sensitive features
 
-| Processing Mode | Opus Input | Opus Output | 10M token job |
+| Processing Mode | Opus 5.5 Input | Opus 5.5 Output | Job of 10M input + 10M output tokens |
 |-----------------|:----------:|:-----------:|:-------------:|
-| Standard | $5.00 | $25.00 | $300.00 |
-| Batch | $2.50 | $12.50 | $150.00 |
-| **Savings** | | | **$150.00 per job** |
+| Standard | $4.00 | $20.00 | $240.00 |
+| Batch | $2.00 | $10.00 | $120.00 |
+| **Savings** | | | **$120.00 per job** |
+
+*Computed: 10 x $4 + 10 x $20 = $240; Batch is "a 50% discount on both input and output tokens" ([pricing page](https://platform.claude.com/docs/en/about-claude/pricing#batch-processing)), so it halves any input/output split. The earlier "$300 for a 10M token job" was this same 10M-in, 10M-out job (20M tokens) at legacy Opus 5's $5/$25; 10M tokens in total cannot cost $300 at those rates (all-output is $250). Anthropic's cookbook measured Batch on a real run at $0.7379 to $0.3653, 50.5% less ([cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization)).*
 
 ### Strategy 3: Watch Cumulative Context Growth (Long Context Is Now Free, But Cache Write Costs Grow With It)
 
@@ -617,7 +621,7 @@ The Batch API is the single most impactful discount. Any workload that can toler
 
 **The exception is Haiku 5.5**, the one model from Claude 4.6 on that is priced by prompt length. A request over 100,000 prompt tokens -- counting cache reads and cache writes -- pays $0.50/$2.50 on all of its tokens instead of $0.10/$0.50, even when part of the prompt is a cache hit. A 100,000-token prompt costs $0.010 of input; a 100,001-token prompt costs $0.050. On Haiku 5.5, long context is a 5x step, not a flat rate.
 
-**The catch**: While the rate is flat, the absolute token count still grows with context. A 500K-token input at $5/MTok is $2.50 per call -- small per call, but it adds up across a long session, and every fresh cache write on that content costs 1.25-2x more in absolute dollars.
+**The catch**: While the rate is flat, the absolute token count still grows with context. A 500K-token input at $5/MTok is $2.50 per call -- small per call, but it adds up across a long session, and every fresh cache write on that content costs 1.25x (5-minute) or 2x (1-hour) the input price in absolute dollars.
 
 | Scenario | Input Tokens | Input Cost (Opus 5) | Output Cost (10K output) |
 |----------|:------------:|:---------------------:|:------------------------:|
@@ -630,7 +634,7 @@ The Batch API is the single most impactful discount. Any workload that can toler
 - Use `permissions.deny` `Read(...)` rules in `.claude/settings.json` to keep Claude Code's file tools out of build output, dependencies and lock files (`.claudeignore` is not a Claude Code feature; no published measurement exists for what Read rules save, it depends on how often Claude would otherwise open those files)
 - Start new sessions when context grows too large
 - Use subagents to isolate expensive operations (see [Guide 04](04-workflow-patterns.md))
-- Remember: the Opus 4.7+ tokenizer (also used by Opus 4.8, Opus 5 and Opus 5.5) makes the same source text up to 35% more tokens than it used to be, so "size" thresholds shift lower.
+- Remember: the Opus 4.7+ tokenizer (also used by Opus 4.8, Opus 5 and Opus 5.5) makes the same source text about 30% more tokens than it used to be ([Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing)), so "size" thresholds shift lower.
 - On Opus 5.5, thinking is always on (it cannot be disabled) and reasoning tokens bill as output at $20/MTok, so lower the effort level when a task does not need reasoning. On legacy Opus 5, thinking is on by default at $25/MTok; drop the effort level, or set `thinking: {type: "disabled"}` at effort `high` or below.
 
 ### Strategy 4: Avoid Fast Mode Unless Latency Is Critical (Save 50%)
@@ -675,19 +679,21 @@ Prompt caching gives you a 90% discount on input tokens that have been seen befo
 
 ### 1. The Opus 4.7+ Tokenizer Inflates Effective Cost
 
-Opus 4.7 introduced a new tokenizer (also used by Opus 4.8, Opus 5 and Opus 5.5) that can use up to **35% more tokens** for the exact same text compared to Opus 4.6 and earlier models. The posted per-token rate does not change with it ($5/$25 on Opus 4.7 through 5, $4/$20 on Opus 5.5), but the same prompt now converts into more billable tokens.
+Opus 4.7 introduced a new tokenizer (also used by Opus 4.8, Opus 5 and Opus 5.5) that produces **about 30% more tokens** for the exact same text compared to Opus 4.6 and earlier models; Anthropic adds that "the exact increase depends on the content and workload shape" ([pricing page](https://platform.claude.com/docs/en/about-claude/pricing)). The posted per-token rate does not change with it ($5/$25 on Opus 4.7 through 5, $4/$20 on Opus 5.5), but the same prompt now converts into more billable tokens.
 
 ```
-Example: The same 10,000-character CLAUDE.md file
+Example: The same 10,000-character CLAUDE.md file, on Opus 4.7 ($5/MTok input)
 
 With Opus 4.6 tokenizer: ~2,500 tokens  -> cost: $0.0125 input
-With Opus 4.7 tokenizer: ~3,375 tokens  -> cost: $0.017 input  (+35%)
+With Opus 4.7 tokenizer: ~3,250 tokens  -> cost: $0.016 input  (2,500 x 1.3)
 
-Over a 50-turn session with CLAUDE.md reloaded every turn,
-the difference compounds to ~$0.22 extra just for CLAUDE.md alone.
+Over a 50-turn session that sends CLAUDE.md every turn, the 750 extra tokens cost:
+  uncached:  750 x 50 x $5/1M                          = $0.19
+  cached (Claude Code's default; 1 write, 49 hits):
+             750 x $6.25/1M + 750 x 49 x $0.50/1M      = $0.023
 ```
 
-> **Takeaway**: When budgeting for Opus 5.5, 5, 4.8, or 4.7, multiply your Opus 4.6 per-task cost estimates by 1.2-1.35 for a realistic projection. The step-change in coding quality usually pays for itself, but the accounting matters when setting budget caps.
+> **Takeaway**: When budgeting for Opus 5.5, 5, 4.8, or 4.7, multiply your Opus 4.6 per-task token estimates by about 1.3 (Anthropic's pricing page) for a realistic projection. The step-change in coding quality usually pays for itself, but the accounting matters when setting budget caps.
 
 ### 1b. Opus 5 Thinks by Default and Talks Longer
 
@@ -700,13 +706,15 @@ Two Opus 5 defaults inflate output token counts at the same $25/MTok rate:
 
 ### 2. Regional Endpoint Premium
 
-The 10% premium on regional endpoints applies to every token. Over time, this adds up significantly.
+The 10% premium on regional endpoints applies to every token ([Claude in Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock#regions) and [Claude on Google Cloud](https://platform.claude.com/docs/en/build-with-claude/claude-on-vertex-ai), read 2026-10-11). Over time, this adds up significantly.
 
 | Usage Level | Monthly Tokens (in + out) | Global Cost | Regional Cost | Annual Premium |
 |-------------|:------------------------:|:-----------:|:-------------:|:--------------:|
-| Light | 5M | $150 | $165 | $180 |
-| Medium | 20M | $600 | $660 | $720 |
-| Heavy | 100M | $3,000 | $3,300 | $3,600 |
+| Light | 5M in + 5M out | $120 | $132 | $144 |
+| Medium | 20M in + 20M out | $480 | $528 | $576 |
+| Heavy | 100M in + 100M out | $2,400 | $2,640 | $2,880 |
+
+*Computed at Opus 5.5 rates: Light = 5 x $4 + 5 x $20 = $120 a month, x 1.1 regional, premium x 12. The equal input/output split is an assumption; the premium is 10% of the bill at any split. On legacy Opus 5 ($5/$25) the rows are $150, $600 and $3,000 global, and $180, $720 and $3,600 a year in premium.*
 
 ### 3. US Data Residency Premium
 
@@ -755,21 +763,21 @@ Prompt-caching multipliers (1.25x 5m write, 2x 1h write, 0.1x hit) DO stack on t
 
 ### Scenario: Solo Developer, Medium Usage
 
-Assumptions: 20 working days/month, 30 turns/day, average 5K input + 2K output tokens per turn (after caching).
+Assumptions: 20 working days/month, 30 turns/day, average 5K input + 2K output tokens per turn (after caching). That is 600 turns: 3.0M input and 1.2M output tokens a month, each API row computed as 3.0M x input rate + 1.2M x output rate.
 
 | Platform | Configuration | Monthly Cost |
 |----------|--------------|:------------:|
 | **Claude Code Pro (annual)** | $200/yr ≈ $16.67/mo | **$17** |
 | **Claude Code Pro (monthly)** | $20/mo subscription | $20 |
 | **Claude Code Max 5x** | $100/mo subscription | $100 |
-| **Anthropic API** | Opus, standard | $360 |
-| **Anthropic API** | Opus, with caching (~70% hit rate) | $144 |
-| **Anthropic API** | Sonnet, with caching | $86 |
-| **Anthropic API** | Haiku, with caching | $29 |
-| **Bedrock Global** | Opus, with caching | $144 |
-| **Bedrock Regional** | Opus, with caching | $158 |
+| **Anthropic API** | Opus 5.5, standard (3.0M x $4 + 1.2M x $20) | $36 |
+| **Anthropic API** | Opus 5 (legacy), standard (3.0M x $5 + 1.2M x $25) | $45 |
+| **Anthropic API** | Sonnet 5.5 (3.0M x $2 + 1.2M x $10) | $18 |
+| **Anthropic API** | Haiku 5.5 (3.0M x $0.10 + 1.2M x $0.50) | $0.90 |
+| **Bedrock Global** | Opus 5.5 (same rates as the Anthropic API) | $36 |
+| **Bedrock Regional** | Opus 5.5 (+10%) | $39.60 |
 
-> For interactive development, Claude Code subscriptions are almost always cheaper than raw API usage, because the subscription absorbs the cost of prompt caching, system prompts, and tool-use overhead.
+> At these light per-turn counts, Pro beats Opus 5.5 on the API ($20 vs $36) but not Sonnet 5.5 ($18) or Haiku 5.5 ($0.90). Real Claude Code turns resend the whole conversation (billed as cache reads), so heavy days cost far more: Anthropic's [costs page](https://code.claude.com/docs/en/costs) puts the average at around $13 per developer per active day and $150-250 per developer per month. At that level a subscription is cheaper, because it absorbs the cost of prompt caching, system prompts, and tool-use overhead.
 
 ### Scenario: Production Application, High Volume
 
@@ -801,8 +809,7 @@ Assumptions: Each developer uses Claude Code for ~4 hrs/day, plus a shared autom
 | 5x Claude Code Pro + Anthropic API for automation | $100 + API costs |
 | 5x Claude Code Max 5x | $500 |
 | 5x Claude Code Max 20x | $1,000 |
-| Pure API (Opus, 5 developers) | ~$1,800 |
-| Pure API (Sonnet, 5 developers) | ~$1,080 |
+| Pure API (5 developers at Anthropic's average of $150-250 per developer per month, [costs page](https://code.claude.com/docs/en/costs)) | ~$750-$1,250 |
 
 ---
 
@@ -814,15 +821,15 @@ Here is the concrete recommendation for minimizing Claude costs, ordered by impa
 
 1. **Use Claude Code subscriptions** -- the subscription model is almost always cheaper than API rates for interactive work
 2. **Start with Pro ($20/mo, or $200/yr for 17% off)** and upgrade only if you consistently hit limits
-3. **Use Haiku 5.5 for routine tasks** -- 40x cheaper per token than Opus 5.5 while the prompt stays at or under 100K tokens (8x above), handles 80% of coding tasks
+3. **Use Haiku 5.5 for routine tasks** -- 40x cheaper per token than Opus 5.5 while the prompt stays at or under 100K tokens (8x above); Anthropic measured it at about 1/20 of Opus 5.5's cost per GPQA Diamond question, at 85% accuracy vs 91% ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence))
 4. **Keep sessions short** -- start new sessions rather than letting context grow past 200K
 
 ### For Programmatic / Application Use
 
 1. **Use the Batch API** for everything that does not need real-time responses -- **50% off**
-2. **Use global endpoints** on Bedrock and Vertex AI -- **10% savings** over regional
+2. **Use global endpoints** on Bedrock and Vertex AI -- regional costs **10% more**, so global takes 9.1% off a regional bill
 3. **Use Haiku 5.5** as your default model, keep its prompts under 100K tokens, and route to Sonnet/Opus only when complexity demands it
-4. **Cache aggressively** -- structure prompts so stable content comes first, aim for 70%+ cache hit rates
+4. **Cache aggressively** -- structure prompts so stable content comes first. Anthropic's production median for agent loops is 84% of input read from cache (coding 88.5%), and the top 10% of harnesses read 94% or more; well below that, something in your prefix is changing ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)).
 5. **Watch cumulative context growth** -- 1M context is priced at standard rates on Opus 5.5/5/4.8/4.7/4.6 and Sonnet 5.5/5/4.6 (no premium; Haiku 5.5 is the exception and bills $0.50/$2.50 once a prompt passes 100K tokens), but absolute token count still grows with context, and the Opus 4.7+ tokenizer (used by Opus 4.8, Opus 5 and Opus 5.5) inflates the count further
 6. **Never use Fast Mode** unless you have proven that standard latency is hurting your business metrics
 
@@ -868,7 +875,7 @@ These discounts are not available through the Anthropic API directly or Claude C
 
 ### Off-Peak 2x Usage Events
 
-Anthropic periodically runs promotional events that double usage limits during off-peak hours (see [Off-Peak 2x in the cheatsheet](../cheatsheet.md#model-lifecycle)). During these events, developers outside the US get the most benefit since their entire workday falls outside US peak hours (8 AM - 2 PM ET).
+Anthropic periodically runs promotional events that double usage limits during off-peak hours (see [Off-Peak 2x in the cheatsheet](../cheatsheet.md#model-lifecycle)). During these events, developers in India and Asia-Pacific get the most benefit, since their entire workday falls outside the peak window past promotions used (8 AM - 2 PM ET weekdays); a UK 9-to-5 overlaps it for 4 of 8 hours and a Central European one for 3 ([Guide 09](09-subscription-value.md#time-zone-advantage)).
 
 ---
 
@@ -884,7 +891,7 @@ Anthropic periodically runs promotional events that double usage limits during o
 6. **Cache hits save 90% on most models, 95% on Opus 5.5 and Sonnet 5.5, and 97.5% on Fable 5.1 / Mythos 5.1** -- structure your prompts to maximize cache reuse
 7. **Claude Code subscriptions beat API rates for interactive development** -- the math almost always works out in favor of a subscription
 8. **The cheapest token is the one you don't send** -- all the strategies in this repo (context optimization, model selection, workflow patterns) compound with platform-level savings
-9. **Opus 5.5 (released 2026-09-22) is the first Opus to cut the price** -- $4/$20, 20% below Opus 5 and 4.8, with cache hits at 0.05x instead of 0.1x, on all five platforms. Thinking is always on and default effort is `medium`, so your output token count can move in either direction; forced `tool_choice`, prefill and non-default sampling params now return 400, and there is no Priority Tier. Migrate, then re-baseline cost per task.
+9. **Opus 5.5 (released 2026-09-22) costs $4/$20, 20% below Opus 5's $5/$25** (and Opus 4.8's), with cache hits at 0.05x instead of 0.1x, on all five platforms. Thinking is always on and default effort is `medium`, so your output token count can move in either direction; forced `tool_choice`, prefill and non-default sampling params now return 400, and there is no Priority Tier. Migrate, then re-baseline cost per task.
 10. **Sonnet 5.5 (released 2026-09-28) costs what Sonnet 5 did, except cache reads** -- $2/$10, same cache writes and Batch, same tokenizer, but cache hits at $0.10 (0.05x) since 2026-10-07, half Sonnet 5's $0.20 -- and halves the cache floor to 512. Carried-over code can 400 (`thinking: disabled`, forced `tool_choice`, `computer_20251124` on the Claude API and Google Cloud), and effort levels are recalibrated, so re-run your effort sweep. In Claude Code on Bedrock, Google Cloud or Foundry, the `sonnet` alias still means Sonnet 4.5 at $3/$15 with 200K context, and Sonnet 4.5 is deprecated (retirement scheduled for 2026-11-30): pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) or you pay 1.5x for a smaller window.
 11. **Haiku 5.5 (released 2026-10-07) is the first model priced by prompt length** -- $0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above, with cache reads and writes counted toward the 100K. At or under the line it is 10x cheaper per token than legacy Haiku 4.5 (~7.7x per task after its ~30% larger token count) and 40x cheaper than Opus 5.5. Carried-over Haiku 4.5 code can 400 (`budget_tokens`, non-default sampling params, prefill, `computer_20250124`). In Claude Code the `haiku` alias reaches Haiku 5.5 only on the Anthropic API (v2.1.293+); elsewhere pin `ANTHROPIC_DEFAULT_HAIKU_MODEL`.
 

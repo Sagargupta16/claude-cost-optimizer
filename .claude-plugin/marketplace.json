@@ -7,8 +7,8 @@
   "plugins": [
     {
       "name": "cost-mode",
-      "version": "1.15.0",
-      "description": "Activate cost-conscious mode. Cuts filler, suggests cheaper models, encourages efficient patterns. 30-60% cost savings.",
+      "version": "1.16.0",
+      "description": "Activate cost-conscious mode. Cuts filler, routes simple tasks to Haiku 5.5 (1/40 of Opus 5.5 per token), encourages efficient patterns.",
       "source": {
         "source": "github",
         "repo": "Sagargupta16/claude-cost-optimizer"

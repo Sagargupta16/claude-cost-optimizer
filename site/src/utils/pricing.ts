@@ -74,13 +74,42 @@ export interface ModelPricing {
   }
 }
 
-/** The input, output and cache-read rates a request of `promptTokens` pays. */
+/** The input, output, cache-read and 5-minute cache-write rates a request of `promptTokens` pays. */
 export function ratesForPrompt(
   model: ModelPricing,
   promptTokens: number,
-): { inputPer1M: number; outputPer1M: number; cacheHitPer1M: number } {
+): { inputPer1M: number; outputPer1M: number; cacheHitPer1M: number; cacheWrite5mPer1M: number } {
   const tier = model.longPrompt && promptTokens > model.longPrompt.threshold ? model.longPrompt : model
-  return { inputPer1M: tier.inputPer1M, outputPer1M: tier.outputPer1M, cacheHitPer1M: tier.cacheHitPer1M }
+  return {
+    inputPer1M: tier.inputPer1M,
+    outputPer1M: tier.outputPer1M,
+    cacheHitPer1M: tier.cacheHitPer1M,
+    cacheWrite5mPer1M: tier.cacheWrite5mPer1M,
+  }
+}
+
+/**
+ * Input cost of one Claude Code turn, billed the way Claude Code caches a conversation: "the
+ * prefix is the entire previous request and only the latest exchange is new"
+ * (code.claude.com/docs/en/prompt-caching). The previous request is a cache read; the new part is
+ * a 5-minute cache write (1.25x input). The first turn (previousPrompt 0) writes everything.
+ * A prompt under the model's minimum cacheable length is not cached at all and pays full input,
+ * reported as writeDollars (the new-input share).
+ */
+export function turnInputCost(
+  model: ModelPricing,
+  promptTokens: number,
+  previousPrompt: number,
+): { readDollars: number; writeDollars: number } {
+  const rates = ratesForPrompt(model, promptTokens)
+  if (promptTokens < model.minCacheTokens) {
+    return { readDollars: 0, writeDollars: (promptTokens / 1_000_000) * rates.inputPer1M }
+  }
+  const cacheRead = previousPrompt >= model.minCacheTokens ? Math.min(previousPrompt, promptTokens) : 0
+  return {
+    readDollars: (cacheRead / 1_000_000) * rates.cacheHitPer1M,
+    writeDollars: ((promptTokens - cacheRead) / 1_000_000) * rates.cacheWrite5mPer1M,
+  }
 }
 
 // Cache hits are 0.1x base input on every model EXCEPT four: Fable 5.1 and
@@ -152,7 +181,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
   'opus-5-5': {
     id: 'opus-5-5',
     name: 'Opus 5.5',
-    // $4/$20 -- a 20% cut from Opus 5's $5/$25, the first Opus release to lower the rate.
+    // $4/$20 -- 20% below Opus 5's $5/$25 (Opus 4.5 made the earlier cut, $15/$75 to $5/$25).
     inputPer1M: 4,
     outputPer1M: 20,
     // 0.05x base input -- the second model family to break the 0.1x cache rule.
@@ -164,7 +193,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     fastModeCapable: true,
     // 2x of its own base: $8/$40, which undercuts the $10/$50 Fast rate of Opus 5 and 4.8.
     fastModeMultiplier: 2,
-    tokenizerOverhead: 1.35,
+    tokenizerOverhead: 1.3,
     minCacheTokens: 512,
     lifecycle: 'active',
     notes:
@@ -193,7 +222,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     maxOutput: '128K',
     fastModeCapable: true,
     fastModeMultiplier: 2,
-    tokenizerOverhead: 1.35,
+    tokenizerOverhead: 1.3,
     minCacheTokens: 512,
     lifecycle: 'legacy',
     notes:
@@ -223,7 +252,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     maxOutput: '128K',
     fastModeCapable: true,
     fastModeMultiplier: 2,
-    tokenizerOverhead: 1.35,
+    tokenizerOverhead: 1.3,
     minCacheTokens: 1024,
     lifecycle: 'legacy',
     notes:
@@ -246,11 +275,11 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     contextWindow: '1M',
     maxOutput: '128K',
     fastModeCapable: false,
-    tokenizerOverhead: 1.35,
+    tokenizerOverhead: 1.3,
     minCacheTokens: 2048,
     lifecycle: 'legacy',
     notes:
-      'Legacy. New tokenizer (up to 35% more tokens for the same text). ' +
+      'Legacy. New tokenizer (approximately 30% more tokens for the same text, per the Anthropic pricing page). ' +
       'Adaptive thinking only with xhigh effort level. ' +
       'Fast Mode has been removed: speed "fast" now returns an error here, with no fallback to standard. ' +
       'Min cacheable prompt 2,048 tokens. Earliest retirement: 2027-04-16. ' +
@@ -519,7 +548,9 @@ export const SUBSCRIPTION_PRICING = {
 }
 
 export const TOKEN_ESTIMATES = {
-  tokensPerClaudeMdLine: 7,
+  // Measured on this repo's 15 CLAUDE.md files (the templates plus the root file): 20,161 cl100k
+  // tokens over 2,048 lines, 9.8 per line counting blank lines. The 4.7+ tokenizer makes about 30% more.
+  tokensPerClaudeMdLine: 10,
   systemPromptTokens: 3500,
   // Worst case: full tool schemas loaded up front, which only happens when MCP
   // tool search is OFF (ENABLE_TOOL_SEARCH=false, a custom ANTHROPIC_BASE_URL).
@@ -529,7 +560,6 @@ export const TOKEN_ESTIMATES = {
   tokensPerFileRead: 2000,
   outputTokensPerTurn: 500,
   historyGrowthPerTurn: 1500,
-  cacheHitRate: 0.7,
 }
 
 /** A per-1M rate for display: "$2" when whole, "$0.10" otherwise. */

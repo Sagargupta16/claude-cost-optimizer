@@ -1,7 +1,7 @@
 # Comprehensive CLAUDE.md Template
 
 <!-- ABOUT THIS TEMPLATE
-  - ~150 lines of actual content (~1,050 tokens)
+  - ~150 lines of actual content (~2,160 tokens)
   - Full-featured configuration for team projects
   - Best for: teams of 3+, projects with complex architecture, onboarding new team members
   - Includes: architecture overview, API patterns, deployment, team conventions
@@ -190,7 +190,7 @@ prisma/
 - Do not modify CI/CD workflows without discussing with the team lead
 
 <!-- END OF TEMPLATE
-  Actual content: ~150 lines (~1,050 tokens)
-  Estimated overhead per 30-turn session: ~31,500 tokens (pre-cache)
+  Actual content: ~150 lines (~2,160 tokens, measured with tiktoken cl100k_base; about 30% more on Claude 4.7+ models)
+  Estimated overhead per 30-turn session: ~64,800 tokens (pre-cache)
   Justified for teams: prevents convention divergence across multiple developers
   Review quarterly and trim sections that Claude consistently gets right without guidance -->

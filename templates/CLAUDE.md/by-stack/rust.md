@@ -1,7 +1,7 @@
 # Rust CLAUDE.md Template
 
 <!-- ABOUT THIS TEMPLATE
-  - ~80 lines of content (~570 tokens)
+  - ~80 lines of content (~890 tokens)
   - Optimized for Rust projects using Cargo
   - Covers: cargo commands, project layout, error handling, testing
   - Copy everything below the "---" line into your project's CLAUDE.md
@@ -116,6 +116,6 @@ pub enum AppError {
 - Do not suppress Clippy warnings without justification
 
 <!-- END OF TEMPLATE
-  Content: ~80 lines (~570 tokens)
-  Overhead per 30-turn session: ~17,100 tokens (pre-cache)
+  Content: ~80 lines (~890 tokens, measured with tiktoken cl100k_base; about 30% more on Claude 4.7+ models)
+  Overhead per 30-turn session: ~26,700 tokens (pre-cache)
   Optimized for: idiomatic Rust, strict correctness, standard Cargo workflow -->

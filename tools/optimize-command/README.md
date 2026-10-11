@@ -62,10 +62,10 @@ Custom commands:    2 defined
 COST ESTIMATE
 -------------
 Model:              Opus 5.5 ($4/$20 per 1M)
-Est. input/turn:    ~2365 tokens (MCP not counted: no per-server figure)
+Est. input/turn:    ~5930 tokens (MCP not counted: no per-server figure)
 Est. output/turn:   ~500 tokens
-Est. session cost:  ~$0.78 (40 turns)
-Est. monthly cost:  ~$85.80 (assuming 5 sessions/day, 22 workdays)
+Est. session cost:  ~$0.48 (40 turns)
+Est. monthly cost:  ~$52.35 (assuming 5 sessions/day, 22 workdays)
 
 GRADE: D (50/100)
 
@@ -79,15 +79,15 @@ ISSUES FOUND
 
 RECOMMENDATIONS (ranked by impact)
 -----------------------------------
-1. [HIGH] Use Sonnet 5.5 as default for most tasks (assumed 80% of turns), reserve Opus 5.5 for complex work -- saves ~40% per session
+1. [HIGH] Use Sonnet 5.5 as default for most tasks (assumed 80% of sessions), reserve Opus 5.5 for complex work -- saves ~40% per session
 2. [HIGH] Move the 6 .claudeignore patterns into permissions.deny as Read(...) rules -- no published figure
-3. [MED]  Trim CLAUDE.md under 200 lines (move workflow-specific sections into skills or path-scoped .claude/rules/) -- saves ~2% per session, plus better adherence
+3. [MED]  Trim CLAUDE.md under 200 lines (move workflow-specific sections into skills or path-scoped .claude/rules/) -- saves ~1.4% per session, plus better adherence
 4. [MED]  Disable the gh and aws MCP servers with /mcp and use the CLIs -- no published figure; run /context to see what they use
 
-ESTIMATED SAVINGS IF ALL APPLIED: ~41% reduction (~$0.78/session -> ~$0.46/session)
+ESTIMATED SAVINGS IF ALL APPLIED: ~41% reduction (~$0.48/session -> ~$0.28/session)
 ```
 
-The example math: input is 2,000 base + 243 lines x 1.5 = ~2,365 tokens/turn, so 40 turns is 94,600 input tokens ($0.38 at $4/1M) plus 20,000 output tokens ($0.40 at $20/1M). Moving 80% of turns to Sonnet 5.5 ($2/$10) and trimming CLAUDE.md to 190 lines gives ~$0.46.
+The example math: input is 3,500 base + 243 lines x 10 = ~5,930 tokens/turn. The estimate bills that stable prefix the way Claude Code caches it: turn 1 writes it at $5/1M (1.25x input), and the other 39 turns read it at $0.20/1M, so $0.030 + $0.046 = $0.076 of input, plus 20,000 output tokens ($0.40 at $20/1M), for ~$0.48 per session. Sonnet 5.5 is half of Opus 5.5 at every rate, so moving 80% of sessions there saves 0.8 x 50% = 40%. Trimming CLAUDE.md to 190 lines cuts the prefix to 5,400 tokens, saving $0.007 (1.4%). Both together give 0.2 x $0.469 + 0.8 x $0.235 = ~$0.28. Conversation history is not modeled, so real sessions, whose history grows every turn, cost more; check them with `/usage`.
 
 ## Customizing the Grading Thresholds
 
@@ -126,13 +126,14 @@ To change the grade boundaries, edit the "Grade scale" list in the Scoring secti
 The per-session cost estimate uses these defaults (editable in the "Cost Estimate" section):
 
 - **Turns per session**: 40
-- **Tokens per CLAUDE.md line**: ~1.5
+- **Tokens per CLAUDE.md line**: ~10 (measured on this repo's root CLAUDE.md and 14 CLAUDE.md templates: 20,161 cl100k tokens over 2,048 lines, 9.8 per line; the Claude 4.7+ tokenizer gives about 30% more)
+- **Caching**: the system prompt and CLAUDE.md prefix is written once at the 5-minute cache-write rate (1.25x input) and read at the model's cache-read rate on the other 39 turns, as Claude Code caches it; below the model's minimum cacheable prompt it bills at full input. Conversation history is not modeled
 - **MCP servers**: not counted. Tool search is on by default, so only tool names and server instructions enter context, and no per-server figure is published. Run `/context` to see the real number
-- **Base system prompt**: ~2000 tokens/turn
+- **Base system prompt**: ~3,500 tokens/turn, the repo's modelling assumption rather than a published figure; Claude Code's real system prompt plus its built-in tool definitions is larger, and `/context` shows the actual number
 - **Average output per turn**: ~500 tokens
 - **Default model**: Opus 5.5 at $4/$20 per 1M input/output tokens when no model is set
 
-Adjust these if your usage patterns differ. For example, if your sessions average 20 turns, halve the session cost estimate.
+Adjust these if your usage patterns differ. For example, if your sessions average 20 turns, roughly halve the session cost estimate (the turn-1 cache write does not shrink).
 
 ## Relationship to Other Tools
 

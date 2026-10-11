@@ -1,7 +1,7 @@
 # Django + Python CLAUDE.md Template
 
 <!-- ABOUT THIS TEMPLATE
-  - ~85 lines of content (~600 tokens)
+  - ~85 lines of content (~930 tokens)
   - Optimized for Django projects with DRF (optional) and pytest
   - Covers: manage.py commands, project layout, views, models, testing
   - Copy everything below the "---" line into your project's CLAUDE.md
@@ -124,6 +124,6 @@ class UserViewSet(viewsets.ModelViewSet):
 - Do not install new dependencies without asking first
 
 <!-- END OF TEMPLATE
-  Content: ~85 lines (~600 tokens)
-  Overhead per 30-turn session: ~18,000 tokens (pre-cache)
+  Content: ~85 lines (~930 tokens, measured with tiktoken cl100k_base; about 30% more on Claude 4.7+ models)
+  Overhead per 30-turn session: ~27,900 tokens (pre-cache)
   Optimized for: Django conventions, thin views, service layer pattern -->

@@ -12,7 +12,7 @@ import { estimateTokens, calculateCost, formatCost, formatTokens } from "./costE
 const WARNING_COLOR = new vscode.ThemeColor("statusBarItem.warningBackground");
 
 export class StatusBarManager {
-  private statusBarItem: vscode.StatusBarItem;
+  private readonly statusBarItem: vscode.StatusBarItem;
   private disposables: vscode.Disposable[] = [];
 
   constructor() {

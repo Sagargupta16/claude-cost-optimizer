@@ -56,6 +56,13 @@ Verified **2026-10-09**. The facts most often got wrong:
   and writes count), $0.50/$2.50 above, on the whole request. Never quote one Haiku 5.5 rate.
 - **Cache hit has three multipliers: 0.1x base input, except Fable 5.1 and Mythos 5.1 (0.025x)
   and Opus 5.5 and Sonnet 5.5 (0.05x).** Never derive a cache rate as `input * 0.1`; read the per-model rate.
+- **Session estimates are cache-aware.** The calculator, repo analyzer, claude-rate and the MCP server
+  bill each turn the way Claude Code caches: the previous request is a cache read, only the new part a
+  5-minute write (1.25x); turn 1 writes everything. Never reintroduce a flat "70% cache hit" rate.
+- **The 4.7+ tokenizer makes about 30% more tokens** (pricing page); every such model uses 1.3.
+  Sonnet 4.6 and earlier use the old tokenizer. Opus 4.5 cut $15/$75 to $5/$25, so Opus 5.5 is not
+  the first Opus price cut.
+- **No vague ranges.** Every saving is a sourced or computed number with its source or formula.
 
 After a rate change, update every file listed at the end of that doc, then run
 `python scripts/check-pricing-sync.py`. CI runs it on every PR.

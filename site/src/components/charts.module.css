@@ -1,46 +1,65 @@
+/* Chart cards */
+
 .chartBlock {
-  margin: 1.5rem 0;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  min-width: 0;
+  transition: border-color 0.2s ease;
+}
+
+.chartBlock:hover {
+  border-color: #3d444d;
+}
+
+@media (max-width: 480px) {
+  .chartBlock {
+    padding: 1rem;
+  }
+}
+
+.chartHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 0.75rem;
+  flex-wrap: wrap;
 }
 
 .chartTitle {
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
   color: var(--text);
-  margin-bottom: 0.5rem;
+  line-height: 1.35;
 }
 
 .chartCanvas {
   position: relative;
   width: 100%;
+  min-width: 0;
+}
+
+.chartCanvas svg {
+  display: block;
+}
+
+/* Horizontal drags scrub the per-turn chart; vertical swipes still scroll the page. */
+.scrub {
+  touch-action: pan-y;
+  cursor: crosshair;
 }
 
 .chartCaption {
   font-size: 0.78rem;
   color: var(--text-muted);
-  margin-top: 0.4rem;
-  line-height: 1.5;
+  line-height: 1.55;
 }
 
-.legendRow {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-}
-
-.legendItem {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.78rem;
-  color: var(--text-muted);
-}
-
-.swatch {
-  width: 10px;
-  height: 10px;
-  border-radius: 3px;
-  display: inline-block;
-}
+/* SVG text */
 
 .axisText {
   font-size: 10px;
@@ -49,58 +68,337 @@
 }
 
 .rowLabel {
-  font-size: 11px;
+  font-size: 11.5px;
   fill: var(--text-muted);
 }
 
 .rowLabelStrong {
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 600;
   fill: var(--text);
 }
 
+/* #7d8590 is 4.6:1 on the #161b22 surface: dimmer than the muted text, still readable. */
+.rowLabelMuted {
+  font-size: 11.5px;
+  fill: #7d8590;
+}
+
+.rowNote {
+  font-size: 10.5px;
+  fill: #7d8590;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
 .valueLabel {
-  font-size: 10px;
+  font-size: 11px;
   fill: var(--text-muted);
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
 
-.endLabel {
+.valueStrong {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 700;
   fill: var(--text);
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
 }
 
-.bar {
-  transition: opacity 120ms ease;
-}
-
-.bar:hover {
-  opacity: 0.85;
-}
-
-.tooltip {
-  position: absolute;
-  transform: translate(-50%, -100%);
-  background: var(--surface-hover);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.4rem 0.6rem;
+/* fill comes from the segment's ink attribute, so no fill here. */
+.segLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   pointer-events: none;
-  white-space: nowrap;
-  z-index: 5;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-.tooltipTitle {
+.ghostLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  fill: var(--accent-green);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.tierLabel {
+  font-size: 10.5px;
+  font-weight: 700;
+  fill: var(--warning-yellow);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+/* SVG marks and motion */
+
+.segment {
+  transition: opacity 180ms ease;
+}
+
+.ghost {
+  animation: march 1.4s linear infinite;
+}
+
+.band {
+  transition: opacity 180ms ease;
+}
+
+.drawLine {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: draw 1.4s cubic-bezier(0.3, 0.6, 0.2, 1) 150ms forwards;
+}
+
+.pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pulse 1.8s ease-out 1.4s infinite;
+  opacity: 0;
+}
+
+.endDot {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pop 420ms cubic-bezier(0.3, 1.6, 0.5, 1) 1.3s backwards;
+}
+
+.tier {
+  animation: fadeIn 500ms ease-out 700ms backwards;
+}
+
+@keyframes draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.8);
+    opacity: 0;
+  }
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes march {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Breakdown table (doubles as the legend) */
+
+.legendTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.82rem;
+}
+
+.legendTable th,
+.legendTable td {
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--border);
+  text-align: right;
+  white-space: nowrap;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.legendTable thead th {
+  font-family: inherit;
   font-size: 0.72rem;
   font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.legendTable thead th:first-child,
+.legendTable th[scope='row'] {
+  text-align: left;
+}
+
+.legendTable th[scope='row'] {
+  font-family: inherit;
+  font-weight: 500;
   color: var(--text);
 }
 
-.tooltipValue {
-  font-size: 0.72rem;
+.legendTable tbody tr {
+  transition: background-color 180ms ease;
+}
+
+.legendTable tfoot th,
+.legendTable tfoot td {
+  font-weight: 700;
+  border-bottom: none;
+  padding-top: 0.65rem;
+}
+
+.rowActive {
+  background-color: var(--surface-hover);
+}
+
+.catCell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.change {
+  color: var(--accent-green);
+}
+
+@media (max-width: 420px) {
+  .changeCol {
+    display: none;
+  }
+
+  .legendTable th,
+  .legendTable td {
+    padding: 0.4rem 0.3rem;
+  }
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+/* Per-turn readout (the docked tooltip) */
+
+.readout {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  padding: 0.65rem 0.8rem;
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.readoutHead {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.5rem;
+  font-size: 0.8rem;
   color: var(--text-muted);
+}
+
+.readoutTurn {
+  color: var(--text);
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+}
+
+.readoutTotal {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--text);
+}
+
+/* Four columns on desktop, one tidy list on a phone (150px keeps "Cache reads $0.0010" on one line). */
+.readoutList {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.25rem 1rem;
+}
+
+.readoutItem {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.readoutValue {
+  margin-left: auto;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  color: var(--text);
+}
+
+.readoutPrompt,
+.readoutPromptWarn {
+  font-size: 0.74rem;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  color: var(--text-muted);
+}
+
+.readoutPromptWarn {
+  color: var(--warning-yellow);
+}
+
+/* Toggle chip */
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  padding: 0.35rem 0.85rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background-color: var(--bg);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  transition: border-color 0.15s, color 0.15s, background-color 0.15s, transform 0.15s;
+}
+
+.chip:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+.chip:active {
+  transform: scale(0.96);
+}
+
+.chip:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+}
+
+.chip[aria-pressed='true'] {
+  border-color: var(--accent-blue);
+  color: var(--text);
+  background-color: var(--surface-hover);
+}
+
+.chipDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: var(--border);
+  transition: background-color 0.15s, transform 0.2s;
+}
+
+.chip[aria-pressed='true'] .chipDot {
+  background-color: var(--accent-blue);
+  transform: scale(1.25);
 }

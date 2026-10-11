@@ -1,7 +1,7 @@
 # FastAPI + Python CLAUDE.md Template
 
 <!-- ABOUT THIS TEMPLATE
-  - ~90 lines of content (~640 tokens)
+  - ~90 lines of content (~1,150 tokens)
   - Optimized for FastAPI + Python projects
   - Covers: venv/poetry, endpoint patterns, Pydantic, DB, pytest
   - Copy everything below the "---" line into your project's CLAUDE.md
@@ -134,6 +134,6 @@ async def get_user(user_id: int, db=Depends(get_db)):
 - Do not install new dependencies without asking first
 
 <!-- END OF TEMPLATE
-  Content: ~90 lines (~640 tokens)
-  Overhead per 30-turn session: ~19,200 tokens (pre-cache)
+  Content: ~90 lines (~1,150 tokens, measured with tiktoken cl100k_base; about 30% more on Claude 4.7+ models)
+  Overhead per 30-turn session: ~34,500 tokens (pre-cache)
   Optimized for: correct FastAPI patterns, clear layer separation -->

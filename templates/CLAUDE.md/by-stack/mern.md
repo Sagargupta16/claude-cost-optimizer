@@ -1,7 +1,7 @@
 # MERN Stack CLAUDE.md Template
 
 <!-- ABOUT THIS TEMPLATE
-  - ~95 lines of content (~680 tokens)
+  - ~95 lines of content (~1,220 tokens)
   - Optimized for MongoDB + Express + React + Node.js projects
   - Covers: server/client commands, API patterns, auth, Mongoose, React conventions
   - Copy everything below the "---" line into your project's CLAUDE.md
@@ -144,6 +144,6 @@ export const User = model<IUser>('User', userSchema);
 - Do not modify shared types without checking both server and client usage
 
 <!-- END OF TEMPLATE
-  Content: ~95 lines (~680 tokens)
-  Overhead per 30-turn session: ~20,400 tokens (pre-cache)
+  Content: ~95 lines (~1,220 tokens, measured with tiktoken cl100k_base; about 30% more on Claude 4.7+ models)
+  Overhead per 30-turn session: ~36,600 tokens (pre-cache)
   Optimized for: clear server/client separation, consistent API patterns -->

@@ -13,8 +13,8 @@ Usage:
 """
 
 import argparse
-import sys
 import os
+import sys
 
 try:
     import tiktoken
@@ -66,11 +66,11 @@ MODEL_PRICING = {
         "name": "Opus 5.5",
         "note": (
             "Anthropic's recommended starting model for most workloads (released "
-            "2026-09-22). $4/$20 -- 20% below Opus 5, the first Opus release to lower "
-            "the rate -- with cache reads at $0.20/MTok, 0.05x base input (95% off). "
+            "2026-09-22). $4/$20 -- 20% below Opus 5 (Opus 4.5 made the earlier cut, "
+            "$15/$75 to $5/$25) -- with cache reads at $0.20/MTok, 0.05x base input (95% off). "
             "Adaptive thinking is always on (thinking disabled and budget_tokens both "
             "return 400) and reasoning tokens bill as output; effort defaults to "
-            "medium. Same tokenizer as Opus 4.7+ (up to 35% more tokens than Opus "
+            "medium. Same tokenizer as Opus 4.7+ (about 30% more tokens than Opus "
             "4.6). Batch $2/$10. Minimum cacheable prompt is 512 tokens."
         ),
     },
@@ -318,7 +318,7 @@ def read_input(source: str) -> str:
         try:
             with open(resolved, "r", encoding="latin-1") as f:
                 return f.read()
-        except Exception as e:
+        except OSError as e:
             print(
                 f"{c(RED, 'Error:')} Could not read file: {e}",
                 file=sys.stderr,

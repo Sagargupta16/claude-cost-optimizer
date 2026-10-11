@@ -1,0 +1,84 @@
+.frame {
+  position: relative;
+  width: 100%;
+}
+
+.frame svg {
+  display: block;
+  overflow: visible;
+}
+
+/* Bars grow from their left edge; value labels ride the growing tip. */
+
+.growBar {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  transition: transform 1100ms var(--ease-out);
+}
+
+.ride {
+  transition:
+    transform 1100ms var(--ease-out),
+    opacity 500ms ease;
+}
+
+.track {
+  fill: var(--chart-grid);
+}
+
+.name {
+  font-size: 12px;
+  font-weight: 600;
+  fill: var(--text);
+}
+
+.note {
+  font-size: 10px;
+  fill: var(--text-muted);
+}
+
+.value {
+  font-size: 10px;
+  fill: var(--text-muted);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.valueStrong {
+  font-size: 11px;
+  font-weight: 700;
+  fill: var(--text);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.pct {
+  font-size: 12px;
+  font-weight: 700;
+  fill: var(--accent-green);
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  transition: opacity 500ms ease 600ms;
+}
+
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin-bottom: 0.75rem;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.legendItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+  display: inline-block;
+}

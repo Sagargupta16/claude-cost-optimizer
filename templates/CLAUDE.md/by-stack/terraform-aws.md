@@ -1,7 +1,7 @@
 # Terraform + AWS CLAUDE.md Template
 
 <!-- ABOUT THIS TEMPLATE
-  - ~90 lines of content (~640 tokens)
+  - ~90 lines of content (~1,140 tokens)
   - Optimized for Terraform + AWS infrastructure projects
   - Covers: terraform commands, module patterns, state, naming, security
   - Copy everything below the "---" line into your project's CLAUDE.md
@@ -139,6 +139,6 @@ module "vpc" {
 - Do not run `terraform destroy` on staging/prod without explicit approval
 
 <!-- END OF TEMPLATE
-  Content: ~90 lines (~640 tokens)
-  Overhead per 30-turn session: ~19,200 tokens (pre-cache)
+  Content: ~90 lines (~1,140 tokens, measured with tiktoken cl100k_base; about 30% more on Claude 4.7+ models)
+  Overhead per 30-turn session: ~34,200 tokens (pre-cache)
   Optimized for: safe infra operations, consistent module structure, security -->

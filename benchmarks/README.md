@@ -31,7 +31,7 @@ All cost calculations use the following rates (verified 2026-10-09):
 
 Haiku 5.5 (released 2026-10-07) is the first model priced by prompt length: each request is priced on its own, its prompt length counts cache reads and writes, and a request over 100,000 prompt tokens pays the higher row for input, cache and output alike. It uses the newer tokenizer (~30% more tokens than Haiku 4.5 for the same text) and is not benchmarked here yet; the Haiku figures in these files are Haiku 4.5.
 
-Batch API pricing is 50% off the standard rates above. The new tokenizer used by Opus 4.7 and later (including Opus 4.8, Opus 5, Opus 5.5, Sonnet 5, and Sonnet 5.5) can use up to 35% more tokens for the same text, so expect ~20-35% higher absolute costs vs Opus 4.6 for identical workloads. Opus 5 needs no re-baselining from Opus 4.7 or 4.8 -- they share the same tokenizer. Note that Opus 5 enables adaptive thinking by default and bills reasoning tokens as output at the normal output rate, so an untuned Opus 5 run costs more than the same work on Opus 4.8 despite the identical posted rates. Opus 5.5 is $4/$20 (20% below Opus 5) and reads cache at 0.05x base input, but thinking is always on and effort defaults to `medium`, so re-baseline rather than scaling Opus 5 figures by 0.8. Sonnet 5 is $2/$10 -- permanent, after Anthropic cancelled the increase to $3/$15 that was scheduled for 2026-09-01. Sonnet 5.5 (released 2026-09-28) costs the same $2/$10 and uses the same tokenizer as Sonnet 5 (its cache read was cut to $0.10, 0.05x base input, on 2026-10-07, half Sonnet 5's $0.20), but adaptive thinking is on by default (reasoning bills as output) and its effort levels are recalibrated, so re-run your effort sweep rather than carrying Sonnet 5 figures over.
+Batch API pricing is 50% off the standard rates above. The new tokenizer used by Opus 4.7 and later (including Opus 4.8, Opus 5, Opus 5.5, Sonnet 5, and Sonnet 5.5) produces about 30% more tokens for the same text ([Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing); the [Opus 4.7 launch post](https://www.anthropic.com/news/claude-opus-4-7) put it at roughly 1.0-1.35x by content type), so expect about 30% higher absolute cost than Opus 4.6 for identical workloads at the same per-token rate. Opus 5 needs no re-baselining from Opus 4.7 or 4.8 -- they share the same tokenizer. Note that Opus 5 enables adaptive thinking by default and bills reasoning tokens as output at the normal output rate, so an untuned Opus 5 run costs more than the same work on Opus 4.8 despite the identical posted rates. Opus 5.5 is $4/$20 (20% below Opus 5) and reads cache at 0.05x base input, but thinking is always on and effort defaults to `medium`, so re-baseline rather than scaling Opus 5 figures by 0.8. Sonnet 5 is $2/$10 -- permanent, after Anthropic cancelled the increase to $3/$15 that was scheduled for 2026-09-01. Sonnet 5.5 (released 2026-09-28) costs the same $2/$10 and uses the same tokenizer as Sonnet 5 (its cache read was cut to $0.10, 0.05x base input, on 2026-10-07, half Sonnet 5's $0.20), but adaptive thinking is on by default (reasoning bills as output) and its effort levels are recalibrated, so re-run your effort sweep rather than carrying Sonnet 5 figures over.
 
 ### What "Estimated" Means
 
@@ -50,7 +50,7 @@ We report ranges where possible. The numbers are designed to show **relative dif
 Claude Code automatically caches stable content (system prompt, CLAUDE.md, earlier conversation turns) between turns. This means:
 
 - **First turn** of a session is always the most expensive because nothing is cached yet.
-- **Subsequent turns** benefit from caching -- input tokens for unchanged content cost ~90% less.
+- **Subsequent turns** benefit from caching -- input tokens for unchanged content cost 90% less (0.1x input) on most models, 95% less on Opus 5.5 and Sonnet 5.5 (0.05x), 97.5% less on Fable 5.1 (0.025x) ([prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)).
 - The benchmarks below show **pre-cache** token counts (worst case). Your actual costs will often be lower due to caching, especially in longer sessions.
 - Strategies that keep content stable between turns (like a well-structured CLAUDE.md) benefit more from caching than strategies that change context frequently.
 
@@ -70,7 +70,7 @@ Claude Code automatically caches stable content (system prompt, CLAUDE.md, earli
 ### Assumptions
 
 - **Session length**: Unless otherwise stated, benchmarks assume a single-task session (Claude Code launched, task completed, session ended).
-- **CLAUDE.md size**: The "optimized" baseline uses the Standard template (~100 lines, ~700 tokens). The "unoptimized" baseline uses a bloated CLAUDE.md (~300 lines, ~2,100 tokens).
+- **CLAUDE.md size**: The "optimized" baseline uses the Standard template (~100 lines, counted as ~700 tokens in these runs; the current template measures ~1,200 tokens with tiktoken cl100k_base). The "unoptimized" baseline uses a bloated CLAUDE.md (~300 lines, counted as ~2,100 tokens).
 - **Codebase size**: A medium-sized project (~50 files, ~15,000 lines of code) unless noted otherwise.
 - **Turns**: A "turn" is one user message + one Claude response (which may include multiple tool calls).
 
@@ -156,7 +156,7 @@ Not every session needs optimization. Use these benchmarks to identify your high
 
 - If you run 50+ turns per session, **context size optimization** has the biggest payoff.
 - If you use Opus for everything, **model selection** is your biggest lever.
-- If you frequently do simple tasks (renames, formatting, small fixes), **switching to Haiku** for those tasks alone can cut monthly costs by 20-40%.
+- If you frequently do simple tasks (renames, formatting, small fixes), **switching to Haiku 5.5** for those tasks cuts the bill by their share of spend times 95% (from Sonnet 5.5) or 97.5% (from Opus 5.5): moving 30% of spend saves 28.5% or 29% (computed from the per-token rates above, prompts up to 100K tokens: 1 - 0.10/2 = 0.95, 1 - 0.10/4 = 0.975).
 
 ### Cost vs. Quality Tradeoffs
 

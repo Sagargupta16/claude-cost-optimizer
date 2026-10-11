@@ -84,6 +84,25 @@ function costForTokens(tokens: number, ratePerMillion: number): number {
   return (tokens / 1_000_000) * ratePerMillion;
 }
 
+/** A 5-minute cache write costs 1.25x base input on every model. */
+const CACHE_WRITE_5M_MULTIPLIER = 1.25;
+
+/**
+ * Input cost of one Claude Code turn, billed the way Claude Code caches a conversation
+ * (code.claude.com/docs/en/prompt-caching): the previous request is a cache read and only the
+ * new part is a 5-minute cache write. The first turn (previousPrompt 0) writes everything; a
+ * prompt under the model's minimum cacheable length is not cached and pays full input.
+ */
+function turnInputCost(pricing: ModelPricing, promptTokens: number, previousPrompt: number): number {
+  const rates = ratesFor(pricing, promptTokens);
+  if (promptTokens < pricing.minCacheTokens) return costForTokens(promptTokens, rates.inputPerMillion);
+  const cacheRead = previousPrompt >= pricing.minCacheTokens ? Math.min(previousPrompt, promptTokens) : 0;
+  return (
+    costForTokens(cacheRead, rates.cacheHitPerMillion) +
+    costForTokens(promptTokens - cacheRead, rates.inputPerMillion * CACHE_WRITE_5M_MULTIPLIER)
+  );
+}
+
 function formatUsd(amount: number): string {
   return `$${amount.toFixed(4)}`;
 }
@@ -129,19 +148,15 @@ function estimateCost(args: {
   }
 
   if (args.turns && args.turns > 1) {
-    // Each turn re-sends conversation history, which grows cumulatively.
-    // Assume ~70% cache hit rate on stable content.
+    // Each turn re-sends the conversation, which grows by ~1,500 tokens a turn.
     let totalCost = 0;
+    let previousPrompt = 0;
     for (let t = 1; t <= args.turns; t++) {
-      const historyTokens = tokens + (t - 1) * 1500;
-      const cachedTokens = Math.floor(historyTokens * 0.7);
-      const freshTokens = historyTokens - cachedTokens;
-      const rates = ratesFor(pricing, historyTokens);
-      const turnInputCost =
-        costForTokens(freshTokens, rates.inputPerMillion) +
-        costForTokens(cachedTokens, rates.cacheHitPerMillion);
-      const turnOutputCost = costForTokens(500, rates.outputPerMillion);
-      totalCost += turnInputCost + turnOutputCost;
+      const promptTokens = tokens + (t - 1) * 1500;
+      totalCost +=
+        turnInputCost(pricing, promptTokens, previousPrompt) +
+        costForTokens(500, ratesFor(pricing, promptTokens).outputPerMillion);
+      previousPrompt = promptTokens;
     }
     result.projected_turns = args.turns;
     result.projected_total_cost = formatUsd(totalCost);
@@ -163,37 +178,30 @@ function sessionEstimate(args: {
   }
 
   const turns = args.turns;
-  const claudeMdTokens = (args.claude_md_lines ?? 0) * 7;
+  // 10 tokens per line: measured on this repo's CLAUDE.md files (20,161 cl100k tokens over 2,048 lines).
+  const claudeMdTokens = (args.claude_md_lines ?? 0) * 10;
   const mcpSchemaTokens = (args.mcp_servers ?? 0) * 1500;
   const systemPromptTokens = 3500;
 
   // Stable tokens (loaded every turn, eligible for caching)
   const stableTokens = systemPromptTokens + claudeMdTokens + mcpSchemaTokens;
 
-  const cacheHitRate = 0.7;
   let totalInputCost = 0;
   let totalOutputCost = 0;
   let totalInputTokens = 0;
   let totalOutputTokens = 0;
+  let previousPrompt = 0;
 
   for (let t = 1; t <= turns; t++) {
     const historyTokens = (t - 1) * 1500; // cumulative conversation growth
     const turnInputTokens = stableTokens + historyTokens;
-
-    const cachedTokens = Math.floor(stableTokens * cacheHitRate);
-    const freshTokens = turnInputTokens - cachedTokens;
-
-    const rates = ratesFor(pricing, turnInputTokens);
-    const turnInputCost =
-      costForTokens(freshTokens, rates.inputPerMillion) +
-      costForTokens(cachedTokens, rates.cacheHitPerMillion);
     const turnOutputTokens = 500;
-    const turnOutputCost = costForTokens(turnOutputTokens, rates.outputPerMillion);
 
-    totalInputCost += turnInputCost;
-    totalOutputCost += turnOutputCost;
+    totalInputCost += turnInputCost(pricing, turnInputTokens, previousPrompt);
+    totalOutputCost += costForTokens(turnOutputTokens, ratesFor(pricing, turnInputTokens).outputPerMillion);
     totalInputTokens += turnInputTokens;
     totalOutputTokens += turnOutputTokens;
+    previousPrompt = turnInputTokens;
   }
 
   const totalCost = totalInputCost + totalOutputCost;
@@ -216,7 +224,7 @@ function sessionEstimate(args: {
   }
   if (stableTokens < pricing.minCacheTokens) {
     recommendations.push(
-      `The stable prefix is only ~${stableTokens} tokens, below the ${pricing.minCacheTokens}-token minimum cacheable prompt for "${model}". Caching is silently skipped at that size, so these figures assume no cache discount is actually applied.`
+      `The stable prefix is only ~${stableTokens} tokens, below the ${pricing.minCacheTokens}-token minimum cacheable prompt for "${model}". Caching is silently skipped at that size, so these figures bill every turn under that size at full input price.`
     );
   }
   if (model === "fable") {
@@ -226,9 +234,7 @@ function sessionEstimate(args: {
   }
   if (model === "opus") {
     recommendations.push(
-      "Opus 5.5 runs adaptive thinking always on (thinking disabled and budget_tokens both return 400), and reasoning tokens bill as output. Effort is the only control: it defaults to medium; lower output_config.effort for routine turns."
-    );
-    recommendations.push(
+      "Opus 5.5 runs adaptive thinking always on (thinking disabled and budget_tokens both return 400), and reasoning tokens bill as output. Effort is the only control: it defaults to medium; lower output_config.effort for routine turns.",
       "Switching to Sonnet 5.5 for routine tasks saves 50% per token ($2/$10 vs $4/$20) with comparable quality for most coding work."
     );
   }
@@ -288,7 +294,7 @@ function compareModels(args: {
     ([, a], [, b]) => a.total_raw - b.total_raw
   );
   const cheapest = sorted[0][0];
-  const mostExpensive = sorted[sorted.length - 1];
+  const mostExpensive = sorted.at(-1) ?? sorted[0];
 
   const comparison = Object.fromEntries(
     Object.entries(results).map(([name, data]) => [
@@ -322,7 +328,7 @@ const server = new Server(
   { capabilities: { tools: {} } }
 );
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
+server.setRequestHandler(ListToolsRequestSchema, () => ({
   tools: [
     {
       name: "estimate_cost",
@@ -402,7 +408,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   ],
 }));
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, (request) => {
   const { name, arguments: args } = request.params;
 
   try {
@@ -441,12 +447,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-}
-
-main().catch((err) => {
+try {
+  await server.connect(new StdioServerTransport());
+} catch (err) {
   console.error("Fatal error:", err);
   process.exit(1);
-});
+}

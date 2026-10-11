@@ -4,6 +4,8 @@
 
 The biggest hidden cost in Claude Code is not the model -- it is wasted turns. Every unnecessary clarification, every "actually, I meant...", every exploratory read of a file Claude did not need -- these compound into real money. This guide covers workflow patterns that minimize waste.
 
+> **How the dollar figures in this guide are computed.** Session and per-turn costs use this repo's calculator defaults (3,500-token system prompt, 100-line CLAUDE.md at 10 tokens per line, measured at 9.8 per line across this repo's 15 CLAUDE.md files, 2 MCP servers at 1,500 tokens each, one 2,000-token file read, 500 output tokens per turn, history growing 1,500 tokens per turn), billed the way Claude Code bills: each request reads the whole previous request from cache and writes only the new exchange at the 5-minute rate (1.25x input), with no pause longer than the cache TTL ([formula](01-understanding-costs.md#estimated-session-cost)). At those defaults a 30-turn session is $0.742 on Opus 5.5 and $0.371 on Sonnet 5.5. Turn counts in the examples are illustrative, not measured.
+
 ---
 
 ## Table of Contents
@@ -41,12 +43,14 @@ Use Claude Code's plan mode to analyze before implementing. In an interactive se
 ```bash
 # Bad: Jump straight to implementation
 claude "refactor the auth module to use JWT instead of sessions"
-# Result: 12 turns, multiple false starts, $1.80
+# Result: 12 turns, multiple false starts: $0.29 on Opus 5.5
 
 # Good: Plan first, then implement (or press Shift+Tab inside a running session)
 claude --permission-mode plan "refactor the auth module to use JWT instead of sessions"
-# Result: Plan in 2 turns ($0.30), implementation in 4 turns ($0.60), total $0.90
+# Result: plan in 2 turns ($0.08), implementation in 4 more ($0.08), total $0.16
 ```
+
+(Computed at the calculator defaults above. The 12 and 6 turn counts are illustrative.)
 
 ### What Plan Mode Does
 
@@ -83,7 +87,7 @@ Step 3: Execute (Claude implements the refined plan)
   "Proceed with the plan. Implement the changes."
 ```
 
-**Estimated savings**: 15-25% per session by eliminating backtracking.
+**Estimated savings: no published figure.** Plan mode appends its instructions as messages, so toggling it keeps the prompt cache; opusplan is the exception, since each toggle switches model and rebuilds the cache ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching)).
 
 ---
 
@@ -164,7 +168,9 @@ Add this to your CLAUDE.md to encourage cost-efficient delegation:
 
 To pin the cheap model rather than asking for it, set `model: haiku` in the subagent's definition frontmatter -- Anthropic's costs page (code.claude.com/docs/en/costs) recommends exactly that for simple subagent tasks. On the Anthropic API `haiku` is Haiku 5.5 (Claude Code v2.1.293+); on Bedrock, Google Cloud, Microsoft Foundry and Claude Platform on AWS it is still legacy Haiku 4.5, so set `ANTHROPIC_DEFAULT_HAIKU_MODEL` there (Bedrock: `anthropic.claude-haiku-5-5`). Two Haiku 5.5 properties suit subagents: short subagent calls stay in the cheap under-100K tier, and its 512-token cache floor (Haiku 4.5: 4,096) means a subagent's short system prompt actually caches instead of paying full input price on every call. The same page warns about the opposite end: agent teams use about **7x the tokens** of a standard session when teammates run in plan mode, so fan out deliberately.
 
-**Estimated savings**: 20-40% for sessions involving multi-file work.
+Delegation is not cheap by default: the built-in Explore subagent runs on the main conversation's model, not Haiku. To explore on Haiku, define your own `Explore` with `model: haiku`, or set `CLAUDE_CODE_SUBAGENT_MODEL=haiku` plus `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` (v2.1.257+). Since v2.1.292 the Agent tool also takes an `effort` parameter ([sub-agents docs](https://code.claude.com/docs/en/sub-agents), [changelog](https://code.claude.com/docs/en/changelog)).
+
+**Measured elsewhere:** in Anthropic's [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization), moving the work into a subagent cut one agent loop's cost 78% ($1.7945 to $0.3978). No Claude Code measurement exists, and subagents add their own requests: Anthropic measured multi-agent systems at about 15x the tokens of a chat ([multi-agent research post](https://www.anthropic.com/engineering/multi-agent-research-system)). Subagents save when they read far more than they return and run on a cheaper model.
 
 ---
 
@@ -268,7 +274,7 @@ Do not add tests unless I ask.
 3. **Consistent behavior**: Same approach every time, no exploratory overhead
 4. **Amortized prompt design**: You spend time writing the prompt once, and every invocation benefits
 
-**Estimated savings**: 10-15% by eliminating prompt interpretation overhead.
+**Estimated savings: no published figure.** Commands and skills load their instructions only when invoked, as messages, so they keep the prompt cache ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching)). A skill's description is the exception: it sits in the skill listing on every turn whether or not the skill runs. `/skill-doctor` (Claude Code v2.1.252+) reports what each skill costs and how often it is used, and says where to turn off the ones you never invoke ([skills docs](https://code.claude.com/docs/en/skills)).
 
 ### Hooks: Filter Output Before Claude Reads It
 
@@ -283,7 +289,7 @@ Filtering matters more on Haiku 5.5 subagents: unfiltered test or build output c
 ### The Problem
 
 Each Claude Code turn includes fixed overhead:
-- System prompt (~1,500 tokens)
+- System prompt (3,500 tokens is this repo's modelling assumption; Claude Code's real system prompt plus its tool definitions is larger)
 - CLAUDE.md content
 - Conversation history
 - Tool definitions (MCP tools are deferred by default under tool search: only their names and server instructions load until Claude uses one)
@@ -293,15 +299,17 @@ If you send 10 separate requests to rename 10 functions, you pay this overhead 1
 ### The Batch Pattern
 
 ```bash
-# Bad: 10 separate requests ($0.07 each x 10 = $0.70)
+# Bad: 10 separate requests ($0.029 each x 10 = $0.29 on Sonnet 5.5)
 claude "rename getUserName to fetchUserName"
 claude "rename getUserEmail to fetchUserEmail"
 claude "rename getUserAge to fetchUserAge"
 # ... 7 more times
 
-# Good: 1 batched request ($0.15 total)
+# Good: 1 batched request (one session: $0.048 if it takes 3 turns, $0.12 even at 10)
 claude "rename all functions matching getUser* to fetchUser* across the codebase"
 ```
+
+(Computed at the calculator defaults at the top of this guide. Each separate `claude` run is a new session that writes its whole 9,500-token prompt to the cache again, unless it can reuse the cached system prompt, which happens only within the TTL and only if its git status snapshot matches ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching)); one session writes it once and reads it after that.)
 
 ### When to Batch
 
@@ -327,9 +335,9 @@ claude "add TypeScript type annotations to all functions in src/utils/"
 
 ### The Sweet Spot
 
-Batch 3-10 related items per request. Beyond 10, Claude may lose track or make mistakes, requiring costly correction turns.
+Batch related items into one request, up to about 10. Beyond that, Claude may lose track or make mistakes, requiring costly correction turns (a rule of thumb, not a measured limit).
 
-**Estimated savings**: 30-50% for repetitive multi-file operations.
+**Worked example:** each turn you avoid saves one cache read of the whole context plus that turn's output. At a 50K-token context on Opus 5.5 that is $0.01 per avoided turn in cache reads ($0.005 on Sonnet 5.5), so twelve one-file turns collapsed into one save about $0.11 before output (computed: 50,000 x $0.20/1M = $0.01, x 11 avoided turns; Sonnet 5.5 reads at $0.10/1M, [Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing)).
 
 ---
 
@@ -345,7 +353,7 @@ Turn 4: "Can you also add password strength indicator?"
 Turn 5: "Make it responsive"
 Turn 6: "Add loading state during submission"
 
-Total: 6 turns, $0.42 (Sonnet)
+Total: 6 turns, $0.079 (Sonnet 5.5)
 ```
 
 Each turn re-reads the growing conversation history and the modified file. By turn 6, Claude is processing all previous turns plus the file content.
@@ -361,10 +369,10 @@ Turn 1: "Create a login form with:
   - Responsive layout (mobile-first)
   - Error messages for invalid inputs"
 
-Total: 1-2 turns, $0.12 (Sonnet)
+Total: 2 turns, $0.038 (Sonnet 5.5)
 ```
 
-**Savings: 71%** for the same output.
+**Savings: 51%** for the same output (computed at the calculator defaults at the top of this guide: $0.038 vs $0.079; the turn counts are illustrative).
 
 ### How to Write Complete Requirements
 
@@ -376,7 +384,7 @@ Before sending a prompt, ask yourself:
 4. **What are the edge cases?** (error states, empty states, loading states)
 5. **What should it NOT do?** (no tests, no storybook, no extra files)
 
-Spend 60 seconds writing a complete prompt. It will save 5 minutes and $0.30 in unnecessary turns.
+Spend 60 seconds writing a complete prompt. It saves the extra turns: $0.04 per task in the example above on Sonnet 5.5, twice that on Opus 5.5, and more in a longer session, where every extra turn reads a bigger context.
 
 ### The Pre-Prompt Checklist
 
@@ -413,7 +421,7 @@ When Claude asks a clarifying question, it costs you:
 2. **Your answer turn**: Input (full history + question + your answer) + Output (next action)
 3. **Potential follow-up questions**: The cycle continues
 
-A single clarification loop adds $0.03-$0.10 depending on context size. Three loops in a session is $0.09-$0.30 of pure waste.
+A single clarification loop adds at least one extra request: a cache read of the whole context, plus the new exchange and its output. At a 50K-token context that is $0.01 of cache read on Opus 5.5 ($0.005 on Sonnet 5.5) before output and thinking, and $0.04 at 200K. The bigger risk is the wait: if you take longer than the cache TTL to answer (five minutes on an API key), the next request re-writes the whole context instead, $0.25 at 50K on Opus 5.5 (computed: 50,000 x $0.20/1M read vs 50,000 x $5/1M write, [Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing)).
 
 ### How to Eliminate Clarification Loops
 
@@ -455,7 +463,7 @@ Do not ask for clarification unless the request is genuinely ambiguous.
 Prefer conventions already established in this codebase.
 ```
 
-This single CLAUDE.md entry can eliminate 50%+ of clarification turns across all sessions.
+This single CLAUDE.md entry removes the clarification turns it answers in advance; no published figure says how many.
 
 ---
 
@@ -518,7 +526,7 @@ Turn 5: Complete step 5
 Total: 5 turns, no wasted reads
 ```
 
-**Estimated savings**: 15-30% on complex multi-step tasks.
+**Estimated savings: no published figure.**
 
 ---
 
@@ -528,9 +536,10 @@ Total: 5 turns, no wasted reads
 
 The `/compact` command tells Claude Code to compress the conversation history. It summarizes previous turns into a compact form, dramatically reducing the input tokens for subsequent turns.
 
-Based on community research into Claude Code's observed behavior, here are the specifics:
+- **Automatic trigger** (Anthropic's docs): Claude Code auto-compacts when the context nears the window, at about **967K tokens** by default on 1M-window models (Fable, Sonnet 5 and later, Haiku 5.5, Opus 4.7 and later). `/autocompact` sets the point anywhere from 100K to 1M and is saved per model since v2.1.288 (2026-10-02); subagents get their own `autoCompactWindow` since v2.1.296 (2026-10-09) ([model-config page](https://code.claude.com/docs/en/model-config), [changelog](https://code.claude.com/docs/en/changelog)).
 
-- **Automatic trigger**: Compaction triggers automatically when compactable content exceeds approximately **10,000 estimated tokens**. You do not need to run `/compact` manually for this to happen -- Claude Code monitors token usage and compacts when the threshold is crossed.
+Based on community research into Claude Code's observed behavior (not documented by Anthropic), here are more specifics:
+
 - **What is preserved**: After compaction, the **4 most recent messages** are preserved verbatim. Everything older is replaced with a summary.
 - **What the summary contains**: The generated summary includes tool mentions from the session, up to 3 recent user requests, up to 8 key files that were referenced, and an inference of the current work being done. This is designed to retain enough context for Claude to continue working without losing track of the task.
 - **Manual /compact is still valuable**: Even though auto-compaction exists, running `/compact` manually before the threshold gives you more control over the timing. You can also provide a focus hint (e.g., `/compact Focus on the auth refactor`) to influence what the summary prioritizes.
@@ -594,12 +603,14 @@ Without /compact, a 30-turn session has massive context by the end. Turn 30 proc
 
 With /compact after every 10 turns:
 - Turns 1-10: Normal growth
-- /compact: History compressed from ~20K tokens to ~2K tokens
+- /compact: History compressed from 15K tokens (10 turns x 1,500 at the calculator defaults) to a 2K summary
 - Turns 11-20: Start with small context, normal growth
 - /compact: Compressed again
 - Turns 21-30: Start with small context
 
-**Estimated savings**: 20-40% on long sessions (30+ turns).
+**Computed:** at the calculator defaults at the top of this guide, those two compactions make the 30-turn session about 6% *more* expensive on Opus 5.5 or Sonnet 5.5 ($0.789 vs $0.742 on Opus 5.5): the history they remove was already billing at the cache-read rate, and each 2K summary bills as output. On an 80-turn session, compacting every 20 turns saves about 20% ($2.02 vs $2.51 on Opus 5.5). Compact long sessions, and compact for focus; on short ones it does not pay.
+
+**Measured elsewhere:** compaction cut cost 32% and pruning stale tool results 39% on Anthropic's long triage run, and saved nothing on short loops ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). In Anthropic's [cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) loop, compaction cut 16% and jagged pruning 29%.
 
 ---
 
@@ -618,7 +629,7 @@ Some developers configure Claude Code to auto-commit after every change. This se
 **Pattern 1: Commit at logical boundaries**
 
 ```
-Implement feature (5-8 turns)
+Implement feature (6 turns)
   → Single commit: "Add user profile editing feature"
 
 Not:
@@ -658,15 +669,15 @@ Use Haiku for commit messages since they are simple summarization tasks.
 ### The Real Cost of Auto-Commit
 
 ```
-50 changes/day x $0.02/commit (Sonnet) = $1.00/day = $22/month
+50 changes/day x $0.0124/commit (Sonnet 5.5) = $0.62/day = $13.60/month
 
 With manual commits at logical boundaries:
-10 commits/day x $0.001/commit (Haiku 5.5) = $0.01/day = $0.22/month
+10 commits/day x $0.0042/commit (Haiku 5.5) = $0.04/day = $0.91/month
 
-Savings: $21.78/month per developer
+Savings: $12.69/month per developer
 ```
 
-The Haiku 5.5 figure is Sonnet 5.5's $0.02 at one-twentieth, their per-token ratio below 100K prompt tokens; a commit diff sits far under that line. On legacy Haiku 4.5 ($0.01/commit) the manual-commit line is $2.20/month.
+Computed at the calculator defaults at the top of this guide, 22 working days. A Sonnet 5.5 commit turn is the average turn of a 30-turn session ($0.371 / 30). A Haiku 5.5 commit through a `model: haiku` command switches model mid-session, so Haiku writes the whole context to its own cache first: 31,250 tokens (the average prompt) x $0.125/1M + 500 output x $0.50/1M = $0.0042. That is still below the Sonnet 5.5 turn, which pays $10/1M for its output and $2.50/1M to write the new exchange, while Haiku 5.5 writes the whole context for $0.125/1M as long as the prompt stays under 100K. On legacy Haiku 4.5 the same switch costs $0.042 per commit ($1.25/1M write), more than staying on Sonnet 5.5: $9.14/month for the manual-commit line.
 
 ---
 
@@ -676,16 +687,18 @@ The most cost-effective Claude Code technique is knowing when not to use it at a
 
 ### Tasks That Are Cheaper to Do Manually
 
-| Task | Claude Code Cost | Manual Time | Verdict |
-|------|:----------------:|:-----------:|---------|
-| Change one line of code | $0.01-0.05 | 10 seconds | **Manual** |
-| Rename a local variable (1 file) | $0.01-0.03 | 15 seconds (IDE rename) | **Manual** |
-| Fix a typo | $0.01-0.03 | 5 seconds | **Manual** |
-| Toggle a boolean config | $0.01-0.02 | 3 seconds | **Manual** |
-| Delete a file | $0.01-0.02 | 2 seconds | **Manual** |
-| Add a blank line | $0.01 | 1 second | **Manual** |
+| Task | Claude Code Cost (one Sonnet 5.5 turn) | Manual Time | Verdict |
+|------|:--------------------------------------:|:-----------:|---------|
+| Change one line of code | $0.012 | 10 seconds | **Manual** |
+| Rename a local variable (1 file) | $0.012 | 15 seconds (IDE rename) | **Manual** |
+| Fix a typo | $0.012 | 5 seconds | **Manual** |
+| Toggle a boolean config | $0.012 | 3 seconds | **Manual** |
+| Delete a file | $0.012 | 2 seconds | **Manual** |
+| Add a blank line | $0.012 | 1 second | **Manual** |
 
-**Rule of thumb**: If you can do it faster than typing the prompt, do it manually. Claude Code's minimum cost per turn is ~$0.001 on Haiku 5.5 (~$0.01 on legacy Haiku 4.5). If the task takes under 30 seconds to do manually, it is not worth the token cost or the latency of waiting for a response.
+> Computed at the calculator defaults at the top of this guide: each of these is one turn, priced as the average turn of a 30-turn Sonnet 5.5 session ($0.371 / 30 = $0.012). As the first turn of a fresh session it is $0.029, because that turn writes the whole 9,500-token prompt to the cache; on Opus 5.5 a fresh one-turn session is $0.0575 (9,500 x $5/1M + 500 x $20/1M). Manual times are illustrative.
+
+**Rule of thumb**: If you can do it faster than typing the prompt, do it manually. Claude Code's minimum cost per turn is about $0.0014 on Haiku 5.5 ($0.014 on legacy Haiku 4.5): a one-turn session at the calculator defaults at the top of this guide writes a 9,500-token prompt to the cache and returns 500 output tokens. If the task takes under 30 seconds to do manually, it is not worth the token cost or the latency of waiting for a response.
 
 ### Tasks Better Suited to Other Tools
 
@@ -718,26 +731,26 @@ Should I use Claude Code for this task?
 
 ## Putting It All Together: The Optimal Session
 
-Here is what a cost-optimized Claude Code session looks like in practice:
+Here is what a cost-optimized Claude Code session looks like in practice. The phases add up to the 12 turns priced in the comparison below; the turn counts are illustrative.
 
 ### Phase 1: Setup (1 turn)
 - Start with Sonnet as default model
 - CLAUDE.md is lean (<150 lines) and includes model routing guidelines
 - `permissions.deny` `Read(...)` rules in `.claude/settings.json` keep Claude out of build output, dependencies and lock files (`.claudeignore` is not a Claude Code feature -- move any patterns you have there into Read rules)
 
-### Phase 2: Plan (2-3 turns)
+### Phase 2: Plan (2 turns)
 - Use plan mode or explicit "analyze and plan" instructions
 - Review the plan, refine once
-- `/compact` after planning phase
+- Skip `/compact` on a session this short: it costs more than it saves (see [Cost Impact](#cost-impact)); compact after planning only when a long implementation follows
 
-### Phase 3: Implement (5-15 turns)
+### Phase 3: Implement (7 turns)
 - Execute the plan step by step
 - Use TodoWrite for multi-step work
 - Delegate file searches and simple subtasks to subagents
 - Batch related changes into single turns
 - Use commands for repetitive operations
 
-### Phase 4: Review and Commit (1-2 turns)
+### Phase 4: Review and Commit (2 turns)
 - `/compact` before review if history is long
 - Review changes
 - Single commit at a logical boundary
@@ -751,39 +764,39 @@ Here is what a cost-optimized Claude Code session looks like in practice:
 
 | Approach | Turns | Avg Cost/Turn | Total |
 |----------|:-----:|:-------------:|:-----:|
-| Unoptimized (all Opus 5.5, no planning, no batching) | 25 | $0.096 | $2.40 |
-| Partially optimized (Sonnet 5.5 default, some planning) | 18 | $0.08 | $1.44 |
-| Fully optimized (right models, planning, batching, /compact) | 12 | $0.06 | $0.72 |
+| Unoptimized (all Opus 5.5, no planning, no batching) | 25 | $0.024 | $0.61 |
+| Partially optimized (Sonnet 5.5 default, some planning) | 18 | $0.012 | $0.21 |
+| Fully optimized (Sonnet 5.5, planning and batching cut it to 12 turns) | 12 | $0.012 | $0.14 |
 
-**Fully optimized is 70% cheaper** than the unoptimized approach, for the same end result. ($0.096 is the old $0.12 Opus 5 per-turn figure at Opus 5.5's 20% lower rate; on legacy Opus 5 the unoptimized session is $3.00 and the gap is 76%.) Even with Opus 5.5's $4/$20 pricing (vs the $15/$75 of the old Opus 4.1), disciplined workflows yield significant savings.
+**Fully optimized is 76% cheaper** than the unoptimized approach, for the same end result (computed at the calculator defaults at the top of this guide: $0.144 vs $0.606; on legacy Opus 5 the unoptimized session is $0.92 and the gap is 84%). About two-thirds of the saving is the model price, Sonnet 5.5 at half Opus 5.5's rate; the rest is the turn count, which is illustrative. `/compact` is left out: one compaction at turn 6 would make this 12-turn session 19% dearer (computed, see [Cost Impact](#cost-impact)).
 
-One Opus-specific caveat for the per-turn numbers above: on Opus 5.5 adaptive thinking is always on and reasoning tokens bill as output at $20/MTok; effort (default `medium`) is the only control. And prompts written for an older model make the new one over-work: in Anthropic's published run, prompts written for Opus 4.8 cost 36% more per ticket on Opus 5 for no accuracy gain, and audited they were 14% cheaper and more accurate. Opus 5 also self-verifies on its own, so a carried-over "double-check your work" instruction pays twice. Re-audit CLAUDE.md when you change models, or your $0.06-$0.10 per turn drifts upward on its own.
+One Opus-specific caveat for the per-turn numbers above: on Opus 5.5 adaptive thinking is always on and reasoning tokens bill as output at $20/MTok; effort (default `medium`) is the only control. And prompts written for an older model make the new one over-work: in Anthropic's published run, prompts written for Opus 4.8 cost 36% more per ticket on Opus 5 for no accuracy gain, and audited they were 14% cheaper and more accurate. Opus 5 also self-verifies on its own, so a carried-over "double-check your work" instruction pays twice. Re-audit CLAUDE.md when you change models, or your per-turn cost ($0.024 on Opus 5.5 at the calculator defaults) drifts upward on its own.
 
 ---
 
 ## Summary of Savings by Pattern
 
-| Pattern | Estimated Savings | Effort to Adopt |
-|---------|:-----------------:|:---------------:|
-| Plan mode before implementation | 15-25% | None (built-in) |
-| Subagent delegation | 20-40% | Low (CLAUDE.md update) |
-| Custom commands for repetitive tasks | 10-15% | Medium (one-time setup) |
-| Batch operations | 30-50% | None (habit change) |
-| Front-loaded requirements | 20-40% | None (habit change) |
-| Eliminate clarification loops | 5-15% | Low (better prompts) |
-| TodoWrite for multi-step work | 15-30% | None (built-in) |
-| /compact at breakpoints | 20-40% | None (built-in) |
-| Smart commit strategy | 5-10% | Low (CLAUDE.md update) |
-| Knowing when not to use Claude Code | 10-20% | None (judgment) |
+| Pattern | Savings (source) | Effort to Adopt |
+|---------|:----------------:|:---------------:|
+| Plan mode before implementation | No published figure | None (built-in) |
+| Subagent delegation | No Claude Code figure (cookbook loop: 78%) | Low (CLAUDE.md update) |
+| Custom commands for repetitive tasks | No published figure (commands load only when invoked and keep the cache) | Medium (one-time setup) |
+| Batch operations | $0.01 per avoided turn at 50K context (Opus 5.5) | None (habit change) |
+| Front-loaded requirements | No published figure | None (habit change) |
+| Eliminate clarification loops | No published figure | Low (better prompts) |
+| TodoWrite for multi-step work | No published figure | None (built-in) |
+| /compact at breakpoints | 32% (Anthropic long triage run; nothing on short loops) | None (built-in) |
+| Smart commit strategy | No published figure | Low (CLAUDE.md update) |
+| Knowing when not to use Claude Code | No published figure | None (judgment) |
 
-> These savings compound. Applying all the workflow patterns together yields the 30-60% typical reduction. Stacking them with prompt caching, the Batch API, and model routing is what pushes toward the up-to-90% ceiling the README documents.
+> No published measurement covers these workflow patterns, alone or combined. The measured levers are in the README's [How far can you actually go?](../README.md#how-far-can-you-actually-go): cache pricing, Batch (50% off), effort (Opus 5.5 at medium costs about 70% of high on SWE-bench Pro, per Anthropic's [cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)), and model routing.
 
 ---
 
 ## Next Steps
 
-- Add the `/compact` habit to your workflow today (zero effort, immediate savings)
-- Create 3-5 custom commands for your most common tasks
+- Add the `/compact` habit to your workflow today for long sessions (zero effort; on short ones it costs more than it saves)
+- Create a custom command for each of your three most common tasks
 - Add subagent and model routing guidelines to your CLAUDE.md
 - Read [Guide 05: Team Budgeting](05-team-budgeting.md) to scale these patterns across a team
 

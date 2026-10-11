@@ -222,11 +222,13 @@ flowchart TD
 
 ### Strategy Summary by Tier
 
-| Tier | Monthly Spend | Focus Areas | Expected Savings |
+| Tier | Monthly Spend | Focus Areas | Published number |
 |------|:------------:|-------------|:----------------:|
-| 1 - Basics | < $50 | Model selection, CLAUDE.md trimming, /compact | 15-30% |
-| 2 - Intermediate | $50-200 | Add Read deny rules, subagents, Plan Mode habits | 30-45% |
-| 3 - Full Optimization | > $200 | Team budgets, usage analyzer, token estimator, Batch API | 40-60% |
+| 1 - Basics | < $50 | Model selection, CLAUDE.md trimming, /compact | Haiku 5.5 at 1/40 of Opus 5.5 per token |
+| 2 - Intermediate | $50-200 | Add Read deny rules, subagents, Plan Mode habits | No published figure |
+| 3 - Full Optimization | > $200 | Team budgets, usage analyzer, token estimator, Batch API | Batch 50% off |
+
+No one has published a combined saving for any tier. The two numbers above are list prices from [Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing): Haiku 5.5 $0.10/$0.50 vs Opus 5.5 $4/$20 per 1M tokens on prompts up to 100K (8x above), and Batch at 50% off input and output. Each applies only to the spend it touches; measure your own before and after with `/usage`.
 
 ---
 

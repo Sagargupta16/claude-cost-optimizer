@@ -1,6 +1,6 @@
 {
   "name": "@sagargupta16/claude-rate",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Rate the cost-efficiency of a Claude / AI setup in a local project directory.",
   "bin": {
     "claude-rate": "./bin/claude-rate.js"

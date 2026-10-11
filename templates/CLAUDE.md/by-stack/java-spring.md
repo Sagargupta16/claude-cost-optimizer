@@ -1,7 +1,7 @@
 # Java Spring Boot CLAUDE.md Template
 
 <!-- ABOUT THIS TEMPLATE
-  - ~85 lines of content (~600 tokens)
+  - ~85 lines of content (~920 tokens)
   - Optimized for Spring Boot 3+ with Maven or Gradle
   - Covers: build/test commands, project layout, patterns, conventions
   - Copy everything below the "---" line into your project's CLAUDE.md
@@ -117,6 +117,6 @@ public class UserController {
 - Do not add dependencies without asking first -- check if Spring Boot starters cover the need
 
 <!-- END OF TEMPLATE
-  Content: ~85 lines (~600 tokens)
-  Overhead per 30-turn session: ~18,000 tokens (pre-cache)
+  Content: ~85 lines (~920 tokens, measured with tiktoken cl100k_base; about 30% more on Claude 4.7+ models)
+  Overhead per 30-turn session: ~27,600 tokens (pre-cache)
   Optimized for: Spring Boot conventions, layered architecture, JUnit 5 patterns -->

@@ -78,7 +78,7 @@ summary = (
     f'  Duration  : {duration}'
 )
 print(summary)
-" 2>/dev/null || echo "Session summary: parse error (non-blocking)")"
+" 2>/dev/null)" || SUMMARY="Session summary: parse error (non-blocking)"
 
 # ---------------------------------------------------------------------------
 # Ensure log directory exists

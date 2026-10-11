@@ -1,6 +1,6 @@
 # cost-mode
 
-A Claude Code skill that saves 30-60% on costs through concise responses (40-70% output token reduction), smart model routing, and efficient workflow patterns.
+A Claude Code skill that trims visible output, suggests cheaper models, and nudges efficient workflow patterns. It has not been benchmarked: measure it with `/usage` before and after.
 
 ## Install
 
@@ -25,7 +25,7 @@ Once installed, activate with:
 /cost-mode            # Toggle on (standard intensity)
 /cost-mode lite       # Professional brevity, full sentences
 /cost-mode standard   # Concise fragments, skip filler (default)
-/cost-mode strict     # Telegraphic, max savings
+/cost-mode strict     # Telegraphic, max brevity
 /cost-mode off        # Resume normal behavior
 ```
 
@@ -50,13 +50,15 @@ Once installed, activate with:
 
 | Intensity | Output Token Reduction | Estimated Cost Savings | Best For |
 |-----------|:---------------------:|:---------------------:|----------|
-| lite | 20-40% | ~10-20% | Team-visible work, PRs, shared sessions |
-| standard | 40-60% | ~20-35% | Daily development, solo coding |
-| strict | 60-70% | ~30-45% | High-volume sessions, budget-constrained |
+| lite | Not measured | Output cut x your output share | Team-visible work, PRs, shared sessions |
+| standard | Not measured | Output cut x your output share | Daily development, solo coding |
+| strict | Not measured | Output cut x your output share | High-volume sessions, budget-constrained |
 
-Output tokens cost 5x more than input tokens, so even moderate output reduction has significant cost impact. Combined with model routing and CLI suggestions, total savings are estimated at 30-60%.
+Closest public measurements: on Anthropic's issue-triage agent, asking for a one-line final answer used 39% fewer output tokens than the two-line original and cost 14% less per run ($0.49 vs $0.57), while a memo-style answer cost $1.40, 2.8x the one-line, at the same accuracy within run-to-run noise ([Anthropic cost guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). caveman's README reports "Answer concisely." cutting output tokens 38% (6,983 to 4,334) on ten dev questions on Opus 5.5 ([its own run](https://github.com/JuliusBrussee/caveman), not verified here).
 
-These figures are estimates: this repo has not run a controlled benchmark of cost-mode. Measure your own with `/usage` (or `npx ccusage`) before and after. Brevity cuts visible output only; thinking tokens also bill as output, and on Opus 5.5 lowering effort is what cuts those.
+Output tokens cost 5x input tokens on every current model ([pricing](https://platform.claude.com/docs/en/about-claude/pricing)), so the saving is the output cut times the output share of your bill. In the token mix of Anthropic's own `/usage` example, priced at Opus 5.5 rates, output is 19% of the bill: a 40% output cut saves about 8%, a 60% cut about 12% (computed: the [costs page](https://code.claude.com/docs/en/costs) example of 1.2k input, 5.3k output, 940.0k cache-read and 50.0k cache-write tokens is $0.549 at Opus 5.5 rates with 5-minute writes, $0.106 of it output; 0.4 x 19.3% = 7.7%).
+
+The 8% and 12% are arithmetic, not measurements: this repo has not run a controlled benchmark of cost-mode. Measure your own with `/usage` (or `npx ccusage`) before and after. Brevity cuts visible output only; thinking tokens also bill as output, and on Opus 5.5 lowering effort is what cuts those.
 
 ## Works Well With
 
@@ -64,10 +66,10 @@ Community tools that cover what a skill can't. Each claim is the project's own, 
 
 - [ccusage](https://github.com/ccusage/ccusage) -- `npx ccusage` cost reports from local logs
 - [Claude-Code-Usage-Monitor](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor) / [claudetop](https://github.com/liorwn/claudetop) -- real-time usage and cache monitors
-- [rtk](https://github.com/rtk-ai/rtk) -- CLI proxy that compresses common dev-command output ("60-90%" on those commands)
+- [rtk](https://github.com/rtk-ai/rtk) -- CLI proxy that compresses common dev-command output ("60-90%" on those commands; its README adds that this "is not the same as cutting your bill by 90%")
 - [claude-mem](https://github.com/thedotmack/claude-mem) -- persistent compressed context across sessions
 - [claude-code-router](https://github.com/musistudio/claude-code-router) -- routes requests across models
-- [caveman](https://github.com/JuliusBrussee/caveman) -- brevity skill and proxy ("cuts 65% of tokens"); overlaps cost-mode's response rules, so pick one
+- [caveman](https://github.com/JuliusBrussee/caveman) -- brevity skill and proxy; its README reports output tokens on ten dev questions on Opus 5.5 falling 38% with "Answer concisely.", 41% with /caveman and 61% with /ultracave, while its rules add about 1,160 tokens and the bill effect is "not measured yet". Overlaps cost-mode's response rules, so pick one
 
 ## License
 

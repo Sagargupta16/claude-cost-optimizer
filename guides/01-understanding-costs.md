@@ -22,7 +22,7 @@
 
 ## Token Pricing
 
-Every interaction with Claude Code consumes tokens. Tokens are the fundamental billing unit -- roughly 1 token per 4 characters of English text, or about 0.75 words per token. Code tends to be slightly less dense: a typical line of code is around 8-12 tokens.
+Every interaction with Claude Code consumes tokens. Tokens are the fundamental billing unit. On models before Opus 4.7 that is roughly 1 token per 4 characters of English text, or about 0.75 words per token; on the current tokenizer 1M tokens is roughly 2.5M characters or 555K words, about 2.5 characters per token ([Anthropic models overview](https://platform.claude.com/docs/en/about-claude/models/overview)). This repo's estimates assume about 10 tokens per line of code and 10 per line of CLAUDE.md. The CLAUDE.md figure is measured: this repo's 15 CLAUDE.md files (the templates plus the root file) hold 20,161 tokens over 2,048 lines, 9.8 per line counting blank lines (12.3 per non-blank line). That count used tiktoken's cl100k encoding, the same pre-4.7 basis as the repo's other estimates; expect about 30% more on the current tokenizer.
 
 ### Current Model Pricing (verified 2026-10-09)
 
@@ -47,7 +47,7 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 | **Opus 5.5 (Fast Mode)** | $8.00 (2x) | $40.00 (2x) | N/A | -- | -- | 1M (included) | 128K |
 | **Opus 5 / 4.8 (Fast Mode)** | $10.00 (2x) | $50.00 (2x) | N/A | -- | -- | 1M (included) | 128K |
 
-> **Opus 5.5** (released 2026-09-22, `claude-opus-5-5`): **$4/$20, 20% below Opus 5's $5/$25** -- the first Opus release to lower the rate. Cache hits cost $0.20/1M, **0.05x base input (95% off)**; 5m cache write $5, 1h cache write $8; Batch $2/$10. 1M context (default and max), 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), knowledge cutoff Jun 2026, same tokenizer as Opus 4.7+, minimum cacheable prompt 512 tokens, tool-use system prompt 286 tokens. Bedrock ID `anthropic.claude-opus-5-5`; `claude-opus-5-5` on Google Cloud, Microsoft Foundry and Claude Platform on AWS. Retirement not sooner than 2027-09-22. Anthropic's models overview now says to "start with Claude Opus 5.5 for most workloads"; Fable 5.1 is for demanding reasoning and long-horizon work.
+> **Opus 5.5** (released 2026-09-22, `claude-opus-5-5`): **$4/$20, 20% below Opus 5's $5/$25** -- the first Opus price cut since Opus 4.5 lowered $15/$75 to $5/$25 on 2025-11-24 ([Opus 4.5 announcement](https://www.anthropic.com/news/claude-opus-4-5)). Cache hits cost $0.20/1M, **0.05x base input (95% off)**; 5m cache write $5, 1h cache write $8; Batch $2/$10. 1M context (default and max), 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), knowledge cutoff Jun 2026, same tokenizer as Opus 4.7+, minimum cacheable prompt 512 tokens, tool-use system prompt 286 tokens. Bedrock ID `anthropic.claude-opus-5-5`; `claude-opus-5-5` on Google Cloud, Microsoft Foundry and Claude Platform on AWS. Retirement not sooner than 2027-09-22. Anthropic's models overview now says to "start with Claude Opus 5.5 for most workloads"; Fable 5.1 is for demanding reasoning and long-horizon work.
 >
 > **Cost-relevant breaking changes vs Opus 5**:
 > - **Thinking is always on.** `thinking: {type: "disabled"}` and `thinking: {type: "enabled", budget_tokens}` both return 400; effort is the only control. Code that disabled thinking on Opus 5 now pays for thinking tokens (billed as output at $20/1M) it did not pay for before.
@@ -88,9 +88,9 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 >
 > **1M context at standard rates**: Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 bill the full 1M window at the standard per-token rate -- no long-context premium. **Sonnet 5.5 at $2/$10 is the cheapest of them** (legacy Sonnet 5 costs the same per token), so reach for it before an Opus tier on long-context work. Haiku 5.5 also has a 1M window and is cheaper still, but it is the one exception to flat pricing: every request over 100K prompt tokens bills at $0.50/$2.50. (The earlier "2x over 200K" pricing applied to Opus 4.1 and older. Note that Opus 4.5, Sonnet 4.5, and Haiku 4.5 are 200K-only.)
 >
-> **New tokenizer caveat**: Opus 4.7 and later (including Opus 4.8, Opus 5 and Opus 5.5) use the same Opus-4.7-generation tokenizer, which may use up to **35% more tokens** for the same source text. Posted pricing stayed at $5/$25 through Opus 5 (Opus 5.5 cut it to $4/$20), but effective per-task cost is 20-35% higher than it would have been on Opus 4.6.
+> **New tokenizer caveat**: Opus 4.7 and later (including Opus 4.8, Opus 5 and Opus 5.5) use the same Opus-4.7-generation tokenizer, which produces **about 30% more tokens** for the same source text ([Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing): "approximately 30% more tokens for the same text"; the exact increase depends on content). Posted pricing stayed at $5/$25 through Opus 5 (Opus 5.5 cut it to $4/$20), but effective per-task cost is about 30% higher than it would have been on Opus 4.6.
 >
-> **Subscriptions**: Pro **$20/mo** (or **$200/yr ≈ $16.67/mo** with annual billing -- ~17% off). Max 5x $100/mo. Max 20x $200/mo. **Batch API**: 50% discount on both input and output. **Cache write**: 1.25x base input price (5-min TTL), 2x base input price (1-hour TTL). Since 2026-10-07 Max 5x and Max 20x include $100 and $200 of monthly Claude API credit (Claude Console API only, **not Claude Code**, no rollover). **Cache hit/refresh**: 0.1x base input price on every model except Fable 5.1 / Mythos 5.1 (0.025x) and Opus 5.5 and Sonnet 5.5 (0.05x). **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"`, scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all future models): +10%.
+> **Subscriptions**: Pro **$20/mo** (or **$200/yr ≈ $16.67/mo** with annual billing -- 16.7% off: $200 vs 12 x $20). Max 5x $100/mo. Max 20x $200/mo. **Batch API**: 50% discount on both input and output. **Cache write**: 1.25x base input price (5-min TTL), 2x base input price (1-hour TTL). Since 2026-10-07 Max 5x and Max 20x include $100 and $200 of monthly Claude API credit (Claude Console API only, **not Claude Code**, no rollover). **Cache hit/refresh**: 0.1x base input price on every model except Fable 5.1 / Mythos 5.1 (0.025x) and Opus 5.5 and Sonnet 5.5 (0.05x). **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"`, scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all future models): +10%.
 
 ### Off-Peak 2x Usage Events
 
@@ -114,7 +114,7 @@ To build intuition, here is what $1.00 buys you with each model:
 | **Haiku 5.5**, prompts > 100K | ~2,000,000 tokens (~5,100 pages) | ~400,000 tokens (~1,020 pages) | ~20,000,000 tokens (~51,000 pages) |
 | **Haiku 4.5** (legacy) | ~1,000,000 tokens (~2,560 pages) | ~200,000 tokens (~510 pages) | ~10,000,000 tokens (~25,600 pages) |
 
-> Opus 5.5, 5, 4.8 and 4.7's token counts may be ~20-35% lower than shown (fewer pages per $1) due to the new tokenizer. Budget with that in mind if you're migrating from 4.6. Haiku 5.5 uses the same newer tokenizer (~30% more tokens than Haiku 4.5 for the same text), so its pages per $1 run about 23% below what its token counts suggest.
+> Opus 5.5, 5, 4.8 and 4.7's pages per $1 may be about 23% lower than shown due to the new tokenizer (about 30% more tokens for the same text, so 1 - 1/1.3 = 23% fewer pages). Budget with that in mind if you're migrating from 4.6. Haiku 5.5 uses the same newer tokenizer (~30% more tokens than Haiku 4.5 for the same text), so its pages per $1 run about 23% below what its token counts suggest.
 >
 > On Opus 5.5 (thinking always on) and Opus 5 (thinking on by default), part of that output budget goes to reasoning tokens you never read. They bill at the same output rate as visible text: $20/1M on Opus 5.5, $25/1M on Opus 5.
 
@@ -143,7 +143,7 @@ Haiku 5.5, Sonnet 5.5 and Opus 5.5 share a tokenizer, so those per-token ratios 
 
 Switching from Opus 5.5 to Haiku 5.5 for a task that costs $1.00 on Opus 5.5 would cost approximately $0.025 if every request stays at or under 100K prompt tokens ($0.125 if they are all above), and $0.25 on legacy Haiku 4.5. The same task on Sonnet 5.5 would cost about $0.50.
 
-> **Note**: Opus 5.5 is priced at $4/$20 -- 20% below the $5/$25 of Opus 5 / 4.8 / 4.7 / 4.6. The gap between Opus and Sonnet is much smaller than it used to be. At the bottom of the ladder Haiku 5.5 widens it again: 40x below Opus 5.5 per token while a prompt stays at or under 100K tokens (8x above), versus 4x for legacy Haiku 4.5 and the historical 19x. The new tokenizer (Opus 4.7 and later, including Opus 5.5) narrows the "effective" gap slightly further -- budget ~20-35% higher than the posted rate suggests. Sonnet 5's $2/$10 is now permanent and Sonnet 5.5 launched at the same rate, so the Sonnet-vs-Opus gap is a durable **2x** against Opus 5.5 (2.5x against legacy Opus 5), not the 1.67x of Sonnet 4.6 vs Opus 5.
+> **Note**: Opus 5.5 is priced at $4/$20 -- 20% below the $5/$25 of Opus 5 / 4.8 / 4.7 / 4.6. The gap between Opus and Sonnet is much smaller than it used to be. At the bottom of the ladder Haiku 5.5 widens it again: 40x below Opus 5.5 per token while a prompt stays at or under 100K tokens (8x above), versus 4x for legacy Haiku 4.5 and the historical 19x. The new tokenizer (Opus 4.7 and later, including Opus 5.5) narrows the "effective" gap slightly further -- budget about 30% higher than the posted rate suggests against pre-4.7 models (Anthropic pricing page). Sonnet 5's $2/$10 is now permanent and Sonnet 5.5 launched at the same rate, so the Sonnet-vs-Opus gap is a durable **2x** against Opus 5.5 (2.5x against legacy Opus 5), not the 1.67x of Sonnet 4.6 vs Opus 5.
 
 ### Long Context Pricing (1M)
 
@@ -210,7 +210,7 @@ Key details about Fast Mode:
 - **Dedicated rate limits**: Fast Mode has its own rate limit pool separate from Standard Opus. Headers like `anthropic-fast-output-tokens-remaining` track it.
 - **Use case**: Time-sensitive tasks where latency directly impacts revenue or user experience -- urgent debugging, live demos, real-time agentic loops. Almost never worth it for routine interactive coding.
 
-On Opus 5.5 at 2x its standard rate, a session that would cost ~$1.66 on standard Opus 5.5 would cost roughly **$3.32** on Fast Mode (legacy Opus 5: $2.33 standard, $4.66 Fast). Use it deliberately and sparingly.
+On Opus 5.5 at 2x its standard rate, the [worked 30-turn session](#worked-example-cost-of-a-30-turn-session) below would go from $1.21 on standard Opus 5.5 to **$2.43** on Fast Mode (legacy Opus 5: $1.89 standard, $3.77 Fast); the cache multipliers apply to the Fast rates, so the whole bill doubles. Use it deliberately and sparingly.
 
 ---
 
@@ -224,31 +224,36 @@ Every turn in Claude Code involves sending input tokens and receiving output tok
 Input Token Composition Per Turn
 ================================
 
-1. System Prompt                          ~3,000-4,000 tokens (fixed)
+1. System Prompt                          ~3,500 tokens (fixed)
    └── Claude Code's built-in instructions for how to behave,
        use tools, format responses, etc. You cannot change this.
+       3,500 is this repo's modelling assumption; the real prompt
+       plus tool definitions varies by Claude Code version.
 
-2. CLAUDE.md Contents                     ~7 tokens/line (variable)
+2. CLAUDE.md Contents                     ~10 tokens/line (variable)
    └── Your project's CLAUDE.md file is injected in full on every
-       single turn. A 150-line file adds ~1,050 tokens per turn.
-       A 500-line file adds ~3,500 tokens per turn.
+       single turn. A 150-line file adds ~1,500 tokens per turn.
+       A 500-line file adds ~5,000 tokens per turn.
 
 3. Conversation History                   Grows each turn
    └── Every previous user message and Claude response in the
        current session. This is the #1 driver of cost growth.
-       Turn 1: ~0 tokens of history
-       Turn 10: ~5,000-20,000 tokens of history
-       Turn 30: ~30,000-100,000+ tokens of history
+       In the worked example below (3,300 tokens added per turn):
+       Turn 1: 0 tokens of history
+       Turn 10: 29,700 tokens of history (9 x 3,300)
+       Turn 30: 95,700 tokens of history (29 x 3,300)
 
 4. Tool Results                           Varies widely
    └── File contents from Read tool:      ~10 tokens/line of code
-       Grep/Glob search results:          ~50-500 tokens per search
-       Bash command output:               ~10-5,000 tokens
-       Edit tool confirmations:           ~50-200 tokens
+       Grep/Glob search results:          only the matching lines
+       Bash command output:               the whole output, unless a
+                                          hook filters it
+       Edit tool confirmations:           a short confirmation
        MCP server responses:              Varies
+       (The worked example assumes 2,500 tokens of tool results per turn.)
 
 5. User's Current Message                 Usually small
-   └── Your prompt for the current turn:  ~20-200 tokens typically
+   └── Your prompt for the current turn:  ~100 tokens in the worked example
 ```
 
 ### Output Tokens (You Pay 5x More For These)
@@ -257,17 +262,17 @@ Input Token Composition Per Turn
 Output Token Composition Per Turn
 =================================
 
-1. Claude's Text Response                 ~50-500 tokens
+1. Claude's Text Response                 ~400 tokens in the worked example
    └── Explanations, analysis, questions back to you
 
-2. Tool Calls                             ~50-200 tokens each
+2. Tool Calls                             ~300 tokens per turn in the worked example
    └── Read, Edit, Bash, Write, Glob, Grep -- each tool call
        includes the tool name and all parameters
 
 3. Code Generation                        ~10 tokens/line
    └── New code written via Edit or Write tools
 
-4. Plan Mode Analysis                     ~200-1,000 tokens
+4. Plan Mode Analysis                     Ordinary output, length set by the task
    └── Structured thinking and planning output
 
 5. Extended Thinking / Reasoning           Varies with effort level
@@ -279,7 +284,7 @@ Output Token Composition Per Turn
        effort default `high`, output $25/1M.)
 ```
 
-> **Opus 5.5 / Opus 5 `max_tokens` trap**: `max_tokens` is a hard cap on thinking **plus** text. Carry over a small `max_tokens` from an older setup and thinking can consume the whole budget before the answer is written -- you pay for the turn and get no usable output. `max_tokens` is a backstop, not a cost knob: in Anthropic's published runs a 16,384 cap ended 15% of Opus 5's coding attempts unsolved, and the guidance is 64,000 for agentic work. "Just turn thinking off" is not available on Opus 5.5 at all (`thinking: {type: "disabled"}` returns 400), and on legacy Opus 5 only at effort `high` or below.
+> **Opus 5.5 / Opus 5 `max_tokens` trap**: `max_tokens` is a hard cap on thinking **plus** text. Carry over a small `max_tokens` from an older setup and thinking can consume the whole budget before the answer is written -- you pay for the turn and get no usable output. `max_tokens` is a backstop, not a cost knob: on Anthropic's internal repository-task benchmark a 16,384-token cap ended about a quarter of Opus 5.5's attempts and 43% of Fable 5.1's, and the guidance is 64,000 for agentic work, or 128,000 when a cut-off attempt is costly ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). "Just turn thinking off" is not available on Opus 5.5 at all (`thinking: {type: "disabled"}` returns 400), and on legacy Opus 5 only at effort `high` or below.
 
 ### The Hidden Multiplier: Conversation History
 
@@ -292,7 +297,7 @@ This is the most important concept in Claude Code cost optimization.
 - **Turn 3**: You send your prompt + system context + Turn 1 + Turn 2. Claude responds.
 - **Turn N**: You send your prompt + system context + all previous N-1 turns.
 
-The cost **accelerates** with each turn. A 30-turn session does not cost 30x a single turn -- it costs far more because each turn includes all previous turns as input.
+The cost **accelerates** with each turn. A 30-turn session does not cost 30x a single turn -- it costs more because each turn includes all previous turns as input. In the [worked example](#worked-example-cost-of-a-30-turn-session) below, 30 Sonnet 4.6 turns cost 42x the first turn with a warm cache ($1.13 vs $0.027) and 185x with caching off ($5.02). Claude Code bills the re-sent history as a cache read ("re-reads that history at the cached token rate", per its [costs page](https://code.claude.com/docs/en/costs)), which is why the warm-cache multiple is so much smaller.
 
 ---
 
@@ -306,7 +311,7 @@ Claude's context window (1M tokens for Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opu
 Context Window (1M tokens for Opus/Sonnet/Haiku 5.5, 200K for Haiku 4.5)
 ┌─────────────────────────────────────────────────────┐
 │ System Prompt          (~3,500 tokens)              │
-│ CLAUDE.md              (~1,050 tokens @ 150 lines)  │
+│ CLAUDE.md              (~1,500 tokens @ 150 lines)  │
 │ Conversation History   (grows each turn)            │
 │ Current Tool Results   (varies)                     │
 │ Your Current Message   (~100 tokens)                │
@@ -319,7 +324,7 @@ Context Window (1M tokens for Opus/Sonnet/Haiku 5.5, 200K for Haiku 4.5)
 
 As your session progresses, the context window fills with conversation history. When it approaches the limit:
 
-1. **Claude Code auto-compacts**: it summarizes older conversation history when the context nears its limit (details are lost, and the summary request itself costs tokens)
+1. **Claude Code auto-compacts**: it summarizes older conversation history when the context nears its limit, at about 967K tokens by default on 1M-window models; `/autocompact` moves that point anywhere from 100K to 1M and saves it per model since v2.1.288 ([model-config page](https://code.claude.com/docs/en/model-config), [changelog](https://code.claude.com/docs/en/changelog)). Details are lost, and the summary request itself costs tokens
 2. This can cause Claude to "forget" earlier context and decisions
 3. You pay for a very large number of input tokens per turn at this point
 4. Quality degrades because Claude loses important context
@@ -337,18 +342,20 @@ What it costs to fill the context window on a single turn:
 | Haiku 5.5 | $0.10 (> 100K rate) | $0.50 (> 100K rate) | $0.32 (128K output at the > 100K rate) |
 | Haiku 4.5 (legacy) | $0.20 | N/A (200K max) | $0.32 (64K output) |
 
-> Long sessions on Opus can cost $5-20+. On Opus 5.5 / 5 / 4.8 / 4.7 / 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 there is no 200K rate cliff -- the full 1M window bills at the standard per-token rate -- but absolute dollars still climb as context grows. Haiku 5.5 has its cliff at 100K instead: a full 200K or 1M prompt bills every input and output token at $0.50/$2.50, 5x its rate below the line.
+> A 100-turn Opus 5.5 session in the worked example's token mix costs $6.35 with a warm cache all the way (computed with the formula in [Key Formulas](#estimated-session-cost); its last prompt is 331K tokens), and every cache miss at that size re-writes the context for $1.66 (331K x $5/1M). On Opus 5.5 / 5 / 4.8 / 4.7 / 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 there is no 200K rate cliff -- the full 1M window bills at the standard per-token rate -- but absolute dollars still climb as context grows. Haiku 5.5 has its cliff at 100K instead: a full 200K or 1M prompt bills every input and output token at $0.50/$2.50, 5x its rate below the line.
 >
 > On Opus 5.5 and Opus 5 the 128K max-output figure covers thinking **plus** visible text, since `max_tokens` caps both together. Reasoning tokens bill as output ($20/1M on Opus 5.5, $25/1M on Opus 5), so a max-output turn can be mostly thinking you never see. (Batch raises the ceiling to 300K via the `output-300k-2026-03-24` beta.)
 
 ### Practical Rule of Thumb
 
-| Context Usage | Status | Action |
-|:-------------:|--------|--------|
-| 0-25% (~0-50K) | Healthy | Normal operation |
-| 25-50% (~50-100K) | Monitor | Consider `/compact` if conversation is growing |
-| 50-75% (~100-150K) | Warning | Run `/compact` or start a new session |
-| 75-100% (~150-200K) | Critical | Start a new session -- cost per turn is very high |
+| Context size | Cache read per turn (Opus 5.5 / Sonnet 5.5) | Re-write after a cache miss (Opus 5.5) | Action |
+|:-:|---|---|---|
+| Up to 100K | $0.02 / $0.01 at 100K | $0.50 | Normal; Haiku 5.5 stays in its $0.10 tier |
+| 100K-200K | $0.04 / $0.02 at 200K | $1.00 | Haiku 5.5 now bills 5x; `/compact` at the next break |
+| 200K-500K | $0.10 / $0.05 at 500K | $2.50 | `/compact` or `/clear` at the next break |
+| 500K-967K | $0.19 / $0.10 at 967K | $4.84 | Auto-compact fires at about 967K on 1M-window models |
+
+> Computed from the [Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing): a warm turn reads the context at $0.20/1M (Opus 5.5) or $0.10/1M (Sonnet 5.5); a turn after a pause longer than the cache TTL re-writes it at the 5-minute write rate, $5/1M on Opus 5.5. The 967K auto-compact point is from Claude Code's [model-config page](https://code.claude.com/docs/en/model-config).
 
 ---
 
@@ -375,18 +382,20 @@ Claude Code structures each request so that **stable content comes first** in th
 ```
 Request Structure (simplified)
 ┌──────────────────────────────────────────┐
-│ 1. System Prompt        ← CACHED         │  These stay the same
-│ 2. CLAUDE.md            ← CACHED         │  between turns, so they
-│ 3. Earlier History      ← CACHED         │  get cached automatically
+│ 1. System Prompt        ← CACHE READ     │  Everything the previous
+│ 2. CLAUDE.md            ← CACHE READ     │  request sent is read
+│ 3. Earlier History      ← CACHE READ     │  from cache (0.1x input)
 │────────────────────────────────────────── │
-│ 4. Recent History       ← NOT cached     │  New content from
-│ 5. Current Message      ← NOT cached     │  recent turns
+│ 4. New Exchange         ← CACHE WRITE    │  New since that request:
+│ 5. Current Message      ← CACHE WRITE    │  written at 1.25x input
 └──────────────────────────────────────────┘
 ```
 
-On a typical Turn 10:
-- Tokens 1-50,000 (system + CLAUDE.md + turns 1-8): **Cached at the model's discount (90% on Sonnet 4.6)**
-- Tokens 50,001-55,000 (turn 9 + current message): **Full price**
+On Turn 10 of the [worked example](#worked-example-cost-of-a-30-turn-session) below:
+- Tokens 1-30,840 (system + CLAUDE.md + everything turn 9's request sent): **cache read at the model's hit rate (0.1x input on Sonnet 4.6, 0.05x on Opus 5.5 and Sonnet 5.5)**
+- Tokens 30,841-34,140 (turn 9's response and tool results, plus the new message): **cache write at 1.25x input** (5-minute TTL), so the next turn reads them
+
+That is how Claude Code bills a session: each request reads the whole previous request from cache and writes only what is new ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching)).
 
 ### Minimum Cacheable Prompt Length
 
@@ -416,14 +425,16 @@ Opus 5.5 and Opus 5 share the lowest Opus-tier floor at 512 tokens, half of Opus
 
 ### Cache Savings in Practice
 
-For a 30-turn session on Sonnet 4.6 with a 150-line CLAUDE.md:
+For the 30-turn Sonnet 4.6 session in the [worked example](#worked-example-cost-of-a-30-turn-session) (84-line CLAUDE.md), input only:
 
-| Component | Tokens (approx) | Without Cache | With Cache | Savings |
-|-----------|:---------------:|:-------------:|:----------:|:-------:|
-| System prompt (per turn) | 3,500 | $0.0105 | $0.00105 | $0.00945 |
-| CLAUDE.md (per turn) | 1,050 | $0.00315 | $0.000315 | $0.002835 |
-| Cached history (avg per turn) | 25,000 | $0.075 | $0.0075 | $0.0675 |
-| **Total cache savings over 30 turns** | | | | **~$2.39** |
+| Component | Tokens over 30 turns | Without Cache | With Cache | Savings |
+|-----------|:--------------------:|:-------------:|:----------:|:-------:|
+| System prompt (3,500 every turn) | 105,000 | $0.315 | $0.044 | $0.271 |
+| CLAUDE.md (840 every turn) | 25,200 | $0.076 | $0.011 | $0.065 |
+| Conversation (messages, responses, tool results) | 1,438,500 | $4.316 | $0.762 | $3.554 |
+| **Total input** | **1,568,700** | **$4.71** | **$0.82** | **$3.89** |
+
+> Computed: without cache every token bills at $3/1M. With cache each token is written once at $3.75/1M (1.25x) and read at $0.30/1M (0.1x) on every later turn: the system prompt is 3,500 x ($3.75 + 29 x $0.30) / 1M = $0.044. Caching takes 83% off the input bill; output ($0.315) is the same either way.
 
 ### What Breaks the Cache
 
@@ -481,11 +492,13 @@ Session Usage:
   Turns:         15
 ```
 
-Use `/usage` as a habit check -- run it every 10-15 turns to see if your session is staying within expected bounds.
+Use `/usage` as a habit check -- run it every 10 turns or so to see if your session is staying within expected bounds.
 
 ### What Normal Spend Looks Like
 
 For a baseline, Anthropic's Claude Code costs page puts the enterprise average at about **$13 per developer per active day** and **$150-250 per developer per month**, with 90% of users under $30 per active day. Background token usage is typically under $0.04 per session. If your numbers sit well above that range, start with [Why Sessions Get Expensive](#why-sessions-get-expensive).
+
+Usage can also climb without new prompts from you. Prompt suggestions send a request after each response (mostly cache reads; you can turn them off), and an idle session still spends on scheduled `/loop` tasks, cross-session messages and goal check-ins (at most 3 idle check-ins per goal since v2.1.246; `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` turns them off). `/usage` flags any behavior that accounts for 10% or more of your recent usage ([Claude Code costs page](https://code.claude.com/docs/en/costs)).
 
 ### The `--max-budget-usd` Flag (Print Mode Only)
 
@@ -512,16 +525,18 @@ Interactive sessions have no per-session dollar cap. Watch `/usage`, set a Conso
 
 ### Recommended Budget Caps by Task Type
 
-The caps below are for `claude -p --max-budget-usd` runs, or as the threshold for a budget hook in interactive work:
+The caps below are for `claude -p --max-budget-usd` runs, or as the threshold for a budget hook in interactive work. They are illustrative caps, not measured:
 
 | Task Type | Suggested Cap | Model |
 |-----------|:------------:|:-----:|
-| Quick bug fix | $1-2 | Haiku/Sonnet |
-| Feature implementation | $3-7 | Sonnet |
-| Complex refactor | $5-15 | Sonnet/Opus |
-| Architecture exploration | $3-7 | Opus (Plan Mode) |
-| Code review | $1-3 | Sonnet |
-| Generating boilerplate | $0.50-2 | Haiku |
+| Quick bug fix | $2 | Haiku/Sonnet |
+| Feature implementation | $7 | Sonnet |
+| Complex refactor | $15 | Sonnet/Opus |
+| Architecture exploration | $7 | Opus (Plan Mode) |
+| Code review | $3 | Sonnet |
+| Generating boilerplate | $2 | Haiku |
+
+For scale (computed with the [worked example](#worked-example-cost-of-a-30-turn-session)'s token mix): a 30-turn session is $1.21 on Opus 5.5 and $0.61 on Sonnet 5.5, and a 100-turn Opus 5.5 session is $6.35, so these caps stop runaway runs rather than normal ones.
 
 ---
 
@@ -540,12 +555,13 @@ You are building a new API endpoint for a Node.js/Express application. The sessi
 
 ### Assumptions
 
-- CLAUDE.md: 120 lines (~840 tokens)
+- CLAUDE.md: 84 lines (~840 tokens at 10 tokens per line)
 - System prompt: ~3,500 tokens
 - Average user message: ~100 tokens
 - Average Claude response: ~400 tokens of text + ~300 tokens of tool calls = ~700 output tokens
-- Average tool results per turn: ~1,500 tokens (file reads, command outputs)
-- Prompt cache hit rate: ~80% of eligible content
+- Average tool results per turn: ~2,500 tokens (file reads, command outputs)
+- So each turn adds **3,300 tokens** to the next request (700 response + 2,500 tool results + 100 next message), and turn N's prompt is 4,440 + (N - 1) x 3,300 tokens
+- Prompt caching billed the way Claude Code does it: each request reads the whole previous request from cache (0.1x input on Sonnet 4.6) and writes only what is new (1.25x input, 5-minute TTL), with no pause longer than the TTL. That reads 94% of all input from cache, close to the upper quartile Anthropic measured for coding agent loops (median 88.5%, upper quartile 93.4%, [cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence))
 
 ### Turn-by-Turn Cost Calculation
 
@@ -559,114 +575,115 @@ Input tokens:
   ─────────────────────────
   Total input:         4,440 tokens
 
-  Cached:                  0  (first turn, nothing cached yet)
-  Uncached:            4,440
+  Cache read:              0  (first turn, nothing cached yet)
+  Cache write:         4,440  (the whole prompt, so turn 2 can read it)
 
-Input cost:  4,440 / 1,000,000 x $3.00  = $0.01332
+Input cost:  4,440 / 1,000,000 x $3.75  = $0.01665
 Output cost: 700 / 1,000,000 x $15.00   = $0.01050
 ─────────────────────────────────────────────────────
-Turn 1 total: $0.024
+Turn 1 total: $0.027
 ```
 
 **Turn 5 (some history accumulated)**
 
 ```
 Input tokens:
-  System prompt:       3,500  (cached)
-  CLAUDE.md:             840  (cached)
-  Turns 1-4 history:  12,000  (mostly cached)
-  Tool results:        1,500  (not cached)
-  User message:          100  (not cached)
+  System prompt:       3,500
+  CLAUDE.md:             840
+  Turns 1-4 history:  13,200  (4 x 3,300)
+  User message:          100
   ─────────────────────────
-  Total input:        17,940 tokens
+  Total input:        17,640 tokens
 
-  Cached:             14,340  @ $0.30/1M = $0.00430
-  Uncached:            3,600  @ $3.00/1M = $0.01080
-  Total input cost:                        $0.01510
+  Cache read:         14,340  @ $0.30/1M = $0.00430  (all of turn 4's request)
+  Cache write:         3,300  @ $3.75/1M = $0.01238  (turn 4's response and tool results + this message)
+  Total input cost:                        $0.01668
   Output cost: 700 / 1,000,000 x $15.00 = $0.01050
   ────────────────────────────────────────────────────
-  Turn 5 total: $0.026
+  Turn 5 total: $0.027
 ```
 
 **Turn 15 (mid-session)**
 
 ```
 Input tokens:
-  System prompt:       3,500  (cached)
-  CLAUDE.md:             840  (cached)
-  Turns 1-14 history: 45,000  (mostly cached)
-  Tool results:        2,000  (not cached)
-  User message:          100  (not cached)
+  System prompt:       3,500
+  CLAUDE.md:             840
+  Turns 1-14 history: 46,200  (14 x 3,300)
+  User message:          100
   ─────────────────────────
-  Total input:        51,440 tokens
+  Total input:        50,640 tokens
 
-  Cached:             42,840  @ $0.30/1M = $0.01285
-  Uncached:            8,600  @ $3.00/1M = $0.02580
-  Total input cost:                        $0.03865
-  Output cost: 800 / 1,000,000 x $15.00 = $0.01200
+  Cache read:         47,340  @ $0.30/1M = $0.01420
+  Cache write:         3,300  @ $3.75/1M = $0.01238
+  Total input cost:                        $0.02658
+  Output cost: 700 / 1,000,000 x $15.00 = $0.01050
   ────────────────────────────────────────────────────
-  Turn 15 total: $0.051
+  Turn 15 total: $0.037
 ```
 
 **Turn 30 (end of session)**
 
 ```
 Input tokens:
-  System prompt:       3,500  (cached)
-  CLAUDE.md:             840  (cached)
-  Turns 1-29 history: 95,000  (mostly cached)
-  Tool results:        3,000  (not cached)
-  User message:          100  (not cached)
+  System prompt:       3,500
+  CLAUDE.md:             840
+  Turns 1-29 history: 95,700  (29 x 3,300)
+  User message:          100
   ─────────────────────────
-  Total input:       102,440 tokens
+  Total input:       100,140 tokens
 
-  Cached:             86,340  @ $0.30/1M = $0.02590
-  Uncached:           16,100  @ $3.00/1M = $0.04830
-  Total input cost:                        $0.07420
+  Cache read:         96,840  @ $0.30/1M = $0.02905
+  Cache write:         3,300  @ $3.75/1M = $0.01238
+  Total input cost:                        $0.04143
   Output cost: 700 / 1,000,000 x $15.00 = $0.01050
   ────────────────────────────────────────────────────
-  Turn 30 total: $0.085
+  Turn 30 total: $0.052
 ```
+
+Turn number t (from turn 2 on) costs $0.024207 + $0.00099 x (t - 2): the cache write ($0.01238) and output ($0.01050) are fixed, and the cache read grows by 3,300 x $0.30/1M = $0.00099 per turn.
 
 ### Total Session Cost Summary
 
 | Phase | Turns | Approx Cost | Notes |
 |-------|:-----:|:-----------:|-------|
-| Planning | 1-3 | $0.07 | Small context, mostly uncached first turn |
-| Implementation | 4-10 | $0.20 | File reads add tokens, cache building up |
-| Writing tests | 11-18 | $0.38 | Context growing, more tool usage |
-| Bug fixing | 19-25 | $0.40 | Large context, lots of back-and-forth |
-| Cleanup | 26-30 | $0.35 | Near-peak context size |
-| **Total** | **30** | **~$1.40** | **With prompt caching** |
+| Planning | 1-3 | $0.08 | Turn 1 writes the whole prompt to cache at 1.25x |
+| Implementation | 4-10 | $0.20 | Each turn reads the previous request and writes 3,300 new tokens |
+| Writing tests | 11-18 | $0.29 | Cache reads grow with the history |
+| Bug fixing | 19-25 | $0.31 | Large context, still read at 0.1x |
+| Cleanup | 26-30 | $0.25 | Near-peak context size |
+| **Total** | **30** | **~$1.13** | **With prompt caching** |
+
+> Computed with the closed form in [Key Formulas](#estimated-session-cost): 100,140 tokens written x $3.75/1M + 1,468,560 read x $0.30/1M + 21,000 output x $15/1M = $0.376 + $0.441 + $0.315 = $1.13.
 
 ### What This Same Session Would Cost Without Caching
 
-Without prompt caching, every input token is charged at full price:
+Without prompt caching, every input token is charged at full price ($3/1M on all 1,568,700 input tokens):
 
 | Turn Range | With Caching | Without Caching |
 |:----------:|:------------:|:---------------:|
-| Turns 1-10 | $0.27 | $0.56 |
-| Turns 11-20 | $0.53 | $1.45 |
-| Turns 21-30 | $0.60 | $2.15 |
-| **Total** | **$1.40** | **$4.16** |
+| Turns 1-10 | $0.28 | $0.68 |
+| Turns 11-20 | $0.38 | $1.67 |
+| Turns 21-30 | $0.47 | $2.66 |
+| **Total** | **$1.13** | **$5.02** |
 
-> Prompt caching saved **~$2.76** on this session -- a **66% reduction**. This is why preserving the cache is so important.
+> Prompt caching saved **$3.89** on this session -- a **77% reduction** (computed: 1 - $1.13 / $5.02), and 83% of the input cost. Rows are rounded; totals are exact sums. On Anthropic's own benchmarks caching cut agent-loop cost by a factor of 2.7 to 5.3 ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). This is why preserving the cache is so important.
 
 ### What This Session Would Cost on Different Models
 
 | Model | 30-Turn Session Cost | Monthly (5 sessions/day, 22 days) |
 |-------|:--------------------:|:---------------------------------:|
-| **Opus 5.5** | ~$1.66 | ~$183 |
-| **Opus 5 / 4.8 / 4.7 / 4.6** (legacy) | ~$2.33 | ~$256 |
-| **Sonnet 5.5** | ~$0.83 | ~$91 |
-| **Sonnet 5** (legacy) | ~$0.93 | ~$102 |
-| **Sonnet 4.6** | ~$1.40 | ~$154 |
-| **Haiku 5.5** | ~$0.058 | ~$6 |
-| **Haiku 4.5** (legacy) | ~$0.47 | ~$52 |
+| **Opus 5.5** | ~$1.21 | ~$134 |
+| **Opus 5 / 4.8 / 4.7 / 4.6** (legacy) | ~$1.89 | ~$207 |
+| **Sonnet 5.5** | ~$0.61 | ~$67 |
+| **Sonnet 5** (legacy) | ~$0.75 | ~$83 |
+| **Sonnet 4.6** | ~$1.13 | ~$124 |
+| **Haiku 5.5** | ~$0.045 | ~$5 |
+| **Haiku 4.5** (legacy) | ~$0.38 | ~$41 |
 
-> **Note**: Every row re-prices the same token mix as the Sonnet 4.6 walkthrough (about 1.02M cached input tokens, derived from the $2.76 caching saving, plus the rest at each model's own input, output and cache-hit rates). Opus 5.5 and Sonnet 5.5 land below a straight per-token scaling because their cache reads cost 0.05x instead of 0.1x, which is also why Sonnet 5.5 now undercuts legacy Sonnet 5 on this session. With both reading cache at 0.05x, an Opus 5.5 session is exactly 2x a Sonnet 5.5 session here, the same as the per-token gap.
+> **Note**: Every row re-prices the same token mix as the Sonnet 4.6 walkthrough (100,140 tokens written to cache, 1,468,560 read from it, 21,000 output) at each model's own 5-minute write, cache-hit and output rates: written x write + read x hit + output x output. Opus 5.5 and Sonnet 5.5 land lowest against their input price because their cache reads cost 0.05x instead of 0.1x, which is also why Sonnet 5.5 undercuts legacy Sonnet 5 on this session. With both reading cache at 0.05x, an Opus 5.5 session is exactly 2x a Sonnet 5.5 session here, the same as the per-token gap. The token counts are pre-4.7-tokenizer counts; models on the Claude 4.7+ tokenizer (every row except Sonnet 4.6, Haiku 4.5 and Opus 4.6) see about 30% more tokens for the same text ([Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing)), so their real sessions run about 30% higher.
 >
-> Haiku 5.5 is priced per request, so the row has to follow the prompt size turn by turn. Turns 1-29 stay at or under 100K prompt tokens and bill at $0.10/$0.50; turn 30's prompt is 102,440 tokens, so that whole request bills at $0.50/$2.50, which adds about $0.011 to the session. That one turn is the gap between ~$0.047 and ~$0.058, and Haiku 5.5 is still ~29x below Opus 5.5 here. On real Haiku 5.5 traffic the same text is ~30% more tokens than these Sonnet 4.6-era counts, so the prompt would cross 100K around turn 23 instead -- run `/compact` before then to stay in the cheap tier.
+> Haiku 5.5 is priced per request, so the row has to follow the prompt size turn by turn. Turns 1-29 stay at or under 100K prompt tokens and bill at $0.10/$0.50; turn 30's prompt is 100,140 tokens, so that whole request bills at $0.50/$2.50, which adds about $0.007 to the session. That one turn is the gap between ~$0.038 and ~$0.045, and Haiku 5.5 is still ~27x below Opus 5.5 here. On real Haiku 5.5 traffic the same text is ~30% more tokens than these Sonnet 4.6-era counts, so the prompt would cross 100K around turn 23 instead (4,440 + 22 x 3,300 = 77,040 tokens x 1.3 = 100,152) -- run `/compact` before then to stay in the cheap tier. Haiku 5.5 also keeps the thinking blocks from all earlier assistant turns in context, billed as input (Haiku 4.5 kept only the latest turn's), so a real multi-turn session grows faster than this mix ([Haiku 5.5 what's new](https://platform.claude.com/docs/en/models/haiku-5-5/whats-new-haiku-5-5)).
 >
 > The Opus figures assume the same output volume as the table's Sonnet baseline. In practice Opus 5.5 always thinks (default effort `medium`), and Opus 5 thinks by default and writes longer than Opus 4.8. Reasoning bills as output ($20/1M on Opus 5.5, $25/1M on Opus 5), so a like-for-like session can land above these figures until you tune effort level and verbosity.
 
@@ -676,35 +693,35 @@ Without prompt caching, every input token is charged at full price:
 
 ### The Exponential Growth Problem
 
-Session cost does not grow linearly -- it grows quadratically with the number of turns, because each turn includes all previous turns as input.
+Session cost does not grow linearly -- it grows quadratically with the number of turns, because each turn includes all previous turns as input. With a warm cache the re-sent part bills at the cache-read rate, so the growth is real but slow; the expensive event is a cache miss.
 
 ```
-Cost per turn over a session (illustrative, Sonnet 4.6):
+Cost per turn over a session (worked example extended to 50 turns, Sonnet 4.6, warm cache):
 
-Turn  1: $0.02  ▎
-Turn  5: $0.03  ▎▎
-Turn 10: $0.04  ▎▎▎
-Turn 15: $0.05  ▎▎▎▎
-Turn 20: $0.06  ▎▎▎▎▎
-Turn 25: $0.07  ▎▎▎▎▎▎
-Turn 30: $0.09  ▎▎▎▎▎▎▎
-Turn 40: $0.12  ▎▎▎▎▎▎▎▎▎
-Turn 50: $0.16  ▎▎▎▎▎▎▎▎▎▎▎▎
+Turn  1: $0.027  ▎▎▎
+Turn  5: $0.027  ▎▎▎
+Turn 10: $0.032  ▎▎▎
+Turn 15: $0.037  ▎▎▎▎
+Turn 20: $0.042  ▎▎▎▎
+Turn 25: $0.047  ▎▎▎▎▎
+Turn 30: $0.052  ▎▎▎▎▎
+Turn 40: $0.062  ▎▎▎▎▎▎
+Turn 50: $0.072  ▎▎▎▎▎▎▎
 ```
 
-The first 10 turns might cost $0.27 total. The last 10 turns (41-50) might cost $1.40 total -- **5x more** for the same number of turns.
+The first 10 turns cost $0.28 in total. The last 10 turns (41-50) cost $0.67 -- **2.4x more** for the same number of turns (computed: $0.024207 + $0.00099 x (t - 2) for turn t). With caching off it would be $0.68 against $4.64, 6.8x. And a cold cache undoes the discount in one turn: turn 50 after a pause longer than the TTL re-writes all 166,140 tokens for $0.63, about 9x the warm-cache turn.
 
 ### The Top 5 Cost Drivers
 
-1. **Long sessions without `/compact`** -- The #1 cost driver. A 50-turn session costs dramatically more per-turn than five 10-turn sessions doing the same work.
+1. **Long sessions without `/compact`** -- The #1 cost driver. In the worked example's token mix, one 50-turn session costs $2.38 with a warm cache, against $1.40 for five 10-turn sessions doing the same work: 41% less, $0.048 vs $0.028 per turn (computed with the formula in [Key Formulas](#estimated-session-cost)).
 
 2. **Large file reads accumulating in history** -- When Claude reads a 1,000-line file (10,000 tokens), that content stays in conversation history for every subsequent turn. Reading 3 large files adds ~30,000 tokens of permanent context.
 
-3. **Bloated CLAUDE.md** -- A 500-line CLAUDE.md adds ~3,500 tokens to every single turn. Over 30 turns, that is 105,000 extra input tokens -- $0.32 on Sonnet 4.6, $0.42 on Opus 5.5 ($0.53 on legacy Opus 5), before caching.
+3. **Bloated CLAUDE.md** -- A 500-line CLAUDE.md adds ~5,000 tokens to every single turn. Over 30 turns, that is 150,000 extra input tokens -- $0.45 on Sonnet 4.6, $0.60 on Opus 5.5 ($0.75 on legacy Opus 5), before caching. With Claude Code's caching it is written once and read on the other 29 turns: $0.062 on Sonnet 4.6, $0.054 on Opus 5.5, $0.104 on legacy Opus 5 per session ([formula](#claudemd-cost-over-a-session)). The larger cost is adherence: Anthropic says longer files "reduce adherence".
 
 4. **Using Opus for routine tasks** -- If 60% of your turns are simple (formatting, small fixes, lookups), using Opus 5.5 for all of them costs 40x more than Haiku 5.5 for those turns while their prompts stay at or under 100K tokens (8x above; 4x against legacy Haiku 4.5). Haiku 5.5 makes this the widest gap in the lineup again, and it adds up across many turns.
 
-5. **Trial-and-error coding instead of planning first** -- Without Plan Mode, Claude might write code, find it does not work, rewrite it, and iterate 4-5 times. Each iteration adds both input history and output tokens. Planning first typically reduces total turns by 30-50%.
+5. **Trial-and-error coding instead of planning first** -- Without Plan Mode, Claude might write code, find it does not work, rewrite it, and iterate several times. Each iteration adds both input history and output tokens. No published measurement says how many turns planning saves; Anthropic's [costs page](https://code.claude.com/docs/en/costs) recommends it to prevent "expensive re-work when the initial direction is wrong".
 
 ---
 
@@ -713,9 +730,12 @@ The first 10 turns might cost $0.27 total. The last 10 turns (41-50) might cost 
 ### Cost Per Turn
 
 ```
-turn_cost = (uncached_input_tokens x input_price_per_token)
-          + (cached_input_tokens x cached_price_per_token)
-          + (output_tokens x output_price_per_token)
+turn_cost = (cache_read_tokens x cache_read_price)     # everything the previous request sent
+          + (cache_write_tokens x cache_write_price)   # what is new since then
+          + (output_tokens x output_price)
+
+# A turn after a pause longer than the cache TTL reads nothing:
+# its whole prompt is a cache write.
 ```
 
 ### Estimated Session Cost
@@ -723,52 +743,64 @@ turn_cost = (uncached_input_tokens x input_price_per_token)
 ```
 session_cost = sum(turn_cost for each turn)
 
-# Rough approximation for N turns:
-session_cost ≈ N x avg_output_tokens x output_price
-             + (base_input x N x (1 - cache_rate) x input_price)
-             + (base_input x N x cache_rate x cached_price)
-             + (N x (N-1) / 2 x avg_turn_size x blended_input_price)
+# Closed form for N turns, one request per turn, warm cache all session:
+#   base = system prompt + CLAUDE.md + first message
+#   g    = tokens each turn adds to the next request
+written_tokens = base + (N - 1) x g                          # every token is written once
+read_tokens    = (N - 1) x base + g x (N - 1) x (N - 2) / 2  # each request is read by the next
+session_cost   = written_tokens x cache_write_price
+               + read_tokens x cache_read_price
+               + N x avg_output_tokens x output_price
 ```
 
 Where:
-- `base_input` = system prompt + CLAUDE.md (~4,500 tokens)
-- `avg_turn_size` = average tokens added per turn (~3,000-4,000)
-- `cache_rate` = ~0.80 for typical sessions
-- `blended_input_price` = `(cache_rate x cached_price) + ((1 - cache_rate) x input_price)`
+- `base` = 4,440 and `g` = 3,300 in the [worked example](#worked-example-cost-of-a-30-turn-session) (700 response + 2,500 tool results + 100 next message)
+- `cache_write_price` = 1.25x input for the 5-minute TTL (2x for the 1-hour TTL)
+- `cache_read_price` = 0.1x input on most models, 0.05x on Opus 5.5 and Sonnet 5.5, 0.025x on Fable 5.1 and Mythos 5.1 ([Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing))
+- Check, worked example on Sonnet 4.6: written = 4,440 + 29 x 3,300 = 100,140; read = 29 x 4,440 + 3,300 x 29 x 28 / 2 = 1,468,560; cost = (100,140 x $3.75 + 1,468,560 x $0.30 + 21,000 x $15) / 1M = $1.13
+
+The read term grows with N squared, so session cost is still quadratic in turns, but at the cache-read rate. This is the billing this repo's calculator and tools model ("cache-aware").
 
 ### CLAUDE.md Cost Over a Session
 
 ```
-claude_md_cost = lines x 7 x turns x blended_input_price
+claude_md_cost = lines x 10 x (cache_write_price + (turns - 1) x cache_read_price)
 
-Example (150 lines, 30 turns, Sonnet 4.6, 80% cache rate):
-= 150 x 7 x 30 x ((0.80 x $0.0000003) + (0.20 x $0.000003))
-= 31,500 x $0.00000084
-= $0.026
+Example (150 lines, 30 turns, Sonnet 4.6):
+= 1,500 x ($3.75 + 29 x $0.30) / 1,000,000
+= 1,500 x $12.45 / 1,000,000
+= $0.019
 
 Same example on Opus 5.5 (cache hit 0.05x):
-= 31,500 x ((0.80 x $0.0000002) + (0.20 x $0.000004))
-= 31,500 x $0.00000096
-= $0.030
+= 1,500 x ($5.00 + 29 x $0.20) / 1,000,000
+= 1,500 x $10.80 / 1,000,000
+= $0.016
 
 Same example on legacy Opus 5 (or Opus 4.8 / 4.7 / 4.6):
-= 31,500 x ((0.80 x $0.0000005) + (0.20 x $0.000005))
-= 31,500 x $0.0000014
-= $0.044
+= 1,500 x ($6.25 + 29 x $0.50) / 1,000,000
+= 1,500 x $20.75 / 1,000,000
+= $0.031
 ```
+
+Each pause longer than the cache TTL adds one more `lines x 10 x cache_write_price`. The 10 tokens per line is this repo's measured figure (9.8 per line across its 15 CLAUDE.md files, pre-4.7 token basis; see [Token Pricing](#token-pricing)).
 
 ### Model Switching Break-Even
 
 When does it make sense to break the prompt cache by switching models?
 
 ```
-cache_loss = cached_tokens x (full_input_price - cached_input_price) for remaining turns
-model_savings = remaining_turns x avg_turn_cost x (1 - cheaper_model_ratio)
+# The new model has no cache for this conversation, so it writes the whole context once.
+cache_loss    = context_tokens x new_write_price - context_tokens x old_read_price
+model_savings = remaining_turns x (old_turn_cost - new_turn_cost)
 
 Switch if: model_savings > cache_loss
 ```
 
-For a rough rule of thumb: if you have more than 3-4 turns left in a session, switching to a model that is 3x+ cheaper is almost always worth the cache break. With the narrower price gaps between current models, the break-even point may be higher when switching between Opus 5.5 and Sonnet 5.5 (only a 2x difference).
+Computed with the worked example's turn (3,300 new tokens, 700 output) at a 50K-token context:
+
+- **Opus 5.5 to Sonnet 5.5**: the switch writes 50K x $2.50/1M = $0.125 instead of reading it for $0.01, a $0.115 loss; each later turn then costs $0.020 instead of $0.041, so it breaks even after about 6 turns.
+- **Opus 5.5 to Haiku 5.5, context under 100K**: the switch writes 50K x $0.125/1M = $0.006, less than the $0.01 cache read Opus 5.5 would bill, so it pays from the first turn.
+- **Opus 5.5 to Haiku 5.5, context over 100K**: Haiku 5.5's write rate jumps to $0.625/1M, 3.1x Opus 5.5's $0.20 read. At 150K the switch costs $0.094 against $0.03 to stay, so for a single answer it is cheaper to let Opus 5.5 reply; over two or more turns Haiku still wins. Anthropic's [2026-04-30 post on Claude Code caching](https://claude.com/blog/lessons-from-building-claude-code-prompt-caching-is-everything) makes the same point for switching to Haiku 100K tokens into an Opus conversation.
 
 ---
 
@@ -778,15 +810,15 @@ For a rough rule of thumb: if you have more than 3-4 turns left in a session, sw
 
 2. **Conversation history is the #1 cost driver.** Use `/compact` proactively and start new sessions for new tasks.
 
-3. **Prompt caching automatically saves ~60-70%** on input costs for multi-turn sessions. Do not break the cache unnecessarily.
+3. **Prompt caching cut this guide's 30-turn Sonnet 4.6 session 77% ($1.13 vs $5.02, 83% of the input cost), and 82% at Opus 5.5 or Sonnet 5.5 rates**, where cache reads cost 0.05x (computed: $1.21 vs $6.69 uncached on Opus 5.5). Do not break the cache unnecessarily.
 
 4. **CLAUDE.md loads on every turn.** Anthropic's guidance is to target under 200 lines per file; nothing is truncated past that, it just costs more and is followed less. Every line you cut saves tokens across your entire session.
 
-5. **Model selection matters, and Haiku 5.5 widens the bottom gap again.** Haiku 5.5 at $0.10/$0.50 vs Opus 5.5 at $4/$20 is a 40x difference while the prompt stays at or under 100K tokens (8x above, where Haiku 5.5 bills $0.50/$2.50); legacy Haiku 4.5 at $1/$5 was 4x. Use the cheapest model that gets the job done, and judge it by cost per completed task, not cost per token: a cheaper model that fails still bills. The new tokenizer (Opus 4.7 and later, +~35% tokens for the same text) slightly re-widens the effective gap.
+5. **Model selection matters, and Haiku 5.5 widens the bottom gap again.** Haiku 5.5 at $0.10/$0.50 vs Opus 5.5 at $4/$20 is a 40x difference while the prompt stays at or under 100K tokens (8x above, where Haiku 5.5 bills $0.50/$2.50); legacy Haiku 4.5 at $1/$5 was 4x. Use the cheapest model that gets the job done, and judge it by cost per completed task, not cost per token: a cheaper model that fails still bills. The new tokenizer (Opus 4.7 and later, about 30% more tokens for the same text per Anthropic's pricing page) slightly re-widens the effective gap against pre-4.7 models.
 
 6. **Track your usage.** Run `/usage` regularly. Put `--max-budget-usd` on every scripted `claude -p` run (interactive sessions ignore it). What gets measured gets managed.
 
-7. **The last 10 turns of a long session cost more than the first 10.** Session cost grows quadratically, not linearly. Shorter, focused sessions are cheaper than long, wandering ones.
+7. **The last 10 turns of a long session cost more than the first 10.** In this guide's 50-turn example they cost 2.4x the first 10 with a warm cache ($0.67 vs $0.28) and 6.8x with caching off. Session cost grows quadratically, not linearly, and one cache miss late in a long session costs about 9x a warm turn. Shorter, focused sessions are cheaper than long, wandering ones.
 
 8. **Opus 5.5 is a price cut, but re-baseline after migrating.** $4/$20 is 20% below Opus 5 (now legacy), and cache reads drop to 0.05x. The catch: thinking is always on and cannot be disabled, so code that turned thinking off on Opus 5 now pays for reasoning tokens at $20/1M, while default effort drops to `medium`, so requests that omit effort think less. Set effort deliberately with `/effort`, use a `max_tokens` of 64,000 for agentic work, and audit prompts written for an older model: in Anthropic's published runs, prompts written for Opus 4.8 cost 36% more per ticket on Opus 5 for no accuracy gain, and once audited they were 14% cheaper and more accurate.
 

@@ -1,4 +1,4 @@
-import { type ModelId, type ModelPricing, MODELS, FAST_MODE_MULTIPLIER, TOKEN_ESTIMATES, ratesForPrompt, formatRate } from './pricing'
+import { type ModelId, type ModelPricing, MODELS, FAST_MODE_MULTIPLIER, TOKEN_ESTIMATES, ratesForPrompt, turnInputCost, formatRate } from './pricing'
 
 /** Fast Mode premium for a model -- per-model rate, falling back to the global default. */
 function fastModeMultiplier(model: ModelPricing): number {
@@ -55,84 +55,38 @@ function computeSessionCost(
   const fileTokensPerTurn = inputs.fileReadsPerTurn * t.tokensPerFileRead
 
   const stableInputPerTurn = claudeMdTokens + systemTokens + mcpTokens
-  const cacheRate = t.cacheHitRate
 
-  // Costs accumulate per turn because a tiered model (Haiku 5.5) prices each
-  // request by its own prompt length, and the prompt grows with history.
-  let inputCost = 0
-  let cacheCost = 0
-  let outputCost = 0
-
-  let claudeMdInput = 0
-  let mcpInput = 0
-  let fileReadsInput = 0
-  let historyInput = 0
-  let outputTotal = 0
+  // Each turn is billed the way Claude Code caches a conversation (turnInputCost): the previous
+  // request is a cache read and only the new exchange is written. Costs accumulate per turn
+  // because a tiered model (Haiku 5.5) also prices each request by its own prompt length.
+  const multiplier = inputs.fastMode && pricing.fastModeCapable ? fastModeMultiplier(pricing) : 1
+  const breakdown: CostBreakdown = { claudeMd: 0, mcp: 0, fileReads: 0, history: 0, output: 0 }
   const perTurn: number[] = []
-  const turnMultiplier = inputs.fastMode && pricing.fastModeCapable ? fastModeMultiplier(pricing) : 1
+  let previousPrompt = 0
 
   for (let turn = 0; turn < inputs.turnsPerSession; turn++) {
     const historyTokens = turn * t.historyGrowthPerTurn
+    const prompt = stableInputPerTurn + fileTokensPerTurn + historyTokens
+    const { readDollars, writeDollars } = turnInputCost(pricing, prompt, previousPrompt)
+    const input = (readDollars + writeDollars) * multiplier
+    const output = (t.outputTokensPerTurn / 1_000_000) * ratesForPrompt(pricing, prompt).outputPer1M * multiplier
+    previousPrompt = prompt
 
-    const stableCached = stableInputPerTurn * cacheRate
-    const stableUncached = stableInputPerTurn * (1 - cacheRate)
-
-    const turnFileTokens = fileTokensPerTurn
-    const turnOutput = t.outputTokensPerTurn
-
-    const rates = ratesForPrompt(pricing, stableInputPerTurn + turnFileTokens + historyTokens)
-    const turnInputCost = ((stableUncached + turnFileTokens + historyTokens) / 1_000_000) * rates.inputPer1M
-    const turnCacheCost = (stableCached / 1_000_000) * rates.cacheHitPer1M
-    const turnOutputCost = (turnOutput / 1_000_000) * rates.outputPer1M
-    inputCost += turnInputCost
-    cacheCost += turnCacheCost
-    outputCost += turnOutputCost
-
-    const claudeMdFraction = claudeMdTokens / stableInputPerTurn
-    const mcpFraction = mcpTokens / stableInputPerTurn
-
-    claudeMdInput += claudeMdTokens * (1 - cacheRate) + claudeMdTokens * cacheRate
-    mcpInput += mcpTokens * (1 - cacheRate) + mcpTokens * cacheRate
-    fileReadsInput += turnFileTokens
-    historyInput += historyTokens
-    outputTotal += turnOutput
-
-    perTurn.push((turnInputCost + turnCacheCost + turnOutputCost) * turnMultiplier)
-
-    // Adjust for cache pricing proportionally
-    void claudeMdFraction
-    void mcpFraction
+    // The system prompt has no category of its own, so input cost is shared over the four
+    // categories by their token share of this turn's prompt.
+    const parts = claudeMdTokens + mcpTokens + fileTokensPerTurn + historyTokens
+    if (parts > 0) {
+      breakdown.claudeMd += (input * claudeMdTokens) / parts
+      breakdown.mcp += (input * mcpTokens) / parts
+      breakdown.fileReads += (input * fileTokensPerTurn) / parts
+      breakdown.history += (input * historyTokens) / parts
+    }
+    breakdown.output += output
+    perTurn.push(input + output)
   }
 
-  let sessionTotal = inputCost + cacheCost + outputCost
-
-  if (inputs.fastMode && pricing.fastModeCapable) {
-    sessionTotal *= fastModeMultiplier(pricing)
-  }
-
-  // Compute breakdown costs proportionally
-  const totalAllInput = claudeMdInput + mcpInput + fileReadsInput + historyInput
-  const inputPlusCacheCost = inputCost + cacheCost
-  const breakdownMultiplier = inputs.fastMode && pricing.fastModeCapable ? fastModeMultiplier(pricing) : 1
-  const outputCostFinal = outputCost * breakdownMultiplier
-
-  const breakdown: CostBreakdown = {
-    claudeMd: totalAllInput > 0
-      ? (claudeMdInput / totalAllInput) * inputPlusCacheCost * breakdownMultiplier
-      : 0,
-    mcp: totalAllInput > 0
-      ? (mcpInput / totalAllInput) * inputPlusCacheCost * breakdownMultiplier
-      : 0,
-    fileReads: totalAllInput > 0
-      ? (fileReadsInput / totalAllInput) * inputPlusCacheCost * breakdownMultiplier
-      : 0,
-    history: totalAllInput > 0
-      ? (historyInput / totalAllInput) * inputPlusCacheCost * breakdownMultiplier
-      : 0,
-    output: outputCostFinal,
-  }
-
-  return { total: sessionTotal, breakdown, perTurn }
+  const total = perTurn.reduce((sum, cost) => sum + cost, 0)
+  return { total, breakdown, perTurn }
 }
 
 /** Session cost at the current settings if run on `model` (Fast Mode only applies when the model supports it). */
@@ -248,7 +202,7 @@ function generateRecommendations(
   if (inputs.claudeMdLines > 80) {
     const savingsPct = ((inputs.claudeMdLines - 80) / inputs.claudeMdLines) * (breakdown.claudeMd / Object.values(breakdown).reduce((a, b) => a + b, 0)) * 100
     recs.push({
-      text: `Trim CLAUDE.md from ${inputs.claudeMdLines} to 80 lines -- saves ~${Math.round(savingsPct)}% of input costs`,
+      text: `Trim CLAUDE.md from ${inputs.claudeMdLines} to 80 lines -- saves ~${savingsPct < 1 ? savingsPct.toFixed(1) : Math.round(savingsPct)}% of session cost (it is a cache read on every turn after the first)`,
       impact: savingsPct,
     })
   }
@@ -410,7 +364,9 @@ function promptTierRecommendation(inputs: CalculatorInputs): { text: string; imp
     t.systemPromptTokens +
     inputs.mcpServers * t.tokensPerMcpServer +
     inputs.fileReadsPerTurn * t.tokensPerFileRead
-  const firstTurnOver = Math.max(0, Math.ceil((tier.threshold - basePrompt) / t.historyGrowthPerTurn))
+  // Turn index n carries basePrompt + n * growth tokens; prices switch only once that is strictly
+  // over the threshold, so the first such n is floor((threshold - base) / growth) + 1.
+  const firstTurnOver = Math.max(0, Math.floor((tier.threshold - basePrompt) / t.historyGrowthPerTurn) + 1)
   if (firstTurnOver >= inputs.turnsPerSession) return null
   return {
     text: `From turn ${firstTurnOver + 1} the prompt passes ${tier.threshold.toLocaleString()} tokens, so every request after that pays ${formatRate(tier.inputPer1M)}/${formatRate(tier.outputPer1M)} instead of ${formatRate(MODELS[inputs.model].inputPer1M)}/${formatRate(MODELS[inputs.model].outputPer1M)} (5x). Run /compact or /clear before then`,

@@ -1,7 +1,7 @@
 # Go CLAUDE.md Template
 
 <!-- ABOUT THIS TEMPLATE
-  - ~80 lines of content (~560 tokens)
+  - ~80 lines of content (~810 tokens)
   - Optimized for Go projects using standard library and modules
   - Covers: build/test/lint commands, project layout, common patterns
   - Copy everything below the "---" line into your project's CLAUDE.md
@@ -106,6 +106,6 @@ func (h *UserHandler) GetUser(w http.ResponseWriter, r *http.Request) {
 - Do not modify `go.mod` / `go.sum` manually -- use `go get` and `go mod tidy`
 
 <!-- END OF TEMPLATE
-  Content: ~80 lines (~560 tokens)
-  Overhead per 30-turn session: ~16,800 tokens (pre-cache)
+  Content: ~80 lines (~810 tokens, measured with tiktoken cl100k_base; about 30% more on Claude 4.7+ models)
+  Overhead per 30-turn session: ~24,300 tokens (pre-cache)
   Optimized for: idiomatic Go, clear project layout, standard tooling -->

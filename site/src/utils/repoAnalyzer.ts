@@ -1,4 +1,4 @@
-import { MODELS, TOKEN_ESTIMATES, type ModelId, ratesForPrompt } from './pricing'
+import { MODELS, TOKEN_ESTIMATES, type ModelId, ratesForPrompt, turnInputCost } from './pricing'
 
 export interface RepoInput {
   owner: string
@@ -163,7 +163,7 @@ export function parseRepoUrl(input: string): RepoInput | null {
   const trimmed = input.trim().replace(/\/+$/, '')
 
   // https://github.com/owner/repo or github.com/owner/repo
-  const urlMatch = /(?:https?:\/\/)?github\.com\/([^/\s]+)\/([^/\s#?]+)/.exec(trimmed)
+  const urlMatch = /github\.com\/([^/\s]+)\/([^/\s#?]+)/.exec(trimmed)
   if (urlMatch) {
     return validateRepoInput(urlMatch[1], urlMatch[2])
   }
@@ -565,6 +565,71 @@ function scoreTooling(t: TreeDetection): CategoryScore {
 
 // -- Main analysis -----------------------------------------------------------
 
+/** CLAUDE.md size, counted on newline-normalized text as the Python graders read it. */
+function analyzeClaudeMd(fileMap: Map<string, FetchedFile>) {
+  const rootClaudeMd = fileMap.get('CLAUDE.md')
+  const nestedClaudeMd = fileMap.get('.claude/CLAUDE.md')
+  const files = [
+    { path: 'CLAUDE.md', file: rootClaudeMd },
+    { path: '.claude/CLAUDE.md', file: nestedClaudeMd },
+  ]
+    .filter(({ file }) => file?.found)
+    .map(({ path, file }) => ({ path, chars: normalizeNewlines(file?.content ?? '').length }))
+
+  const primary = rootClaudeMd?.found ? rootClaudeMd : nestedClaudeMd
+  const primaryText = primary?.found ? normalizeNewlines(primary.content) : ''
+  const primaryLines = countLines(primaryText)
+  const totalChars = files.reduce((sum, f) => sum + f.chars, 0)
+
+  return {
+    totalChars,
+    claudeMd: {
+      found: !!primary?.found,
+      charCount: primaryText.length,
+      lineCount: primaryLines,
+      overGuidance: primaryLines > CLAUDE_MD_LINE_GUIDANCE,
+    },
+    claudeMdAll: {
+      totalChars,
+      totalTokens: estimateTokens(totalChars),
+      fileCount: files.length,
+      files,
+    },
+  }
+}
+
+/** Number of servers under `mcpServers` in a parsed config, or 0. */
+function serverCount(config: Record<string, unknown> | null): number {
+  const servers = config?.mcpServers
+  return servers && typeof servers === 'object' ? Object.keys(servers as Record<string, unknown>).length : 0
+}
+
+/** 30-turn session and monthly cost per model at 3 sessions/day, 22 days/month. */
+function estimateModelCosts(systemPromptTokens: number, turns: number) {
+  const costEstimate = {} as Record<ModelId, { perSession: number; perMonth: number }>
+  for (const modelId of Object.keys(MODELS) as ModelId[]) {
+    const model = MODELS[modelId]
+    // Billed per turn the way Claude Code caches (turnInputCost): the previous request is a
+    // cache read, the new exchange a cache write. Per turn also lets a tiered model (Haiku 5.5)
+    // price each request by its own prompt length.
+    let perSession = 0
+    let previousPrompt = 0
+    for (let turn = 0; turn < turns; turn++) {
+      const prompt =
+        systemPromptTokens + turn * TOKEN_ESTIMATES.historyGrowthPerTurn + TOKEN_ESTIMATES.tokensPerFileRead
+      const { readDollars, writeDollars } = turnInputCost(model, prompt, previousPrompt)
+      previousPrompt = prompt
+      perSession +=
+        readDollars + writeDollars + (TOKEN_ESTIMATES.outputTokensPerTurn / 1_000_000) * ratesForPrompt(model, prompt).outputPer1M
+    }
+    costEstimate[modelId] = {
+      perSession: Math.round(perSession * 100) / 100,
+      perMonth: Math.round(perSession * 3 * 22 * 100) / 100,
+    }
+  }
+  return costEstimate
+}
+
 export async function analyzeRepo(
   input: RepoInput,
 ): Promise<AnalysisResult> {
@@ -604,40 +669,7 @@ export async function analyzeRepo(
 
   const fileMap = new Map(files.map((f) => [f.path, f]))
 
-  // CLAUDE.md analysis
-  const rootClaudeMd = fileMap.get('CLAUDE.md')
-  const nestedClaudeMd = fileMap.get('.claude/CLAUDE.md')
-
-  // Chars and lines are counted on newline-normalized text, as the Python graders read it.
-  const claudeMdFiles: { path: string; chars: number }[] = []
-  if (rootClaudeMd?.found) {
-    claudeMdFiles.push({ path: 'CLAUDE.md', chars: normalizeNewlines(rootClaudeMd.content).length })
-  }
-  if (nestedClaudeMd?.found) {
-    claudeMdFiles.push({
-      path: '.claude/CLAUDE.md',
-      chars: normalizeNewlines(nestedClaudeMd.content).length,
-    })
-  }
-
-  const primaryClaudeMd = rootClaudeMd?.found ? rootClaudeMd : nestedClaudeMd
-  const totalInstructionChars = claudeMdFiles.reduce((sum, f) => sum + f.chars, 0)
-  const primaryText = primaryClaudeMd?.found ? normalizeNewlines(primaryClaudeMd.content) : ''
-  const primaryLines = countLines(primaryText)
-
-  const claudeMd = {
-    found: !!primaryClaudeMd?.found,
-    charCount: primaryText.length,
-    lineCount: primaryLines,
-    overGuidance: primaryLines > CLAUDE_MD_LINE_GUIDANCE,
-  }
-
-  const claudeMdAll = {
-    totalChars: totalInstructionChars,
-    totalTokens: estimateTokens(totalInstructionChars),
-    fileCount: claudeMdFiles.length,
-    files: claudeMdFiles,
-  }
+  const { claudeMd, claudeMdAll, totalChars: totalInstructionChars } = analyzeClaudeMd(fileMap)
 
   // Settings
   const settingsFile = fileMap.get('.claude/settings.json')
@@ -677,15 +709,7 @@ export async function analyzeRepo(
   // MCP servers: .mcp.json is the canonical location; settings.json is legacy.
   const mcpFile = fileMap.get('.mcp.json')
   const mcpRaw = mcpFile?.found ? parseSettings(mcpFile.content) : null
-  const mcpFromFile =
-    mcpRaw && typeof mcpRaw.mcpServers === 'object' && mcpRaw.mcpServers
-      ? Object.keys(mcpRaw.mcpServers as Record<string, unknown>).length
-      : 0
-  const mcpFromSettings =
-    settingsRaw && typeof settingsRaw.mcpServers === 'object' && settingsRaw.mcpServers
-      ? Object.keys(settingsRaw.mcpServers as Record<string, unknown>).length
-      : 0
-  const mcpServerCount = mcpFromFile + mcpFromSettings
+  const mcpServerCount = serverCount(mcpRaw) + serverCount(settingsRaw)
 
   const hookCount = settingsRaw ? countHookEntries(settingsRaw.hooks) : 0
   const hasHooks = hookCount > 0 || detection.hookScripts > 0
@@ -751,38 +775,13 @@ export async function analyzeRepo(
     TOKEN_ESTIMATES.tokensPerFileRead * turns
   const outputTokensSession = TOKEN_ESTIMATES.outputTokensPerTurn * turns
 
-  const cacheHitRate = TOKEN_ESTIMATES.cacheHitRate
-
   const tokenEstimate = {
     systemPromptTokens,
     perTurnTokens,
     sessionTokens30Turns: inputTokensSession + outputTokensSession,
   }
 
-  // Cost per model
-  const sessionsPerDay = 3
-  const workingDays = 22
-
-  const costEstimate = {} as Record<ModelId, { perSession: number; perMonth: number }>
-  for (const modelId of Object.keys(MODELS) as ModelId[]) {
-    const model = MODELS[modelId]
-    // Per turn, because a tiered model (Haiku 5.5) prices each request by its
-    // own prompt length; for flat-rate models this equals the session totals.
-    let perSession = 0
-    for (let turn = 0; turn < turns; turn++) {
-      const prompt =
-        systemPromptTokens + turn * TOKEN_ESTIMATES.historyGrowthPerTurn + TOKEN_ESTIMATES.tokensPerFileRead
-      const rates = ratesForPrompt(model, prompt)
-      perSession +=
-        ((prompt * (1 - cacheHitRate)) / 1_000_000) * rates.inputPer1M +
-        ((prompt * cacheHitRate) / 1_000_000) * rates.cacheHitPer1M +
-        (TOKEN_ESTIMATES.outputTokensPerTurn / 1_000_000) * rates.outputPer1M
-    }
-    costEstimate[modelId] = {
-      perSession: Math.round(perSession * 100) / 100,
-      perMonth: Math.round(perSession * sessionsPerDay * workingDays * 100) / 100,
-    }
-  }
+  const costEstimate = estimateModelCosts(systemPromptTokens, turns)
 
   const recommendations = buildRecommendations({
     claudeMd,
@@ -904,7 +903,7 @@ function toolingRecommendations(r: RecommendationInput): string[] {
   const recs: string[] = []
   if (!r.tooling.costModeInstalled) {
     recs.push(
-      'Install the cost-mode skill for 30-60% savings: npx skills add Sagargupta16/claude-cost-optimizer',
+      'Install the cost-mode skill for concise responses and model-routing hints: npx skills add Sagargupta16/claude-cost-optimizer',
     )
   }
   if (r.tooling.commandCount === 0) {

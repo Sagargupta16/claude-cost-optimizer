@@ -12,7 +12,7 @@ assignees: ''
 
 ## Expected Savings
 
-<!-- Estimated percentage or dollar reduction (e.g., "10-20% reduction in input tokens") -->
+<!-- Measured before/after with its source, e.g. "/usage over 5 sessions: $1.84 -> $1.21 per session", or a priced formula with the rate's URL -->
 
 ## Effort Level
 

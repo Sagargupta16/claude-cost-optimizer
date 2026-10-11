@@ -13,7 +13,7 @@ Ready-to-submit entries for popular Claude Code awesome lists. Each section incl
 **Entry to add**:
 
 ```markdown
-- [Claude Cost Optimizer](https://github.com/Sagargupta16/claude-cost-optimizer) - Strategies, benchmarks, templates, and CLI tools for reducing Claude Code costs by 30-90% (30-60% typical, up to 90% when every lever is stacked).
+- [Claude Cost Optimizer](https://github.com/Sagargupta16/claude-cost-optimizer) - Strategies, benchmarks, templates, and CLI tools for reducing Claude Code costs, with every number sourced (cache reads at 5% of input on Opus 5.5, Haiku 5.5 at 1/40 of Opus 5.5 per token).
 ```
 
 **PR title**: `Add Claude Cost Optimizer to resources`
@@ -22,12 +22,12 @@ Ready-to-submit entries for popular Claude Code awesome lists. Each section incl
 
 ```
 Adds Claude Cost Optimizer -- a collection of cost reduction strategies,
-real-world benchmarks, CLAUDE.md templates, and Python CLI tools (token
+cost-estimate benchmarks, CLAUDE.md templates, and Python CLI tools (token
 estimator, usage analyzer) for cutting Claude Code spending.
 
 Includes:
 - 12 optimization guides covering context, model selection, workflows, team budgeting, caching, task routing, and speed vs cost
-- Benchmarks with reproducible methodology
+- Cost-estimate benchmarks with their methodology written out
 - Copy-paste CLAUDE.md templates for common stacks (React, Next.js, FastAPI, Django, MERN, Rails, Go, Rust, Java Spring, Terraform)
 - Token estimator and usage analyzer CLI tools
 ```
@@ -85,7 +85,7 @@ Adds Claude Cost Optimizer, which covers:
 - 12 guides: cost fundamentals, context optimization, model selection,
   workflow patterns, team budgeting, access method pricing, MCP/agent costs,
   prompt caching, subscription value, task routing, speed vs cost
-- Real-world benchmarks: task comparison, model comparison, context size impact
+- Cost-estimate benchmarks: task comparison, model comparison, context size impact
 - Templates: 4 CLAUDE.md templates, 10 stack-specific templates, 3 settings configs, 3 slash commands
 - Tools: token estimator (estimate cost before sending), usage analyzer (find cost hotspots)
 - Cheatsheet: one-page quick reference

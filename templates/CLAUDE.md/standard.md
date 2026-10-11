@@ -1,7 +1,7 @@
 # Standard CLAUDE.md Template
 
 <!-- ABOUT THIS TEMPLATE
-  - ~100 lines of actual content (~700 tokens)
+  - ~100 lines of actual content (~1,200 tokens)
   - Balanced approach: enough context for good first-pass quality, lean enough to avoid waste
   - Best for: most projects, small teams, day-to-day development
   - Sections are ordered by importance -- Claude reads top-down, so put critical info first
@@ -141,6 +141,6 @@ describe('UserService', () => {
 - Do not write SQL directly -- use Prisma client methods
 
 <!-- END OF TEMPLATE
-  Actual content: ~100 lines (~700 tokens)
-  Estimated overhead per 30-turn session: ~21,000 tokens (pre-cache)
+  Actual content: ~100 lines (~1,200 tokens, measured with tiktoken cl100k_base; about 30% more on Claude 4.7+ models)
+  Estimated overhead per 30-turn session: ~36,000 tokens (pre-cache)
   Good balance: enough context for 4/5 quality, low enough cost for daily use -->
