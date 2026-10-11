@@ -75,7 +75,7 @@ Returns a breakdown of cost by component (system prompt, CLAUDE.md, MCP schemas,
 **Assumptions used in the estimate:**
 
 - System prompt: ~3,500 tokens (fixed, loaded every turn)
-- CLAUDE.md: ~7 tokens per line (loaded every turn)
+- CLAUDE.md: ~10 tokens per line (loaded every turn; measured on this repo's root CLAUDE.md and its 14 CLAUDE.md templates: 20,161 cl100k tokens over 2,048 lines, 9.8 per line, and about 30% more on Claude 4.7+ models)
 - MCP servers: ~1,500 tokens per server, this tool's own assumption rather than a published figure. It models full schemas, which load up front only when tool search is off (`ENABLE_TOOL_SEARCH=false`, a custom `ANTHROPIC_BASE_URL`, or models older than the Claude 4.5 generation on Google Cloud). Tool search is on by default, and then only tool names and server instructions enter context until Claude uses a tool
 - Conversation history: ~1,500 tokens per turn (cumulative)
 - Output: ~500 tokens per turn

@@ -76,17 +76,17 @@ Anthropic's target is under **200 lines** per CLAUDE.md file; this guide aims fo
 
 | CLAUDE.md Size | Tokens Per Turn | 30-Turn Session, Warm Cache (Sonnet 4.6) | 30-Turn Session, Warm Cache (Opus 5.5) | 30-Turn Session, No Cache (Sonnet 4.6) | Monthly, Warm Cache (Opus 5.5, 110 sessions) |
 |:--------------:|:---------------:|:----------------------------------------:|:--------------------------------------:|:--------------------------------------:|:--------------------------------------------:|
-| 50 lines | ~350 | $0.0044 | $0.0038 | $0.03 | $0.42 |
-| 100 lines | ~700 | $0.0087 | $0.0076 | $0.06 | $0.83 |
-| **150 lines** | **~1,050** | **$0.013** | **$0.011** | **$0.09** | **$1.25** |
-| 300 lines | ~2,100 | $0.026 | $0.023 | $0.19 | $2.49 |
-| 500 lines | ~3,500 | $0.044 | $0.038 | $0.32 | $4.16 |
+| 50 lines | ~500 | $0.0062 | $0.0054 | $0.045 | $0.59 |
+| 100 lines | ~1,000 | $0.012 | $0.011 | $0.09 | $1.19 |
+| **150 lines** | **~1,500** | **$0.019** | **$0.016** | **$0.14** | **$1.78** |
+| 300 lines | ~3,000 | $0.037 | $0.032 | $0.27 | $3.56 |
+| 500 lines | ~5,000 | $0.062 | $0.054 | $0.45 | $5.94 |
 
-> Computed with Claude Code's prefix caching ([Guide 01 formula](01-understanding-costs.md#claudemd-cost-over-a-session)): the file is written to the cache once and read on the other 29 turns, so a session costs tokens x (write + 29 x read). Sonnet 4.6: $3.75 + 29 x $0.30 = $12.45 per 1M tokens; Opus 5.5: $5 + 29 x $0.20 = $10.80, which puts Opus 5.5 below Sonnet 4.6 here because its cache reads cost 0.05x. "No cache" is 30 x $3 = $90 per 1M, every turn at full input price. Each pause longer than the cache TTL adds one re-write: 3,500 tokens x $5/1M = $0.0175 on Opus 5.5 for a 500-line file.
+> Computed with Claude Code's prefix caching ([Guide 01 formula](01-understanding-costs.md#claudemd-cost-over-a-session)): the file is written to the cache once and read on the other 29 turns, so a session costs tokens x (write + 29 x read). Sonnet 4.6: $3.75 + 29 x $0.30 = $12.45 per 1M tokens; Opus 5.5: $5 + 29 x $0.20 = $10.80, which puts Opus 5.5 below Sonnet 4.6 here because its cache reads cost 0.05x. "No cache" is 30 x $3 = $90 per 1M, every turn at full input price. Each pause longer than the cache TTL adds one re-write: 5,000 tokens x $5/1M = $0.025 on Opus 5.5 for a 500-line file. Tokens per line are this repo's measured 10 (9.8 per line across its 15 CLAUDE.md files, pre-4.7 token basis; [Guide 01](01-understanding-costs.md#token-pricing)).
 
-**On legacy Opus 5** ($6.25 write, $0.50 read) the warm-cache cost is 1.9x the Opus 5.5 column: a 500-line CLAUDE.md costs $4.16/month on Opus 5.5 and $7.99 on legacy Opus 5 across 110 sessions. **Opus 5.5 adds about 30% on top** because its tokenizer (the same one shipped with Opus 4.7 and used by every Opus since) produces more tokens for the same text ([Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing)).
+**On legacy Opus 5** ($6.25 write, $0.50 read) the warm-cache cost is 1.9x the Opus 5.5 column: a 500-line CLAUDE.md costs $5.94/month on Opus 5.5 and $11.41 on legacy Opus 5 across 110 sessions. **Opus 5.5 adds about 30% on top** because its tokenizer (the same one shipped with Opus 4.7 and used by every Opus since) produces more tokens for the same text ([Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing)).
 
-One caching caveat that depends on size: a `cache_control` block is silently ignored -- no error, no discount -- if the prefix it marks is shorter than the model's minimum cacheable prompt. That floor is **512 tokens on Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5**, down from 1,024 on Opus 4.8, 2,048 on Opus 4.7, and 4,096 on Opus 4.6. Sonnet 5 and Sonnet 4.6 sit at 1,024; legacy Haiku 4.5 at 4,096. Practical effect: a ~100-line CLAUDE.md (~700 tokens) that was too short to cache on Opus 4.8, Sonnet 5 or Haiku 4.5 does cache on Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5, while a 50-line one (~350 tokens) still caches on none of them.
+One caching caveat that depends on size: a `cache_control` block is silently ignored -- no error, no discount -- if the prefix it marks is shorter than the model's minimum cacheable prompt. That floor is **512 tokens on Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5**, down from 1,024 on Opus 4.8, 2,048 on Opus 4.7, and 4,096 on Opus 4.6. Sonnet 5 and Sonnet 4.6 sit at 1,024; legacy Haiku 4.5 at 4,096. Practical effect: a ~100-line CLAUDE.md (~1,000 tokens) that was too short to cache on Opus 4.8, Sonnet 5 or Haiku 4.5 does cache on Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5, while a 50-line one (~500 tokens) still caches on none of them.
 
 ### What Belongs in CLAUDE.md
 
@@ -336,7 +336,7 @@ src/
 6. Post-deploy: verify monitoring dashboards
 ```
 
-**Token count: ~2,660 tokens per turn. Over 30 turns with prefix caching: ~$0.014 (Sonnet 5.5) / ~$0.029 (Opus 5.5)**
+**Token count: ~3,800 tokens per turn (380 lines x 10). Over 30 turns with prefix caching: ~$0.021 (Sonnet 5.5) / ~$0.041 (Opus 5.5)**
 
 ### After: 62 Lines (Optimized)
 
@@ -385,7 +385,7 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 - Squash merge, 1+ review required
 ```
 
-**Token count: ~434 tokens per turn. Over 30 turns with prefix caching: ~$0.0023 (Sonnet 5.5) / ~$0.0047 (Opus 5.5)**
+**Token count: ~620 tokens per turn (62 lines x 10). Over 30 turns with prefix caching: ~$0.0033 (Sonnet 5.5) / ~$0.0067 (Opus 5.5)**
 
 ### What Was Cut and Why
 
@@ -407,12 +407,12 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 | Metric | Before | After | Improvement |
 |--------|:------:|:-----:|:-----------:|
 | Lines | 380 | 62 | **84% fewer** |
-| Tokens per turn | ~2,660 | ~434 | **84% fewer** |
-| 30-turn Sonnet 5.5 cost | $0.014 | $0.0023 | **$0.012 saved/session** |
-| 30-turn Opus 5.5 cost | $0.029 | $0.0047 | **$0.024 saved/session** |
-| Monthly Opus 5.5 cost (110 sessions) | $3.16 | $0.52 | **$2.64 saved/month** |
+| Tokens per turn | ~3,800 | ~620 | **84% fewer** |
+| 30-turn Sonnet 5.5 cost | $0.021 | $0.0033 | **$0.017 saved/session** |
+| 30-turn Opus 5.5 cost | $0.041 | $0.0067 | **$0.034 saved/session** |
+| Monthly Opus 5.5 cost (110 sessions) | $4.51 | $0.74 | **$3.78 saved/month** |
 
-> Costs use Claude Code's prefix caching ([Guide 01](01-understanding-costs.md#key-formulas)): the file is written once at the 5-minute cache-write rate and read on the other 29 turns, tokens x (write + 29 x read): $2.50 + 29 x $0.10 = $5.40 per 1M on Sonnet 5.5, $5 + 29 x $0.20 = $10.80 on Opus 5.5. For example, 2,660 x $10.80 / 1M = $0.029.
+> Costs use Claude Code's prefix caching ([Guide 01](01-understanding-costs.md#key-formulas)) at this repo's measured 10 tokens per CLAUDE.md line: the file is written once at the 5-minute cache-write rate and read on the other 29 turns, tokens x (write + 29 x read): $2.50 + 29 x $0.10 = $5.40 per 1M on Sonnet 5.5, $5 + 29 x $0.20 = $10.80 on Opus 5.5. For example, 3,800 x $10.80 / 1M = $0.041.
 
 ---
 
@@ -731,7 +731,7 @@ undefined when the JWT token is expired. Add a null check before line 23.
 
 The bad prompt will trigger Claude to: search for auth files, read multiple files, ask clarifying questions, and guess at the issue -- costing several turns (4 in the cost figure below). The good prompt leads to a 1-turn fix.
 
-**Computed cost difference: $0.058 (4 turns) vs $0.028 (1 turn) on Sonnet 5.5 for the same outcome**, from a fresh session at this repo's calculator defaults with cache-aware billing. Most of the 1-turn cost is the first cache write of the 9,200-token prompt; each extra turn adds about $0.01.
+**Computed cost difference: $0.058 (4 turns) vs $0.029 (1 turn) on Sonnet 5.5 for the same outcome**, from a fresh session at this repo's calculator defaults with cache-aware billing. Most of the 1-turn cost is the first cache write of the 9,500-token prompt; each extra turn adds about $0.01.
 
 **Example 2: New Feature**
 
@@ -792,7 +792,7 @@ Each repetition costs about 22 tokens of input (the 56-character first example a
 - Run `npm test` after changes
 ```
 
-Three lines in CLAUDE.md (~21 tokens) that are loaded once per turn via cache, replacing about 61 tokens of repeated ad-hoc instructions each time you would have typed all three (153 characters / 2.5).
+Three lines in CLAUDE.md (~30 tokens at 10 per line) that are loaded once per turn via cache, replacing about 61 tokens of repeated ad-hoc instructions each time you would have typed all three (153 characters / 2.5).
 
 ### When to Use CLAUDE.md vs Separate Files
 
@@ -831,7 +831,7 @@ Root CLAUDE.md (before): 150 lines including 40 lines of React-specific rules
 Root CLAUDE.md (after): 110 lines
 `src/client/CLAUDE.md`: 40 lines of React rules -- only loaded during frontend work
 
-Savings: 40 fewer lines in root CLAUDE.md = ~280 fewer tokens on every non-frontend turn.
+Savings: 40 fewer lines in root CLAUDE.md = ~400 fewer tokens on every non-frontend turn (10 per line).
 
 ### Custom Slash Commands for Specialized Workflows
 
@@ -875,14 +875,14 @@ Apply these in order of impact:
 
 | Strategy | Savings (source) | Effort to Implement |
 |----------|:----------------:|:-------------------:|
-| CLAUDE.md under 150 lines | About 3% of a 30-turn session (500 to 150 lines, derived: $0.769 vs $0.742 per Opus 5.5 session, cache-aware calculator defaults) | One-time, 15 minutes |
+| CLAUDE.md under 150 lines | About 5% of a 30-turn session (500 to 150 lines, derived: $0.785 vs $0.747 per Opus 5.5 session, cache-aware calculator defaults, 10 tokens per line) | One-time, 15 minutes |
 | Read deny rules configured | Not measured (no published figure; depends on how often Claude would open those files) | One-time, 2 minutes |
 | /compact usage | 32% (Anthropic long triage run; nothing on short loops) | Ongoing habit |
 | Precise file references | 1 - lines read / file length per read (50 of 2,000 lines: 97.5% fewer tokens for that read) | Ongoing habit |
 | Subagent delegation | No Claude Code figure (cookbook loop: 78%) | Ongoing habit |
 | Concise prompts | No published figure (Anthropic: vague requests "trigger broad scanning") | Ongoing habit |
 | Nested CLAUDE.md + commands | No published figure (nested files and path-scoped rules load only when Claude reads files there) | One-time, 15 minutes |
-| New sessions for new tasks | About 23% for an 80-turn day split into eight sessions (derived: $2.51 vs $1.93 on Opus 5.5); `/clear` itself costs nothing | Ongoing habit |
+| New sessions for new tasks | About 23% for an 80-turn day split into eight sessions (derived: $2.51 vs $1.94 on Opus 5.5); `/clear` itself costs nothing | Ongoing habit |
 | **Combined** | **Not measured combined** | |
 
 Each figure applies to its own slice of spend, so they do not simply add, and no one has published a combined measurement. Sources: the [cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) (compaction), the [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) (subagent loop), and Claude Code's [costs page](https://code.claude.com/docs/en/costs) and [prompt-caching page](https://code.claude.com/docs/en/prompt-caching). Price your own before and after with `/usage`.

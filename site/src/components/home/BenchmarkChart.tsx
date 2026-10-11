@@ -89,12 +89,10 @@ export function BenchmarkChart({
     <div>
       <div className={styles.legend}>
         <span className={styles.legendItem}>
-          <span className={styles.swatch} style={{ background: COLOR_BEFORE }} />
-          Before
+          <span className={styles.swatch} style={{ background: COLOR_BEFORE }} />Before
         </span>
         <span className={styles.legendItem}>
-          <span className={styles.swatch} style={{ background: COLOR_AFTER }} />
-          After
+          <span className={styles.swatch} style={{ background: COLOR_AFTER }} />After
         </span>
         <span className={styles.legendItem}>{unit}</span>
       </div>

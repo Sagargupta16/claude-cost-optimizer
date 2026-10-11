@@ -289,7 +289,7 @@ Turn Cost = (Input Tokens x Input Price) + (Output Tokens x Output Price)
 
 Where Input Tokens =
     System Prompt (~3,500 tokens, fixed)
-  + CLAUDE.md (~7 tokens/line x number of lines)
+  + CLAUDE.md (~10 tokens/line x number of lines)
   + Conversation History (grows each turn)
   + Tool Results (file contents, search results, command output)
   + MCP Responses (if using MCP servers)
@@ -395,12 +395,12 @@ Build: `npm run build` - must pass before PR
 | CLAUDE.md loads on every ___ | **turn** |
 | CLAUDE.md size guidance per file | **under 200 lines** (Anthropic's guidance; CLAUDE.md is never truncated -- the only size cap is that Claude Code skips a file over 4 MiB) |
 | Auto memory (`MEMORY.md`) loaded at session start | **first 200 lines or 25KB**, whichever comes first -- the only truncation |
-| 1 line of code is roughly ___ tokens | **~10** on pre-4.7 models, ~16 on the current tokenizer (computed: this repo's 11,295 non-blank lines of TypeScript and Python average 38.9 characters, at 4 and 2.5 characters per token) |
+| 1 line of code is roughly ___ tokens | **~11** on the pre-4.7 basis, about 14 on the 4.7+ tokenizer (measured: this repo's 11,302 non-blank lines of TypeScript and Python are 119,917 cl100k tokens, 10.6 per line; plus about 30% per the [pricing page](https://platform.claude.com/docs/en/about-claude/pricing)) |
 | Token estimation rule of thumb | **~1 token per 4 bytes** of text on pre-4.7 models; **about 2.5 characters per token** on the current tokenizer (1M tokens is roughly 2.5M characters, [models overview](https://platform.claude.com/docs/en/about-claude/models/overview)) |
 | Opus 4.7+ tokenizer overhead vs older models | **about +30%** for the same text ([pricing page](https://platform.claude.com/docs/en/about-claude/pricing)) |
-| 150-line CLAUDE.md per turn is roughly | **~1,050 tokens** |
-| 50-turn session CLAUDE.md cost (Sonnet 4.6) | **~$0.02** with caching (computed: 1,050 x $3.75/M once + 49 x 1,050 x $0.30/M); $0.16 if nothing were cached |
-| 50-turn session CLAUDE.md cost (Opus 5.5) | **~$0.016** with caching (computed: 1,050 x $5/M once + 49 x 1,050 x $0.20/M; ~$0.03 on Opus 5); $0.21 if nothing were cached ($0.26 on Opus 5); add about 30% for the new tokenizer |
+| 150-line CLAUDE.md per turn is roughly | **~1,500 tokens** at 10 per line (measured: this repo's 15 CLAUDE.md files are 20,161 cl100k tokens over 2,048 lines, 9.8 per line counting blank lines, 12.3 per non-blank line); about 30% more on the 4.7+ tokenizer |
+| 50-turn session CLAUDE.md cost (Sonnet 4.6) | **$0.028** with caching (computed: 1,500 x $3.75/M once + 49 x 1,500 x $0.30/M); $0.225 if nothing were cached (50 x 1,500 x $3/M) |
+| 50-turn session CLAUDE.md cost (Opus 5.5) | **$0.022** with caching (computed: 1,500 x $5/M once + 49 x 1,500 x $0.20/M; $0.046 on Opus 5); $0.30 if nothing were cached ($0.375 on Opus 5); add about 30% for the new tokenizer |
 | Average tool result size | **No published average.** Anthropic's context-window explorer illustrates file reads of 1,100 to 2,400 tokens and a grep of 600 ("Token counts are illustrative", [context window](https://code.claude.com/docs/en/context-window)); this repo's calculator assumes 2,000 per file read. Caps: MCP tool output warns above 10,000 tokens and is cut at 25,000 by default (`MAX_MCP_OUTPUT_TOKENS`, [MCP docs](https://code.claude.com/docs/en/mcp)) |
 | Compaction trigger threshold | **about 967K tokens** by default on 1M-window models (Fable, Sonnet 5 and later, Haiku 5.5, Opus 4.7 and later); `/autocompact` sets 100K to 1M ([model config](https://code.claude.com/docs/en/model-config)) |
 | What /compact keeps | A summary of the conversation, plus re-reads of up to **5 files** Claude read or edited, most recently modified first; a file over 5,000 tokens comes back as a path only ([context window](https://code.claude.com/docs/en/context-window)) |

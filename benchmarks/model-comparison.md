@@ -37,7 +37,7 @@
 Each task type was performed with all three models under the same conditions:
 
 - Same codebase (React + TypeScript, ~50 files)
-- Same CLAUDE.md (Standard template, ~100 lines, ~700 tokens)
+- Same CLAUDE.md (Standard template, ~100 lines, counted as ~700 tokens in these runs; the current template measures ~1,200 tokens with tiktoken cl100k_base)
 - Same prompt wording
 - Quality rated 1-5 (5 = perfect, no follow-ups needed; 1 = unusable or required complete redo)
 

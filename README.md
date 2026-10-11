@@ -151,7 +151,7 @@ cost-mode is the first skill. More are planned:
 |-------|:------:|-------------|:-----------:|
 | **cost-mode** | Live | Concise responses, model routing suggestions, session awareness | Not benchmarked ([Anthropic](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence): asking for shorter answers cut output tokens 39%, cost 14%) |
 | **deny-rules-gen** | Planned | Generates `permissions.deny` `Read(...)` rules for your project's tech stack | No published figure |
-| **context-compress** | Planned | Rewrites your CLAUDE.md to be shorter while keeping all essential info | About 3% of a 30-turn session per 350 lines cut (derived from this repo's cache-aware calculator model), plus adherence |
+| **context-compress** | Planned | Rewrites your CLAUDE.md to be shorter while keeping all essential info | About 5% of a 30-turn session for 500 to 150 lines (computed with this repo's cache-aware calculator at 10 tokens per line: $0.7851 to $0.7473 on Opus 5.5), plus adherence |
 | **cache-optimizer** | Planned | Detects cache-busting patterns and suggests fixes to maximize prompt cache hits | [Anthropic](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence): one cache-busting 25-token prefix made a run 7.2x dearer ($4.24 vs $0.59) |
 | **budget-guard** | Planned | Per-session and per-day spending limits with warnings before you blow past them | Prevents overspend |
 

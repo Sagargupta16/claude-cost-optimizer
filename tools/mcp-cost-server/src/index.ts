@@ -178,7 +178,8 @@ function sessionEstimate(args: {
   }
 
   const turns = args.turns;
-  const claudeMdTokens = (args.claude_md_lines ?? 0) * 7;
+  // 10 tokens per line: measured on this repo's CLAUDE.md files (20,161 cl100k tokens over 2,048 lines).
+  const claudeMdTokens = (args.claude_md_lines ?? 0) * 10;
   const mcpSchemaTokens = (args.mcp_servers ?? 0) * 1500;
   const systemPromptTokens = 3500;
 

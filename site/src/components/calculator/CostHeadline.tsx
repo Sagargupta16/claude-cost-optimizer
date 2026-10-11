@@ -59,12 +59,10 @@ export function CostHeadline({
       <SavingsMeter share={share} />
       <div className={styles.meterKey}>
         <span className={styles.keyItem}>
-          <span className={styles.keySwatch} style={{ background: BLUE_400 }} />
-          Still paying
+          <span className={styles.keySwatch} style={{ background: BLUE_400 }} />Still paying
         </span>
         <span className={styles.keyItem}>
-          <span className={styles.keySwatch} style={{ background: SAVINGS }} />
-          Saved
+          <span className={styles.keySwatch} style={{ background: SAVINGS }} />Saved
         </span>
       </div>
       <div className={styles.savingsRow}>

@@ -1,7 +1,7 @@
 # Next.js App Router CLAUDE.md Template
 
 <!-- ABOUT THIS TEMPLATE
-  - ~95 lines of content (~680 tokens)
+  - ~95 lines of content (~1,110 tokens)
   - Optimized for Next.js 14+ with App Router
   - Covers: dev commands, server/client components, data fetching, routing, middleware
   - Copy everything below the "---" line into your project's CLAUDE.md
@@ -135,6 +135,6 @@ export async function createUser(formData: FormData) {
 - Do not modify `next.config.{js/mjs}` without discussing impact
 
 <!-- END OF TEMPLATE
-  Content: ~95 lines (~680 tokens)
-  Overhead per 30-turn session: ~20,400 tokens (pre-cache)
+  Content: ~95 lines (~1,110 tokens, measured with tiktoken cl100k_base; about 30% more on Claude 4.7+ models)
+  Overhead per 30-turn session: ~33,300 tokens (pre-cache)
   Optimized for: correct server/client boundaries, modern App Router patterns -->

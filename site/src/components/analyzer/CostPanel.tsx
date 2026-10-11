@@ -170,14 +170,14 @@ function CostBars({ rows }: Readonly<{ rows: CostRow[] }>) {
 
 function LineupToggle({ showAll, onChange }: Readonly<{ showAll: boolean; onChange: (all: boolean) => void }>) {
   return (
-    <div className={styles.segmented} role="group" aria-label="Models shown">
+    <fieldset className={styles.segmented} aria-label="Models shown">
       <button type="button" aria-pressed={!showAll} onClick={() => onChange(false)}>
         Current lineup
       </button>
       <button type="button" aria-pressed={showAll} onClick={() => onChange(true)}>
         All models
       </button>
-    </div>
+    </fieldset>
   )
 }
 
@@ -185,12 +185,10 @@ function ChartLegend() {
   return (
     <div className={styles.legend}>
       <span className={styles.legendItem}>
-        <span className={`${styles.swatch} ${styles.swatchCurrent}`} />
-        Current lineup
+        <span className={`${styles.swatch} ${styles.swatchCurrent}`} />Current lineup
       </span>
       <span className={styles.legendItem}>
-        <span className={`${styles.swatch} ${styles.swatchLegacy}`} />
-        Legacy or deprecated
+        <span className={`${styles.swatch} ${styles.swatchLegacy}`} />Legacy or deprecated
       </span>
     </div>
   )

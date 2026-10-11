@@ -402,11 +402,8 @@ function LevelsSection() {
       <SectionHead eyebrow="Pick your intensity" title="Three Intensity Levels">
         <p className={styles.sectionSub}>
           None of the three is benchmarked. Closest measurement: Anthropic cut output
-          tokens 39% and cost per run 14% by asking for shorter answers (
-          <a href={COST_GUIDE} target="_blank" rel="noopener noreferrer">
-            cost guide
-          </a>
-          ).
+          tokens 39% and cost per run 14% by asking for shorter answers
+          {' ('}<a href={COST_GUIDE} target="_blank" rel="noopener noreferrer">cost guide</a>{').'}
         </p>
       </SectionHead>
       <div className={styles.levelsGrid} ref={ref}>
@@ -526,11 +523,11 @@ function BenchmarksSection() {
           <a href="https://platform.claude.com/cookbook/cost-optimization-cost-optimization" target="_blank" rel="noopener noreferrer">
             cost-optimization cookbook
           </a>
-          ). Rows 2 to 4 are from Anthropic's{' '}
+          {'). Rows 2 to 4 are from '}Anthropic's{' '}
           <a href={COST_GUIDE} target="_blank" rel="noopener noreferrer">
             cost and intelligence guide
           </a>
-          : a 25-token status line at the front of a triage agent's system prompt, a memo answer
+          {': a 25-token status line'} at the front of a triage agent's system prompt, a memo answer
           against a one-line one, and Opus 5.5 run all at high (95.3% pass) against low with
           failures re-run at high (about 97%).
         </p>

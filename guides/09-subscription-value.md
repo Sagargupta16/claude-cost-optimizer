@@ -234,7 +234,7 @@ With 5x the headroom, you can afford to be less aggressive about token pinching.
 
 **1. Use Opus freely for complex tasks -- but not for everything**
 
-You have room to use Opus when it matters (architecture, debugging, complex refactoring), but do not leave it as your default for all tasks. Anthropic does not publish how each model draws on plan limits, so no model split can be called the right target for your allowance. Priced at API rates, a 60/30/10 split of 30-turn sessions across Haiku 5.5, Sonnet 5.5 and Opus 5.5 costs $0.20 per session against $0.74 all on Opus 5.5, 73% less (computed at this repo's calculator defaults with Claude Code's prompt caching: 0.6 x $0.0228 + 0.3 x $0.3693 + 0.1 x $0.7387). `/usage` flags any behavior that accounts for 10% or more of your recent usage ([costs page](https://code.claude.com/docs/en/costs)); start with what it flags.
+You have room to use Opus when it matters (architecture, debugging, complex refactoring), but do not leave it as your default for all tasks. Anthropic does not publish how each model draws on plan limits, so no model split can be called the right target for your allowance. Priced at API rates, a 60/30/10 split of 30-turn sessions across Haiku 5.5, Sonnet 5.5 and Opus 5.5 costs $0.20 per session against $0.74 all on Opus 5.5, 73% less (computed at this repo's calculator defaults with Claude Code's prompt caching: 0.6 x $0.0230 + 0.3 x $0.3709 + 0.1 x $0.7419). `/usage` flags any behavior that accounts for 10% or more of your recent usage ([costs page](https://code.claude.com/docs/en/costs)); start with what it flags.
 
 **2. Leverage subagents more aggressively**
 
@@ -397,24 +397,24 @@ If you only use Claude Code occasionally (a few times per week), even Pro at $20
 ```
 Light usage example:
   10 sessions/month, 20 turns each, Sonnet 5.5
-  Token cost at API rates: 10 x $0.2374 = $2.37
+  Token cost at API rates: 10 x $0.2387 = $2.39
     (one 20-turn session at this repo's calculator defaults,
      billed with Claude Code's prompt caching)
 
   Pro subscription: $20/mo
-  API cost:         $2.37/mo
-  Savings:          $17.63/mo with API billing
+  API cost:         $2.39/mo
+  Savings:          $17.61/mo with API billing
 ```
 
 ### Subscription vs. API Break-Even Estimates
 
-Computed for one workload: 30-turn Sonnet 5.5 sessions at this repo's calculator defaults (3,500-token system prompt, 100-line CLAUDE.md, two MCP servers, one 2,000-token file read, 1,500 tokens of history per turn, 500 output tokens per turn), billed the way Claude Code caches a conversation: $0.3693 per session, over 22 working days. Other model mixes, session lengths and cache hit rates move the line: the same session costs $0.7387 on Opus 5.5 and $0.0228 on Haiku 5.5.
+Computed for one workload: 30-turn Sonnet 5.5 sessions at this repo's calculator defaults (3,500-token system prompt, 100-line CLAUDE.md at 10 tokens per line, two MCP servers, one 2,000-token file read, 1,500 tokens of history per turn, 500 output tokens per turn), billed the way Claude Code caches a conversation: $0.3709 per session, over 22 working days. Other model mixes, session lengths and cache hit rates move the line: the same session costs $0.7419 on Opus 5.5 and $0.0230 on Haiku 5.5.
 
 | Plan | Break-Even (API Equivalent) | Below This = API Cheaper |
 |------|:-----------------------------------:|:------------------------:|
 | Pro ($20) | $20 of API usage/month | < 2.5 Sonnet 5.5 sessions/day (54/month; 1.2/day on Opus 5.5) |
-| Max 5x ($100) | $100 of API usage/month | < 12.3 Sonnet 5.5 sessions/day (271/month; 6.2/day on Opus 5.5) |
-| Max 20x ($200) | $200 of API usage/month | < 24.6 Sonnet 5.5 sessions/day (542/month; 12.3/day on Opus 5.5) |
+| Max 5x ($100) | $100 of API usage/month | < 12.3 Sonnet 5.5 sessions/day (270/month; 6.1/day on Opus 5.5) |
+| Max 20x ($200) | $200 of API usage/month | < 24.5 Sonnet 5.5 sessions/day (539/month; 12.3/day on Opus 5.5) |
 
 > **Note**: the session cost above already includes Claude Code's own overhead in this repo's model: its system prompt (3,500 tokens) and two MCP servers' tool definitions. Background requests (conversation summarization, status checks) add typically under $0.04 per session ([costs page](https://code.claude.com/docs/en/costs)). The table compares prices only: Anthropic does not publish plan limits in tokens, so whether a plan's allowance covers that many sessions is not something this math can tell you. For scale, Anthropic's enterprise average is around $13 per developer per active day and $150-250 per developer per month at API rates ([costs page](https://code.claude.com/docs/en/costs)), more than Max 5x's $100.
 

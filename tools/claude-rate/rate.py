@@ -1267,6 +1267,9 @@ def _text_file(path: Path) -> str:
         return ""
 
 
+_FRONTMATTER_KEY = re.compile(r"[A-Za-z_][\w-]*")
+
+
 def _frontmatter(text: str) -> dict[str, str]:
     """Top-level keys of a leading YAML frontmatter block; block scalars are joined."""
     lines = text.splitlines()
@@ -1277,9 +1280,9 @@ def _frontmatter(text: str) -> dict[str, str]:
     for line in lines[1:]:
         if line.strip() == "---":
             break
-        match = re.match(r"^([A-Za-z_][\w-]*):\s*(.*)$", line)
-        if match:
-            key, value = match.group(1), match.group(2).strip()
+        name, colon, rest = line.partition(":")
+        if colon and _FRONTMATTER_KEY.fullmatch(name):
+            key, value = name, rest.strip()
             out[key] = "" if value in (">", ">-", "|", "|-") else value.strip("'\"")
         elif key and line[:1] in (" ", "\t", "-"):
             out[key] = f"{out[key]} {line.strip()}".strip()
@@ -1874,7 +1877,7 @@ def _print_usage_facts(facts: dict[str, Any]) -> None:
 # -- CLI entry point ---------------------------------------------------------
 
 
-def main() -> None:
+def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="claude-rate",
         description="Rate the cost-efficiency of a Claude / AI setup in a local project directory; "
@@ -1916,8 +1919,27 @@ def main() -> None:
         "model mix and list-price spend per model",
     )
     parser.add_argument("--version", action="version", version="claude-rate 0.2.0")
+    return parser
 
-    args = parser.parse_args()
+
+def _emit(result: RateResult, scopes: list[ScopeResult], args: argparse.Namespace) -> None:
+    """Print the project grade plus any --user / --usage scopes, as JSON or as a report."""
+    if args.json_output:
+        payload = result.to_dict()
+        payload.update({"user" if s.name.startswith("Your Claude") else "usage": s.to_dict() for s in scopes})
+        print(json.dumps(payload, indent=2))
+        return
+    print_report(result, show_fixes=args.show_fixes)
+    for scope in scopes:
+        _print_scope(scope, args.show_fixes)
+        if "facts" in scope.to_dict() and scope.facts.get("days"):
+            _print_usage_facts(scope.facts)
+    if scopes:
+        print()
+
+
+def main() -> None:
+    args = _build_parser().parse_args()
 
     if not Path(args.path).is_dir():
         print(f"{RED}Error:{RESET} '{args.path}' is not a directory", file=sys.stderr)
@@ -1931,18 +1953,7 @@ def main() -> None:
     if args.usage is not None:
         scopes.append(rate_usage(max(1, args.usage)))
 
-    if args.json_output:
-        payload = result.to_dict()
-        payload.update({"user" if s.name.startswith("Your Claude") else "usage": s.to_dict() for s in scopes})
-        print(json.dumps(payload, indent=2))
-    else:
-        print_report(result, show_fixes=args.show_fixes)
-        for scope in scopes:
-            _print_scope(scope, args.show_fixes)
-            if "facts" in scope.to_dict() and scope.facts.get("days"):
-                _print_usage_facts(scope.facts)
-        if scopes:
-            print()
+    _emit(result, scopes, args)
 
     if args.strict and result.grade in ("C", "D", "F"):
         sys.exit(1)

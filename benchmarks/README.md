@@ -70,7 +70,7 @@ Claude Code automatically caches stable content (system prompt, CLAUDE.md, earli
 ### Assumptions
 
 - **Session length**: Unless otherwise stated, benchmarks assume a single-task session (Claude Code launched, task completed, session ended).
-- **CLAUDE.md size**: The "optimized" baseline uses the Standard template (~100 lines, ~700 tokens). The "unoptimized" baseline uses a bloated CLAUDE.md (~300 lines, ~2,100 tokens).
+- **CLAUDE.md size**: The "optimized" baseline uses the Standard template (~100 lines, counted as ~700 tokens in these runs; the current template measures ~1,200 tokens with tiktoken cl100k_base). The "unoptimized" baseline uses a bloated CLAUDE.md (~300 lines, counted as ~2,100 tokens).
 - **Codebase size**: A medium-sized project (~50 files, ~15,000 lines of code) unless noted otherwise.
 - **Turns**: A "turn" is one user message + one Claude response (which may include multiple tool calls).
 

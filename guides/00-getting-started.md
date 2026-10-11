@@ -59,7 +59,7 @@ There is no character cap: CLAUDE.md files in the directories above your working
 
 Grab a template: [minimal](../templates/CLAUDE.md/minimal.md) | [standard](../templates/CLAUDE.md/standard.md) | [by stack](../templates/CLAUDE.md/by-stack/)
 
-**Savings: about 3% of a 30-turn session** for trimming 500 lines to 150 (computed with this repo's cache-aware calculator model at its defaults, 7 tokens per line: $0.769 vs $0.742 per Opus 5.5 session, because CLAUDE.md is written to the cache once and then read at 0.05x input). The bigger win is adherence: Anthropic says longer files "consume more context and reduce adherence".
+**Savings: about 5% of a 30-turn session** for trimming 500 lines to 150 (computed with this repo's cache-aware calculator model at its defaults, 10 tokens per line, measured at 9.8 per line across this repo's 15 CLAUDE.md files: $0.785 vs $0.747 per Opus 5.5 session, because CLAUDE.md is written to the cache once and then read at 0.05x input). The bigger win is adherence: Anthropic says longer files "consume more context and reduce adherence".
 
 ---
 
@@ -119,9 +119,9 @@ Best practice:
 - **Compact** long sessions with `/compact` to summarize history. While the prompt cache is warm the summary request reads from cache, so it costs a fraction of the context size; after a break longer than the cache TTL it reprocesses the full history uncached
 - **Clear** with `/clear` when the old context is no longer needed -- it costs nothing
 
-A 50-turn session sends 2.9x more input tokens per turn than a 10-turn one (45,950 vs 15,950 at this repo's calculator defaults). With a warm cache most of that bills at the cache-read rate, so the per-turn dollar gap is about 1.1x on Opus 5.5 ($0.027 vs $0.024 per turn, computed with the cache-aware calculator model). What costs is a cache miss on a long session: re-writing 100K tokens on Opus 5.5 is $0.50, against $0.02 to read them (100K x $5/1M 5-minute write vs 100K x $0.20/1M read, [Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing)).
+A 50-turn session sends 2.8x more input tokens per turn than a 10-turn one (46,250 vs 16,250 at this repo's calculator defaults). With a warm cache most of that bills at the cache-read rate, so the per-turn dollar gap is about 1.1x on Opus 5.5 ($0.027 vs $0.024 per turn, computed with the cache-aware calculator model). What costs is a cache miss on a long session: re-writing 100K tokens on Opus 5.5 is $0.50, against $0.02 to read them (100K x $5/1M 5-minute write vs 100K x $0.20/1M read, [Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing)).
 
-**Savings:** one 80-turn session split into eight 10-turn sessions sends 77% fewer input tokens (5.48M vs 1.28M at calculator defaults); billed with Claude Code's prefix caching that is about 23% less spend ($2.51 vs $1.93 on Opus 5.5, computed).
+**Savings:** one 80-turn session split into eight 10-turn sessions sends 76% fewer input tokens (5.50M vs 1.30M at calculator defaults); billed with Claude Code's prefix caching that is about 23% less spend ($2.51 vs $1.94 on Opus 5.5, computed).
 
 ---
 

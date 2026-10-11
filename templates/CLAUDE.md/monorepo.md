@@ -1,7 +1,7 @@
 # Monorepo CLAUDE.md Template
 
 <!-- ABOUT THIS TEMPLATE
-  - ~120 lines of actual content (~850 tokens) for the ROOT CLAUDE.md
+  - ~90 lines of actual content (~870 tokens) for the ROOT CLAUDE.md
   - Optimized for multi-package workspaces (Turborepo, Nx, pnpm workspaces, etc.)
   - Includes guidance on structuring BOTH root-level and package-level CLAUDE.md files
   - Key principle: root CLAUDE.md has shared conventions, package CLAUDE.md files have specifics
@@ -223,16 +223,17 @@ prisma/
      ============================================================
 
   When working in packages/web/:
-    Root CLAUDE.md:    ~850 tokens (shared conventions)
-    Package CLAUDE.md: ~280 tokens (web-specific)
-    Total per turn:    ~1,130 tokens
+    Root CLAUDE.md:    ~870 tokens (shared conventions)
+    Package CLAUDE.md: ~300 tokens (web-specific)
+    Total per turn:    ~1,170 tokens
+    (measured with tiktoken cl100k_base; about 30% more on Claude 4.7+ models)
 
   Compare to a single monolithic CLAUDE.md with everything:
     Monolithic:        ~2,800 tokens per turn (all packages' details loaded always)
 
-  Savings per 30-turn session: (2,800 - 1,130) x 30 = 50,100 tokens
+  Savings per 30-turn session: (2,800 - 1,170) x 30 = 48,900 tokens
   At Sonnet 5.5 standard rates ($2/1M input): ~$0.10 saved per session
-  With Claude Code's prompt caching (warm cache): about $0.01, since the 1,670 extra
+  With Claude Code's prompt caching (warm cache): about $0.01, since the 1,630 extra
   tokens are written once at $2.50/1M (1.25x) and read 29 times at $0.10/1M (0.05x)
 
   More importantly, Claude gets ONLY the relevant context for the package

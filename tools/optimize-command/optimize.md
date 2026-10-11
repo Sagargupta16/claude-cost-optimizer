@@ -109,11 +109,12 @@ Grade scale:
 
 Estimate the per-session cost using these assumptions:
 - Average session: 40 turns
-- CLAUDE.md is loaded every turn (line count x ~1.5 tokens per line x 40 turns)
+- CLAUDE.md is loaded every turn (line count x ~10 tokens per line, measured on this repo's root CLAUDE.md and 14 CLAUDE.md templates: 20,161 cl100k tokens over 2,048 lines, 9.8 per line; the Claude 4.7+ tokenizer gives about 30% more)
 - MCP servers: leave them out of the per-turn number (no per-server figure is published) and say so; if tool search is off, note that the estimate is low because full tool schemas load up front
-- Base system prompt: ~2000 tokens per turn
+- Base system prompt: ~3,500 tokens per turn. This is the repo's modelling assumption, not a published figure; Claude Code's real system prompt plus its built-in tool definitions is larger, and `/context` shows the actual number
 - Average output per turn: ~500 tokens
 - Use the pricing for the configured model (default to Opus 5.5 at $4/$20 per 1M input/output tokens if no model is set). Rates per 1M input/output: Opus 5.5 $4/$20, Sonnet 5.5 $2/$10 (cache read $0.10, 0.05x input), Haiku 5.5 $0.10/$0.50 when a request's prompt is at most 100,000 tokens and $0.50/$2.50 above, Fable 5.1 $10/$50; legacy Opus 5 and Opus 4.x $5/$25, legacy Sonnet 5 $2/$10, legacy Haiku 4.5 $1/$5, legacy Sonnet 4.6 $3/$15, and Sonnet 4.5 $3/$15 (deprecated; retirement scheduled for 2026-11-30, migrate to Sonnet 5.5). Haiku 5.5 prices each request on its own, its prompt length counts cache reads and writes, and a request over the threshold pays the higher rates on all of it: a 100,000-token prompt is $0.010 of input, a 100,001-token prompt $0.050 (5x). Price each turn at the tier its own prompt falls in. The `sonnet` alias is Sonnet 5.5 on the Anthropic API but Sonnet 4.5 ($3/$15, deprecated) on Bedrock, Google Cloud and Foundry, and Sonnet 4.6 ($3/$15) on Claude Platform on AWS. The `haiku` alias is Haiku 5.5 on the Anthropic API (Claude Code v2.1.293+) but Haiku 4.5 ($1/$5) on Claude Platform on AWS, Bedrock, Google Cloud and Foundry
+- Caching: the system prompt and CLAUDE.md are a stable prefix, so bill it the way Claude Code caches a conversation. Turn 1 writes it at the 5-minute cache-write rate (1.25x input); the other 39 turns read it at the model's cache-read rate (0.05x input on Opus 5.5 and Sonnet 5.5, 0.025x on Fable 5.1, 0.1x on the other models). If the prefix is under the model's minimum cacheable prompt (512 tokens on the current models, 1,024 on Opus 4.8, Sonnet 5 and Sonnet 4.6, 2,048 on Opus 4.7, 4,096 on Opus 4.6 and Haiku 4.5), bill every turn at full input. Conversation history is not modeled, so say the estimate runs low for long sessions
 
 Show the math briefly, then give the final estimate.
 

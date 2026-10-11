@@ -22,7 +22,7 @@
 
 ## Token Pricing
 
-Every interaction with Claude Code consumes tokens. Tokens are the fundamental billing unit. On models before Opus 4.7 that is roughly 1 token per 4 characters of English text, or about 0.75 words per token; on the current tokenizer 1M tokens is roughly 2.5M characters or 555K words, about 2.5 characters per token ([Anthropic models overview](https://platform.claude.com/docs/en/about-claude/models/overview)). This repo's estimates assume about 10 tokens per line of code and 7 per line of CLAUDE.md.
+Every interaction with Claude Code consumes tokens. Tokens are the fundamental billing unit. On models before Opus 4.7 that is roughly 1 token per 4 characters of English text, or about 0.75 words per token; on the current tokenizer 1M tokens is roughly 2.5M characters or 555K words, about 2.5 characters per token ([Anthropic models overview](https://platform.claude.com/docs/en/about-claude/models/overview)). This repo's estimates assume about 10 tokens per line of code and 10 per line of CLAUDE.md. The CLAUDE.md figure is measured: this repo's 15 CLAUDE.md files (the templates plus the root file) hold 20,161 tokens over 2,048 lines, 9.8 per line counting blank lines (12.3 per non-blank line). That count used tiktoken's cl100k encoding, the same pre-4.7 basis as the repo's other estimates; expect about 30% more on the current tokenizer.
 
 ### Current Model Pricing (verified 2026-10-09)
 
@@ -230,10 +230,10 @@ Input Token Composition Per Turn
        3,500 is this repo's modelling assumption; the real prompt
        plus tool definitions varies by Claude Code version.
 
-2. CLAUDE.md Contents                     ~7 tokens/line (variable)
+2. CLAUDE.md Contents                     ~10 tokens/line (variable)
    └── Your project's CLAUDE.md file is injected in full on every
-       single turn. A 150-line file adds ~1,050 tokens per turn.
-       A 500-line file adds ~3,500 tokens per turn.
+       single turn. A 150-line file adds ~1,500 tokens per turn.
+       A 500-line file adds ~5,000 tokens per turn.
 
 3. Conversation History                   Grows each turn
    └── Every previous user message and Claude response in the
@@ -311,7 +311,7 @@ Claude's context window (1M tokens for Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opu
 Context Window (1M tokens for Opus/Sonnet/Haiku 5.5, 200K for Haiku 4.5)
 ┌─────────────────────────────────────────────────────┐
 │ System Prompt          (~3,500 tokens)              │
-│ CLAUDE.md              (~1,050 tokens @ 150 lines)  │
+│ CLAUDE.md              (~1,500 tokens @ 150 lines)  │
 │ Conversation History   (grows each turn)            │
 │ Current Tool Results   (varies)                     │
 │ Your Current Message   (~100 tokens)                │
@@ -425,7 +425,7 @@ Opus 5.5 and Opus 5 share the lowest Opus-tier floor at 512 tokens, half of Opus
 
 ### Cache Savings in Practice
 
-For the 30-turn Sonnet 4.6 session in the [worked example](#worked-example-cost-of-a-30-turn-session) (120-line CLAUDE.md), input only:
+For the 30-turn Sonnet 4.6 session in the [worked example](#worked-example-cost-of-a-30-turn-session) (84-line CLAUDE.md), input only:
 
 | Component | Tokens over 30 turns | Without Cache | With Cache | Savings |
 |-----------|:--------------------:|:-------------:|:----------:|:-------:|
@@ -555,7 +555,7 @@ You are building a new API endpoint for a Node.js/Express application. The sessi
 
 ### Assumptions
 
-- CLAUDE.md: 120 lines (~840 tokens)
+- CLAUDE.md: 84 lines (~840 tokens at 10 tokens per line)
 - System prompt: ~3,500 tokens
 - Average user message: ~100 tokens
 - Average Claude response: ~400 tokens of text + ~300 tokens of tool calls = ~700 output tokens
@@ -717,7 +717,7 @@ The first 10 turns cost $0.28 in total. The last 10 turns (41-50) cost $0.67 -- 
 
 2. **Large file reads accumulating in history** -- When Claude reads a 1,000-line file (10,000 tokens), that content stays in conversation history for every subsequent turn. Reading 3 large files adds ~30,000 tokens of permanent context.
 
-3. **Bloated CLAUDE.md** -- A 500-line CLAUDE.md adds ~3,500 tokens to every single turn. Over 30 turns, that is 105,000 extra input tokens -- $0.32 on Sonnet 4.6, $0.42 on Opus 5.5 ($0.53 on legacy Opus 5), before caching. With Claude Code's caching it is written once and read on the other 29 turns: $0.044 on Sonnet 4.6, $0.038 on Opus 5.5, $0.073 on legacy Opus 5 per session ([formula](#claudemd-cost-over-a-session)). The larger cost is adherence: Anthropic says longer files "reduce adherence".
+3. **Bloated CLAUDE.md** -- A 500-line CLAUDE.md adds ~5,000 tokens to every single turn. Over 30 turns, that is 150,000 extra input tokens -- $0.45 on Sonnet 4.6, $0.60 on Opus 5.5 ($0.75 on legacy Opus 5), before caching. With Claude Code's caching it is written once and read on the other 29 turns: $0.062 on Sonnet 4.6, $0.054 on Opus 5.5, $0.104 on legacy Opus 5 per session ([formula](#claudemd-cost-over-a-session)). The larger cost is adherence: Anthropic says longer files "reduce adherence".
 
 4. **Using Opus for routine tasks** -- If 60% of your turns are simple (formatting, small fixes, lookups), using Opus 5.5 for all of them costs 40x more than Haiku 5.5 for those turns while their prompts stay at or under 100K tokens (8x above; 4x against legacy Haiku 4.5). Haiku 5.5 makes this the widest gap in the lineup again, and it adds up across many turns.
 
@@ -764,25 +764,25 @@ The read term grows with N squared, so session cost is still quadratic in turns,
 ### CLAUDE.md Cost Over a Session
 
 ```
-claude_md_cost = lines x 7 x (cache_write_price + (turns - 1) x cache_read_price)
+claude_md_cost = lines x 10 x (cache_write_price + (turns - 1) x cache_read_price)
 
 Example (150 lines, 30 turns, Sonnet 4.6):
-= 1,050 x ($3.75 + 29 x $0.30) / 1,000,000
-= 1,050 x $12.45 / 1,000,000
-= $0.013
+= 1,500 x ($3.75 + 29 x $0.30) / 1,000,000
+= 1,500 x $12.45 / 1,000,000
+= $0.019
 
 Same example on Opus 5.5 (cache hit 0.05x):
-= 1,050 x ($5.00 + 29 x $0.20) / 1,000,000
-= 1,050 x $10.80 / 1,000,000
-= $0.011
+= 1,500 x ($5.00 + 29 x $0.20) / 1,000,000
+= 1,500 x $10.80 / 1,000,000
+= $0.016
 
 Same example on legacy Opus 5 (or Opus 4.8 / 4.7 / 4.6):
-= 1,050 x ($6.25 + 29 x $0.50) / 1,000,000
-= 1,050 x $20.75 / 1,000,000
-= $0.022
+= 1,500 x ($6.25 + 29 x $0.50) / 1,000,000
+= 1,500 x $20.75 / 1,000,000
+= $0.031
 ```
 
-Each pause longer than the cache TTL adds one more `lines x 7 x cache_write_price`.
+Each pause longer than the cache TTL adds one more `lines x 10 x cache_write_price`. The 10 tokens per line is this repo's measured figure (9.8 per line across its 15 CLAUDE.md files, pre-4.7 token basis; see [Token Pricing](#token-pricing)).
 
 ### Model Switching Break-Even
 

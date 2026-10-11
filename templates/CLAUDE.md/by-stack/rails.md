@@ -1,7 +1,7 @@
 # Ruby on Rails CLAUDE.md Template
 
 <!-- ABOUT THIS TEMPLATE
-  - ~80 lines of content (~570 tokens)
+  - ~80 lines of content (~940 tokens)
   - Optimized for Rails 7+ projects with RSpec
   - Covers: rails commands, project layout, conventions, testing
   - Copy everything below the "---" line into your project's CLAUDE.md
@@ -124,6 +124,6 @@ end
 - Do not install new gems without asking first
 
 <!-- END OF TEMPLATE
-  Content: ~80 lines (~570 tokens)
-  Overhead per 30-turn session: ~17,100 tokens (pre-cache)
+  Content: ~80 lines (~940 tokens, measured with tiktoken cl100k_base; about 30% more on Claude 4.7+ models)
+  Overhead per 30-turn session: ~28,200 tokens (pre-cache)
   Optimized for: Rails conventions, service layer pattern, RSpec workflow -->

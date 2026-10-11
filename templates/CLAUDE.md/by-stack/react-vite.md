@@ -1,7 +1,7 @@
 # React + Vite CLAUDE.md Template
 
 <!-- ABOUT THIS TEMPLATE
-  - ~90 lines of content (~650 tokens)
+  - ~90 lines of content (~930 tokens)
   - Optimized for React 18/19 + Vite + Tailwind CSS projects
   - Covers: dev/build/test commands, component patterns, state, routing, conventions
   - Copy everything below the "---" line into your project's CLAUDE.md
@@ -122,6 +122,6 @@ export const Button = ({ variant = 'primary', children, onClick }: ButtonProps) 
 - Do not modify `vite.config.ts` without discussing impact on build
 
 <!-- END OF TEMPLATE
-  Content: ~90 lines (~650 tokens)
-  Overhead per 30-turn session: ~19,500 tokens (pre-cache)
+  Content: ~90 lines (~930 tokens, measured with tiktoken cl100k_base; about 30% more on Claude 4.7+ models)
+  Overhead per 30-turn session: ~27,900 tokens (pre-cache)
   Optimized for: fast component work, clear conventions, minimal ambiguity -->

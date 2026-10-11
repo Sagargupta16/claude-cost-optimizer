@@ -68,12 +68,10 @@ export function PriceLadder({ rows }: Readonly<{ rows: LadderRow[] }>) {
     <div>
       <div className={styles.legend}>
         <span className={styles.legendItem}>
-          <span className={styles.swatch} style={{ background: COLOR_INPUT }} />
-          Input
+          <span className={styles.swatch} style={{ background: COLOR_INPUT }} />Input
         </span>
         <span className={styles.legendItem}>
-          <span className={styles.swatch} style={{ background: COLOR_OUTPUT }} />
-          Output
+          <span className={styles.swatch} style={{ background: COLOR_OUTPUT }} />Output
         </span>
       </div>
       <div className={styles.frame} ref={ref} style={{ height }}>

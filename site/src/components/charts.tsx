@@ -686,8 +686,7 @@ export function ModelComparisonChart({ inputs }: Readonly<{ inputs: CalculatorIn
           aria-pressed={showLegacy}
           onClick={() => setShowLegacy((v) => !v)}
         >
-          <span className={styles.chipDot} aria-hidden="true" />
-          Legacy models
+          <span className={styles.chipDot} aria-hidden="true" />Legacy models
         </button>
       </div>
       <RankedBars

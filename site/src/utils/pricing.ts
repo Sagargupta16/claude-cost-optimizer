@@ -548,7 +548,9 @@ export const SUBSCRIPTION_PRICING = {
 }
 
 export const TOKEN_ESTIMATES = {
-  tokensPerClaudeMdLine: 7,
+  // Measured on this repo's 15 CLAUDE.md files (the templates plus the root file): 20,161 cl100k
+  // tokens over 2,048 lines, 9.8 per line counting blank lines. The 4.7+ tokenizer makes about 30% more.
+  tokensPerClaudeMdLine: 10,
   systemPromptTokens: 3500,
   // Worst case: full tool schemas loaded up front, which only happens when MCP
   // tool search is OFF (ENABLE_TOOL_SEARCH=false, a custom ANTHROPIC_BASE_URL).

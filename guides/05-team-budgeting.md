@@ -1,6 +1,6 @@
 # Guide 05: Team Budgeting
 
-> **Claude Code costs scale linearly with team size -- unless you manage them.** Anthropic's enterprise average is about $150-250 per developer per month, so a team of 5 averages about $750-1,250 a month (computed: 5 x $150 and 5 x $250). This guide's cache-aware model prices the [example team of 5](#example-team-of-5) at $232 a month with model routing and $546 with every task on Opus 5.5.
+> **Claude Code costs scale linearly with team size -- unless you manage them.** Anthropic's enterprise average is about $150-250 per developer per month, so a team of 5 averages about $750-1,250 a month (computed: 5 x $150 and 5 x $250). This guide's cache-aware model prices the [example team of 5](#example-team-of-5) at $233 a month with model routing and $552 with every task on Opus 5.5.
 
 **Anthropic's own benchmark** ([code.claude.com/docs/en/costs](https://code.claude.com/docs/en/costs), read 2026-10-11): "Across enterprise deployments, the average cost is around $13 per developer per active day and $150-250 per developer per month, with costs remaining below $30 per active day for 90% of users." Use that as the outside check on any budget below. This guide's modelled figures sit well under it because the model's task counts and context sizes are illustrative, so follow Anthropic's advice and start with a small pilot group to establish your own baseline.
 
@@ -35,15 +35,15 @@ Not every developer uses Claude Code the same way. Set budgets based on role and
 
 | Role | Typical Usage | Illustrative Day (simple / medium / complex tasks) | Modelled Monthly Cost | Starting Budget (x1.2) | Rationale |
 |------|---------------|:--------------------------------------------------:|:---------------------:|:----------------------:|-----------|
-| **Junior Developer** | High-frequency simple tasks, learning | 25 / 8 / 1 | $33.00 | $39.60 | Lots of small queries; should use Haiku 5.5 heavily |
-| **Mid-Level Developer** | Mixed task complexity | 20 / 10 / 2 | $48.47 | $58.17 | Component creation, bug fixes, test writing |
-| **Senior Developer** | Lower frequency, higher complexity | 10 / 8 / 4 | $63.52 | $76.22 | Architecture work, complex debugging (Opus 5.5 usage) |
-| **Tech Lead** | Architecture, reviews, planning | 10 / 6 / 5 | $68.66 | $82.40 | Higher Opus 5.5 usage justified for strategic decisions |
-| **DevOps/Platform** | Infrastructure, CI/CD, automation | 20 / 6 / 1 | $27.43 | $32.92 | Mostly config generation, script writing |
+| **Junior Developer** | High-frequency simple tasks, learning | 25 / 8 / 1 | $33.26 | $39.92 | Lots of small queries; should use Haiku 5.5 heavily |
+| **Mid-Level Developer** | Mixed task complexity | 20 / 10 / 2 | $48.83 | $58.60 | Component creation, bug fixes, test writing |
+| **Senior Developer** | Lower frequency, higher complexity | 10 / 8 / 4 | $63.94 | $76.73 | Architecture work, complex debugging (Opus 5.5 usage) |
+| **Tech Lead** | Architecture, reviews, planning | 10 / 6 / 5 | $69.10 | $82.92 | Higher Opus 5.5 usage justified for strategic decisions |
+| **DevOps/Platform** | Infrastructure, CI/CD, automation | 20 / 6 / 1 | $27.64 | $33.17 | Mostly config generation, script writing |
 
-> Computed: (simple x $0.0025 + medium x $0.12 + complex x $0.47) x 22 working days, with the task costs from the [estimation formula](#monthly-cost-estimation-formula) below; the starting budget applies this guide's 120% rule. The day mixes are illustrative, not measured. Replace them with two weeks of real numbers before you set anyone's budget.
+> Computed: (simple x $0.0025 + medium x $0.12 + complex x $0.48) x 22 working days, with the task costs from the [estimation formula](#monthly-cost-estimation-formula) below; the starting budget applies this guide's 120% rule. The day mixes are illustrative, not measured. Replace them with two weeks of real numbers before you set anyone's budget.
 
-> **Note**: The modelled costs price complex tasks at **Opus 5.5** (released 2026-09-22, now the default Opus, **$4/$20**). At the $5/$25 shared by legacy Opus 5 / 4.8 / 4.7 / 4.6 / 4.5 (cache read $0.50) a complex task costs $0.70 instead of $0.47, and at the retired Opus 4.1's $15/$75 it costs $2.10 (every rate 3x Opus 5). The tokenizer shared by Opus 4.7 and every Opus since (including 5.5) produces about 30% more tokens for the same text ([Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing)), so budgeting about 30% higher than you would for 4.6 is wise.
+> **Note**: The modelled costs price complex tasks at **Opus 5.5** (released 2026-09-22, now the default Opus, **$4/$20**). At the $5/$25 shared by legacy Opus 5 / 4.8 / 4.7 / 4.6 / 4.5 (cache read $0.50) a complex task costs $0.71 instead of $0.48, and at the retired Opus 4.1's $15/$75 it costs $2.12 (every rate 3x Opus 5). The tokenizer shared by Opus 4.7 and every Opus since (including 5.5) produces about 30% more tokens for the same text ([Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing)), so budgeting about 30% higher than you would for 4.6 is wise.
 
 > **Budget risk specific to Opus 5.5**: adaptive thinking is **always on** -- `thinking: {type: "disabled"}` returns a 400 -- and reasoning tokens bill as **output** at $20/MTok. Default effort is `medium` (Opus 5 defaulted to `high`), so a developer who never sets effort thinks less than on Opus 5; but any tooling that disabled thinking on Opus 5 now pays for thinking it did not pay for before. That makes the output side of the bill less predictable than the 20% rate cut suggests, so re-baseline after migrating. Anthropic's testing found Opus 5.5 at `medium` "matches or exceeds Opus 5 at high on coding and knowledge-work evaluations", but at the same effort it "tends to think more per turn than Claude Opus 5, most of all at xhigh and max" ([model-config page](https://code.claude.com/docs/en/model-config); [Opus 5.5 what's new](https://platform.claude.com/docs/en/models/opus-5-5/whats-new-opus-5-5)). `max_tokens` is a hard cap on thinking **plus** visible text: in Anthropic's published runs a 16,384-token cap ended about a quarter of Opus 5.5's attempts and 43% of Fable 5.1's, and the guidance is 64,000 for agentic work. On SWE-bench Pro, Opus 5.5 at high costs about 1.4x its medium default and xhigh 2.5x high, so budget the complex-task tier from those ratios until you have two weeks of real numbers. And price the tail, not the median: in one Anthropic run, two of 20 problems carried 43% of spend ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)).
 
@@ -93,19 +93,19 @@ Monthly Cost = (Simple Tasks x Simple Cost) +
                (Complex Tasks x Complex Cost)
 
 Where (per developer per day, the mid-level day):
-  Simple Tasks  = 20 tasks/day x $0.0025 (Haiku 5.5, 3-turn session)   = $0.05/day
-  Medium Tasks  = 10 tasks/day x $0.12   (Sonnet 5.5, 10-turn session) = $1.20/day
-  Complex Tasks =  2 tasks/day x $0.47   (Opus 5.5, 20-turn session)   = $0.95/day
+  Simple Tasks  = 20 tasks/day x $0.0025 (Haiku 5.5, 3-turn session)   = $0.050/day
+  Medium Tasks  = 10 tasks/day x $0.12   (Sonnet 5.5, 10-turn session) = $1.215/day
+  Complex Tasks =  2 tasks/day x $0.48   (Opus 5.5, 20-turn session)   = $0.955/day
 
-  Daily Total   = $2.20/day
-  Monthly Total = $48.47/developer (22 days, routed)
+  Daily Total   = $2.22/day
+  Monthly Total = $48.83/developer (22 days, routed)
 ```
 
-> **How the task costs are computed**: each task is one focused session at this repo's calculator defaults (3,500-token system prompt, 100-line CLAUDE.md, 2 MCP servers, one 2,000-token file read, 500 output tokens per turn, history growing 1,500 tokens per turn), billed the way Claude Code bills: each request reads the whole previous request from cache and writes only the new exchange at the 5-minute rate ([formula](01-understanding-costs.md#estimated-session-cost)). Exact values: $0.002474, $0.12043 and $0.47476 per task. The turns per task and tasks per day are illustrative. The same day with every task on Opus 5.5 costs $5.26 ($115.67 a month), so routing removes 58% of that bill.
+> **How the task costs are computed**: each task is one focused session at this repo's calculator defaults (3,500-token system prompt, 100-line CLAUDE.md at 10 tokens per line, measured at 9.8 per line across this repo's 15 CLAUDE.md files, 2 MCP servers, one 2,000-token file read, 500 output tokens per turn, history growing 1,500 tokens per turn), billed the way Claude Code bills: each request reads the whole previous request from cache and writes only the new exchange at the 5-minute rate ([formula](01-understanding-costs.md#estimated-session-cost)). Exact values: $0.0025175, $0.12145 and $0.47740 per task. The turns per task and tasks per day are illustrative. The same day with every task on Opus 5.5 costs $5.32 ($116.95 a month), so routing removes 58% of that bill.
 
-> **Haiku 5.5 simple tasks**: Haiku 5.5 bills $0.10/$0.50 per 1M up to 100K prompt tokens and $0.50/$2.50 above. A 3-turn session at the calculator defaults peaks at a 12,200-token prompt, so all of it bills at the lower tier. Legacy Haiku 4.5 ($1/$5) is 10x per token: $0.025 per task, $0.49/day for the simple-task line and $58.27 for the month. With Haiku 5.5's ~30% larger token counts for the same text, the real per-task gap is about 7.7x (10 / 1.3).
+> **Haiku 5.5 simple tasks**: Haiku 5.5 bills $0.10/$0.50 per 1M up to 100K prompt tokens and $0.50/$2.50 above. A 3-turn session at the calculator defaults peaks at a 12,500-token prompt, so all of it bills at the lower tier. Legacy Haiku 4.5 ($1/$5) is 10x per token: $0.025 per task, $0.50/day for the simple-task line and $58.80 for the month. With Haiku 5.5's ~30% larger token counts for the same text, the real per-task gap is about 7.7x (10 / 1.3).
 
-> **Note**: A complex task costs $0.47 on Opus 5.5 ($4/$20), $0.70 at the $5/$25 shared by legacy Opus 5, 4.8, 4.7 and 4.6, and $2.10 at old Opus 4.1 pricing ($15/$75, every rate 3x Opus 5). The model assumes 500 output tokens per turn; on Opus 5.5 thinking is always on and its tokens bill as output at $20/MTok, so complex tasks run at `xhigh` or `max` effort land higher.
+> **Note**: A complex task costs $0.48 on Opus 5.5 ($4/$20), $0.71 at the $5/$25 shared by legacy Opus 5, 4.8, 4.7 and 4.6, and $2.12 at old Opus 4.1 pricing ($15/$75, every rate 3x Opus 5). The model assumes 500 output tokens per turn; on Opus 5.5 thinking is always on and its tokens bill as output at $20/MTok, so complex tasks run at `xhigh` or `max` effort land higher.
 
 ### Estimation Worksheet
 
@@ -120,7 +120,7 @@ Working days/month:           _____ (default: 22)
 Per Developer (daily averages):
   Simple tasks (Haiku 5.5):   _____ tasks x $0.0025 = $_____ /day
   Medium tasks (Sonnet 5.5):  _____ tasks x $0.12 = $_____ /day
-  Complex tasks (Opus 5.5):   _____ tasks x $0.47 = $_____ /day
+  Complex tasks (Opus 5.5):   _____ tasks x $0.48 = $_____ /day
 
   Daily subtotal:             $_____ /day
   Monthly subtotal:           $_____ x 22 = $_____ /month
@@ -133,19 +133,19 @@ Add 20% buffer:              $_____ x 1.2 = $_____ /month (budgeted)
 ### Example: Team of 5
 
 ```
-Junior Dev (2):      $33.00/month x 2 = $66.00
-Mid-Level Dev (2):   $48.47/month x 2 = $96.94
-Tech Lead (1):       $68.66/month x 1 = $68.66
+Junior Dev (2):      $33.26/month x 2 = $66.52
+Mid-Level Dev (2):   $48.83/month x 2 = $97.66
+Tech Lead (1):       $69.10/month x 1 = $69.10
 
-Subtotal:            $231.60/month
-Buffer (20%):        $46.32/month
-Budgeted Total:      $277.92/month
+Subtotal:            $233.28/month
+Buffer (20%):        $46.66/month
+Budgeted Total:      $279.94/month
 
-Compare to all-Opus 5.5: the same tasks on Opus 5.5 = $546.40/month
-Savings: $314.80/month = $3,778/year
+Compare to all-Opus 5.5: the same tasks on Opus 5.5 = $552.49/month
+Savings: $319.21/month = $3,831/year
 ```
 
-Computed from the role table above. "All-Opus" runs every task in the same day mixes on Opus 5.5 with the same turn counts. At legacy Opus 5 rates the all-Opus team is $751.64/month, so against that habit routing on current models saves $520.04/month: the Opus 5.5 price cut does part of the work, routing does the rest.
+Computed from the role table above. "All-Opus" runs every task in the same day mixes on Opus 5.5 with the same turn counts. At legacy Opus 5 rates the all-Opus team is $760.55/month, so against that habit routing on current models saves $527.27/month: the Opus 5.5 price cut does part of the work, routing does the rest.
 
 ---
 
@@ -203,7 +203,7 @@ Team Total      | $76.30    | $276.00       | $440   | 63%
 
 | Metric | What It Tells You | Target |
 |--------|-------------------|--------|
-| **Cost per developer per day** | Individual efficiency | $2.20 modelled for the routed mid-level day ([formula](#monthly-cost-estimation-formula)); Anthropic's enterprise average is ~$13/active day, 90% of users under $30 |
+| **Cost per developer per day** | Individual efficiency | $2.22 modelled for the routed mid-level day ([formula](#monthly-cost-estimation-formula)); Anthropic's enterprise average is ~$13/active day, 90% of users under $30 |
 | **Model distribution** | Are devs using the right models? | No published target split. The computed effect: moving 30% of Opus 5.5 spend to Haiku 5.5 cuts the bill 29% (0.30 x 0.975, [Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing)) |
 | **Tokens per task** | Are prompts efficient? | Decreasing over time |
 | **Cost per commit** | Cost of productive output | Decreasing over time (no published benchmark) |
@@ -219,7 +219,7 @@ Not every task should go through Claude Code. Here is a decision framework for t
 
 | Approach | Best For | Typical Cost | Speed |
 |----------|----------|:------------:|:-----:|
-| **Claude Code** | Interactive development, multi-file changes, exploration | Modelled per task: $0.0025 simple (Haiku 5.5), $0.12 medium (Sonnet 5.5), $0.47 complex (Opus 5.5) | Fast (for complex work) |
+| **Claude Code** | Interactive development, multi-file changes, exploration | Modelled per task: $0.0025 simple (Haiku 5.5), $0.12 medium (Sonnet 5.5), $0.48 complex (Opus 5.5) | Fast (for complex work) |
 | **Claude API** (direct) | Batch processing, CI/CD pipelines, automated code review | $0.04 for one Sonnet 5.5 request of 10K input + 2K output ($0.02 on Batch) | Variable |
 | **Manual coding** | Trivial changes, domain-expert knowledge, creative design | $0 (but developer time) | Depends on task |
 
@@ -311,36 +311,36 @@ TIME SAVINGS:
   40 hours x $75/hour = $3,000 value
 
 CLAUDE CODE COSTS:
-  Token spend: $48/month (the modelled mid-level developer, rounded)
+  Token spend: $49/month (the modelled mid-level developer, rounded)
   Pro plan: $20/month (or Max 5x: $100/month, Max 20x: $200/month)
-  Total: $68/month (Pro) or $148/month (Max 5x) or $248/month (Max 20x)
+  Total: $69/month (Pro) or $149/month (Max 5x) or $249/month (Max 20x)
 
 ROI:
-  ($3,000 - $68) / $68 = 4,312% ROI (Pro plan)
-  ($3,000 - $148) / $148 = 1,927% ROI (Max 5x plan)
-  ($3,000 - $248) / $248 = 1,110% ROI (Max 20x plan)
+  ($3,000 - $69) / $69 = 4,248% ROI (Pro plan)
+  ($3,000 - $149) / $149 = 1,913% ROI (Max 5x plan)
+  ($3,000 - $249) / $249 = 1,105% ROI (Max 20x plan)
 
 NET BENEFIT:
-  $2,932/month per developer (Pro plan)
-  $2,852/month per developer (Max 5x plan)
-  $2,752/month per developer (Max 20x plan)
+  $2,931/month per developer (Pro plan)
+  $2,851/month per developer (Max 5x plan)
+  $2,751/month per developer (Max 20x plan)
 ```
 
 The Max plans' monthly API credit ($100 on Max 5x, $200 on Max 20x) does not reduce C: it does not cover Claude Code, only Claude API work in the Console (see [Plan API credits](#claude-code-vs-claude-api-vs-manual-coding)).
 
-Even with conservative estimates (half the tasks, half the time saved: 100 tasks x 6 minutes = 10 hours x $75 = $750), the ROI is still 1,003% on Pro, 407% on Max 5x and 202% on Max 20x. The question is not whether Claude Code is worth it -- it is how to maximize the ROI by minimizing waste.
+Even with conservative estimates (half the tasks, half the time saved: 100 tasks x 6 minutes = 10 hours x $75 = $750), the ROI is still 987% on Pro, 403% on Max 5x and 201% on Max 20x. The question is not whether Claude Code is worth it -- it is how to maximize the ROI by minimizing waste.
 
 ### ROI by Task Type
 
 | Task Type | Avg Time Saved | Claude Code Cost | ROI (at $75/hr) |
 |-----------|:--------------:|:----------------:|:----------------:|
-| Test writing | 25 min | $0.12 | 25,849% |
-| Bug fixing | 20 min | $0.12 | 20,659% |
-| Component creation | 30 min | $0.12 | 31,038% |
-| Code review | 15 min | $0.12 | 15,469% |
-| Documentation | 20 min | $0.12 | 20,659% |
-| Architecture planning | 45 min | $0.47 | 11,748% |
-| Simple refactoring | 10 min | $0.0025 | 505,155% |
+| Test writing | 25 min | $0.12 | 25,631% |
+| Bug fixing | 20 min | $0.12 | 20,485% |
+| Component creation | 30 min | $0.12 | 30,777% |
+| Code review | 15 min | $0.12 | 15,338% |
+| Documentation | 20 min | $0.12 | 20,485% |
+| Architecture planning | 45 min | $0.48 | 11,683% |
+| Simple refactoring | 10 min | $0.0025 | 496,424% |
 
 > Claude Code cost is one modelled task of its class (medium on Sonnet 5.5, architecture as a complex Opus 5.5 task, simple refactoring on Haiku 5.5; [estimation formula](#monthly-cost-estimation-formula)), and ROI = (minutes / 60 x $75 - cost) / cost. Time saved per task is illustrative, not measured. Even the lowest-ROI task (architecture planning) returns about 118x the investment.
 
@@ -422,15 +422,15 @@ Feature: User notification preferences
   Estimated Claude Code cost: $0.49
 
 Feature: Payment system overhaul
-  - Architecture design (Opus 5.5, complex: $0.47)
+  - Architecture design (Opus 5.5, complex: $0.48)
   - 5 service refactors (Sonnet 5.5, 5 x medium: $0.60)
-  - Database migration (Opus 5.5 plan + Sonnet 5.5 impl: $0.47 + $0.12)
+  - Database migration (Opus 5.5 plan + Sonnet 5.5 impl: $0.48 + $0.12)
   - Test suite (Sonnet 5.5, medium: $0.12)
-  - Security review (Opus 5.5, complex: $0.47)
-  Estimated Claude Code cost: $2.27
+  - Security review (Opus 5.5, complex: $0.48)
+  Estimated Claude Code cost: $2.28
 ```
 
-Each item is one modelled task of its class from the [estimation formula](#monthly-cost-estimation-formula) (simple: a 3-turn Haiku 5.5 session; medium: 10 turns on Sonnet 5.5; complex: 20 turns on Opus 5.5). Totals use the unrounded task costs: 4 x $0.12043 + 2 x $0.002474 = $0.49, and 3 x $0.47476 + 7 x $0.12043 = $2.27. On legacy Haiku 4.5 the two simple items cost $0.025 each and the first feature is $0.53.
+Each item is one modelled task of its class from the [estimation formula](#monthly-cost-estimation-formula) (simple: a 3-turn Haiku 5.5 session; medium: 10 turns on Sonnet 5.5; complex: 20 turns on Opus 5.5). Totals use the unrounded task costs: 4 x $0.12145 + 2 x $0.0025175 = $0.49, and 3 x $0.47740 + 7 x $0.12145 = $2.28. On legacy Haiku 4.5 the two simple items cost $0.025 each and the first feature is $0.54.
 
 ---
 
@@ -447,7 +447,7 @@ Each item is one modelled task of its class from the [estimation formula](#month
 | Create a shared command library | Standardized workflows, pre-set models |
 | Weekly informal cost review | Catch problems early |
 
-**Expected cost**: team size x $48.47/month at the routed mid-level day (modelled), for example $242 for 5 developers. Anthropic's enterprise average is $150-250 per developer per month, so calibrate with a pilot.
+**Expected cost**: team size x $48.83/month at the routed mid-level day (modelled), for example $244 for 5 developers. Anthropic's enterprise average is $150-250 per developer per month, so calibrate with a pilot.
 
 ### Phase 2: Growing Team (5-15 developers)
 
@@ -461,7 +461,7 @@ Each item is one modelled task of its class from the [estimation formula](#month
 | Build an internal "tips" channel | Peer-driven optimization |
 | Conduct monthly cost reviews | Identify trends and outliers |
 
-**Expected cost**: team size x $48.47/month (modelled), for example $485 for 10 developers.
+**Expected cost**: team size x $48.83/month (modelled), for example $488 for 10 developers.
 
 ### Phase 3: Large Team (15-50+ developers)
 
@@ -477,20 +477,20 @@ Each item is one modelled task of its class from the [estimation formula](#month
 | Custom tooling for usage analytics | Deep visibility into spending patterns |
 | Negotiate enterprise pricing | Volume discounts |
 
-**Expected cost**: team size x $48.47/month (modelled), for example $2,424 for 50 developers.
+**Expected cost**: team size x $48.83/month (modelled), for example $2,442 for 50 developers.
 
 ### Cost Scaling: Optimized vs Unoptimized
 
 | Team Size | Unoptimized (all Opus 5.5) | Optimized (routed) | Monthly Savings |
 |:---------:|:--------------------------:|:------------------:|:---------------:|
-| 5 | $578 | $242 | $336 |
-| 10 | $1,157 | $485 | $672 |
-| 20 | $2,313 | $969 | $1,344 |
-| 50 | $5,783 | $2,424 | $3,360 |
+| 5 | $585 | $244 | $341 |
+| 10 | $1,169 | $488 | $681 |
+| 20 | $2,339 | $977 | $1,362 |
+| 50 | $5,847 | $2,442 | $3,406 |
 
-At 50 developers, model routing saves **$40,318/year** in this model.
+At 50 developers, model routing saves **$40,869/year** in this model.
 
-> **Note**: Computed with every developer at the mid-level day ([estimation formula](#monthly-cost-estimation-formula)): $48.47 a month routed, $115.67 with every task on Opus 5.5, times team size. On legacy Opus 5 ($5/$25, cache read $0.50) the all-Opus column is $795 for 5 developers and $7,952 for 50; at old Opus 4.1 pricing ($15/$75) it would be three times that. The task counts are illustrative, so the absolute dollars are a floor, but the ratio (routing removes 58% of the all-Opus 5.5 bill) holds for any team size. The tokenizer introduced with Opus 4.7 and carried into 4.8, 5 and 5.5 pushes the absolute dollar totals about 30% higher vs 4.6 for identical workloads (Anthropic pricing page: approximately 30% more tokens for the same text). There is no cost argument for staying on Opus 4.8 or Opus 5.
+> **Note**: Computed with every developer at the mid-level day ([estimation formula](#monthly-cost-estimation-formula)): $48.83 a month routed, $116.95 with every task on Opus 5.5, times team size. On legacy Opus 5 ($5/$25, cache read $0.50) the all-Opus column is $805 for 5 developers and $8,046 for 50; at old Opus 4.1 pricing ($15/$75) it would be three times that. The task counts are illustrative, so the absolute dollars are a floor, but the ratio (routing removes 58% of the all-Opus 5.5 bill) holds for any team size. The tokenizer introduced with Opus 4.7 and carried into 4.8, 5 and 5.5 pushes the absolute dollar totals about 30% higher vs 4.6 for identical workloads (Anthropic pricing page: approximately 30% more tokens for the same text). There is no cost argument for staying on Opus 4.8 or Opus 5.
 
 ---
 
@@ -714,7 +714,7 @@ After 3 months of active cost management, a well-optimized team should see the f
 
 | Metric | Month 1 | Month 3 | Target |
 |--------|:-------:|:-------:|:------:|
-| Average cost/developer | $80 | $45 | $48 (the modelled mid-level day) |
+| Average cost/developer | $80 | $45 | $49 (the modelled mid-level day) |
 | Model split (Haiku/Sonnet/Opus) | 20/50/30 | 40/40/20 | No published target |
 | Average turns per task | 8 | 4 | 4 |
 | Budget utilization | 110% | 75% | Under 100% |
@@ -727,7 +727,7 @@ After 3 months of active cost management, a well-optimized team should see the f
 | Strategy | Monthly Savings (team of 5) | Effort |
 |----------|:---------------------------:|:------:|
 | Per-developer budgets | No published figure | Low |
-| Model routing guidelines | $314.80 against all-Opus 5.5 (modelled: $546.40 vs $231.60 for the [example team](#example-team-of-5)) | Low |
+| Model routing guidelines | $319.21 against all-Opus 5.5 (modelled: $552.49 vs $233.28 for the [example team](#example-team-of-5)) | Low |
 | Shared command library | No published figure | Medium (one-time) |
 | Automated usage tracking | No published figure | Medium (one-time) |
 | Onboarding program | No published figure | Medium (one-time) |

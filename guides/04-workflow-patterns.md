@@ -4,7 +4,7 @@
 
 The biggest hidden cost in Claude Code is not the model -- it is wasted turns. Every unnecessary clarification, every "actually, I meant...", every exploratory read of a file Claude did not need -- these compound into real money. This guide covers workflow patterns that minimize waste.
 
-> **How the dollar figures in this guide are computed.** Session and per-turn costs use this repo's calculator defaults (3,500-token system prompt, 100-line CLAUDE.md at 7 tokens per line, 2 MCP servers at 1,500 tokens each, one 2,000-token file read, 500 output tokens per turn, history growing 1,500 tokens per turn), billed the way Claude Code bills: each request reads the whole previous request from cache and writes only the new exchange at the 5-minute rate (1.25x input), with no pause longer than the cache TTL ([formula](01-understanding-costs.md#estimated-session-cost)). At those defaults a 30-turn session is $0.74 on Opus 5.5 and $0.37 on Sonnet 5.5. Turn counts in the examples are illustrative, not measured.
+> **How the dollar figures in this guide are computed.** Session and per-turn costs use this repo's calculator defaults (3,500-token system prompt, 100-line CLAUDE.md at 10 tokens per line, measured at 9.8 per line across this repo's 15 CLAUDE.md files, 2 MCP servers at 1,500 tokens each, one 2,000-token file read, 500 output tokens per turn, history growing 1,500 tokens per turn), billed the way Claude Code bills: each request reads the whole previous request from cache and writes only the new exchange at the 5-minute rate (1.25x input), with no pause longer than the cache TTL ([formula](01-understanding-costs.md#estimated-session-cost)). At those defaults a 30-turn session is $0.742 on Opus 5.5 and $0.371 on Sonnet 5.5. Turn counts in the examples are illustrative, not measured.
 
 ---
 
@@ -299,7 +299,7 @@ If you send 10 separate requests to rename 10 functions, you pay this overhead 1
 ### The Batch Pattern
 
 ```bash
-# Bad: 10 separate requests ($0.028 each x 10 = $0.28 on Sonnet 5.5)
+# Bad: 10 separate requests ($0.029 each x 10 = $0.29 on Sonnet 5.5)
 claude "rename getUserName to fetchUserName"
 claude "rename getUserEmail to fetchUserEmail"
 claude "rename getUserAge to fetchUserAge"
@@ -309,7 +309,7 @@ claude "rename getUserAge to fetchUserAge"
 claude "rename all functions matching getUser* to fetchUser* across the codebase"
 ```
 
-(Computed at the calculator defaults at the top of this guide. Each separate `claude` run is a new session that writes its whole 9,200-token prompt to the cache again, unless it can reuse the cached system prompt, which happens only within the TTL and only if its git status snapshot matches ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching)); one session writes it once and reads it after that.)
+(Computed at the calculator defaults at the top of this guide. Each separate `claude` run is a new session that writes its whole 9,500-token prompt to the cache again, unless it can reuse the cached system prompt, which happens only within the TTL and only if its git status snapshot matches ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching)); one session writes it once and reads it after that.)
 
 ### When to Batch
 
@@ -353,7 +353,7 @@ Turn 4: "Can you also add password strength indicator?"
 Turn 5: "Make it responsive"
 Turn 6: "Add loading state during submission"
 
-Total: 6 turns, $0.078 (Sonnet 5.5)
+Total: 6 turns, $0.079 (Sonnet 5.5)
 ```
 
 Each turn re-reads the growing conversation history and the modified file. By turn 6, Claude is processing all previous turns plus the file content.
@@ -372,7 +372,7 @@ Turn 1: "Create a login form with:
 Total: 2 turns, $0.038 (Sonnet 5.5)
 ```
 
-**Savings: 52%** for the same output (computed at the calculator defaults at the top of this guide: $0.038 vs $0.078; the turn counts are illustrative).
+**Savings: 51%** for the same output (computed at the calculator defaults at the top of this guide: $0.038 vs $0.079; the turn counts are illustrative).
 
 ### How to Write Complete Requirements
 
@@ -608,7 +608,7 @@ With /compact after every 10 turns:
 - /compact: Compressed again
 - Turns 21-30: Start with small context
 
-**Computed:** at the calculator defaults at the top of this guide, those two compactions make the 30-turn session about 6% *more* expensive on Opus 5.5 or Sonnet 5.5 ($0.785 vs $0.739 on Opus 5.5): the history they remove was already billing at the cache-read rate, and each 2K summary bills as output. On an 80-turn session, compacting every 20 turns saves about 20% ($2.01 vs $2.51 on Opus 5.5). Compact long sessions, and compact for focus; on short ones it does not pay.
+**Computed:** at the calculator defaults at the top of this guide, those two compactions make the 30-turn session about 6% *more* expensive on Opus 5.5 or Sonnet 5.5 ($0.789 vs $0.742 on Opus 5.5): the history they remove was already billing at the cache-read rate, and each 2K summary bills as output. On an 80-turn session, compacting every 20 turns saves about 20% ($2.02 vs $2.51 on Opus 5.5). Compact long sessions, and compact for focus; on short ones it does not pay.
 
 **Measured elsewhere:** compaction cut cost 32% and pruning stale tool results 39% on Anthropic's long triage run, and saved nothing on short loops ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). In Anthropic's [cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) loop, compaction cut 16% and jagged pruning 29%.
 
@@ -669,15 +669,15 @@ Use Haiku for commit messages since they are simple summarization tasks.
 ### The Real Cost of Auto-Commit
 
 ```
-50 changes/day x $0.0123/commit (Sonnet 5.5) = $0.62/day = $13.54/month
+50 changes/day x $0.0124/commit (Sonnet 5.5) = $0.62/day = $13.60/month
 
 With manual commits at logical boundaries:
-10 commits/day x $0.0041/commit (Haiku 5.5) = $0.04/day = $0.91/month
+10 commits/day x $0.0042/commit (Haiku 5.5) = $0.04/day = $0.91/month
 
-Savings: $12.63/month per developer
+Savings: $12.69/month per developer
 ```
 
-Computed at the calculator defaults at the top of this guide, 22 working days. A Sonnet 5.5 commit turn is the average turn of a 30-turn session ($0.37 / 30). A Haiku 5.5 commit through a `model: haiku` command switches model mid-session, so Haiku writes the whole context to its own cache first: 30,950 tokens (the average prompt) x $0.125/1M + 500 output x $0.50/1M = $0.0041. That is still below the Sonnet 5.5 turn, which pays $10/1M for its output and $2.50/1M to write the new exchange, while Haiku 5.5 writes the whole context for $0.125/1M as long as the prompt stays under 100K. On legacy Haiku 4.5 the same switch costs $0.041 per commit ($1.25/1M write), more than staying on Sonnet 5.5: $9.06/month for the manual-commit line.
+Computed at the calculator defaults at the top of this guide, 22 working days. A Sonnet 5.5 commit turn is the average turn of a 30-turn session ($0.371 / 30). A Haiku 5.5 commit through a `model: haiku` command switches model mid-session, so Haiku writes the whole context to its own cache first: 31,250 tokens (the average prompt) x $0.125/1M + 500 output x $0.50/1M = $0.0042. That is still below the Sonnet 5.5 turn, which pays $10/1M for its output and $2.50/1M to write the new exchange, while Haiku 5.5 writes the whole context for $0.125/1M as long as the prompt stays under 100K. On legacy Haiku 4.5 the same switch costs $0.042 per commit ($1.25/1M write), more than staying on Sonnet 5.5: $9.14/month for the manual-commit line.
 
 ---
 
@@ -696,9 +696,9 @@ The most cost-effective Claude Code technique is knowing when not to use it at a
 | Delete a file | $0.012 | 2 seconds | **Manual** |
 | Add a blank line | $0.012 | 1 second | **Manual** |
 
-> Computed at the calculator defaults at the top of this guide: each of these is one turn, priced as the average turn of a 30-turn Sonnet 5.5 session ($0.37 / 30 = $0.012). As the first turn of a fresh session it is $0.028, because that turn writes the whole 9,200-token prompt to the cache; on Opus 5.5 a fresh one-turn session is $0.056 (9,200 x $5/1M + 500 x $20/1M). Manual times are illustrative.
+> Computed at the calculator defaults at the top of this guide: each of these is one turn, priced as the average turn of a 30-turn Sonnet 5.5 session ($0.371 / 30 = $0.012). As the first turn of a fresh session it is $0.029, because that turn writes the whole 9,500-token prompt to the cache; on Opus 5.5 a fresh one-turn session is $0.0575 (9,500 x $5/1M + 500 x $20/1M). Manual times are illustrative.
 
-**Rule of thumb**: If you can do it faster than typing the prompt, do it manually. Claude Code's minimum cost per turn is about $0.0014 on Haiku 5.5 ($0.014 on legacy Haiku 4.5): a one-turn session at the calculator defaults at the top of this guide writes a 9,200-token prompt to the cache and returns 500 output tokens. If the task takes under 30 seconds to do manually, it is not worth the token cost or the latency of waiting for a response.
+**Rule of thumb**: If you can do it faster than typing the prompt, do it manually. Claude Code's minimum cost per turn is about $0.0014 on Haiku 5.5 ($0.014 on legacy Haiku 4.5): a one-turn session at the calculator defaults at the top of this guide writes a 9,500-token prompt to the cache and returns 500 output tokens. If the task takes under 30 seconds to do manually, it is not worth the token cost or the latency of waiting for a response.
 
 ### Tasks Better Suited to Other Tools
 
@@ -764,11 +764,11 @@ Here is what a cost-optimized Claude Code session looks like in practice. The ph
 
 | Approach | Turns | Avg Cost/Turn | Total |
 |----------|:-----:|:-------------:|:-----:|
-| Unoptimized (all Opus 5.5, no planning, no batching) | 25 | $0.024 | $0.60 |
+| Unoptimized (all Opus 5.5, no planning, no batching) | 25 | $0.024 | $0.61 |
 | Partially optimized (Sonnet 5.5 default, some planning) | 18 | $0.012 | $0.21 |
 | Fully optimized (Sonnet 5.5, planning and batching cut it to 12 turns) | 12 | $0.012 | $0.14 |
 
-**Fully optimized is 76% cheaper** than the unoptimized approach, for the same end result (computed at the calculator defaults at the top of this guide: $0.143 vs $0.603; on legacy Opus 5 the unoptimized session is $0.91 and the gap is 84%). About two-thirds of the saving is the model price, Sonnet 5.5 at half Opus 5.5's rate; the rest is the turn count, which is illustrative. `/compact` is left out: one compaction at turn 6 would make this 12-turn session 19% dearer (computed, see [Cost Impact](#cost-impact)).
+**Fully optimized is 76% cheaper** than the unoptimized approach, for the same end result (computed at the calculator defaults at the top of this guide: $0.144 vs $0.606; on legacy Opus 5 the unoptimized session is $0.92 and the gap is 84%). About two-thirds of the saving is the model price, Sonnet 5.5 at half Opus 5.5's rate; the rest is the turn count, which is illustrative. `/compact` is left out: one compaction at turn 6 would make this 12-turn session 19% dearer (computed, see [Cost Impact](#cost-impact)).
 
 One Opus-specific caveat for the per-turn numbers above: on Opus 5.5 adaptive thinking is always on and reasoning tokens bill as output at $20/MTok; effort (default `medium`) is the only control. And prompts written for an older model make the new one over-work: in Anthropic's published run, prompts written for Opus 4.8 cost 36% more per ticket on Opus 5 for no accuracy gain, and audited they were 14% cheaper and more accurate. Opus 5 also self-verifies on its own, so a carried-over "double-check your work" instruction pays twice. Re-audit CLAUDE.md when you change models, or your per-turn cost ($0.024 on Opus 5.5 at the calculator defaults) drifts upward on its own.
 
