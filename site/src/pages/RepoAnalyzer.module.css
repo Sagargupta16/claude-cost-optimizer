@@ -171,6 +171,17 @@
   border-radius: 3px;
 }
 
+.localCmdGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.localCmdLabel {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
 .localCmdRow {
   display: flex;
   gap: 0.5rem;

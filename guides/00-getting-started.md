@@ -132,9 +132,19 @@ Run [claude-rate](../tools/claude-rate/) to check your score locally and get:
 - Estimated monthly cost per model
 - Specific recommendations
 
-```bash
-curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/install.sh | sh -s -- .
+Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python - .
 ```
+
+macOS, Linux, Git Bash, or Windows cmd (on Windows, `python` instead of `python3`):
+
+```bash
+curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python3 - .
+```
+
+It needs only Python 3.10+; nothing is installed. Add `--user --usage --fix` to also grade `~/.claude` and your recent usage and print the fixes.
 
 Or use the legacy CLI:
 
