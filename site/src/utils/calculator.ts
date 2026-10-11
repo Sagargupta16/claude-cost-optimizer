@@ -88,9 +88,6 @@ function computeSessionCost(
     cacheCost += turnCacheCost
     outputCost += turnOutputCost
 
-    const claudeMdFraction = claudeMdTokens / stableInputPerTurn
-    const mcpFraction = mcpTokens / stableInputPerTurn
-
     claudeMdInput += claudeMdTokens * (1 - cacheRate) + claudeMdTokens * cacheRate
     mcpInput += mcpTokens * (1 - cacheRate) + mcpTokens * cacheRate
     fileReadsInput += turnFileTokens
@@ -98,10 +95,6 @@ function computeSessionCost(
     outputTotal += turnOutput
 
     perTurn.push((turnInputCost + turnCacheCost + turnOutputCost) * turnMultiplier)
-
-    // Adjust for cache pricing proportionally
-    void claudeMdFraction
-    void mcpFraction
   }
 
   let sessionTotal = inputCost + cacheCost + outputCost

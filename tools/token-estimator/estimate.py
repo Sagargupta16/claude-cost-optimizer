@@ -13,8 +13,8 @@ Usage:
 """
 
 import argparse
-import sys
 import os
+import sys
 
 try:
     import tiktoken
@@ -318,7 +318,7 @@ def read_input(source: str) -> str:
         try:
             with open(resolved, "r", encoding="latin-1") as f:
                 return f.read()
-        except Exception as e:
+        except OSError as e:
             print(
                 f"{c(RED, 'Error:')} Could not read file: {e}",
                 file=sys.stderr,

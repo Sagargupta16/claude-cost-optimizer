@@ -99,9 +99,9 @@ echo "$(date +%H:%M:%S) $TOOL input:~${EST_INPUT} output:~${EST_OUTPUT} ~\$${COS
 COUNT=$(wc -l < "$SESSION_LOG" 2>/dev/null || echo 0)
 
 # Warn at thresholds (informational only, never blocks)
-if [ "$COUNT" -eq 50 ]; then
+if [[ "$COUNT" -eq 50 ]]; then
   echo '{"result": "50 tool calls this session. Consider starting fresh if switching tasks."}'
-elif [ "$COUNT" -eq 100 ]; then
+elif [[ "$COUNT" -eq 100 ]]; then
   echo '{"result": "100 tool calls. Session history is expensive. Run /compact or start a new session."}'
 fi
 

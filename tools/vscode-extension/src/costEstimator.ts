@@ -122,7 +122,7 @@ export function estimateTokens(text: string): number {
     return 0;
   }
 
-  const codeIndicators = /[{}();=<>\[\]|&^%$#@!~`]/g;
+  const codeIndicators = /[{}();=<>[\]|&^%$#@!~`]/g;
   const matches = text.match(codeIndicators);
   const codeRatio = matches ? matches.length / text.length : 0;
 

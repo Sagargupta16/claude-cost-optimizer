@@ -42,7 +42,6 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-
 # -- Pricing data (mirrors site/src/utils/pricing.ts) ------------------------
 
 # Models priced as of 2026-10-09. Prices are USD per 1M tokens.

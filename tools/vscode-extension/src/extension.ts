@@ -28,25 +28,12 @@ export function activate(context: vscode.ExtensionContext): void {
   statusBarManager.activate();
   context.subscriptions.push({ dispose: () => statusBarManager?.dispose() });
 
-  // Command: Estimate current file
+  // Commands return their promise so VS Code surfaces a failure instead of
+  // dropping it.
   context.subscriptions.push(
-    vscode.commands.registerCommand("claudeCost.estimateFile", () => {
-      estimateCurrentFile();
-    })
-  );
-
-  // Command: Estimate CLAUDE.md per-turn cost
-  context.subscriptions.push(
-    vscode.commands.registerCommand("claudeCost.estimateClaudeMd", () => {
-      estimateClaudeMdCost();
-    })
-  );
-
-  // Command: Check project configuration
-  context.subscriptions.push(
-    vscode.commands.registerCommand("claudeCost.checkConfig", () => {
-      checkProjectConfig();
-    })
+    vscode.commands.registerCommand("claudeCost.estimateFile", () => estimateCurrentFile()),
+    vscode.commands.registerCommand("claudeCost.estimateClaudeMd", () => estimateClaudeMdCost()),
+    vscode.commands.registerCommand("claudeCost.checkConfig", () => checkProjectConfig())
   );
 }
 
@@ -103,10 +90,10 @@ async function estimateClaudeMdCost(): Promise<void> {
   const model = config.get<string>("defaultModel", "sonnet");
 
   const results: string[] = [];
+  const docs = await Promise.all(files.map((file) => vscode.workspace.openTextDocument(file)));
 
-  for (const file of files) {
-    const doc = await vscode.workspace.openTextDocument(file);
-    const text = doc.getText();
+  for (const [i, file] of files.entries()) {
+    const text = docs[i].getText();
     const relativePath = vscode.workspace.asRelativePath(file);
     const breakdown = estimatePerTurnCost(text, 20, model);
 

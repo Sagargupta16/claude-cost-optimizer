@@ -226,9 +226,7 @@ function sessionEstimate(args: {
   }
   if (model === "opus") {
     recommendations.push(
-      "Opus 5.5 runs adaptive thinking always on (thinking disabled and budget_tokens both return 400), and reasoning tokens bill as output. Effort is the only control: it defaults to medium; lower output_config.effort for routine turns."
-    );
-    recommendations.push(
+      "Opus 5.5 runs adaptive thinking always on (thinking disabled and budget_tokens both return 400), and reasoning tokens bill as output. Effort is the only control: it defaults to medium; lower output_config.effort for routine turns.",
       "Switching to Sonnet 5.5 for routine tasks saves 50% per token ($2/$10 vs $4/$20) with comparable quality for most coding work."
     );
   }
@@ -288,7 +286,7 @@ function compareModels(args: {
     ([, a], [, b]) => a.total_raw - b.total_raw
   );
   const cheapest = sorted[0][0];
-  const mostExpensive = sorted[sorted.length - 1];
+  const mostExpensive = sorted.at(-1) ?? sorted[0];
 
   const comparison = Object.fromEntries(
     Object.entries(results).map(([name, data]) => [
@@ -322,7 +320,7 @@ const server = new Server(
   { capabilities: { tools: {} } }
 );
 
-server.setRequestHandler(ListToolsRequestSchema, async () => ({
+server.setRequestHandler(ListToolsRequestSchema, () => ({
   tools: [
     {
       name: "estimate_cost",
@@ -402,7 +400,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => ({
   ],
 }));
 
-server.setRequestHandler(CallToolRequestSchema, async (request) => {
+server.setRequestHandler(CallToolRequestSchema, (request) => {
   const { name, arguments: args } = request.params;
 
   try {
@@ -441,12 +439,9 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
   }
 });
 
-async function main() {
-  const transport = new StdioServerTransport();
-  await server.connect(transport);
-}
-
-main().catch((err) => {
+try {
+  await server.connect(new StdioServerTransport());
+} catch (err) {
   console.error("Fatal error:", err);
   process.exit(1);
-});
+}

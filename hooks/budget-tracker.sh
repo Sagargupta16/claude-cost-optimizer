@@ -68,7 +68,7 @@ except Exception:
 # Grab the tool name from the HOOK_TOOL_NAME environment variable.
 # This is simpler and more reliable than parsing JSON. Fall back to
 # JSON parsing if the env var is not set (older Claude Code versions).
-if [ -n "${HOOK_TOOL_NAME:-}" ]; then
+if [[ -n "${HOOK_TOOL_NAME:-}" ]]; then
     TOOL_NAME="$HOOK_TOOL_NAME"
 else
     TOOL_NAME="$(printf '%s' "$INPUT" | python3 -c "
@@ -91,7 +91,7 @@ COUNTER_FILE="${LOG_DIR}/session-${SESSION_ID}.count"
 # ---------------------------------------------------------------------------
 # Increment counter (atomic-ish for single-threaded hook execution)
 # ---------------------------------------------------------------------------
-if [ -f "$COUNTER_FILE" ]; then
+if [[ -f "$COUNTER_FILE" ]]; then
     CURRENT="$(cat "$COUNTER_FILE" 2>/dev/null || echo "0")"
 else
     CURRENT=0
@@ -100,6 +100,7 @@ fi
 # Validate that CURRENT is a number
 case "$CURRENT" in
     ''|*[!0-9]*) CURRENT=0 ;;
+    *) ;;  # already a number
 esac
 
 NEXT=$((CURRENT + 1))
@@ -110,13 +111,13 @@ printf '%d' "$NEXT" > "$COUNTER_FILE" 2>/dev/null || true
 # ---------------------------------------------------------------------------
 WARN_AT=$(( TOOL_LIMIT * WARN_PERCENT / 100 ))
 
-if [ "$NEXT" -ge "$TOOL_LIMIT" ]; then
+if [[ "$NEXT" -ge "$TOOL_LIMIT" ]]; then
     # Over the limit -- output a warning message via JSON stdout.
     # Claude Code hooks can return JSON with a "message" field to surface
     # information to the user.
     printf '{"message":"[Budget] Tool call %d of %d -- limit reached. Consider starting a new session or raising BUDGET_TOOL_LIMIT."}\n' \
         "$NEXT" "$TOOL_LIMIT"
-elif [ "$NEXT" -ge "$WARN_AT" ]; then
+elif [[ "$NEXT" -ge "$WARN_AT" ]]; then
     REMAINING=$((TOOL_LIMIT - NEXT))
     printf '{"message":"[Budget] Tool call %d of %d -- %d remaining before limit."}\n' \
         "$NEXT" "$TOOL_LIMIT" "$REMAINING"
