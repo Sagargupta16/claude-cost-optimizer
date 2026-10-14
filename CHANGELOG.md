@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.16.1] - 2026-10-14
+
+### Fixed
+- **The repo's own hooks failed on every tool call once Claude left the repo root.** `.claude/settings.json` ran `bash hooks/budget-tracker.sh`, `bash hooks/cost-logger.sh` and `bash hooks/session-summary.sh` with bare relative paths, and a hook runs in the session's current directory. Across the 12 local sessions in this repo between 2026-09-14 and 2026-10-11, 2,452 hook runs ended in `bash: hooks/budget-tracker.sh: No such file or directory` (or the cost-logger equivalent), so the budget hook enforced nothing while the session sat in a subfolder. All three now run as `bash "$CLAUDE_PROJECT_DIR"/hooks/...`, which Claude Code sets to the project root for every hook. The same fix is applied to the snippet in guide 10 and the header comment in `cost-logger.sh` (whose example was also not valid hook syntax), and `hooks/README.md` now says why a bare relative path breaks.
+
 ## [1.16.0] - 2026-10-11
 
 Three things land together. Every cost estimator in the repo now bills a turn the way Claude Code actually caches a conversation, which cuts the modelled 30-turn Opus 5.5 session from $3.44 to $0.74. Every vague savings range ("30-90%", "30-60% typical", "up to 35%") is replaced with a sourced or computed number: the claim regex goes from 257 hits to 54, and each remaining hit carries its source. And the site is rebuilt around animated charts and SVG explainers, with `claude-rate` gaining `--user` and `--usage` so anyone can grade their whole setup and their real usage locally.

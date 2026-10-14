@@ -74,7 +74,7 @@ Copy the hooks configuration into your Claude Code settings file. You have two o
 
 Edit `settings-example.json` in this directory -- replace `/path/to/claude-cost-optimizer` with the actual path -- then merge the `hooks` block into your existing settings file.
 
-This repo's own [`.claude/settings.json`](../.claude/settings.json) wires all three hooks with repo-relative paths, so you can copy its `hooks` block instead of filling in placeholders. It validates against the `claude-code-settings.json` schema it declares. Repo-relative paths only resolve when the hooks live in the repo you are working in; use absolute paths for a global install.
+This repo's own [`.claude/settings.json`](../.claude/settings.json) wires all three hooks through `"$CLAUDE_PROJECT_DIR"/hooks/...`, so you can copy its `hooks` block into a project that keeps the scripts in its own `hooks/` folder. It validates against the `claude-code-settings.json` schema it declares. Do not use a bare relative path such as `bash hooks/cost-logger.sh`: a hook runs in the session's current directory, so it fails with "No such file or directory" as soon as Claude `cd`s into a subfolder. Claude Code sets `CLAUDE_PROJECT_DIR` to the project root for every hook ([hooks reference](https://code.claude.com/docs/en/hooks)). For a global install in `~/.claude/settings.json`, use absolute paths.
 
 Each entry must be an object with `"type": "command"` and a `"command"` string. A bare command string in the `hooks` array is invalid and the hook silently never runs.
 
