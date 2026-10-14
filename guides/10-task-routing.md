@@ -240,7 +240,7 @@ Add to your `settings.json`:
     "PreToolUse": [
       {
         "matcher": ".*",
-        "hooks": [{ "type": "command", "command": "bash hooks/cost-logger.sh" }]
+        "hooks": [{ "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/hooks/cost-logger.sh" }]
       }
     ]
   }

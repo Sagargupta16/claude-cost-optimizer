@@ -6,7 +6,7 @@
 #   "hooks": {
 #     "PreToolUse": [{
 #       "matcher": ".*",
-#       "hooks": ["bash hooks/cost-logger.sh"]
+#       "hooks": [{ "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/hooks/cost-logger.sh" }]
 #     }]
 #   }
 #

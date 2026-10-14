@@ -49,17 +49,17 @@
     "PreToolUse": [
       {
         "matcher": ".*",
-        "hooks": [{ "type": "command", "command": "bash hooks/budget-tracker.sh" }]
+        "hooks": [{ "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/hooks/budget-tracker.sh" }]
       },
       {
         "matcher": ".*",
-        "hooks": [{ "type": "command", "command": "bash hooks/cost-logger.sh" }]
+        "hooks": [{ "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/hooks/cost-logger.sh" }]
       }
     ],
     "Stop": [
       {
         "matcher": "",
-        "hooks": [{ "type": "command", "command": "bash hooks/session-summary.sh" }]
+        "hooks": [{ "type": "command", "command": "bash \"$CLAUDE_PROJECT_DIR\"/hooks/session-summary.sh" }]
       }
     ]
   }
