@@ -76,12 +76,12 @@ npm test
 | Tag | Publishes | Version must match |
 |-----|-----------|--------------------|
 | `claude-rate-v<version>` | PyPI `claude-rate` (`uvx claude-rate .`) and npm `@sagargupta16/claude-rate` | `claude-rate/pyproject.toml`, `claude-rate/package.json`, `--version` in `rate.py` |
-| `mcp-cost-server-v<version>` | npm `@sagargupta16/mcp-cost-server` and the MCP Registry as `io.github.Sagargupta16/cost-estimator` | `mcp-cost-server/package.json`, both versions in `mcp-cost-server/server.json` |
+| `mcp-cost-server-v<version>` | npm `@sagargupta16/mcp-cost-server` and the MCP Registry as `io.github.Sagargupta16/cost-estimator` | `mcp-cost-server/package.json`, both versions in `mcp-cost-server/server.json`, the Server version in `mcp-cost-server/src/index.ts` |
 
 One-time setup before the first tag, per registry:
 
 1. **PyPI:** pypi.org, Your projects, Publishing, "Add a new pending publisher": project `claude-rate`, owner `Sagargupta16`, repository `claude-cost-optimizer`, workflow `release-tools.yml`, environment `release`.
-2. **npm:** a package must exist before trusted publishing can be configured, so publish `0.2.0` / `1.0.0` once by hand (`npm publish --access public` in each tool folder), then on npmjs.com open the package, Settings, Trusted Publisher, GitHub Actions: `Sagargupta16` / `claude-cost-optimizer` / `release-tools.yml` / environment `release`.
+2. **npm:** a package must exist before trusted publishing can be configured, so publish `0.2.0` / `1.0.0` once by hand (`npm publish --access public` in each tool folder), then on npmjs.com open the package, Settings, Trusted Publisher, GitHub Actions: `Sagargupta16` / `claude-cost-optimizer` / `release-tools.yml` / environment `release`. The tags `claude-rate-v0.2.0` and `mcp-cost-server-v1.0.0` still work after this: the npm step skips a version that is already on npm, so the first tag publishes `claude-rate` to PyPI and the server to the MCP Registry. The PyPI step uses `skip-existing`, so a failed run can be re-run from the top.
 3. **MCP Registry:** nothing to configure; `mcp-publisher login github-oidc` proves the `io.github.Sagargupta16/` namespace from the workflow's own token.
 
 ## Web Tools

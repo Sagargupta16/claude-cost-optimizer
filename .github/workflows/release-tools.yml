@@ -71,17 +71,30 @@ jobs:
       - name: Smoke-test the built wheel
         run: uvx --from dist/claude_rate-*.whl claude-rate ../.. --json > /dev/null
 
+      # skip-existing lets a re-run get past PyPI when an earlier run already
+      # uploaded this version and then failed at npm.
       - name: Publish to PyPI
         uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
         with:
           packages-dir: tools/claude-rate/dist
+          skip-existing: true
 
       # npm trusted publishing needs npm 11.5.1 or later; provenance is attached
-      # automatically when publishing through OIDC.
+      # automatically when publishing through OIDC. The first version is
+      # published by hand (npm needs the package to exist before a trusted
+      # publisher can be added), so skip when this version is already on npm.
       - name: Publish to npm
         run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          # npm view exits 0 with no output when the package exists but the
+          # version does not, so test the output rather than the exit code.
+          if [ -n "$(npm view "$name@$version" version 2>/dev/null)" ]; then
+            echo "$name@$version is already on npm, skipping"
+            exit 0
+          fi
           npm install -g npm@latest
-          npm publish --access public
+          npm publish --access public --ignore-scripts
 
   mcp-cost-server:
     name: MCP cost server to npm and the MCP Registry
@@ -114,9 +127,10 @@ jobs:
           pkg=$(node -p "require('./package.json').version")
           srv=$(node -p "require('./server.json').version")
           srv_pkg=$(node -p "require('./server.json').packages[0].version")
-          echo "tag=$want package.json=$pkg server.json=$srv/$srv_pkg"
-          test "$pkg" = "$want" -a "$srv" = "$want" -a "$srv_pkg" = "$want" || {
-            echo "::error::version mismatch -- bump package.json and both versions in server.json together"
+          code=$(grep -oP 'name: "cost-estimator", version: "\K[^"]+' src/index.ts)
+          echo "tag=$want package.json=$pkg server.json=$srv/$srv_pkg src/index.ts=$code"
+          test "$pkg" = "$want" -a "$srv" = "$want" -a "$srv_pkg" = "$want" -a "$code" = "$want" || {
+            echo "::error::version mismatch -- bump package.json, both versions in server.json and the Server version in src/index.ts together"
             exit 1
           }
 
@@ -127,8 +141,16 @@ jobs:
           pnpm run build
           pnpm test
 
+      # Same first-version rule as claude-rate: skip when already on npm, so the
+      # tag for the hand-published version still reaches the MCP Registry step.
       - name: Publish to npm
         run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          if [ -n "$(npm view "$name@$version" version 2>/dev/null)" ]; then
+            echo "$name@$version is already on npm, skipping"
+            exit 0
+          fi
           npm install -g npm@latest
           npm publish --access public --ignore-scripts
 

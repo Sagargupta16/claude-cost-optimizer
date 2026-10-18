@@ -174,7 +174,7 @@ jobs:
         run: python scripts/check-pricing-sync.py .
 
       # The stamp check above proves the dates agree, not the numbers. This
-      # compares every per-model rate in the seven code copies against rate.py.
+      # compares every per-model rate in the six code copies against rate.py.
       - name: Check rate values across every code copy
         run: python scripts/check-rate-values.py .
 
