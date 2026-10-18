@@ -115,8 +115,8 @@ class EstimateCosts(unittest.TestCase):
             + per_m(30 * 650, 20.00)
         )
         est = rate.estimate_costs(0, 0)["opus-5-5"]
-        self.assertAlmostEqual(est["per_session"], round(session, 2))
-        self.assertAlmostEqual(est["per_month"], round(session * 3 * 22, 2))
+        self.assertAlmostEqual(est["per_session"], session, places=2)
+        self.assertAlmostEqual(est["per_month"], session * 3 * 22, places=2)
         self.assertEqual(est["per_session"], 0.91)
 
     def test_more_context_never_costs_less(self) -> None:
