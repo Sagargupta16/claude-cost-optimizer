@@ -171,7 +171,7 @@ BEFORE (no optimization):                 AFTER (5 minutes of setup):
   Savings: $6.77/month (12%)
 ```
 
-The setup cleanup saves 12%, not more, because the prefix is a cache read on 29 of the 30 turns. Output is the bigger share: 500 tokens a turn is $0.30 of the $0.82 (37%), so halving output saves $0.15 a session, more than the whole cleanup. Without caching the same session would cost $4.95, and the cleanup would save 23%. The Read deny rules are not in these figures: what they save depends on which files your sessions would otherwise read.
+The setup cleanup saves 12%, not more, because the prefix is a cache read on 29 of the 30 turns. Output is the bigger share: 500 tokens a turn is $0.30 of the $0.82 (36%), so halving output saves $0.15 a session, more than the whole cleanup. Without caching the same session would cost $4.95, and the cleanup would save 23%. The Read deny rules are not in these figures: what they save depends on which files your sessions would otherwise read.
 
 ---
 
