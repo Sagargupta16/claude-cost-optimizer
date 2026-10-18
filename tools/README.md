@@ -10,7 +10,7 @@ CLI tools and utilities for measuring, tracking, and reducing Claude Code costs.
 | [Token Estimator](token-estimator/) | Python | Estimate token count and cost for files | `pip install tiktoken` |
 | [Usage Analyzer](usage-analyzer/) | Python | Analyze session data for cost hotspots | stdlib only |
 | [Badge Generator](badge-generator/) | Python | Grade project config (A+ to F) -- precursor to claude-rate, 4-category | stdlib only |
-| [MCP Cost Server](mcp-cost-server/) | TypeScript | In-session cost estimation via MCP | `npm install` |
+| [MCP Cost Server](mcp-cost-server/) | TypeScript | In-session cost estimation via MCP | `pnpm install` |
 | [VS Code Extension](vscode-extension/) | TypeScript | Status bar token/cost display | `npm install` |
 | [/optimize Command](optimize-command/) | Markdown | Claude Code custom command for auditing | Copy to `.claude/commands/` |
 | [GitHub Action](actions/claude-cost-audit/) | Python | CI cost audit for PRs | Use in workflow YAML |
@@ -45,12 +45,16 @@ python badge-generator/generate.py /path/to/project
 
 ```bash
 # MCP Cost Server
-cd mcp-cost-server && npm install && npm run build
+cd mcp-cost-server
+pnpm install
+pnpm run build
 
 # VS Code Extension
-cd vscode-extension && npm install && npm run compile
+cd vscode-extension
+npm install
+npm run compile
 ```
 
 ## Web Tools
 
-Browser-based versions (Cost Calculator, Badge Checker, Repo Analyzer) are built in [../site/](../site/) but not yet live on the [deployed site](https://sagargupta16.github.io/claude-cost-optimizer/) -- use `claude-rate` locally in the meantime.
+Browser-based versions are built in [../site/](../site/) and live on the [deployed site](https://sagargupta.online/claude-cost-optimizer/): the [Repo Analyzer](https://sagargupta.online/claude-cost-optimizer/analyzer/), [Cost Calculator](https://sagargupta.online/claude-cost-optimizer/calculator/) and [Badge Checker](https://sagargupta.online/claude-cost-optimizer/badge/). Use `claude-rate` for private or uncommitted repos, which the web analyzer cannot read.
