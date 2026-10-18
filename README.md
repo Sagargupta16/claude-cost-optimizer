@@ -11,6 +11,8 @@
 >
 > **No one has published a typical saving for a mixed Claude Code workload, so this repo does not quote one.** What is measured: prompt caching cut agent-loop cost 2.7x to 5.3x on [Anthropic's benchmarks](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), and Anthropic's [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) stacked model choice, effort and caching on one agent for a 13x lower cost per task ($0.2906 to $0.0223, 10/10 tasks passed both ways). See [How far can you actually go?](#how-far-can-you-actually-go), and price your own sessions with `/usage` or [claude-rate](#rate-your-setup).
 
+**Live site:** [sagargupta.online/claude-cost-optimizer](https://sagargupta.online/claude-cost-optimizer/) -- [Repo Analyzer](https://sagargupta.online/claude-cost-optimizer/analyzer/) | [Cost Calculator](https://sagargupta.online/claude-cost-optimizer/calculator/) | [Badge Checker](https://sagargupta.online/claude-cost-optimizer/badge/). How the pieces fit: [How It Is Built](#how-it-is-built).
+
 ## Install
 
 **Claude Code (official plugin system):**
@@ -87,6 +89,69 @@ The local rater works on private and uncommitted repos and inspects things the w
 | **[Repo Analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer)** | Paste a GitHub URL to get a cost audit, grade (A+ to F), and recommendations |
 | **[Cost Calculator](https://sagargupta16.github.io/claude-cost-optimizer/calculator)** | Estimate monthly spend with interactive charts: per-turn cost curve, savings breakdown, model comparison |
 | **[Badge Checker](https://sagargupta16.github.io/claude-cost-optimizer/badge)** | Score your setup and get a shields.io badge for your repo |
+
+---
+
+## How It Is Built
+
+One pricing reference feeds every surface: the skill, the web tools, the CLI graders, the MCP server and the VS Code extension. Each carries its own copy of the rates, reconciled against the doc's sync checklist, and CI fails a pull request when a file's verified-date stamp disagrees with the canonical one or still calls a passed retirement date upcoming.
+
+```mermaid
+flowchart LR
+  subgraph source["Source of truth"]
+    P["docs/pricing-data.md<br/>rates, cache floors, retirements"]
+  end
+  subgraph ship["What users run"]
+    S["cost-mode skill<br/>skills/cost-mode/SKILL.md"]
+    W["Web tools<br/>React 19 + Vite + TypeScript<br/>GitHub Pages, no backend"]
+    R["claude-rate<br/>Python stdlib, runs locally"]
+    M["MCP cost server<br/>TypeScript, stdio"]
+    V["VS Code extension"]
+  end
+  subgraph dist["Distribution"]
+    CP["Claude Code plugin<br/>.claude-plugin/marketplace.json"]
+    NS["npx skills add<br/>Cursor, Cline, Codex, ..."]
+  end
+  subgraph ci["CI gates on every PR"]
+    C1["check-pricing-sync.py<br/>stamp drift, stale retirement wording"]
+    C2["check-links.py<br/>internal links and anchors"]
+    C3["site build + route entry points<br/>TS tools build, ruff, grader smoke test"]
+  end
+  P --> S
+  P --> W
+  P --> R
+  P --> M
+  P --> V
+  S --> CP
+  S --> NS
+  W -->|"GitHub REST API from the browser"| GH[("public repo<br/>contents + tree")]
+  R -->|"reads local files and<br/>~/.claude transcripts"| L[("your machine")]
+  C1 -.-> P
+  C2 -.-> P
+  C3 -.-> W
+```
+
+| Decision | Why |
+|----------|-----|
+| **Web tools run entirely in the browser** | The Repo Analyzer calls the GitHub REST API directly, so there is no server to host and no token to store; repo data comes from `api.github.com` and the grade badge from `img.shields.io`. The cost is GitHub's unauthenticated rate limit. |
+| **claude-rate is one stdlib Python file** | It streams into `python -` from `curl` or `irm` with no install step, and it can read what the web tool cannot: `settings.local.json`, lock files on disk, and your local Claude Code transcripts for real cache hit rate and spend. |
+| **Session math is cache-aware** | Every estimator bills a turn the way Claude Code caches a conversation: turn 1 writes the whole prompt, every later turn reads the previous request and writes only the new exchange. The old flat-hit-rate model overstated a 30-turn Opus 5.5 session about 4.6x (see [CHANGELOG 1.16.0](CHANGELOG.md#1160---2026-10-11)). |
+| **Every saving needs a source or a formula** | The repo's product is being a trustworthy pricing reference, so a claim without a link or a computed formula is treated as a bug, and `check-pricing-sync.py` turns the drift failures that shipped before into CI errors. |
+| **Each tool route gets a real `index.html`** | GitHub Pages would otherwise answer `/calculator` with HTTP 404 behind the SPA fallback; `site/scripts/spa-404.mjs` writes one per route with its own canonical URL so search engines index each tool. |
+
+Run it locally:
+
+```bash
+# repo gates CI runs, from the repo root
+python scripts/check-pricing-sync.py .
+python scripts/check-links.py .
+python tools/claude-rate/rate.py . --json
+
+# web tools (Node 24)
+cd site
+npm ci --legacy-peer-deps
+npm run dev
+```
 
 ---
 

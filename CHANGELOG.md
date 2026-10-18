@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.16.2] - 2026-10-18
+
+### Fixed
+- **Every tool page told search engines it was a copy of the home page.** `site/scripts/spa-404.mjs` copied `index.html` byte for byte into `calculator/`, `badge/` and `analyzer/`, so all three shipped `<link rel="canonical" href=".../claude-cost-optimizer/">`, the opposite of what writing a real `index.html` per route was for. Each route copy now carries its own canonical and `og:url`, and the CI route check fails a PR whose route page does not declare its own URL.
+- **The canonical and `og:url` pointed at a redirect.** Both named `sagargupta16.github.io/claude-cost-optimizer/`, which answers 301 to `sagargupta.online/claude-cost-optimizer/`, the repo's homepage. They now name the final URL.
+- **`tools/README.md` said the web tools were "not yet live"**; all three return 200 on the deployed site. The section now links each one.
+- **The MCP cost server docs said `npm install`**, but its lockfile is `pnpm-lock.yaml` and the patched transitive pins (`hono`, `@hono/node-server`, `ip-address`, `fast-uri`) live in `pnpm-workspace.yaml`, which npm does not read. The tool and tools READMEs now say pnpm and why.
+- **`tools/claude-rate/package-lock.json` still said 0.1.0** after `package.json` moved to 0.2.0.
+
+### Added
+- **TypeScript tools build in CI.** Neither the MCP cost server nor the VS Code extension was compiled by any workflow, so a type error or a breaking SDK bump in either could merge green. A `ts-tools` job now builds both on every PR.
+- **README: a live-site line under the headline, and a "How It Is Built" section** with a Mermaid diagram of how the pricing reference feeds the skill, web tools, CLI graders, MCP server and extension, the design decisions behind each, and the commands to run the site and the CI gates locally.
+
+### Changed
+- Site dependencies to the latest minor releases: React and React DOM 19.3.1, React Router 7.18.4, Vite 8.3.4, `@vitejs/plugin-react` 6.1.2, React type packages 19.3.0. MCP cost server: `@modelcontextprotocol/sdk` 1.32.1. `npm audit` and `pnpm audit` report 0 vulnerabilities.
+
 ## [1.16.1] - 2026-10-14
 
 ### Fixed

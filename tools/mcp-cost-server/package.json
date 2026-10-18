@@ -9,10 +9,10 @@
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0"
+    "@modelcontextprotocol/sdk": "^1.32.1"
   },
   "devDependencies": {
-    "typescript": "^7.0.0",
-    "@types/node": "^24.0.0"
+    "@types/node": "^24.0.0",
+    "typescript": "^7.0.0"
   }
 }

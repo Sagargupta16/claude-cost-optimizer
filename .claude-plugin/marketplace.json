@@ -7,7 +7,7 @@
   "plugins": [
     {
       "name": "cost-mode",
-      "version": "1.16.1",
+      "version": "1.16.2",
       "description": "Activate cost-conscious mode. Cuts filler, routes simple tasks to Haiku 5.5 (1/40 of Opus 5.5 per token), encourages efficient patterns.",
       "source": {
         "source": "github",

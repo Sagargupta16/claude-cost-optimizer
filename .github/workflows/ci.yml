@@ -68,9 +68,43 @@ jobs:
               echo "::error::dist/$route/index.html missing -- add the route to ROUTES in site/scripts/spa-404.mjs"
               exit 1
             }
+            grep -q "rel=\"canonical\" href=\"https://sagargupta.online/claude-cost-optimizer/$route/\"" "dist/$route/index.html" || {
+              echo "::error::dist/$route/index.html does not declare its own canonical URL"
+              exit 1
+            }
             echo "ok: dist/$route/index.html"
           done
           test -f dist/404.html || { echo "::error::dist/404.html missing"; exit 1; }
+
+  ts-tools:
+    name: TypeScript tools build
+    runs-on: ubuntu-latest
+    # Neither TypeScript tool was compiled anywhere in CI, so a type error or a
+    # breaking SDK bump in either one could merge green.
+    steps:
+      - uses: actions/checkout@v7
+
+      # Third-party action, so pinned to a commit (Sonar githubactions:S7637).
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # pnpm, not npm: the patched transitive pins live in pnpm-workspace.yaml.
+      - name: Build the MCP cost server
+        working-directory: tools/mcp-cost-server
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm run build
+
+      - name: Compile the VS Code extension
+        working-directory: tools/vscode-extension
+        run: |
+          npm ci --ignore-scripts
+          npm run compile
 
   python-tools:
     name: Python tools
