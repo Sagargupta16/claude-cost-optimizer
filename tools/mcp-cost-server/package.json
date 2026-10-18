@@ -1,13 +1,44 @@
 {
-  "name": "@claude-cost-optimizer/mcp-cost-server",
+  "name": "@sagargupta16/mcp-cost-server",
   "version": "1.0.0",
-  "description": "MCP server for estimating Claude Code token costs",
+  "mcpName": "io.github.Sagargupta16/cost-estimator",
+  "description": "MCP server for estimating Claude Code token costs, billed the way Claude Code caches a conversation",
   "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "mcp-cost-server": "dist/index.js"
+  },
+  "files": [
+    "dist/",
+    "README.md"
+  ],
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "claude",
+    "claude-code",
+    "anthropic",
+    "cost",
+    "prompt-caching"
+  ],
+  "homepage": "https://github.com/Sagargupta16/claude-cost-optimizer/tree/main/tools/mcp-cost-server",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sagargupta16/claude-cost-optimizer.git",
+    "directory": "tools/mcp-cost-server"
+  },
+  "bugs": {
+    "url": "https://github.com/Sagargupta16/claude-cost-optimizer/issues"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "node --test test/"
+    "test": "node --test test/",
+    "prepublishOnly": "pnpm run build && pnpm test"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.32.1"

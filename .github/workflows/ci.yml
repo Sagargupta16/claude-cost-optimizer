@@ -138,6 +138,14 @@ jobs:
       - name: Unit-test the claude-rate cost math
         run: python -m unittest discover -s tools/claude-rate/tests -v
 
+      # The PyPI package ships rate.py as the claude_rate module; build the
+      # wheel and run its console script so a packaging break shows up here,
+      # not in the release workflow.
+      - name: Build and run the claude-rate wheel
+        run: |
+          pipx run build --wheel --outdir /tmp/claude-rate-wheel tools/claude-rate
+          pipx run --spec /tmp/claude-rate-wheel/claude_rate-*.whl claude-rate . --json > /dev/null
+
       - name: Smoke-test the graders that CI and the README depend on
         run: |
           python tools/claude-rate/rate.py . --json > /tmp/rate.json

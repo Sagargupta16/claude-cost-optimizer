@@ -35,6 +35,18 @@ Or add it to `.mcp.json` at a project root to share it with that project. Claude
 
 Replace `/path/to/` with the actual absolute path to this repository on your machine.
 
+### From npm (after the first release)
+
+The package is prepared as `@sagargupta16/mcp-cost-server` with an MCP Registry entry ([`server.json`](server.json), name `io.github.Sagargupta16/cost-estimator`) but is not published yet; see [Releasing](../README.md#releasing). Once it is, no clone is needed:
+
+```bash
+claude mcp add --scope user cost-estimator -- npx -y @sagargupta16/mcp-cost-server
+```
+
+## Tests
+
+`pnpm test` (after `pnpm run build`) starts the built server over stdio with the MCP SDK client and checks each tool against values worked out by hand: a 30-turn Opus 5.5 `session_estimate` is $0.6771, and a 100,001-token Haiku 5.5 request in `compare_models` pays the $0.50/$2.50 tier.
+
 ## Tools
 
 ### estimate_cost
