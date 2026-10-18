@@ -69,7 +69,7 @@ jobs:
         run: uv build --out-dir dist
 
       - name: Smoke-test the built wheel
-        run: uvx --from dist/claude_rate-*.whl claude-rate ../.. --json > /dev/null
+        run: pipx run --spec dist/claude_rate-*.whl claude-rate ../.. --json > /dev/null
 
       # skip-existing lets a re-run get past PyPI when an earlier run already
       # uploaded this version and then failed at npm.
@@ -79,10 +79,11 @@ jobs:
           packages-dir: tools/claude-rate/dist
           skip-existing: true
 
-      # npm trusted publishing needs npm 11.5.1 or later; provenance is attached
-      # automatically when publishing through OIDC. The first version is
-      # published by hand (npm needs the package to exist before a trusted
-      # publisher can be added), so skip when this version is already on npm.
+      # npm trusted publishing needs npm 11.5.1 or later, which Node 24 bundles;
+      # provenance is attached automatically when publishing through OIDC. The
+      # first version is published by hand (npm needs the package to exist
+      # before a trusted publisher can be added), so skip when this version is
+      # already on npm.
       - name: Publish to npm
         run: |
           name=$(node -p "require('./package.json').name")
@@ -93,7 +94,11 @@ jobs:
             echo "$name@$version is already on npm, skipping"
             exit 0
           fi
-          npm install -g npm@latest
+          npm_version=$(npm --version)
+          printf '%s\n' 11.5.1 "$npm_version" | sort -V -C || {
+            echo "::error::npm $npm_version is older than 11.5.1, which trusted publishing needs"
+            exit 1
+          }
           npm publish --access public --ignore-scripts
 
   mcp-cost-server:
@@ -151,11 +156,15 @@ jobs:
             echo "$name@$version is already on npm, skipping"
             exit 0
           fi
-          npm install -g npm@latest
+          npm_version=$(npm --version)
+          printf '%s\n' 11.5.1 "$npm_version" | sort -V -C || {
+            echo "::error::npm $npm_version is older than 11.5.1, which trusted publishing needs"
+            exit 1
+          }
           npm publish --access public --ignore-scripts
 
       - name: Publish to the MCP Registry
         run: |
-          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          curl --proto '=https' --tlsv1.2 -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
           ./mcp-publisher login github-oidc
           ./mcp-publisher publish

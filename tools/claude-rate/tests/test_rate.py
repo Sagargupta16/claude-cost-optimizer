@@ -18,7 +18,8 @@ from pathlib import Path
 
 _RATE_PY = Path(__file__).resolve().parent.parent / "rate.py"
 _spec = importlib.util.spec_from_file_location("rate", _RATE_PY)
-assert _spec and _spec.loader
+assert _spec
+assert _spec.loader
 rate = importlib.util.module_from_spec(_spec)
 sys.modules["rate"] = rate  # dataclasses resolve annotations through sys.modules
 _spec.loader.exec_module(rate)
@@ -114,8 +115,8 @@ class EstimateCosts(unittest.TestCase):
             + per_m(30 * 650, 20.00)
         )
         est = rate.estimate_costs(0, 0)["opus-5-5"]
-        self.assertEqual(est["per_session"], round(session, 2))
-        self.assertEqual(est["per_month"], round(session * 3 * 22, 2))
+        self.assertAlmostEqual(est["per_session"], round(session, 2))
+        self.assertAlmostEqual(est["per_month"], round(session * 3 * 22, 2))
         self.assertEqual(est["per_session"], 0.91)
 
     def test_more_context_never_costs_less(self) -> None:

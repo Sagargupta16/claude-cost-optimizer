@@ -155,7 +155,7 @@ class Value:
     local_key: str
     model: str  # canonical key, possibly with "@fast"
     field: str  # "input", "long_prompt.output", "min_cache", ...
-    value: float | bool
+    amount: float | bool
 
 
 class ParseError(Exception):
@@ -235,6 +235,26 @@ def _unmapped(path: Path, keys, mapping: dict[str, str]) -> None:
         )
 
 
+def _row_values(
+    path: Path, key: str, model: str, row: dict, fields: dict[str, str]
+) -> list[Value]:
+    """Values from one row of a dict rate table; a nested dict is its long_prompt block."""
+    out = []
+    for name, raw in row.items():
+        if isinstance(raw, dict):
+            out += [
+                Value(path, key, model, f"long_prompt.{fields.get(sub, sub)}", val)
+                for sub, val in raw.items()
+                if isinstance(val, (int, float))
+            ]
+            continue
+        field = fields.get(name, name)
+        is_rate = field in RATE_FIELDS or field == "min_cache"
+        if is_rate and isinstance(raw, (int, float)) and not isinstance(raw, bool):
+            out.append(Value(path, key, model, field, raw))
+    return out
+
+
 def _from_rows(
     path: Path,
     rows: dict,
@@ -242,76 +262,74 @@ def _from_rows(
     fields: dict[str, str] | None = None,
 ) -> list[Value]:
     _unmapped(path, rows, mapping)
-    out = []
-    for key, row in rows.items():
-        for name, raw in row.items():
-            if isinstance(raw, dict):
-                for sub, val in raw.items():
-                    field = (fields or {}).get(sub, sub)
-                    if isinstance(val, (int, float)):
-                        out.append(
-                            Value(path, key, mapping[key], f"long_prompt.{field}", val)
-                        )
-                continue
-            field = (fields or {}).get(name, name)
-            if field in RATE_FIELDS or field == "min_cache":
-                if isinstance(raw, (int, float)) and not isinstance(raw, bool):
-                    out.append(Value(path, key, mapping[key], field, raw))
-    return out
+    return [
+        value
+        for key, row in rows.items()
+        for value in _row_values(path, key, mapping[key], row, fields or {})
+    ]
 
 
 # -- per-file readers --------------------------------------------------------
 
 
+# pricing.ts is indented two spaces per level: entries at 2, fields at 4,
+# longPrompt fields at 6.
+_TS_ENTRY = re.compile(r"^ {2}'?([\w-]+)'?: \{\n(.*?)^ {2}\},", re.M | re.S)
+_TS_NAME = re.compile(r"^ {4}name: '([^']+)'", re.M)
+_TS_LONG_PROMPT = re.compile(r"^ {4}longPrompt: \{\n(.*?)^ {4}\},", re.M | re.S)
+_TS_FAST = re.compile(r"^ {4}fastModeCapable: (true|false)", re.M)
+_TS_TOP_FIELD = re.compile(r"^ {4}(\w+): ([\d_.]+),", re.M)
+_TS_LONG_FIELD = re.compile(r"^ {6}(\w+): ([\d_.]+),", re.M)
+
+
+def _ts_rates(
+    pattern: re.Pattern[str], text: str, local: str, model: str, prefix: str
+) -> list[Value]:
+    return [
+        Value(
+            PRICING_TS,
+            local,
+            model,
+            prefix + TS_FIELDS[field],
+            float(raw.replace("_", "")),
+        )
+        for field, raw in pattern.findall(text)
+        if field in TS_FIELDS
+    ]
+
+
+def _pricing_entry(local: str, body: str) -> list[Value]:
+    name = _TS_NAME.search(body)
+    if not name:
+        raise ParseError(f"{PRICING_TS.as_posix()}: entry {local!r} has no name")
+    if name.group(1) not in PRICING_TS_NAMES:
+        raise ParseError(
+            f"{PRICING_TS.as_posix()}: no canonical mapping for {name.group(1)!r}; add it to check-rate-values.py"
+        )
+    model = PRICING_TS_NAMES[name.group(1)]
+    long_prompt = _TS_LONG_PROMPT.search(body)
+    top = body.replace(long_prompt.group(0), "") if long_prompt else body
+    out = _ts_rates(_TS_TOP_FIELD, top, local, model, "")
+    fast = _TS_FAST.search(top)
+    if fast:
+        out.append(
+            Value(PRICING_TS, local, model, "fast_mode", fast.group(1) == "true")
+        )
+    if long_prompt:
+        out += _ts_rates(
+            _TS_LONG_FIELD, long_prompt.group(1), local, model, "long_prompt."
+        )
+    return out
+
+
 def read_pricing_ts(root: Path) -> list[Value]:
     text = (root / PRICING_TS).read_text(encoding="utf-8")
     block = text[text.index("export const MODELS") :]
-    out = []
-    for match in re.finditer(r"^  '?([\w-]+)'?: \{\n(.*?)^  \},", block, re.M | re.S):
-        local, body = match.group(1), match.group(2)
-        name = re.search(r"^    name: '([^']+)'", body, re.M)
-        if not name:
-            raise ParseError(f"{PRICING_TS.as_posix()}: entry {local!r} has no name")
-        if name.group(1) not in PRICING_TS_NAMES:
-            raise ParseError(
-                f"{PRICING_TS.as_posix()}: no canonical mapping for {name.group(1)!r}; add it to check-rate-values.py"
-            )
-        model = PRICING_TS_NAMES[name.group(1)]
-        long_prompt = re.search(
-            r"^    longPrompt: \{\n(.*?)^    \},", body, re.M | re.S
-        )
-        top = body.replace(long_prompt.group(0), "") if long_prompt else body
-        for field, raw in re.findall(r"^    (\w+): ([\d_.]+),", top, re.M):
-            if field in TS_FIELDS:
-                out.append(
-                    Value(
-                        PRICING_TS,
-                        local,
-                        model,
-                        TS_FIELDS[field],
-                        float(raw.replace("_", "")),
-                    )
-                )
-        fast = re.search(r"^    fastModeCapable: (true|false)", top, re.M)
-        if fast:
-            out.append(
-                Value(PRICING_TS, local, model, "fast_mode", fast.group(1) == "true")
-            )
-        if long_prompt:
-            for field, raw in re.findall(
-                r"^      (\w+): ([\d_.]+),", long_prompt.group(1), re.M
-            ):
-                if field in TS_FIELDS:
-                    value = float(raw.replace("_", ""))
-                    out.append(
-                        Value(
-                            PRICING_TS,
-                            local,
-                            model,
-                            f"long_prompt.{TS_FIELDS[field]}",
-                            value,
-                        )
-                    )
+    out = [
+        value
+        for match in _TS_ENTRY.finditer(block)
+        for value in _pricing_entry(match.group(1), match.group(2))
+    ]
     if not out:
         raise ParseError(f"{PRICING_TS.as_posix()}: no MODELS entries parsed")
     return out
@@ -363,7 +381,7 @@ def read_cost_logger(root: Path) -> list[Value]:
         raise ParseError(f'{COST_LOGGER.as_posix()}: no case "$MODEL" block')
     branches = []
     for patterns, body in re.findall(
-        r"^  ([^\n#][^\n]*?)\)\n(.*?);;", case.group(1), re.M | re.S
+        r"^ {2}([^\n#][^\n]*?)\)\n(.*?);;", case.group(1), re.M | re.S
     ):
         rates = dict(re.findall(r"RATE_(INPUT|OUTPUT)=([\d.]+)", body))
         # Shell `\[` is a literal bracket; fnmatch spells that `[[]`.
@@ -383,7 +401,9 @@ def read_cost_logger(root: Path) -> list[Value]:
                 )
                 break
         else:
-            raise ParseError(f"{COST_LOGGER.as_posix()}: no case branch matches {probe!r}")
+            raise ParseError(
+                f"{COST_LOGGER.as_posix()}: no case branch matches {probe!r}"
+            )
     return out
 
 
@@ -419,54 +439,66 @@ def canonical_rates(root: Path) -> dict[str, dict[str, float | bool]]:
     return flat
 
 
-def check(root: Path) -> tuple[list[str], int, int]:
-    canon = canonical_rates(root)
-    values = [v for reader in READERS for v in reader(root)]
-    errors: list[str] = []
+def _same(a: float | bool, b: float | bool) -> bool:
+    if isinstance(a, bool) or isinstance(b, bool):
+        return a is b
+    return abs(float(a) - float(b)) < 1e-9
 
-    def same(a: float | bool, b: float | bool) -> bool:
-        if isinstance(a, bool) or isinstance(b, bool):
-            return a is b
-        return abs(float(a) - float(b)) < 1e-9
 
-    # 1. Rates against rate.py.
+def _against_rate_py(values: list[Value], canon: dict) -> list[str]:
+    """1. Rates against rate.py."""
+    errors = []
     for v in values:
         if v.field == "min_cache" or v.model not in canon:
             continue
         expected = canon[v.model].get(v.field)
-        if expected is None:
-            continue
-        if not same(v.value, expected):
+        if expected is not None and not _same(v.amount, expected):
             errors.append(
-                f"{v.file.as_posix()}: {v.local_key} {v.field} = {v.value}, but rate.py has {expected} for {v.model}"
+                f"{v.file.as_posix()}: {v.local_key} {v.field} = {v.amount}, but rate.py has {expected} for {v.model}"
             )
+    return errors
 
-    # 2. Minimum cacheable prompt against pricing.ts.
+
+def _against_cache_floors(values: list[Value]) -> list[str]:
+    """2. Minimum cacheable prompt against pricing.ts."""
     floors = {
-        v.model: v.value
+        v.model: v.amount
         for v in values
         if v.file == PRICING_TS and v.field == "min_cache"
     }
-    for v in values:
-        if (
-            v.field == "min_cache"
-            and v.file != PRICING_TS
-            and not same(v.value, floors.get(v.model, -1))
-        ):
-            errors.append(
-                f"{v.file.as_posix()}: {v.local_key} minCacheTokens = {v.value}, but pricing.ts has {floors.get(v.model)}"
-            )
+    return [
+        f"{v.file.as_posix()}: {v.local_key} minCacheTokens = {v.amount}, but pricing.ts has {floors.get(v.model)}"
+        for v in values
+        if v.field == "min_cache"
+        and v.file != PRICING_TS
+        and not _same(v.amount, floors.get(v.model, -1))
+    ]
 
-    # 3. Models rate.py does not carry: every copy must agree.
+
+def _across_copies(values: list[Value], canon: dict) -> list[str]:
+    """3. Models rate.py does not carry: every copy must agree."""
     groups: dict[tuple[str, str], list[Value]] = {}
     for v in values:
         if v.model not in canon and v.field != "min_cache":
             groups.setdefault((v.model, v.field), []).append(v)
+    errors = []
     for (model, field), group in sorted(groups.items()):
-        if any(not same(g.value, group[0].value) for g in group):
-            seen = ", ".join(f"{g.file.as_posix()} {g.local_key}={g.value}" for g in group)
+        if any(not _same(g.amount, group[0].amount) for g in group):
+            seen = ", ".join(
+                f"{g.file.as_posix()} {g.local_key}={g.amount}" for g in group
+            )
             errors.append(f"{model} {field} disagrees across copies: {seen}")
+    return errors
 
+
+def check(root: Path) -> tuple[list[str], int, int]:
+    canon = canonical_rates(root)
+    values = [v for reader in READERS for v in reader(root)]
+    errors = (
+        _against_rate_py(values, canon)
+        + _against_cache_floors(values)
+        + _across_copies(values, canon)
+    )
     files = len({v.file for v in values})
     return errors, len(values), files
 
