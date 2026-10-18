@@ -61,12 +61,13 @@ Current Claude API pricing (verified 2026-10-09):
 
 ## Sync checklist
 
-Update pricing references across ALL files when rates change: README, `guides/00-11` + `guides/diagrams.md`, `cheatsheet.md`, `benchmarks/`, `templates/`, `.github/ISSUE_TEMPLATE/`, `case-studies/TEMPLATE.md`, `skills/cost-mode/SKILL.md` + its distribution copy `plugins/cost-mode/skills/cost-mode/SKILL.md`, `site/src/utils/pricing.ts` + `site/src/utils/calculator.ts` + the ratio copy in `site/src/pages/Home.tsx`, `hooks/cost-logger.sh`, and the pricing tables in `tools/` (`token-estimator/estimate.py`, `usage-analyzer/analyze.py`, `claude-rate/rate.py`, `mcp-cost-server/src/index.ts`, `vscode-extension/src/costEstimator.ts` + its `package.json` enum). Each tool has a sibling README with its own copy of the table -- update both. This file is the source of truth; reconcile the others against it.
+Update pricing references across ALL files when rates change: README, `docs/pricing-reference.md`, `guides/00-11` + `guides/diagrams.md`, `cheatsheet.md`, `benchmarks/`, `templates/`, `.github/ISSUE_TEMPLATE/`, `case-studies/TEMPLATE.md`, `skills/cost-mode/SKILL.md` + its distribution copy `plugins/cost-mode/skills/cost-mode/SKILL.md`, `site/src/utils/pricing.ts` + `site/src/utils/calculator.ts` + the ratio copy in `site/src/pages/Home.tsx`, `hooks/cost-logger.sh`, and the pricing tables in `tools/` (`token-estimator/estimate.py`, `usage-analyzer/analyze.py`, `claude-rate/rate.py`, `mcp-cost-server/src/index.ts`, `vscode-extension/src/costEstimator.ts` + its `package.json` enum). Each tool has a sibling README with its own copy of the table -- update both. This file is the source of truth; reconcile the others against it.
 
-**The list above is necessary but not sufficient, and it has failed twice.** v1.11.0 and v1.12.0 both shipped with the checklist followed only partway. Two automated checks now catch the failure modes it misses, and CI runs both on every pull request:
+**The list above is necessary but not sufficient, and it has failed twice.** v1.11.0 and v1.12.0 both shipped with the checklist followed only partway. Three automated checks now catch the failure modes it misses, and CI runs all three on every pull request. The checklist still matters for the markdown tables: `check-rate-values.py` reads only the code copies.
 
 ```bash
 python scripts/check-pricing-sync.py .   # verified-date drift, stale "retires <past date>", relative countdowns, doc freshness
+python scripts/check-rate-values.py .    # every rate value in the code copies against rate.py's MODELS
 python scripts/check-links.py .          # broken relative links and heading anchors
 ```
 
