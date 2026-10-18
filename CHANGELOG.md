@@ -1,5 +1,24 @@
 # Changelog
 
+## [1.17.0] - 2026-10-18
+
+The cost math is the product, and until now nothing tested it. Each implementation now has a suite pinned to values worked out by hand, CI compares every code copy of the rates instead of only their date stamps, the two standalone tools are packaged for their registries, and the README shows the tools instead of a 143-line pricing section.
+
+### Added
+- **Golden-value tests for the cost math in all three implementations.** `site/src/utils/*.test.ts` (vitest, 27 tests, `npm test`) pin `pricing.ts` and `calculator.ts` to the README's Before vs After ($0.8229 and $0.7203 a session, $4.95 uncached, 12% and 23% savings), the calculator default ($0.7419 a session, $48.97 a month) and the Haiku 5.5 boundary (100,000 tokens bills $0.10, 100,001 bills $0.50, and the turn-62 warning lands on the first high-tier turn). `tools/claude-rate/tests/` (stdlib unittest, 13 tests) covers per-request billing with every token class, the boundary and Fast Mode, and the session estimate against a closed form. `tools/mcp-cost-server/test/` (node:test, 5 tests) starts the built server over stdio with the MCP SDK client: a 30-turn Opus 5.5 `session_estimate` returns $0.6771. CI runs all three.
+- **`scripts/check-rate-values.py`: CI now checks the rate values, not just the dates.** `check-pricing-sync.py` compared verified-date stamps, so a typo in one copy of a rate passed. The new check reads the six code copies (`pricing.ts`, the MCP server, the VS Code extension, the token estimator, the usage analyzer and the cost-logger hook's `case` branches) and compares 344 values against `rate.py`'s `MODELS`, cache floors against `pricing.ts`, and models `rate.py` lacks across the copies. Every model key is mapped explicitly, so a new model without a mapping fails instead of being skipped. Mutating one value in each file makes it fail.
+- **claude-rate is packaged for PyPI** (`tools/claude-rate/pyproject.toml`: the wheel ships `rate.py` as the `claude_rate` module with a `claude-rate` console script, so `uvx claude-rate .` works once published), and **the MCP cost server for npm and the MCP Registry** (`@sagargupta16/mcp-cost-server` with a `mcp-cost-server` bin, `mcpName` and a `server.json` that validates against the 2025-12-11 schema). Nothing is published yet.
+- **`.github/workflows/release-tools.yml`** publishes on a `claude-rate-v*` or `mcp-cost-server-v*` tag with OIDC trusted publishing on PyPI and npm and `mcp-publisher login github-oidc`, and refuses to run when the tag and the tool's version strings disagree. CI also builds the claude-rate wheel and runs its console script on every PR. One-time registry setup is in `tools/README.md` under Releasing.
+- **A social preview image.** `twitter:card` was `summary_large_image` with no image declared, so shared links rendered bare. `site/public/og-image.png` (1200x630) is now set as `og:image` and `twitter:image` on every route, and CI fails the build if it is missing.
+- **README screenshots** of a live Repo Analyzer run on this repo, the calculator and the home page at desktop and phone widths, all from `scripts/capture-screenshots.py` (Playwright against a local build), which also renders the preview image.
+
+### Changed
+- **The pricing reference moved to [docs/pricing-reference.md](docs/pricing-reference.md).** The README keeps a five-row table of current models; the full table, Batch and Fast Mode notes, the alias gotcha, the four migration guides and the retired-model tables moved unchanged. The README went from 53,317 to 32,025 bytes.
+
+### Fixed
+- **The README said output was 37% of the worked example's session.** That came from the rounded figures ($0.30 of $0.82); from the unrounded $0.8229 it is 36%. The new tests caught it.
+- **`TOKENS_PER_CLAUDE_MD_LINE` in `rate.py` still read 7** under a comment saying it mirrors `pricing.ts`, which moved to 10 in 1.16.0. Nothing reads the constant, so no output changes.
+
 ## [1.16.2] - 2026-10-18
 
 ### Fixed
