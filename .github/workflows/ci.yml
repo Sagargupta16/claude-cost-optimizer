@@ -82,6 +82,9 @@ jobs:
             echo "ok: dist/$route/index.html"
           done
           test -f dist/404.html || { echo "::error::dist/404.html missing"; exit 1; }
+          # og:image in index.html points at this file; without it every shared
+          # link renders with no preview.
+          test -f dist/og-image.png || { echo "::error::dist/og-image.png missing -- run scripts/capture-screenshots.py"; exit 1; }
 
   ts-tools:
     name: TypeScript tools build
