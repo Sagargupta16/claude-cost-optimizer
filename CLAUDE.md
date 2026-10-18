@@ -22,8 +22,9 @@ This repo is an installable Claude Code skill and a documentation/tooling projec
 - `hooks/` - Budget-enforcement and cost-logging hooks (wired up in `.claude/settings.json`)
 - `site/` - React + Vite + TS site (calculator, badge checker, analyzer) on GitHub Pages
 - `case-studies/` - Submission template only; no stories published yet
-- `docs/pricing-data.md` - Pricing source of truth
-- `scripts/` - Consistency checks run by CI
+- `docs/pricing-data.md` - Pricing source of truth; `docs/pricing-reference.md` - the user-facing pricing tables and migration notes (moved out of the README)
+- `scripts/` - Consistency checks run by CI (`check-rate-values.py` compares every code copy of the rates against `rate.py`), plus `capture-screenshots.py` for the README images and the social preview
+- Tests: `site/src/utils/*.test.ts` (vitest, `npm test`), `tools/claude-rate/tests/` (unittest), `tools/mcp-cost-server/test/` (node:test over stdio)
 
 ## Writing Conventions
 
@@ -65,5 +66,5 @@ Verified **2026-10-09**. The facts most often got wrong:
 - **No vague ranges.** Every saving is a sourced or computed number with its source or formula.
 
 After a rate change, update every file listed at the end of that doc, then run
-`python scripts/check-pricing-sync.py`. CI runs it on every PR.
+`python scripts/check-pricing-sync.py` and `python scripts/check-rate-values.py`. CI runs both on every PR.
 

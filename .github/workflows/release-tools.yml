@@ -1,0 +1,170 @@
+name: Release tools
+
+# Publishes the standalone tools to their registries when a tool tag is pushed:
+#
+#   claude-rate-v<version>      -> PyPI (uvx claude-rate) and npm (@sagargupta16/claude-rate)
+#   mcp-cost-server-v<version>  -> npm (@sagargupta16/mcp-cost-server) and the MCP Registry
+#
+# No long-lived tokens: PyPI and npm use trusted publishing (OIDC), and the MCP
+# Registry uses `mcp-publisher login github-oidc`. Each registry has to be told
+# about this workflow once before the first run; the steps are in
+# tools/README.md under "Releasing".
+
+on:
+  push:
+    tags:
+      - 'claude-rate-v*'
+      - 'mcp-cost-server-v*'
+
+permissions:
+  contents: read
+
+jobs:
+  claude-rate:
+    name: claude-rate to PyPI and npm
+    if: startsWith(github.ref_name, 'claude-rate-v')
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write # PyPI and npm trusted publishing
+    defaults:
+      run:
+        working-directory: tools/claude-rate
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+
+      # Third-party actions are pinned to a commit (Sonar githubactions:S7637).
+      - uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      # The version lives in three places; refuse to publish when any of them
+      # disagrees with the tag.
+      - name: Check the tag matches every version string
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          want="${TAG#claude-rate-v}"
+          py=$(python -c "import tomllib; print(tomllib.load(open('pyproject.toml', 'rb'))['project']['version'])")
+          js=$(node -p "require('./package.json').version")
+          cli=$(python rate.py --version | awk '{print $2}')
+          echo "tag=$want pyproject=$py package.json=$js rate.py=$cli"
+          test "$py" = "$want" -a "$js" = "$want" -a "$cli" = "$want" || {
+            echo "::error::version mismatch -- bump pyproject.toml, package.json and the --version string in rate.py together"
+            exit 1
+          }
+
+      - name: Test
+        run: python -m unittest discover -s tests -v
+
+      - name: Build the sdist and wheel
+        run: uv build --out-dir dist
+
+      - name: Smoke-test the built wheel
+        run: pipx run --spec dist/claude_rate-*.whl claude-rate ../.. --json > /dev/null
+
+      # skip-existing lets a re-run get past PyPI when an earlier run already
+      # uploaded this version and then failed at npm.
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        with:
+          packages-dir: tools/claude-rate/dist
+          skip-existing: true
+
+      # npm trusted publishing needs npm 11.5.1 or later, which Node 24 bundles;
+      # provenance is attached automatically when publishing through OIDC. The
+      # first version is published by hand (npm needs the package to exist
+      # before a trusted publisher can be added), so skip when this version is
+      # already on npm.
+      - name: Publish to npm
+        run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          # npm view exits 0 with no output when the package exists but the
+          # version does not, so test the output rather than the exit code.
+          if [ -n "$(npm view "$name@$version" version 2>/dev/null)" ]; then
+            echo "$name@$version is already on npm, skipping"
+            exit 0
+          fi
+          npm_version=$(npm --version)
+          printf '%s\n' 11.5.1 "$npm_version" | sort -V -C || {
+            echo "::error::npm $npm_version is older than 11.5.1, which trusted publishing needs"
+            exit 1
+          }
+          npm publish --access public --ignore-scripts
+
+  mcp-cost-server:
+    name: MCP cost server to npm and the MCP Registry
+    if: startsWith(github.ref_name, 'mcp-cost-server-v')
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      id-token: write # npm trusted publishing and mcp-publisher github-oidc
+    defaults:
+      run:
+        working-directory: tools/mcp-cost-server
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          version: 11
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Check the tag matches package.json and server.json
+        env:
+          TAG: ${{ github.ref_name }}
+        run: |
+          want="${TAG#mcp-cost-server-v}"
+          pkg=$(node -p "require('./package.json').version")
+          srv=$(node -p "require('./server.json').version")
+          srv_pkg=$(node -p "require('./server.json').packages[0].version")
+          code=$(grep -oP 'name: "cost-estimator", version: "\K[^"]+' src/index.ts)
+          echo "tag=$want package.json=$pkg server.json=$srv/$srv_pkg src/index.ts=$code"
+          test "$pkg" = "$want" -a "$srv" = "$want" -a "$srv_pkg" = "$want" -a "$code" = "$want" || {
+            echo "::error::version mismatch -- bump package.json, both versions in server.json and the Server version in src/index.ts together"
+            exit 1
+          }
+
+      # pnpm, not npm: the patched transitive pins live in pnpm-workspace.yaml.
+      - name: Build and test
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm run build
+          pnpm test
+
+      # Same first-version rule as claude-rate: skip when already on npm, so the
+      # tag for the hand-published version still reaches the MCP Registry step.
+      - name: Publish to npm
+        run: |
+          name=$(node -p "require('./package.json').name")
+          version=$(node -p "require('./package.json').version")
+          if [ -n "$(npm view "$name@$version" version 2>/dev/null)" ]; then
+            echo "$name@$version is already on npm, skipping"
+            exit 0
+          fi
+          npm_version=$(npm --version)
+          printf '%s\n' 11.5.1 "$npm_version" | sort -V -C || {
+            echo "::error::npm $npm_version is older than 11.5.1, which trusted publishing needs"
+            exit 1
+          }
+          npm publish --access public --ignore-scripts
+
+      - name: Publish to the MCP Registry
+        run: |
+          curl --proto '=https' --tlsv1.2 -fsSL "https://github.com/modelcontextprotocol/registry/releases/latest/download/mcp-publisher_linux_amd64.tar.gz" | tar xz mcp-publisher
+          ./mcp-publisher login github-oidc
+          ./mcp-publisher publish

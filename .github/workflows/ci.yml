@@ -49,6 +49,13 @@ jobs:
         # Same flags as deploy-site.yml so CI and the deploy build match.
         run: npm ci --legacy-peer-deps --ignore-scripts
 
+      # Golden values for the cost math: the README worked example, the
+      # calculator default and the Haiku 5.5 100K boundary.
+      - name: Unit-test the cost math
+        if: steps.changed.outputs.site == 'true'
+        working-directory: site
+        run: npm test
+
       # `npm run build` is `tsc -b && vite build && node scripts/spa-404.mjs`,
       # so this covers the typecheck, the bundle, and the route entry points.
       - name: Build site
@@ -75,6 +82,9 @@ jobs:
             echo "ok: dist/$route/index.html"
           done
           test -f dist/404.html || { echo "::error::dist/404.html missing"; exit 1; }
+          # og:image in index.html points at this file; without it every shared
+          # link renders with no preview.
+          test -f dist/og-image.png || { echo "::error::dist/og-image.png missing -- run scripts/capture-screenshots.py"; exit 1; }
 
   ts-tools:
     name: TypeScript tools build
@@ -99,6 +109,7 @@ jobs:
         run: |
           pnpm install --frozen-lockfile --ignore-scripts
           pnpm run build
+          pnpm test
 
       - name: Compile the VS Code extension
         working-directory: tools/vscode-extension
@@ -127,6 +138,17 @@ jobs:
           pipx install ruff
           ruff check --select E9,F tools/ scripts/
 
+      - name: Unit-test the claude-rate cost math
+        run: python -m unittest discover -s tools/claude-rate/tests -v
+
+      # The PyPI package ships rate.py as the claude_rate module; build the
+      # wheel and run its console script so a packaging break shows up here,
+      # not in the release workflow.
+      - name: Build and run the claude-rate wheel
+        run: |
+          pipx run build --wheel --outdir /tmp/claude-rate-wheel tools/claude-rate
+          pipx run --spec /tmp/claude-rate-wheel/claude_rate-*.whl claude-rate . --json > /dev/null
+
       - name: Smoke-test the graders that CI and the README depend on
         run: |
           python tools/claude-rate/rate.py . --json > /tmp/rate.json
@@ -150,6 +172,11 @@ jobs:
       # pricing doc goes stale against the canonical verification date.
       - name: Check pricing stamps and retirement wording
         run: python scripts/check-pricing-sync.py .
+
+      # The stamp check above proves the dates agree, not the numbers. This
+      # compares every per-model rate in the six code copies against rate.py.
+      - name: Check rate values across every code copy
+        run: python scripts/check-rate-values.py .
 
       # Offline by design. Relative links and heading anchors are fully
       # determined by the tree, so this is a deterministic gate. External URLs

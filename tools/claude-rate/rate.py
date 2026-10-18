@@ -220,7 +220,7 @@ MODELS: dict[str, dict[str, Any]] = {
 }
 
 # Token estimation constants (mirrors TOKEN_ESTIMATES in pricing.ts).
-TOKENS_PER_CLAUDE_MD_LINE = 7
+TOKENS_PER_CLAUDE_MD_LINE = 10
 SYSTEM_PROMPT_TOKENS = 3_500
 # Worst case: full schemas with MCP tool search off. With tool search on (the
 # default) a server adds only its tool names and instructions, so this overstates.

@@ -42,6 +42,15 @@ curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/m
 claude-rate .
 ```
 
+### From PyPI or npm (after the first release)
+
+`pyproject.toml` packages `rate.py` as the `claude_rate` module with a `claude-rate` console script, and `package.json` wraps it for npx. Neither is published yet ([Releasing](../README.md#releasing)); once they are:
+
+```bash
+uvx claude-rate . --fix          # or: pipx run claude-rate . --fix
+npx @sagargupta16/claude-rate . --fix
+```
+
 ### Direct Python (cloned repo)
 
 ```bash
@@ -49,6 +58,8 @@ python tools/claude-rate/rate.py /path/to/project
 ```
 
 No external dependencies. Pure Python 3.10+ stdlib.
+
+Tests: `python -m unittest discover -s tools/claude-rate/tests -v` from the repo root. They pin the per-request billing, the Haiku 5.5 100,000-token boundary and the session estimate to values worked out by hand from the posted rates.
 
 ## Your whole setup and your real usage
 
