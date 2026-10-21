@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.17.1] - 2026-10-21
+
+### Added
+- **A toolkit map at the top of the README's How It Is Built section.** The section's Mermaid diagram shows how the pricing reference feeds each surface (it stays as it was), but nothing showed what each tool reads, where it runs and what it gives back. The new figure shows the three inputs (your repo, `~/.claude`, any public repo), the nine tools grouped by where they run (GitHub, your machine, a Claude Code session) and the three things you get back (a grade and badge, a cost estimate, in-session nudges). It is drawn with [orrery](https://github.com/Sagargupta16/orrery) from [`docs/diagrams/toolkit.yaml`](docs/diagrams/toolkit.yaml) as light and dark SVGs that follow the reader's theme, and each of its 15 nodes carries an `evidence:` path to the file and line it comes from, which `orrery verify` checks.
+
 ## [1.17.0] - 2026-10-18
 
 The cost math is the product, and until now nothing tested it. Each implementation now has a suite pinned to values worked out by hand, CI compares every code copy of the rates instead of only their date stamps, the two standalone tools are packaged for their registries, and the README shows the tools instead of a 143-line pricing section.

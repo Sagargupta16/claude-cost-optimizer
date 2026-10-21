@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Sagargupta16/orrery/main/skills/orrery/references/diagram.schema.json
+# Rendered with orrery (github.com/Sagargupta16/orrery):
+#   orrery render docs/diagrams/toolkit.yaml -o docs/diagrams/toolkit -f svg --theme both
+# Reviewed at README width: orrery review docs/diagrams/toolkit.yaml --width 880
+title: How the toolkit fits together
+subtitle: What each tool reads, where it runs and what it gives back
+direction: down
+layout: { merge: false }
+
+groups:
+  github: { type: zone, label: On GitHub, icon: logos:github-icon }
+  local: { type: zone, label: On your machine, icon: tabler:device-laptop }
+  # Claude Code loads the skill, calls the MCP server's tools and runs the hooks.
+  session: { type: zone, label: In a Claude Code session, icon: logos:claude-icon }
+
+nodes:
+  # What the tools read
+  public: { icon: github:repo, label: Any public repo, evidence: "site/src/utils/repoAnalyzer.ts:85#GITHUB_API" }
+  repo: { icon: tabler:folder-code, label: Your repo, note: "CLAUDE.md, .claude/", evidence: "tools/claude-rate/rate.py:416#CLAUDE.md" }
+  config: { icon: github:file-directory, label: ~/.claude, note: "settings, skills, transcripts", evidence: "tools/claude-rate/rate.py:1567#projects" }
+
+  # The composite Action runs on GitHub Actions; the web tools are a static site on Pages with no backend.
+  action: { icon: logos:github-actions, label: Cost Audit Action, note: composite action, in: github, evidence: "tools/actions/claude-cost-audit/action.yml:34#audit.py" }
+  analyzer: { icon: tabler:report-search, label: Repo Analyzer, note: GitHub Pages, in: github, evidence: "site/src/utils/repoAnalyzer.ts:85#GITHUB_API" }
+  badge: { icon: tabler:rosette, label: Badge Checker, note: GitHub Pages, in: github, evidence: "site/src/pages/BadgeChecker.tsx:352#scoreBadge" }
+  calculator: { icon: tabler:calculator, label: Cost Calculator, note: GitHub Pages, in: github, evidence: "site/src/pages/Calculator.tsx:3#calculate" }
+
+  # Local, outside a session. The extension is not on the Marketplace yet (tools/vscode-extension/README.md).
+  rate: { icon: logos:python, label: claude-rate, note: one stdlib Python file, in: local, evidence: "tools/claude-rate/rate.py:1941#main" }
+  vscode: { icon: logos:visual-studio-code, label: VS Code extension, note: "VSIX, not on Marketplace", in: local, evidence: "tools/vscode-extension/src/statusBar.ts:19#createStatusBarItem" }
+
+  # Inside a session
+  mcp: { icon: logos:model-context-protocol-icon, label: MCP cost server, note: 3 tools over stdio, in: session, evidence: "tools/mcp-cost-server/src/index.ts:451#StdioServerTransport" }
+  skill: { icon: tabler:puzzle, label: cost-mode skill, note: /cost-mode, in: session, evidence: "skills/cost-mode/SKILL.md:2#cost-mode" }
+  hooks: { icon: tabler:webhook, label: Budget hooks, note: "PreToolUse, Stop", in: session, evidence: ".claude/settings.json:52#budget-tracker.sh" }
+
+  # What you get back
+  grade: { icon: tabler:award, label: Grade and badge, note: "A+ to F, fixes, shields.io URL", evidence: "tools/claude-rate/rate.py:1135#badge_url" }
+  estimate: { icon: tabler:coins, label: Cost estimate, note: "file, session, month", evidence: "tools/mcp-cost-server/src/index.ts:360#session_estimate" }
+  nudges: { icon: tabler:message-chatbot, label: In-session nudges, note: "model hints, budget warnings", rank: last, evidence: "hooks/budget-tracker.sh:122#remaining" }
+
+edges:
+  - public -> analyzer: REST API
+  - repo -> action: pull request
+  - repo -> rate, vscode
+  - config -> rate: --user --usage
+  - action, analyzer, badge -> grade
+  - rate -> grade
+  - rate -> estimate
+  - calculator, vscode, mcp -> estimate
+  - skill, hooks -> nudges
