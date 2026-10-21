@@ -113,6 +113,14 @@ The local rater works on private and uncommitted repos and inspects things the w
 
 ## How It Is Built
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/toolkit-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/diagrams/toolkit-light.svg">
+  <img width="880" src="docs/diagrams/toolkit-light.svg" alt="How the toolkit fits together, in three rows. Top row, what the tools read: any public repo, your repo (CLAUDE.md and .claude/) and ~/.claude (settings, skills and transcripts). Middle row, where each tool runs. On GitHub: the Cost Audit Action, which a pull request in your repo runs, and the Repo Analyzer, Badge Checker and Cost Calculator on GitHub Pages; the Repo Analyzer reads any public repo through the GitHub REST API. On your machine: claude-rate, which reads your repo and, with --user --usage, ~/.claude, and the VS Code extension, which reads your repo and is not on the Marketplace yet. In a Claude Code session: the MCP cost server over stdio, the budget hooks and the cost-mode skill. Bottom row, what you get back: the Cost Audit Action, Repo Analyzer, Badge Checker and claude-rate give a grade from A+ to F with fixes and a shields.io badge; claude-rate, the Cost Calculator, the VS Code extension and the MCP cost server give a cost estimate; the cost-mode skill and the budget hooks give in-session nudges, model hints and budget warnings.">
+</picture>
+
+The spec behind the picture is [`docs/diagrams/toolkit.yaml`](docs/diagrams/toolkit.yaml), rendered with [orrery](https://github.com/Sagargupta16/orrery).
+
 One pricing reference feeds every surface: the skill, the web tools, the CLI graders, the MCP server and the VS Code extension. Each carries its own copy of the rates, because each has to run on its own (claude-rate streams into `python -` with no install). CI fails a pull request when any rate value in the six code copies (344 values on 2026-10-18) disagrees with `rate.py`, when a file's verified-date stamp disagrees with the canonical one, or when a file still calls a passed retirement date upcoming. Each implementation of the cost math has a test suite pinned to the worked example below.
 
 ```mermaid

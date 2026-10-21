@@ -23,6 +23,7 @@ This repo is an installable Claude Code skill and a documentation/tooling projec
 - `site/` - React + Vite + TS site (calculator, badge checker, analyzer) on GitHub Pages
 - `case-studies/` - Submission template only; no stories published yet
 - `docs/pricing-data.md` - Pricing source of truth; `docs/pricing-reference.md` - the user-facing pricing tables and migration notes (moved out of the README)
+- `docs/diagrams/` - The README's toolkit map: orrery spec `toolkit.yaml` and the light/dark SVGs rendered from it; re-render after adding or moving a tool
 - `scripts/` - Consistency checks run by CI (`check-rate-values.py` compares every code copy of the rates against `rate.py`), plus `capture-screenshots.py` for the README images and the social preview
 - Tests: `site/src/utils/*.test.ts` (vitest, `npm test`), `tools/claude-rate/tests/` (unittest), `tools/mcp-cost-server/test/` (node:test over stdio)
 
