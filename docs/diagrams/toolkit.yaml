@@ -5,13 +5,15 @@
 title: How the toolkit fits together
 subtitle: What each tool reads, where it runs and what it gives back
 direction: down
-layout: { merge: false }
+layout: { merge: false, layering: simplex }
 
+# The three places a tool runs sit side by side as columns, each a grid,
+# so the figure stays narrow enough to read at README width.
 groups:
-  github: { type: zone, label: On GitHub, icon: logos:github-icon }
-  local: { type: zone, label: On your machine, icon: tabler:device-laptop }
+  github: { type: zone, label: On GitHub, icon: logos:github-icon, cols: 2 }
+  local: { type: zone, label: On your machine, icon: tabler:device-laptop, cols: 1 }
   # Claude Code loads the skill, calls the MCP server's tools and runs the hooks.
-  session: { type: zone, label: In a Claude Code session, icon: logos:claude-icon }
+  session: { type: zone, label: In a Claude Code session, icon: logos:claude-icon, cols: 1 }
 
 nodes:
   # What the tools read
@@ -20,8 +22,8 @@ nodes:
   config: { icon: github:file-directory, label: ~/.claude, note: "settings, skills, transcripts", evidence: "tools/claude-rate/rate.py:1567#projects" }
 
   # The composite Action runs on GitHub Actions; the web tools are a static site on Pages with no backend.
-  action: { icon: logos:github-actions, label: Cost Audit Action, note: composite action, in: github, evidence: "tools/actions/claude-cost-audit/action.yml:34#audit.py" }
   analyzer: { icon: tabler:report-search, label: Repo Analyzer, note: GitHub Pages, in: github, evidence: "site/src/utils/repoAnalyzer.ts:85#GITHUB_API" }
+  action: { icon: logos:github-actions, label: Cost Audit Action, note: composite action, in: github, evidence: "tools/actions/claude-cost-audit/action.yml:34#audit.py" }
   badge: { icon: tabler:rosette, label: Badge Checker, note: GitHub Pages, in: github, evidence: "site/src/pages/BadgeChecker.tsx:352#scoreBadge" }
   calculator: { icon: tabler:calculator, label: Cost Calculator, note: GitHub Pages, in: github, evidence: "site/src/pages/Calculator.tsx:3#calculate" }
 
