@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.17.2] - 2026-10-24
+
+### Changed
+- **Redrew the toolkit map with orrery 0.12.0's 64 px icons.** The old layout put all nine tools in one row, 1317 px wide, so the README showed it at two thirds size: the new icons would have come out at 43 px and the labels at 8.7 px. The three places a tool runs are now columns side by side (GitHub as a 2x2 grid, your machine and the Claude Code session stacked), which brings it to 809 px wide, shown at full size with 13 px labels. Every node, edge and `evidence:` path is unchanged, and `orrery verify` still finds all 15.
+
 ## [1.17.1] - 2026-10-21
 
 ### Added

@@ -1,6 +1,6 @@
 {
   "name": "claude-cost-optimizer",
-  "version": "1.17.1",
+  "version": "1.17.2",
   "description": "Cost-conscious mode for Claude Code: concise responses, model routing (Haiku 5.5 is 1/40 of Opus 5.5 per token), and efficient workflow patterns.",
   "author": {
     "name": "Sagar Gupta",
