@@ -125,7 +125,7 @@ jobs:
 
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.14'
+          python-version: '3.15'
 
       - name: Byte-compile every tool
         run: python -m compileall -q tools/ scripts/
@@ -164,7 +164,7 @@ jobs:
 
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.14'
+          python-version: '3.15'
 
       # Fails the PR when a "verified" date drifts between files, when a model
       # is still described as "retiring" on a date that has passed, when a

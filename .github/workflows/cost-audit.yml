@@ -22,7 +22,7 @@ jobs:
 
       - uses: actions/setup-python@v7
         with:
-          python-version: '3.14'
+          python-version: '3.15'
 
       # claude-rate is the authoritative grader: it scores all 7 categories the
       # README advertises, while badge-generator scores 4 and so returns a
