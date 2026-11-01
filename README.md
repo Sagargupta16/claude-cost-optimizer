@@ -123,42 +123,13 @@ The spec behind the picture is [`docs/diagrams/toolkit.yaml`](docs/diagrams/tool
 
 One pricing reference feeds every surface: the skill, the web tools, the CLI graders, the MCP server and the VS Code extension. Each carries its own copy of the rates, because each has to run on its own (claude-rate streams into `python -` with no install). CI fails a pull request when any rate value in the six code copies (344 values on 2026-10-18) disagrees with `rate.py`, when a file's verified-date stamp disagrees with the canonical one, or when a file still calls a passed retirement date upcoming. Each implementation of the cost math has a test suite pinned to the worked example below.
 
-```mermaid
-flowchart LR
-  subgraph source["Source of truth"]
-    P["docs/pricing-data.md<br/>rates, cache floors, retirements"]
-  end
-  subgraph ship["What users run"]
-    S["cost-mode skill<br/>skills/cost-mode/SKILL.md"]
-    W["Web tools<br/>React 19 + Vite + TypeScript<br/>GitHub Pages, no backend"]
-    R["claude-rate<br/>Python stdlib, runs locally"]
-    M["MCP cost server<br/>TypeScript, stdio"]
-    V["VS Code extension"]
-  end
-  subgraph dist["Distribution"]
-    CP["Claude Code plugin<br/>.claude-plugin/marketplace.json"]
-    NS["npx skills add<br/>Cursor, Cline, Codex, ..."]
-  end
-  subgraph ci["CI gates on every PR"]
-    C1["check-pricing-sync.py<br/>stamp drift, stale retirement wording"]
-    C4["check-rate-values.py<br/>every code copy of the rates vs rate.py"]
-    C2["check-links.py<br/>internal links and anchors"]
-    C3["site build + route entry points<br/>vitest, unittest, MCP stdio tests<br/>TS tools build, ruff, wheel smoke test"]
-  end
-  P --> S
-  P --> W
-  P --> R
-  P --> M
-  P --> V
-  S --> CP
-  S --> NS
-  W -->|"GitHub REST API from the browser"| GH[("public repo<br/>contents + tree")]
-  R -->|"reads local files and<br/>~/.claude transcripts"| L[("your machine")]
-  C1 -.-> P
-  C4 -.-> R
-  C2 -.-> P
-  C3 -.-> W
-```
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/diagrams/build-dark.svg">
+  <source media="(prefers-color-scheme: light)" srcset="docs/diagrams/build-light.svg">
+  <img width="880" src="docs/diagrams/build-light.svg" alt="How it is built and shipped. docs/pricing-data.md is the pricing source of truth, and its sync checklist lists every file to update by hand when a rate changes: the cost-mode skill, which carries its rates as prose in SKILL.md, and four code copies of the rates, in the web tools (site/src/utils/pricing.ts), claude-rate (rate.py, the canonical copy), the MCP cost server (TypeScript over stdio) and the VS Code extension (not on the Marketplace). Each reaches users its own way: claude-rate as a raw file from the main branch of the GitHub repo, streamed into python -; the MCP cost server and the VS Code extension from a clone of the repo, built with pnpm or packaged as a VSIX; the web tools on GitHub Pages, deployed by deploy-site.yml on every push to main; and the skill through the Claude Code plugin in .claude-plugin/, the Codex plugin in .agents/plugins/, whose copy of the skill in plugins/ is also kept by hand, and npx skills add for Cursor, Cline, Codex and other agents. On every pull request CI runs three checks: check-pricing-sync.py reads the stamps and retirement wording in every file and compares each stamp with the date in rate.py, check-links.py reads every relative link and heading anchor in the markdown, and check-rate-values.py compares every rate value in the code copies with rate.py.">
+</picture>
+
+The spec behind the picture is [`docs/diagrams/build.yaml`](docs/diagrams/build.yaml), rendered with [orrery](https://github.com/Sagargupta16/orrery).
 
 | Decision | Why |
 |----------|-----|

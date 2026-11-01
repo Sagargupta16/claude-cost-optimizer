@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/Sagargupta16/orrery/main/skills/orrery/references/diagram.schema.json
+# Rendered with orrery (github.com/Sagargupta16/orrery):
+#   orrery render docs/diagrams/build.yaml -o docs/diagrams/build -f svg --theme both
+# Reviewed at README width: orrery review docs/diagrams/build.yaml --width 880
+title: How it is built and shipped
+subtitle: One pricing source, a copy of the rates in every tool, three checks on every pull request
+direction: right
+layout: { spacing: compact }
+legend:
+  dotted: Copied by hand from the sync checklist
+  dashed: Read by a CI check
+
+groups:
+  tools: { type: zone, label: What users run }
+  # check-rate-values.py compares these four code copies; the skill carries its rates as prose.
+  copies: { type: box, label: Code copies of the rates, in: tools, evidence: "scripts/check-rate-values.py:46#RATE_PY" }
+  # The docs-consistency job of ci.yml; the site, ts-tools and python-tools jobs build and test the tools.
+  ci: { type: zone, label: CI on every pull request, icon: logos:github-actions, evidence: ".github/workflows/ci.yml:159#docs-consistency" }
+  ship: { type: zone, label: How it reaches users }
+
+nodes:
+  # docs/pricing-data.md:65 lists every file to update when a rate changes.
+  pricing: { icon: tabler:file-dollar, label: pricing-data.md, note: "docs/, source of truth", evidence: "docs/pricing-data.md:11#source of truth" }
+
+  mcp: { icon: logos:model-context-protocol-icon, label: MCP cost server, note: TypeScript over stdio, in: copies, evidence: "tools/mcp-cost-server/src/index.ts:34#PRICING" }
+  vscode: { icon: logos:visual-studio-code, label: VS Code extension, note: not on Marketplace, in: copies, evidence: "tools/vscode-extension/src/costEstimator.ts:21#PRICING" }
+  # Both CI checks take rate.py as canonical: its MODELS and _PRICING_VERIFIED_DATE.
+  rate: { icon: logos:python, label: claude-rate, note: "rate.py, canonical", in: copies, evidence: "tools/claude-rate/rate.py:62#MODELS" }
+  web: { icon: logos:react, label: Web tools, note: site/src/utils/pricing.ts, in: copies, evidence: "site/src/utils/pricing.ts:132#MODELS" }
+  skill: { icon: tabler:puzzle, label: cost-mode skill, note: rates in prose, in: tools, evidence: "skills/cost-mode/SKILL.md:2#cost-mode" }
+
+  sync: { icon: tabler:calendar-check, label: check-pricing-sync.py, note: every stamp vs rate.py, in: ci, evidence: ".github/workflows/ci.yml:174#check-pricing-sync.py" }
+  links: { icon: tabler:link, label: check-links.py, note: every .md file, in: ci, evidence: ".github/workflows/ci.yml:186#check-links.py" }
+  values: { icon: github:git-compare, label: check-rate-values.py, note: 6 copies vs rate.py, in: ci, evidence: ".github/workflows/ci.yml:179#check-rate-values.py" }
+
+  # claude-rate streams from raw.githubusercontent.com; the MCP server and the extension are built from a clone.
+  repo: { icon: github:repo, label: GitHub repo, note: "main branch", in: ship, evidence: ["README.md:93#raw.githubusercontent.com", "tools/mcp-cost-server/README.md:20#claude mcp add", "tools/vscode-extension/README.md:15#not yet published"] }
+  pages: { icon: si:githubpages, label: GitHub Pages, note: deploy-site.yml, in: ship, evidence: ".github/workflows/deploy-site.yml:46#deploy-pages" }
+  plugin: { icon: logos:claude-icon, label: Claude Code plugin, note: .claude-plugin/, in: ship, evidence: ".claude-plugin/marketplace.json:9#cost-mode" }
+  codex: { icon: logos:codex, label: Codex plugin, note: .agents/plugins/, in: ship, evidence: ".agents/plugins/marketplace.json:11#./plugins/cost-mode" }
+  npx: { icon: logos:npm-icon, label: npx skills add, note: "Cursor, Cline, Codex", in: ship, evidence: "README.md:47#npx skills add" }
+
+edges:
+  - pricing ..> tools: sync checklist
+  - pricing --> sync: stamps, retirements
+  - pricing --> links: links, anchors
+  - copies --> values: compared with rate.py
+  - rate -> repo: raw file into python -
+  - mcp -> repo: clone, pnpm build
+  - vscode -> repo: clone, VSIX build
+  - web -> pages: on push to main
+  - skill -> plugin: /plugin install
+  - skill ..> codex: copy in plugins/
+  - skill -> npx: reads skills/
