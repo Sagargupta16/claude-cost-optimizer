@@ -208,10 +208,12 @@ function generateRecommendations(
   }
 
   if (inputs.fastMode) {
-    const mult = MODELS[inputs.model].fastModeMultiplier ?? FAST_MODE_MULTIPLIER
+    const model = MODELS[inputs.model]
+    const mult = model.fastModeMultiplier ?? FAST_MODE_MULTIPLIER
     const savePct = Math.round(((mult - 1) / mult) * 100)
+    const status = model.fastModeStatus ? ' (' + model.name + ' Fast Mode: ' + model.fastModeStatus + ')' : ''
     recs.push({
-      text: `Disable Fast Mode -- saves ${savePct}% by removing the ${mult}x multiplier${MODELS[inputs.model].fastModeStatus ? ` (${MODELS[inputs.model].name} Fast Mode: ${MODELS[inputs.model].fastModeStatus})` : ''}`,
+      text: `Disable Fast Mode -- saves ${savePct}% by removing the ${mult}x multiplier${status}`,
       impact: savePct,
     })
   }
