@@ -1,6 +1,6 @@
 # Guide 08: Prompt Caching
 
-> **Prompt caching is the single largest automatic discount on your Claude Code bill.** It reduces input token costs by 90% on repeated content on most models -- **95% on Opus 5.5 and Sonnet 5.5 (0.05x) and 97.5% on Fable 5.1 and Mythos 5.1 (0.025x)** -- and it happens without any configuration. On Anthropic's benchmarks caching cut agent-loop cost by a factor of 2.7 to 5.3, and 83% on a small triage agent (88% with input trimming); on DeepResearch Bench II it took Fable 5.1 from $37.94 to $7.12 per task ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). This guide covers how it works, what breaks it, and how to keep the hit rate high.
+> **Prompt caching is the single largest automatic discount on your Claude Code bill.** It reduces input token costs by 90% on repeated content on most models -- **95% on Opus 5.5 and Sonnet 5.5 (0.05x) and 97.5% on Fable 5.1 and Mythos 5.1 (0.025x)** -- and it happens without any configuration. On Anthropic's benchmarks caching cut cost by a factor of 4.8 to 7.2 on a research agent and by 83% to 86% on a small triage agent (88% with input trimming); on DeepResearch Bench II it took Fable 5.1 from $40.58 to $5.64 a task and Sonnet 5.5 from $5.13 to $1.05. Without caching, a run costs 3.3x as much on Opus 5.5 and 3.1x on Sonnet 5.5 (SWE-bench Pro), 1.7x on Haiku 5.5 (Managed Agents tasks) and 7.3x on Sonnet 5.5 for the triage agent ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), "Why caching comes first" and the lever table, read 2026-11-01). This guide covers how it works, what breaks it, and how to keep the hit rate high.
 
 ---
 
@@ -16,6 +16,7 @@
 - [Cache TTL and Economics](#cache-ttl-and-economics)
   - [Standard vs Extended TTL](#standard-vs-extended-ttl)
   - [How Claude Code Picks the Cache TTL](#how-claude-code-picks-the-cache-ttl)
+  - [Idle Compaction](#idle-compaction)
   - [Breakeven Math](#breakeven-math)
 - [Maximizing Cache Hit Rate](#maximizing-cache-hit-rate)
 - [ROI Calculations](#roi-calculations)
@@ -70,7 +71,7 @@ This is why caching is so powerful in Claude Code specifically. The structure of
 
 > **There are now three cache-hit multipliers, not one.** Fable 5.1 and Mythos 5.1 read cache at **0.025x base input** ($0.25 per 1M) -- a 97.5% discount. Opus 5.5 and Sonnet 5.5 read at **0.05x** ($0.20 and $0.10 per 1M) -- a 95% discount; Sonnet 5.5 joined this group on 2026-10-07, when its cache read was cut from $0.20 to $0.10. Every other model is still 0.1x (90% off), Haiku 5.5 included, where the 0.1x applies to the request's own tier. If you compute a cache rate anywhere in your own tooling as `input * 0.1`, that formula is now wrong on four models; read the per-model rate instead.
 >
-> This also flips a planning default. Because a hit costs so little *relative to a miss* on Fable 5.1, losing the cache hurts far more than it does elsewhere, while a read is nearly free. For a 5-to-60-minute gap between turns, re-sending the previous request with `max_tokens: 0` to refresh the 5-minute entry is usually cheaper than paying the 2x write for the 1-hour TTL -- the keep-alive bills only a cheap cache read and no output tokens. (`max_tokens: 0` can't be combined with streaming, structured outputs, or Batches; where the request can't be reshaped, use the 1-hour TTL.)
+> This also flips a planning default. Because a hit costs so little *relative to a miss* on Fable 5.1, losing the cache hurts far more than it does elsewhere, while a read is nearly free. When pauses run for minutes, re-sending the previous request with `max_tokens: 0` every 4 minutes to refresh the 5-minute entry cost 13% to 20% less than paying the 2x write for the 1-hour TTL on Fable 5.1 -- the keep-alive bills only a cheap cache read and no output tokens. On Opus 5.5 and Sonnet 5.5 it wins only when few turns pause (only 1 or 2 gaps in 20 between 5 minutes and an hour: 8% to 13% less on Opus 5.5, 8% to 16% less on Sonnet 5.5), and the 1-hour TTL wins when a pause comes before every turn; on Haiku 5.5, whose cache reads are 0.1x, Anthropic says to use the "Any model" rows of its table (5-minute default when turns arrive seconds apart or gaps over an hour are common, 1-hour TTL once about 1 turn in 20 follows a pause of 5 minutes to an hour) ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), "Pick the cache duration", read 2026-11-01). (`max_tokens: 0` can't be combined with streaming, structured outputs, or Batches; where the request can't be reshaped, use the 1-hour TTL.)
 >
 > Absolute savings per 1M cached tokens: **$9.75 on Fable 5.1**, $9.00 on Fable 5, $3.80 on Opus 5.5, $4.50 on legacy Opus 5 / 4.x, **$1.90 on Sonnet 5.5** ($2.00 - $0.10; it was $1.80 before the cut), $1.80 on Sonnet 5, and on Haiku 5.5 $0.09 at <= 100K prompt tokens ($0.10 - $0.01) or $0.45 above ($0.50 - $0.05).
 
@@ -163,7 +164,7 @@ Based on community research into Claude Code's internals, the system prompt has 
 - **Static zone** (before the boundary): Claude Code's built-in instructions, behavioral rules, and tool descriptions. This content is identical across all sessions and never changes during a session. It is highly cacheable -- once written to cache on turn 1, it stays cached for the entire session.
 - **Dynamic zone** (after the boundary): Environment context (OS, shell, cwd), git status, CLAUDE.md file contents, runtime configuration, and any session-specific state. This content varies per session and can change between turns.
 
-Both zones are cached, but the dynamic zone's cache is invalidated whenever any of its components change. CLAUDE.md is not one of the things that changes mid-session: Claude Code reads the root and user CLAUDE.md once at session start, so editing the file on disk does not change the prompt and does not invalidate the cache ([Anthropic's prompt-caching docs](https://code.claude.com/docs/en/prompt-caching)). The edit applies after the next `/clear`, `/compact`, or restart.
+Both zones are cached, but the dynamic zone's cache is invalidated whenever any of its components change. CLAUDE.md is not one of the things that changes mid-session: Claude Code reads the root and user CLAUDE.md once at session start, so editing the file on disk does not change the prompt and does not invalidate the cache ([Anthropic's prompt-caching docs](https://code.claude.com/docs/en/prompt-caching)). The edit applies after the next `/clear`, `/compact`, or restart. Anthropic's own docs describe three layers instead of two zones: the system prompt (core instructions and tool definitions), project context (CLAUDE.md, auto memory and unscoped rules, which change when a session starts or after `/clear` or `/compact`) and the conversation. The conversation opens with an announcement of the working directory, platform, shell and OS version, and carries the git status snapshot taken at startup ([prompt caching docs](https://code.claude.com/docs/en/prompt-caching), read 2026-11-01).
 
 **Practical implication**: The ~3,500 tokens of static instructions get cached reliably regardless of what you do. Your CLAUDE.md gets cached too, and editing it mid-session is safe for the cache -- just do not expect the new version to apply until you `/clear`, `/compact`, or restart.
 
@@ -172,9 +173,9 @@ Both zones are cached, but the dynamic zone's cache is invalidated whenever any 
 | Component | Approx. Tokens | Cache Zone | Cache Behavior |
 |-----------|:--------------:|:----------:|----------------|
 | **System prompt** | ~3,500 | Static | Cached on every turn after the first. This is Claude Code's built-in instruction set -- it never changes during a session. |
-| **Tool schemas (built-in)** | ~1,000-2,000 | Static | Cached if the set of available tools stays constant. Includes Read, Edit, Write, Bash, Grep, Glob, etc. |
+| **Tool schemas (built-in)** | ~1,000-2,000 | Static | Cached if the set of available tools stays constant. Includes Read, Edit, Write, Bash and, on Windows, Grep and Glob (on macOS, Linux and WSL Claude Code leaves them out of the default tools and searches through Bash; [tools reference](https://code.claude.com/docs/en/tools-reference), read 2026-11-01), etc. |
 | **CLAUDE.md content** | ~10 per line | Dynamic | Read once at session start, so a mid-session edit neither changes the prompt nor breaks the cache (it applies after `/clear`, `/compact`, or restart). A 150-line file adds ~1,500 tokens that stay cached. The per-line figure is measured on this repo's 15 CLAUDE.md files: 20,161 cl100k tokens over 2,048 lines, 9.8 per line counting blank lines; the Opus 4.7+ tokenizer adds about 30% ([pricing page](https://platform.claude.com/docs/en/about-claude/pricing)). |
-| **Environment context** | ~200-500 | Dynamic | OS, shell, cwd, git status. Changes if you switch directories or git state changes between turns. |
+| **Environment context** | ~200-500 | Dynamic | OS, shell, cwd, git status. Anthropic's docs put the working-directory and OS announcement and the git status snapshot at the start of the conversation, and the snapshot is taken at startup, so sequential sessions share a prefix only when it matches. |
 | **MCP tools** | Tool names + server instructions (full schemas only with tool search off) | Dynamic | MCP tool search is on by default: only tool names and server instructions enter context until Claude uses a tool, and connecting or removing a server keeps the cache. With tool search off, full schemas load up front and a server change invalidates the cache. |
 | **Conversation history** | Grows each turn | After prefix | The portion of history that is identical to the previous turn (all turns except the newest) is cached. |
 
@@ -194,23 +195,23 @@ By turn 50, the vast majority of your input tokens are cache hits. Only the newe
 
 ## What Breaks the Cache
 
-Because caching relies on exact prefix matching, anything that changes the prefix invalidates the cache from that point forward. A break can cost more than no caching at all: in Anthropic's measured triage run, a cache-busting 25-token status line at the front of the system prompt made the run cost $4.24 instead of $0.59 (7.2x, computed 4.24 / 0.59), more than running with caching off ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). Here are the specific actions that break it in Claude Code -- and one that famously does not:
+Because caching relies on exact prefix matching, anything that changes the prefix invalidates the cache from that point forward. A break can cost more than no caching at all: in Anthropic's measured triage run, a cache-busting 25-token status line at the front of the system prompt made the run cost $4.24 instead of $0.59 (7.2x, computed 4.24 / 0.59), more than running with caching off ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), "What breaks the cache", read 2026-11-01). Here are the specific actions that break it in Claude Code -- and one that famously does not:
 
 ### 1. Editing CLAUDE.md Mid-Session (Keeps the Cache)
 
 Editing CLAUDE.md mid-session does **not** invalidate the cache. Claude Code reads the root and user CLAUDE.md once at session start, so changing the file on disk does not change the prompt. The flip side: the edit does not apply until the next `/clear`, `/compact`, or restart. Nested CLAUDE.md files and path-scoped rules load later, when Claude first reads a matching file.
 
-Other actions that keep the cache: editing repo files, changing permission mode, changing output style, invoking skills or commands, `/recap`, `/rewind`, and spawning a subagent.
+Other actions that keep the cache: editing repo files, changing permission mode, changing output style, invoking skills or commands, `/recap`, `/rewind`, and spawning a subagent. An ordinary subagent starts a cache of its own on a 5-minute TTL; a fork (on by default in `claude -p`, the SDK, desktop and VS Code since v2.1.302) inherits the parent's system prompt, tools and history, so its first request reads the parent's cache ([prompt caching docs](https://code.claude.com/docs/en/prompt-caching), "Subagents and the cache", read 2026-11-01).
 
 ### 2. Adding or Removing MCP Servers (Only With Tool Search Off)
 
 MCP tool search is on by default: tool definitions are deferred, and only tool names and server instructions enter context until Claude uses a specific tool. With tool search on, connecting or removing a server does **not** invalidate the cache.
 
-The old rule still applies when tool search is off (`ENABLE_TOOL_SEARCH=false`, a custom `ANTHROPIC_BASE_URL`, or models older than the Claude 4.5 generation on Google Cloud). Then full schemas load up front, and connecting or removing a server -- or enabling or disabling a plugin that provides MCP servers, or denying an entire tool -- changes the prefix and breaks the cache on everything that follows.
+The old rule still applies when tool search is off or unavailable (`ENABLE_TOOL_SEARCH=false`, `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS`, a gateway that rejects it, models older than the Claude 4.5 generation on Google Cloud's Agent Platform (Google managed, formerly Vertex AI), or a Microsoft Foundry deployment hosted on Azure). Then full schemas load up front, and connecting or removing a server -- or enabling or disabling a plugin that provides MCP servers, or denying an entire tool -- changes the prefix and breaks the cache on everything that follows. A custom `ANTHROPIC_BASE_URL` no longer turns tool search off by itself: it is on behind a custom base URL by default since v2.1.304 ([MCP docs](https://code.claude.com/docs/en/mcp), read 2026-11-01).
 
-> **Opus 5 caveat (2026-07-24)**: the new beta `mid-conversation-tool-changes-2026-07-01` lets tool definitions change between turns **without** invalidating the prompt cache. With that beta header set, changing tools mid-conversation is no longer a cache-busting move. Without that header, the old rule stands: changing the tool set reprocesses everything after the schema block at full price. It is a beta opt-in on the API, so assume the old behavior unless you are explicitly sending the header.
+> **Mid-conversation tool changes caveat (updated 2026-11-01)**: the beta `inline-tools-2026-09-15` lets tools change between turns **without** invalidating the prompt cache (add or remove a tool by reference, or define a tool inside a `tool_addition` block in a mid-conversation system message). The older `mid-conversation-tool-changes-2026-07-01` header (first announced 2026-07-24 for Opus 5) still works for changes that name a tool by reference. With a header set, changing tools mid-conversation is no longer a cache-busting move. Without one, the old rule stands: changing the tool set reprocesses everything after the schema block at full price. It is a beta opt-in on the API, so assume the old behavior unless you are explicitly sending the header ([mid-conversation system messages and tool changes](https://platform.claude.com/docs/en/build-with-claude/mid-conversation-system-messages), [Opus 5.5 migration guide](https://platform.claude.com/docs/en/models/opus-5-5/migration-guide), read 2026-11-01).
 >
-> **Sonnet 5.5 caveat (2026-09-28)**: mid-conversation tool changes (beta), mid-conversation system messages and per-message effort (beta) are supported on **Sonnet 5.5 and not on Sonnet 5**, so on the Sonnet tier tools and instructions can change mid-conversation without losing the prompt cache only after you move to Sonnet 5.5.
+> **Sonnet 5.5 caveat (2026-09-28)**: mid-conversation tool changes (beta), mid-conversation system messages and per-message effort (beta) are supported on **Sonnet 5.5 and not on Sonnet 5**, so on the Sonnet tier tools and instructions can change mid-conversation without losing the prompt cache only after you move to Sonnet 5.5. Mid-conversation system messages and tool changes are also available on Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8 and Haiku 5.5; per-message effort (beta, `mid-conversation-output-config-2026-07-01`) on Fable 5.1, Mythos 5.1, Opus 5.5, Opus 5 and Haiku 5.5 on the Claude API and Google Cloud (Google managed).
 
 ### 3. Cache TTL Expiration
 
@@ -223,19 +224,19 @@ This means:
 
 ### 4. Switching Models Mid-Session
 
-Each model maintains its own cache. Switching from Sonnet to Opus (or vice versa) means the new model has no cached prefix -- everything is processed from scratch.
+Each model maintains its own cache. Switching from Sonnet to Opus (or vice versa) means the new model has no cached prefix -- everything is processed from scratch. Some switches are easy to miss: each plan-mode toggle under the `opusplan` setting, an automatic fallback model after a safety-classifier flag, and a skill or command whose frontmatter names a different `model` all count as model switches ([prompt caching docs](https://code.claude.com/docs/en/prompt-caching), "Switching models", read 2026-11-01).
 
 Switching model also changes the minimum cacheable length. Moving from Opus 5.5, Sonnet 5.5 or Haiku 5.5 (512) to Sonnet 5 (1,024) or legacy Haiku 4.5 (4,096) can turn a previously-cached small prefix into one that never caches at all. See [Minimum Cacheable Prompt Length](#minimum-cacheable-prompt-length).
 
 ### 5. Switching Speed Mid-Session (Fast Mode)
 
-Changing `speed` between requests invalidates the prompt cache, the same way switching models does. In Claude Code, turning on fast mode invalidates the cache once per conversation. Fast Mode is supported on **Opus 5.5, Opus 5 and Opus 4.8 only**, each at 2x its own base rate: $8/$40 on Opus 5.5, $10/$50 on Opus 5 and Opus 4.8. Opus 4.7 with `speed: "fast"` returns an error, and Opus 4.6 silently runs at standard speed and standard rates (`usage.speed` comes back `"standard"`). The old 6x tier no longer exists.
+Changing `speed` between requests invalidates the prompt cache, the same way switching models does: fast and standard speed keep separate caches. In Claude Code, the first time you turn fast mode on in a conversation the next request reads the whole conversation so far uncached at fast mode rates, and each later toggle (including the automatic fallback to standard speed after a rate limit and the return to fast mode) can read it uncached again, so turn it on at the start of a session ([Claude Code prompt caching](https://code.claude.com/docs/en/prompt-caching), "Turning on fast mode", read 2026-11-01). Fast Mode is supported on **Opus 5.5, Opus 5 and Opus 4.8 only**, each at 2x its own base rate: $8/$40 on Opus 5.5, $10/$50 on Opus 5 and Opus 4.8. Opus 4.7 with `speed: "fast"` returns an error, and Opus 4.6 silently runs at standard speed and standard rates (`usage.speed` comes back `"standard"`). The old 6x tier no longer exists.
 
-Fast Mode is a research preview on the Claude API (plus Managed Agents on Opus 5 and 4.8) -- not on Bedrock, Vertex, Foundry, Claude Platform on AWS, Batch, or Priority Tier.
+Fast Mode is generally available on Opus 5.5 (no beta header) and a research preview on Opus 5 and Opus 4.8, which need the `fast-mode-2026-02-01` header; Opus 4.8 Fast Mode is deprecated (2026-10-30) and will be removed on 2026-11-30. Opus 5.5 runs it on the Claude API, Google Cloud (Anthropic managed) and Microsoft Foundry deployments hosted on Azure; Opus 5 and Opus 4.8 on the Claude API only (plus Managed Agents). It is not on Bedrock, Google Cloud (Google managed, formerly Vertex AI), Claude Platform on AWS, Batch, or Priority Tier, and Claude Code offers it only on the Anthropic API or a subscription with usage credits turned on ([fast mode docs](https://platform.claude.com/docs/en/build-with-claude/fast-mode), [Claude Code fast mode](https://code.claude.com/docs/en/fast-mode), read 2026-11-01).
 
 ### 6. Changing Effort Level
 
-Changing the effort level invalidates the cache on most models. The exception is **Opus 5.5 and Fable 5.1 with an API key or a subscription**, where effort changes keep the cache -- so on those two you can drop to `low` for a routine stretch and back up again without paying a rebuild.
+Changing the effort level invalidates the cache on most models. The exception is **Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 with an API key or a Claude subscription**, where effort changes keep the cache -- so on those four you can drop to `low` for a routine stretch and back up again without paying a rebuild. The exemption does not apply on Amazon Bedrock, Google Cloud's Agent Platform or a Claude apps gateway, with `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS`, or under a HIPAA configuration; there an effort change rebuilds the cache as on other models ([Claude Code prompt caching](https://code.claude.com/docs/en/prompt-caching), "Changing effort level", read 2026-11-01). On your own API calls the same change at the top level invalidates the cache: on a cached conversation of about 100,000 tokens Anthropic measured it at 20 to 40 times the cost of changing effort per message ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), "What breaks the cache", read 2026-11-01).
 
 A few more actions invalidate the cache in Claude Code: compaction (it rebuilds the conversation layer), accumulating many images, and upgrading Claude Code.
 
@@ -246,11 +247,11 @@ A few more actions invalidate the cache in Claude Code: compaction (it rebuilds 
 | Edit CLAUDE.md mid-session | **None** -- the file is read once at session start | No penalty; the edit applies after `/clear`, `/compact`, or restart |
 | Add/remove MCP server, or toggle a plugin that provides MCP servers | None with tool search on (the default); with tool search off, invalidates prefix from schema change onward | With tool search off: all history reprocessed at full input price |
 | Deny an entire tool | Same rule: only breaks the cache when tool search is off | With tool search off: all history reprocessed at full input price |
-| Change tool definitions mid-conversation (custom API tooling) | Invalidates prefix from schema change onward -- **unless** the `mid-conversation-tool-changes-2026-07-01` beta is enabled, which makes it free (on the Sonnet tier, Sonnet 5.5 only; Sonnet 5 does not support it) | All history reprocessed at full input price (no penalty with the beta) |
+| Change tool definitions mid-conversation (custom API tooling) | Invalidates prefix from schema change onward -- **unless** the `inline-tools-2026-09-15` beta (or the older `mid-conversation-tool-changes-2026-07-01` for changes by reference) is enabled, which makes it free (on the Sonnet tier, Sonnet 5.5 only; Sonnet 5 does not support it) | All history reprocessed at full input price (no penalty with the beta) |
 | Gap longer than the TTL between turns | Full cache expiration (TTL is 5 minutes, or 1 hour on a subscription's main conversation) | Entire prefix reprocessed (cache write at 1.25x) |
 | Switch model mid-session | New model has empty cache, and may have a higher minimum cacheable length | Entire prefix reprocessed (cache write at 1.25x) |
-| Change effort level | Invalidates the cache -- **except** on Opus 5.5 and Fable 5.1 with an API key or subscription | Entire prefix reprocessed (none on Opus 5.5 / Fable 5.1) |
-| Turn on fast mode | Invalidates the cache once per conversation | Entire prefix reprocessed (cache write at 1.25x, at Fast Mode rates) |
+| Change effort level | Invalidates the cache -- **except** in Claude Code on Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 with an API key or subscription (not on Bedrock, Google Cloud's Agent Platform, a Claude apps gateway or a HIPAA configuration) | Entire prefix reprocessed (none on those four models) |
+| Turn fast mode on or off | Fast and standard speed keep separate caches, so each toggle (and the automatic fallback to standard speed after a rate limit) can read the conversation uncached again | Entire prefix reprocessed (cache write at 1.25x, at Fast Mode rates when going to fast) |
 | Accumulate many images, or upgrade Claude Code | Invalidates the cache | Entire prefix reprocessed |
 | Prefix under the model's minimum length | `cache_control` silently ignored, no cache ever created | Full input price every turn, with no error to tell you |
 | Use `/compact` | Rebuilds the conversation layer with a summary | While warm, the summarization reads the prefix from cache; the new, smaller summary is written to cache |
@@ -265,7 +266,7 @@ These three look similar but cost very different amounts ([Anthropic's prompt-ca
 | `/clear` | Costs nothing. The next turn starts a fresh, small prefix. |
 | `/rewind` | Returns to an already-cached prefix, so it keeps the cache. |
 
-The practical rule: compact while the cache is still warm, not after you come back from a long break. The compressed context becomes a much smaller cacheable prefix going forward, which is usually a net positive for cost -- see [Guide 02](02-context-optimization.md).
+The practical rule: compact while the cache is still warm, not after you come back from a long break. The compressed context becomes a much smaller cacheable prefix going forward, which is usually a net positive for cost -- see [Guide 02](02-context-optimization.md). The turn after a compaction is not just the summary: Claude Code re-reads up to five recently read or edited files (a file over 5,000 tokens comes back as a path only), re-injects invoked skill bodies at up to 5,000 tokens each and 25,000 in total, and rebuilds the skill list (v2.1.304+) ([context window docs](https://code.claude.com/docs/en/context-window), read 2026-11-01).
 
 ---
 
@@ -282,14 +283,14 @@ The practical rule: compact while the cache is still warm, not after you come ba
 
 Claude Code chooses the TTL for you based on how you pay ([Anthropic's prompt-caching docs](https://code.claude.com/docs/en/prompt-caching)):
 
-| How you use Claude Code | Main conversation | Subagents, workflows, compaction |
+| How you use Claude Code | Main conversation | Subagents, forks, workflows, compaction |
 |-------------------------|:-----------------:|:--------------------------------:|
 | Claude subscription, within plan usage | **1 hour** | 5 minutes |
 | API key, cloud provider, or drawing on usage credits | 5 minutes | 5 minutes |
 
-To choose it yourself, set the `promptCacheTtl` setting or the `CLAUDE_CODE_PROMPT_CACHE_TTL` environment variable to `5m` or `1h`. Subagents have their own knob: `subagentPromptCacheTtl` / `CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL`. Both require Claude Code v2.1.242+. On an API key, `1h` raises the write price from 1.25x to 2x input, so run the [extended breakeven math](#extended-ttl-economics) before switching.
+To choose it yourself, set the `promptCacheTtl` setting or the `CLAUDE_CODE_PROMPT_CACHE_TTL` environment variable to `5m` or `1h`. Subagents have their own knob: `subagentPromptCacheTtl` / `CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL`. Both require Claude Code v2.1.242+. On an API key, `1h` raises the write price from 1.25x to 2x input, so run the [extended breakeven math](#extended-ttl-economics) before switching. To confirm which TTL your main conversation's writes used, run `claude -p "hello" --output-format json` and read `usage.cache_creation` (`ephemeral_5m_input_tokens` vs `ephemeral_1h_input_tokens`); the OpenTelemetry `api_request` event splits cache writes the same way with `cache_creation_5m_tokens` and `cache_creation_1h_tokens` (v2.1.300) ([prompt caching docs](https://code.claude.com/docs/en/prompt-caching), [changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
 
-**Check your hit rate with `/usage`.** Since v2.1.251, `/usage` shows a `Prompt cache (main)` line with the hit share, misses, the likely cause, and whether the cache is warm or cold. It is the fastest way to confirm a habit is actually breaking the cache before you change it.
+**Check your hit rate with `/usage`.** Since v2.1.251, `/usage` shows a `Prompt cache (main)` line with the hit share, misses, the likely cause, and whether the cache is warm or cold. It is the fastest way to confirm a habit is actually breaking the cache before you change it. Large cache misses also show in `/usage` under "What's contributing to your limits usage?" since v2.1.311 ([changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
 
 ### 5-Minute TTL in Practice
 
@@ -299,6 +300,14 @@ This applies wherever Claude Code uses the 5-minute TTL: an API key, a cloud pro
 - **Reviewing output**: Even if you spend 3-4 minutes reading Claude's response before your next message, the cache holds.
 - **Short breaks**: A quick coffee break or Slack check (under 5 minutes) does not break the cache.
 - **Long breaks**: A 15-minute meeting, lunch, or context switch causes a full cache expiration.
+
+### Idle Compaction
+
+Claude Code can compact a long conversation you leave idle while it is on the one-hour TTL. In the terminal, a conversation of 200K or more tokens left idle for about 54 minutes is compacted before its one-hour cache expires, so your next message does not reprocess it all (v2.1.299). In VS Code and the Claude Desktop Code tab a 200K+ token conversation left idle is summarized, and the summary is used on your next message if the cache has expired (v2.1.314). Since v2.1.314 it also runs for subscribers with telemetry turned off, and on Bedrock, Google Cloud, Foundry and LLM gateways once the one-hour cache is on. Because it runs before the cache expires, the summarization request should read the prefix from the warm cache, as `/compact` does (see [/compact vs /clear vs /rewind](#compact-vs-clear-vs-rewind)); the costs page lists idle compaction among the things that can use tokens while you are idle.
+
+Controls: `CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS` changes the 200,000-token minimum, and `"idleCompaction": false` in settings.json (or the `Idle compaction` row in `/config`, v2.1.302) turns it off ([prompt caching docs](https://code.claude.com/docs/en/prompt-caching), [costs page](https://code.claude.com/docs/en/costs), [changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
+
+How it changes the "compact before a break" advice below: it needs the one-hour TTL, so it applies to a subscription's main conversation by default and not to an API key, usage credits or a cloud provider on the five-minute default. On a subscription, a conversation under 200K tokens is not idle-compacted, so a manual `/compact` before a break longer than an hour still applies; above 200K tokens, idle compaction does it for you after about 54 minutes. A break shorter than the TTL needs neither, because the cache is still warm.
 
 ### Breakeven Math
 
@@ -351,7 +360,7 @@ You need at least 2 cache hits to break even with extended TTL.
 
 In Claude Code this choice is made for you (see [How Claude Code Picks the Cache TTL](#how-claude-code-picks-the-cache-ttl)) unless you set `promptCacheTtl`. It matters most if you are on an API key and considering `1h`, or building custom tooling on the API.
 
-**What Anthropic measured.** With no pauses between turns, the 5-minute default cost 15% less per session than the 1-hour cache on Sonnet 5 and 15% to 18% less on Opus 5.5; the 1-hour cache wins once about 1 turn in 20 follows a 5-to-60-minute pause. On Fable 5.1 a `max_tokens: 0` keep-alive every 4 minutes beat both: $2.29 per session vs $2.42 on the 5-minute cache and $3.09 on the 1-hour cache, with no pauses ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), "Cache duration").
+**What Anthropic measured.** With no pauses between turns, the 5-minute default cost about 19% less per session than the 1-hour cache on Sonnet 5.5 (it was 15% on Sonnet 5) and about 15% to 18% less on Opus 5.5; the 1-hour cache wins once about 1 turn in 20 follows a 5-to-60-minute pause. On Fable 5.1 a `max_tokens: 0` keep-alive every 4 minutes beat both: $2.29 per session vs $2.42 on the 5-minute cache and $3.09 on the 1-hour cache, with no pauses ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), "Pick the cache duration", read 2026-11-01).
 
 ---
 
@@ -361,7 +370,7 @@ These strategies increase the percentage of input tokens that hit the cache:
 
 ### 1. Keep Model and Effort Constant During Sessions
 
-Pick the model (and, on most models, the effort level) before the session starts and keep it. Editing CLAUDE.md is not the problem -- it keeps the cache, though the edit only applies after `/clear`, `/compact`, or restart. Switching models, or changing effort on anything other than Opus 5.5 and Fable 5.1, is what forces a rebuild.
+Pick the model (and, on most models, the effort level) before the session starts and keep it. Editing CLAUDE.md is not the problem -- it keeps the cache, though the edit only applies after `/clear`, `/compact`, or restart. Switching models, or changing effort on anything other than Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 (and on those four, anywhere the exemption does not apply: Bedrock, Google Cloud's Agent Platform, a Claude apps gateway, a HIPAA configuration), is what forces a rebuild.
 
 **Cost of one cache break at turn 25 of a 50-turn session (Sonnet 4.6, e.g. an effort change):**
 
@@ -385,14 +394,14 @@ If you use different MCP servers for different types of work, use project-scoped
 
 ### 3. Work in Focused Sessions
 
-Many rapid turns on the same topic maximize caching. Across Anthropic's API traffic (14 days ending 2026-08-23, 303,003 organization-days from 106,487 organizations), agent loops read a median 84.2% of their input from cache (upper quartile 91.7%). Coding organizations read a median 88.5% (90.9% once a conversation has 25 or more prior tool calls), with the upper quartile at 93.4% and the top decile at 95.9% or more ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), benchmark reference 17). If `/usage` shows your hit share well below those, something in your prefix is changing.
+Many rapid turns on the same topic maximize caching. Across Anthropic's API traffic (14 days ending 2026-08-23, 303,003 organization-days from 106,487 organizations), agent loops read a median 84.2% of their input from cache (upper quartile 91.7%). About 72% of coding organization-days read 80% or more, and the top decile reads 95.9% or more for coding; in a six-hour sample of coding requests with 25 or more prior tool calls, 92% of input was read from cache, 7% written and under 1% uncached ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), benchmark reference 17, read 2026-11-01). If `/usage` shows your hit share well below those, something in your prefix is changing.
 
 | Pattern | Cache Efficiency | Why |
 |---------|:----------------:|-----|
-| Many turns close together | 88.5% median (coding agent loops on Anthropic's API) | Prefix stays warm |
+| Many turns close together | 84.2% median across agent loops on Anthropic's API; 92% of input read from cache for coding requests with 25+ prior tool calls (six-hour sample) | Prefix stays warm |
 | Turns with long gaps | One full re-write per gap longer than the TTL (5 min on an API key, 1 hour for a subscription's main conversation) | At 100K tokens on Opus 5.5 a re-write costs $0.50 vs $0.02 to read |
 | Several short sessions in one directory | Not measured | A new session reads the system prompt from cache only within the TTL and only if its git status snapshot matches |
-| Single-turn conversations | Low (Anthropic measured a median 34.6% for API traffic with no tool definitions) | Only the shared system prompt and tools can hit, within the TTL |
+| Single-turn conversations | Not measured (Anthropic no longer publishes a figure for API traffic without tool definitions) | Only the shared system prompt and tools can hit, within the TTL |
 
 ### 4. Use /compact Strategically
 
@@ -404,7 +413,7 @@ Many rapid turns on the same topic maximize caching. Across Anthropic's API traf
 **When /compact hurts caching:**
 - If you compact too frequently (every 5-10 turns), you repeatedly pay cache write costs without accumulating enough cached turns to justify it.
 
-**Time unavoidable cache breaks to a compaction boundary.** Compaction rebuilds the conversation layer anyway, so a change that breaks the cache costs least right after it. In Anthropic's measured run (Sonnet 5), changing effort and adding a tool right after the first compaction cost $0.75 per session, against $0.95 for the same change mid-session. Making the change on the compaction request itself cost $0.92, because that summarization pass then cost $0.21 instead of $0.04 ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), "Mid-session changes and compaction").
+**Time unavoidable cache breaks to a compaction boundary.** Compaction rebuilds the conversation layer anyway, so a change that breaks the cache costs least right after it. In Anthropic's measured run (Sonnet 5), changing effort and adding a tool right after the first compaction cost $0.75 per session, against $0.95 for the same change mid-session. Making the change on the compaction request itself cost $0.92, because that summarization pass then cost $0.21 instead of $0.04 ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), end of "What breaks the cache", read 2026-11-01).
 
 **Rule of thumb**: Compact when context exceeds 80,000-100,000 tokens, or at natural breakpoints in your work (finishing a feature, switching to a different file).
 
@@ -412,7 +421,7 @@ Many rapid turns on the same topic maximize caching. Across Anthropic's API traf
 
 Claude's prompt is structured so that CLAUDE.md appears near the beginning of the prefix. This means CLAUDE.md content is always in the cached prefix, and because it is read once at session start, mid-session edits do not disturb it. You do not need to reorder content within CLAUDE.md for caching purposes -- the entire file is part of the prefix regardless of internal ordering.
 
-What does matter is size, because the root file loads in full on every session. If you use multiple CLAUDE.md files, remember that subdirectory CLAUDE.md files and path-scoped `.claude/rules/` load on demand, when Claude first reads a matching file -- so moving area-specific content there keeps the always-loaded prefix small.
+What does matter is size, because the root file loads in full on every session (a file over 4 MiB is skipped; `MEMORY.md` loads its first 200 lines or 25KB). If you use multiple CLAUDE.md files, remember that subdirectory CLAUDE.md files and path-scoped `.claude/rules/` load on demand, when Claude first reads a matching file -- so moving area-specific content there keeps the always-loaded prefix small. Since v2.1.309 each on-demand file is capped: 40,000 characters at a 200K window and 150,000 at 1M (200,000 on Opus 4.6 and Sonnet 4.6), and Claude receives only the start of a larger one ([memory docs](https://code.claude.com/docs/en/memory), read 2026-11-01).
 
 ---
 
@@ -510,7 +519,7 @@ That is 1.8x the cost of the same 50-turn session with good caching. Note what i
 | **0%** (every token written, none read) | $16.02 | $0.525 | **$16.55** | **24% more** |
 | **No caching** (1x input) | $12.82 | $0.525 | **$13.34** | baseline |
 
-*Computed: input = 4,272,100 x (hit share x $0.30 + (1 - hit share) x $3.75) / 1M, because Claude Code writes every token it does not read from cache, at 1.25x; with no caching all of them bill at $3.00. Below a 21.7% hit share, caching costs more than none ((3.75 - 3.00) / (3.75 - 0.30)). Anthropic's production medians, 84.2% for agent loops and 88.5% for coding, fall between the 75% and 90% rows ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), benchmark reference 17).*
+*Computed: input = 4,272,100 x (hit share x $0.30 + (1 - hit share) x $3.75) / 1M, because Claude Code writes every token it does not read from cache, at 1.25x; with no caching all of them bill at $3.00. Below a 21.7% hit share, caching costs more than none ((3.75 - 3.00) / (3.75 - 0.30)). Anthropic's production median for agent loops, 84.2% (upper quartile 91.7%), falls between the 75% and 90% rows, and its 92% read share for coding requests with 25 or more prior tool calls sits just above the 90% row ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), benchmark reference 17, read 2026-11-01).*
 
 > Output tokens are never cached -- they are always generated fresh. Caching only affects input tokens. This is why the output cost ($0.525) is constant across all rows.
 
@@ -607,7 +616,7 @@ Some developers flip effort up and down (or bounce between models) every few tur
 
 **The math**: If your session has accumulated 60,000 tokens of cached history on Sonnet 4.6 and you change the effort level, the next turn re-writes all 60,000 tokens to cache at 1.25x instead of reading them: 60,000 x ($3.75 - $0.30) / 1M = an extra $0.21 for that single turn. Do this 4 times in a session and you have wasted $0.83 -- more than a whole 30-turn Opus 5.5 session costs at this repo's calculator defaults ($0.74).
 
-**Better approach**: Pick the model and effort before the session starts. On Opus 5.5 and Fable 5.1 (API key or subscription), effort changes keep the cache, so there you can adjust freely.
+**Better approach**: Pick the model and effort before the session starts. On Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 (API key or subscription, not on Bedrock, Google Cloud's Agent Platform, a Claude apps gateway or under a HIPAA configuration), effort changes keep the cache in Claude Code, so there you can adjust freely.
 
 ### 2. Frequently Switching MCP Servers With Tool Search Off
 
@@ -639,6 +648,8 @@ In practice, this almost never matters -- the overhead is tiny and most sessions
 
 If you know you will be away for longer than the TTL (5 minutes on an API key, cloud provider or usage credits; an hour on a subscription's main conversation), run `/compact` before stepping away. While the cache is warm, `/compact` reads the history from cache, so it costs a fraction of the context size. When you return, the context will be smaller, and the cache write cost on the first turn back will be lower.
 
+On a subscription's one-hour TTL, idle compaction (see [Idle Compaction](#idle-compaction)) handles a break of about 54 minutes or more for a conversation of 200K+ tokens, so the manual `/compact` matters most for a smaller conversation, or on the five-minute TTL. If you resume an old conversation anyway, Pro and Max users get a warning (v2.1.304) when resuming would use a noticeable share of the 5-hour limit, and can start a new conversation instead ([changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
+
 ```
 Without compacting before break:
   Return to session with 80,000 tokens of expired cache
@@ -656,15 +667,15 @@ With compacting before break:
 
 ## Key Takeaways
 
-1. **Prompt caching bills repeated input at 10% of the input price -- 5% on Opus 5.5 and Sonnet 5.5, 2.5% on Fable 5.1 / Mythos 5.1.** Across Anthropic's API traffic, coding agent loops read a median 88.5% of their input from cache (upper quartile 93.4%). This is the largest automatic cost reduction in Claude Code.
+1. **Prompt caching bills repeated input at 10% of the input price -- 5% on Opus 5.5 and Sonnet 5.5, 2.5% on Fable 5.1 / Mythos 5.1.** Across Anthropic's API traffic, agent loops read a median 84.2% of their input from cache (upper quartile 91.7%). This is the largest automatic cost reduction in Claude Code.
 
-2. **Know the real cache breakers.** Switching models, changing effort (except on Opus 5.5 and Fable 5.1 with an API key or subscription), turning on fast mode (once per conversation), and MCP changes with tool search off all force a rebuild. Editing CLAUDE.md mid-session does not -- but the edit only applies after `/clear`, `/compact`, or restart. `/usage` shows a `Prompt cache (main)` line with your hit share and the likely cause of misses.
+2. **Know the real cache breakers.** Switching models, changing effort (except in Claude Code on Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 with an API key or subscription), toggling fast mode (separate caches per speed), and MCP changes with tool search off all force a rebuild. Editing CLAUDE.md mid-session does not -- but the edit only applies after `/clear`, `/compact`, or restart. `/usage` shows a `Prompt cache (main)` line with your hit share and the likely cause of misses.
 
 3. **Caching pays for itself after just one reuse.** The cache write premium (1.25x) is recovered with a single cache hit (0.1x). Every subsequent hit is pure savings.
 
 4. **Work in focused sessions with turns inside the TTL.** Claude Code gives a subscription's main conversation a 1-hour TTL; an API key, cloud provider, usage credits and every subagent get 5 minutes (override with `promptCacheTtl` and `subagentPromptCacheTtl`). Rapid, focused sessions maintain a warm cache. Scattered work with long gaps between turns wastes money on repeated cache writes.
 
-5. **Run /compact before long breaks.** If you are stepping away for longer than the TTL, compacting first (while the cache is warm) reduces the cache write cost when you return. `/clear` costs nothing; `/rewind` returns to an already-cached prefix.
+5. **Run /compact before long breaks.** If you are stepping away for longer than the TTL, compacting first (while the cache is warm) reduces the cache write cost when you return. On a subscription's one-hour TTL, Claude Code does this for you after about 54 minutes idle once a conversation is 200K+ tokens (idle compaction, v2.1.299; turn it off with `"idleCompaction": false`); under 200K tokens, or on a five-minute TTL, the manual `/compact` still applies. `/clear` costs nothing; `/rewind` returns to an already-cached prefix.
 
 6. **On this guide's 50-turn Sonnet 4.6 session, caching is the difference between $258 and $1,468 a month** (110 sessions, computed in [the comparison table](#comparison-table-cache-hit-rate-impact)). Slipping from the warm 96.3% hit share to 90% alone costs $103 a month. Good caching hygiene is not optional -- it is one of the highest-ROI optimizations you can make.
 

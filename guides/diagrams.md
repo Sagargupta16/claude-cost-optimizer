@@ -16,9 +16,9 @@ Mermaid flowcharts for key cost optimization decisions. These render natively on
 
 ## Claude Model Family
 
-The current Claude model lineup, their positioning, and cost tiers. Mythos 5 is the limited-availability sibling of Fable 5 under [Project Glasswing](https://anthropic.com/glasswing) -- same specs and price, no safety classifiers.
+The current Claude model lineup, their positioning, and cost tiers. Mythos 5 is the limited-availability sibling of Fable 5 -- same specs and price, no safety classifiers -- and Mythos 5.1 is the sibling of Fable 5.1 (same specs, price and $0.25 cache read). Both require verification through Anthropic's verification programs, such as the Cyber Verification Program, which Anthropic expanded on 2026-10-06 into Defense Access, Red Team Access and Specialized Access tiers; members of [Project Glasswing](https://www.anthropic.com/glasswing) moved to Specialized Access ([announcement](https://www.anthropic.com/news/cyber-verification-program), [Mythos 5.1](https://platform.claude.com/docs/en/models/mythos-5-1/overview) and [Mythos 5](https://platform.claude.com/docs/en/models/mythos-5/overview) model pages, read 2026-11-01).
 
-> **Opus 5.5** (`claude-opus-5-5`, released 2026-09-22) is the Opus flagship and Anthropic's recommended starting model for most workloads, at $4 / $20 -- 20% below Opus 5, which moved to legacy alongside Opus 4.8. It reads cache at $0.20 (0.05x). Fast Mode is Opus 5.5 ($8 / $40), Opus 5 and Opus 4.8 ($10 / $50) only, each at 2x its own base. Mythos Preview is **deprecated** -- retirement to be announced.
+> **Opus 5.5** (`claude-opus-5-5`, released 2026-09-22) is the Opus flagship and Anthropic's recommended starting model for most workloads, at $4 / $20 -- 20% below Opus 5, which moved to legacy alongside Opus 4.8. It reads cache at $0.20 (0.05x). Fast Mode is Opus 5.5 ($8 / $40, generally available), Opus 5 and Opus 4.8 ($10 / $50, research previews; Opus 4.8's ends on 2026-11-30) only, each at 2x its own base ([fast mode docs](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01). Mythos Preview is **deprecated** -- retirement to be announced.
 >
 > **Sonnet 5.5** (`claude-sonnet-5-5`, released 2026-09-28) is the Sonnet flagship at Sonnet 5's $2 / $10, with the same cache writes and tokenizer, a 512-token cache floor (Sonnet 5 was 1,024) and no Fast Mode. Since 2026-10-07 it reads cache at $0.10 (0.05x), half Sonnet 5's $0.20. Sonnet 5 moved to legacy. Sonnet 4.5 is deprecated, retirement scheduled for 2026-11-30 (replacement: Sonnet 5.5).
 >
@@ -31,8 +31,8 @@ flowchart TB
         fable51["Fable 5.1 (most capable)<br/>$10 / $50 per 1M<br/>Cache reads $0.25 (0.025x)<br/>Always-on adaptive thinking · No Fast Mode"]
         fable5["Fable 5 (legacy)<br/>$10 / $50 per 1M<br/>Cache reads $1.00 (0.1x)<br/>Superseded by Fable 5.1"]
         opus55["Opus 5.5 (Opus flagship)<br/>$4 / $20 per 1M<br/>Cache reads $0.20 (0.05x)<br/>Always-on adaptive thinking · Fast Mode $8 / $40"]
-        opus5["Opus 5 (legacy)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Thinking ON by default · Fast Mode (beta)"]
-        opus8["Opus 4.8 (legacy)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking · Fast Mode (beta)"]
+        opus5["Opus 5 (legacy)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Thinking ON by default · Fast Mode (research preview)"]
+        opus8["Opus 4.8 (legacy)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking · Fast Mode (research preview, ends 2026-11-30)"]
         opus7["Opus 4.7 (legacy)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Adaptive thinking · Fast Mode removed"]
         opus6["Opus 4.6 (legacy)<br/>$5 / $25 per 1M<br/>1M context · 128K output<br/>Extended + adaptive · Fast Mode removed"]
         opus45["Opus 4.5<br/>$5 / $25 per 1M<br/>200K context · 64K output<br/>Extended thinking"]
@@ -44,9 +44,9 @@ flowchart TB
         haiku["Haiku 4.5 (legacy)<br/>$1 / $5 per 1M<br/>200K context · 64K output<br/>Extended thinking · Superseded by Haiku 5.5"]
     end
 
-    subgraph RP["Limited Availability (Project Glasswing)"]
+    subgraph RP["Limited Availability (verification required)"]
         direction TB
-        mythos5["Mythos 5<br/>$10 / $50 per 1M<br/>Fable 5 without safety classifiers<br/>Approved Glasswing customers only"]
+        mythos5["Mythos 5<br/>$10 / $50 per 1M<br/>Fable 5 without safety classifiers<br/>Verified customers only (Cyber Verification Program)"]
         mythos["Mythos Preview<br/>Deprecated, no retirement date<br/>Migrate to Mythos 5"]
     end
 
@@ -67,11 +67,11 @@ flowchart TB
 
 | Model | Access | Best For | Why Not |
 |-------|--------|----------|---------|
-| Fable 5.1 | **GA** (Anthropic API, Claude Platform on AWS, Bedrock, Vertex AI, Microsoft Foundry) | The hardest reasoning and longest agentic runs; cheapest cache reads in the lineup at 0.025x | 2.5x Opus 5.5 pricing; always-on thinking; forced tool use returns 400; no Fast Mode; no Priority Tier |
+| Fable 5.1 | **GA** (Anthropic API, Claude Platform on AWS, Bedrock, Google Cloud (Google managed, formerly Vertex AI, and Anthropic managed), Microsoft Foundry) | The hardest reasoning and longest agentic runs; cheapest cache reads in the lineup at 0.025x | 2.5x Opus 5.5 pricing; always-on thinking; forced tool use returns 400; no Fast Mode; no Priority Tier |
 | Fable 5 | GA (legacy) | Prompts pinned to this snapshot | Same $10/$50 as 5.1 but 4x costlier cache reads ($1.00 vs $0.25) -- migrating is strictly cheaper |
 | Opus 5.5 | **GA on every platform** (Anthropic API, Claude Platform on AWS, Bedrock, Google Cloud, Microsoft Foundry) | Anthropic's recommended starting model for most workloads: complex agentic coding, multi-file refactors, long autonomous runs; cache reads at 0.05x | Thinking is always on (disabling it returns 400); forced tool use returns 400; no Priority Tier; earliest retirement 2027-09-22 |
 | Opus 5 | GA (legacy) | Prompts tuned to this snapshot, or code that needs thinking disabled or forced `tool_choice` (both rejected by Opus 5.5) | Opus 5.5 costs 20% less ($4/$20) and reads cache at 0.05x instead of 0.1x |
-| Opus 4.8 | GA (legacy) | Prompts already tuned to this snapshot; the fallback target for Opus 5 cyber refusals; keeps Priority Tier, which Opus 5.5 lacks | No cost argument to stay; earliest retirement 2027-05-28 |
+| Opus 4.8 | GA (legacy) | Prompts already tuned to this snapshot; the fallback model Anthropic's refusal docs use in their examples; keeps Priority Tier, which Opus 5.5 lacks | No cost argument to stay; its Fast Mode (research preview) will be removed on 2026-11-30; earliest retirement 2027-05-28 |
 | Opus 4.7 | GA (legacy) | Pinned snapshots tuned to 4.7 | Fast Mode was removed: `speed: "fast"` now returns an error |
 | Opus 4.6 | GA (legacy) | Workloads tuned to the older tokenizer; stable snapshot | Fast Mode was removed *silently*: the request succeeds at standard speed and standard rates |
 | Opus 4.5 | GA | Pinned snapshots only | 200K context (not 1M); no Fast Mode; earliest retirement 2026-11-24 |
@@ -80,8 +80,9 @@ flowchart TB
 | Sonnet 4.6 | GA | Prompts tuned to this snapshot | Sonnet 5.5 is the current mid-tier and costs less ($2/$10 vs $3/$15) |
 | Sonnet 4.5 | **Deprecated** (retirement scheduled for 2026-11-30) | Pinned snapshots only; migrate to Sonnet 5.5 | 200K context (not 1M); $3/$15 vs Sonnet 5.5's $2/$10; still what the Claude Code `sonnet` alias means on Bedrock, Google Cloud and Foundry |
 | Haiku 5.5 | **GA on every platform** (Anthropic API, Claude Platform on AWS, Bedrock, Google Cloud, Microsoft Foundry) | High-volume, latency-sensitive work: classification, extraction, routing, subagent tasks, formatting, simple edits, file lookups; $0.10/$0.50 up to 100K prompt tokens | A prompt over 100K tokens (cache reads and writes count) pays $0.50/$2.50 on the whole request; manual `budget_tokens`, non-default sampling params and prefill return 400; no Fast Mode; earliest retirement 2027-10-07 |
-| Haiku 4.5 | GA (legacy) | Prompts pinned to this snapshot; what the Claude Code `haiku` alias still means outside the Anthropic API | Lacks reasoning depth for multi-file work; 200K context; 4,096-token cache floor; Haiku 5.5 is 10x cheaper per token up to 100K prompt tokens; earliest retirement 2026-10-15 |
-| Mythos 5 | Glasswing only | Fable 5's capabilities without safety classifiers (approved customers) | No self-serve access; use Fable 5.1 instead |
+| Haiku 4.5 | GA (legacy) | Prompts pinned to this snapshot; what the Claude Code `haiku` alias still means outside the Anthropic API | Lacks reasoning depth for multi-file work; 200K context; 4,096-token cache floor; Haiku 5.5 is 10x cheaper per token up to 100K prompt tokens; Active, no retirement announced (its earliest date, 2026-10-15, has passed) |
+| Mythos 5.1 | Verification required (Cyber Verification Program) | Fable 5.1's specs and price (cache reads at 0.025x) for verified security work | No self-serve access; use Fable 5.1 instead |
+| Mythos 5 | Verification required (Cyber Verification Program; Glasswing members moved to Specialized Access) | Fable 5's capabilities without safety classifiers (verified customers) | No self-serve access; use Fable 5.1 instead |
 | Mythos Preview | **Deprecated** (retirement to be announced) | (superseded by Mythos 5) | Still functional but no longer recommended; migrate to Mythos 5 |
 
 ---
@@ -120,7 +121,7 @@ flowchart TD
 |------------|-------|:--------------------------:|----------|
 | Maximum | Fable 5.1 | $10 / $50 | Hardest reasoning, longest autonomous agentic runs; cache reads at 0.025x |
 | High | Opus 5.5 | $4 / $20 | Architecture design, complex debugging, large refactors, long agentic runs; cache reads at 0.05x |
-| High (Fast Mode) | Opus 5.5 | $8 / $40 | Latency-critical urgent work (2x premium, 2.5x output tokens/sec); legacy Opus 5 / 4.8 Fast Mode is $10 / $50 |
+| High (Fast Mode) | Opus 5.5 | $8 / $40 | Latency-critical urgent work (2x premium, 2.5x output tokens/sec); legacy Opus 5 / 4.8 Fast Mode is $10 / $50 (Opus 4.8's ends 2026-11-30) |
 | High (legacy) | Opus 5 / 4.8 / 4.7 / 4.6 | $5 / $25 | Pinned snapshots only; Opus 5.5 is 20% cheaper. Fast Mode is gone on 4.7 (errors) and 4.6 (silently runs standard) |
 | Medium | Sonnet 5.5 | $2 / $10 | Feature implementation, code review, test writing; 512-token cache floor |
 | Medium (legacy) | Sonnet 5 | $2 / $10 | Pinned snapshots only (same permanent rate as Sonnet 5.5) |
@@ -167,7 +168,7 @@ flowchart TD
 ### Key Checkpoints
 
 1. **CLAUDE.md size** -- Every line loads on every turn. Keep it under 150 lines to avoid recurring token waste.
-2. **File-read exclusions** -- `Read(...)` rules under `permissions.deny` in `.claude/settings.json` keep Claude's file tools out of large generated or vendored files. (`.claudeignore` is not a Claude Code feature; move any patterns you put there into Read deny rules.)
+2. **File-read exclusions** -- `Read(...)` rules under `permissions.deny` in `.claude/settings.json` keep Claude's file tools out of large generated or vendored files. (A `.claudeignore` file has no effect in Claude Code; move any patterns you put there into Read deny rules. A Read deny also blocks Edit and Write on that path, but it does not cover commands that read without naming a file, such as `grep -r pattern .`; [permissions docs](https://code.claude.com/docs/en/permissions), read 2026-11-01.)
 3. **Model selection** -- Match model to task complexity (see decision tree above).
 4. **Plan Mode** -- For complex tasks, plan first to avoid expensive iterative dead ends.
 5. **/compact** -- Summarizes conversation history to reduce context size mid-session.
@@ -260,11 +261,11 @@ flowchart LR
     region -- "Regional endpoint" --> regRegional["× 1.1<br/>(+10%)"]
     region -- "US-only data<br/>residency" --> regData["× 1.1<br/>(+10%)"]
 
-    regGlobal --> fast{"Fast Mode?<br/>(Opus 5.5, Opus 5 or<br/>Opus 4.8 only, beta)"}
+    regGlobal --> fast{"Fast Mode?<br/>(Opus 5.5, Opus 5 or<br/>Opus 4.8 only)"}
     regRegional --> fast
     regData --> fast
 
-    fast -- "Yes (Opus 5.5 / 5 / 4.8)" --> fastYes["× 2<br/>(beta, ~2.5x OTPS)"]
+    fast -- "Yes (Opus 5.5 / 5 / 4.8)" --> fastYes["× 2<br/>(up to 2.5x OTPS)"]
     fast -- "Opus 4.7" --> fastErr["Error<br/>(Fast Mode removed)"]
     fast -- "Opus 4.6" --> fastSilent["× 1.0<br/>(silently standard)"]
     fast -- "No" --> fastNo["× 1.0"]
@@ -294,7 +295,7 @@ flowchart LR
 | Batch + cache read | $4 × 0.5 × 0.05 | $0.10 |
 | Regional endpoint on Bedrock | $4 × 1.1 | $4.40 |
 | Regional + data residency | $4 × 1.1 × 1.1 | $4.84 |
-| Fast Mode (Opus 5.5, beta) | $4 × 2 | $8.00 |
+| Fast Mode (Opus 5.5) | $4 × 2 | $8.00 |
 | Fast Mode + cache read | $4 × 2 × 0.05 | $0.40 |
 | Fast Mode + 5m cache write | $4 × 2 × 1.25 | $10.00 |
 | Fast Mode + 1h cache write | $4 × 2 × 2 | $16.00 |
@@ -307,7 +308,7 @@ On legacy Opus 5 ($5 base, 0.1x cache hits) the same rows are $5.00, $0.50, $2.5
 > - Fast Mode **cannot** combine with Batch API or Priority Tier.
 > - Switching between Fast and Standard speeds invalidates the prompt cache (different speed prefixes don't share cache).
 > - Cache-write/hit multipliers DO stack on top of Fast Mode rates.
-> - Data residency (`inference_geo: "us"`) only applies to Opus 4.6, Sonnet 4.6, and all later models (Opus 5, Opus 5.5, Sonnet 5.5 and Haiku 5.5 included) on Anthropic API and Claude Platform on AWS. Earlier models error if the parameter is set.
+> - Data residency (`inference_geo: "us"`) only applies to Opus 4.6, Sonnet 4.6, and all later models (Opus 5, Opus 5.5, Sonnet 5.5 and Haiku 5.5 included) on the Anthropic API, Claude Platform on AWS and Google Cloud (Anthropic managed); on Microsoft Foundry the same 1.1x applies to the US Data Zone Standard deployment type, and Bedrock and Google Cloud (Google managed) have their own regional pricing ([pricing page](https://platform.claude.com/docs/en/about-claude/pricing#data-residency-pricing), read 2026-11-01). Earlier models error if the parameter is set.
 > - **Haiku 5.5's base rate itself depends on prompt length**: $0.10 / $0.50 up to 100K prompt tokens, $0.50 / $2.50 above, with cache reads and writes counted toward the 100K. Every multiplier in the stack applies to the request's own tier (cache hit $0.01 or $0.05; Batch $0.05 / $0.25 or $0.25 / $1.25; regional $0.11 / $0.55 or $0.55 / $2.75).
 > - **Not shown on the diagram:** extended thinking has no multiplier -- reasoning tokens simply bill as output at the normal rate. On Opus 5.5 thinking is always on and cannot be disabled, so code that disabled thinking on Opus 5 now bills thinking tokens as output.
 

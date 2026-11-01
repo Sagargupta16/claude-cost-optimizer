@@ -142,7 +142,7 @@ Developer tells Claude in the main session: "Write comprehensive unit tests for 
 
 ### Optimized Approach (Subagent Delegation)
 
-Developer uses a subagent command for test generation. The `/test` custom command prompt tells Claude: "Delegate the test writing to a subagent. Include this context: test framework is Jest, use `vi.mock()` pattern for mocking, follow AAA pattern (Arrange/Act/Assert), use `describe`/`it` blocks." The subagent runs in an isolated context, generates the test file, and returns just the result.
+Developer uses a subagent command for test generation. The `/test` custom command prompt tells Claude: "Delegate the test writing to a subagent. Include this context: test framework is Jest, use `jest.mock()` pattern for mocking, follow AAA pattern (Arrange/Act/Assert), use `describe`/`it` blocks." The subagent runs in an isolated context, generates the test file, and returns just the result.
 
 | Metric | Value |
 |--------|-------|

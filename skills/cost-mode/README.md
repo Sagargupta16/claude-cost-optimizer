@@ -54,7 +54,7 @@ Once installed, activate with:
 | standard | Not measured | Output cut x your output share | Daily development, solo coding |
 | strict | Not measured | Output cut x your output share | High-volume sessions, budget-constrained |
 
-Closest public measurements: on Anthropic's issue-triage agent, asking for a one-line final answer used 39% fewer output tokens than the two-line original and cost 14% less per run ($0.49 vs $0.57), while a memo-style answer cost $1.40, 2.8x the one-line, at the same accuracy within run-to-run noise ([Anthropic cost guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). caveman's README reports "Answer concisely." cutting output tokens 38% (6,983 to 4,334) on ten dev questions on Opus 5.5 ([its own run](https://github.com/JuliusBrussee/caveman), not verified here).
+Closest public measurements: on Anthropic's issue-triage agent, asking for a one-line final answer used 39% fewer output tokens than the two-line original and cost 13% less per run (from the unrounded means; the chart's rounded $0.49 vs $0.57 give 14%; read 2026-11-01), while a memo-style answer cost $1.40, 2.8x the one-line, at the same accuracy within run-to-run noise ([Anthropic cost guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). caveman's README reports "Answer concisely." cutting output tokens 38% (6,983 to 4,334) on ten dev questions on Opus 5.5 ([its own run](https://github.com/JuliusBrussee/caveman), not verified here).
 
 Output tokens cost 5x input tokens on every current model ([pricing](https://platform.claude.com/docs/en/about-claude/pricing)), so the saving is the output cut times the output share of your bill. In the token mix of Anthropic's own `/usage` example, priced at Opus 5.5 rates, output is 19% of the bill: a 40% output cut saves about 8%, a 60% cut about 12% (computed: the [costs page](https://code.claude.com/docs/en/costs) example of 1.2k input, 5.3k output, 940.0k cache-read and 50.0k cache-write tokens is $0.549 at Opus 5.5 rates with 5-minute writes, $0.106 of it output; 0.4 x 19.3% = 7.7%).
 
@@ -65,11 +65,11 @@ The 8% and 12% are arithmetic, not measurements: this repo has not run a control
 Community tools that cover what a skill can't. Each claim is the project's own, not measured here.
 
 - [ccusage](https://github.com/ccusage/ccusage) -- `npx ccusage` cost reports from local logs
-- [Claude-Code-Usage-Monitor](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor) / [claudetop](https://github.com/liorwn/claudetop) -- real-time usage and cache monitors
-- [rtk](https://github.com/rtk-ai/rtk) -- CLI proxy that compresses common dev-command output ("60-90%" on those commands; its README adds that this "is not the same as cutting your bill by 90%")
-- [claude-mem](https://github.com/thedotmack/claude-mem) -- persistent compressed context across sessions
-- [claude-code-router](https://github.com/musistudio/claude-code-router) -- routes requests across models
-- [caveman](https://github.com/JuliusBrussee/caveman) -- brevity skill and proxy; its README reports output tokens on ten dev questions on Opus 5.5 falling 38% with "Answer concisely.", 41% with /caveman and 61% with /ultracave, while its rules add about 1,160 tokens and the bill effect is "not measured yet". Overlaps cost-mode's response rules, so pick one
+- [Claude-Code-Usage-Monitor](https://github.com/Maciek-roboblog/Claude-Code-Usage-Monitor) / [claudetop](https://github.com/liorwn/claudetop) -- real-time usage and cache monitors (Usage Monitor has had no push since 2026-07-05)
+- [rtk](https://github.com/rtk-ai/rtk) -- CLI proxy that compresses common dev-command output ("60-90%" on those commands in its GitHub description, "up to 90% smaller" in its README, which adds that this "is not the same as cutting your bill by the same amount"; read 2026-11-01)
+- [claude-mem](https://github.com/thedotmack/claude-mem) -- persistent compressed context across sessions, now for Claude Code and several other agents
+- [claude-code-router](https://github.com/musistudio/claude-code-router) -- local control plane that routes Claude Code and other agent CLIs across models
+- [caveman](https://github.com/JuliusBrussee/caveman) -- caveman 4.0: a brevity voice skill plus input compression, per-ask model and effort routing and reusable scripts. Its README reports output tokens on ten dev questions on Opus 5.5 falling 38% with "Answer concisely.", 41% with /caveman and 61% with /ultracave (computed from its 6,983, 4,334, 4,119 and 2,693 tokens; measured on its 3.1.0 rules, not yet re-run), while its rules add about 1,160 tokens of input. Its CLI sends usage telemetry by default (`caveman telemetry off` or `DO_NOT_TRACK=1` turns it off; read 2026-11-01). Overlaps cost-mode's response rules, so pick one
 
 ## License
 

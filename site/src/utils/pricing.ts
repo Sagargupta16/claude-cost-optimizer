@@ -1,15 +1,14 @@
-// Pricing data verified against Anthropic docs on 2026-10-09 (Haiku 5.5 launch,
-// Sonnet 5.5 cache-read cut):
+// Pricing data verified against Anthropic docs on 2026-11-01 (no rate changed since
+// the Haiku 5.5 launch and the Sonnet 5.5 cache-read cut on 2026-10-07):
 //   - https://platform.claude.com/docs/en/about-claude/pricing
-//   - https://platform.claude.com/docs/en/about-claude/models/overview
+//   - https://platform.claude.com/docs/en/models/overview
 //   - https://platform.claude.com/docs/en/models/haiku-5-5/overview
 //   - https://platform.claude.com/docs/en/models/haiku-5-5/whats-new-haiku-5-5
 //   - https://platform.claude.com/docs/en/models/sonnet-5-5/overview
 //   - https://platform.claude.com/docs/en/models/sonnet-5-5/whats-new-sonnet-5-5
 //   - https://platform.claude.com/docs/en/models/opus-5-5/overview
 //   - https://platform.claude.com/docs/en/models/opus-5-5/migration-guide
-//   - https://platform.claude.com/docs/en/models/opus-5/migration-guide
-//   - https://platform.claude.com/docs/en/about-claude/models/introducing-claude-fable-5-and-claude-mythos-5
+//   - https://platform.claude.com/docs/en/models/fable-5-1/overview
 //   - https://platform.claude.com/docs/en/build-with-claude/fast-mode
 //   - https://platform.claude.com/docs/en/build-with-claude/prompt-caching
 //   - https://platform.claude.com/docs/en/about-claude/model-deprecations
@@ -49,6 +48,9 @@ export interface ModelPricing {
   // are the only supported models, all at 2x of their own base rate: $8/$40 on
   // Opus 5.5, $10/$50 on the other two. Undefined when fastModeCapable is false.
   fastModeMultiplier?: number
+  // Fast Mode availability caveat shown in the calculator; unset when Fast Mode is
+  // generally available (Opus 5.5 since 2026-10-15).
+  fastModeStatus?: string
   tokenizerOverhead?: number
   // Minimum prompt length (tokens) before a cache_control block does anything.
   // Shorter prefixes are silently not cached, so cache savings are 0 below this.
@@ -204,7 +206,8 @@ export const MODELS: Record<ModelId, ModelPricing> = {
       'Default effort drops to medium (Opus 5 defaulted to high), so a request that omits effort thinks ' +
       'less than it did. Forced tool_choice (any/tool) returns 400; sampling params and prefill 400; ' +
       'the computer_20251124 tool is rejected on the Claude API and Google Cloud (use ' +
-      'computer_toolset_20260801). No Priority Tier. Fast Mode 2x ($8/$40). Batch $2/$10. ' +
+      'computer_toolset_20260801). No Priority Tier. Fast Mode 2x ($8/$40), generally available since ' +
+      '2026-10-15 (no beta header), also on Google Cloud (Anthropic managed) and Foundry on Azure. Batch $2/$10. ' +
       '1M context at standard rates; 128K max output (300K on Batch via beta). Min cacheable prompt 512. ' +
       'Refusal classifiers cover bio and reasoning_extraction as well as cyber. Knowledge cutoff Jun 2026. ' +
       'Earliest retirement: 2027-09-22. On the Claude API, Bedrock (anthropic.claude-opus-5-5), Google ' +
@@ -222,6 +225,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     maxOutput: '128K',
     fastModeCapable: true,
     fastModeMultiplier: 2,
+    fastModeStatus: 'research preview',
     tokenizerOverhead: 1.3,
     minCacheTokens: 512,
     lifecycle: 'legacy',
@@ -234,11 +238,11 @@ export const MODELS: Record<ModelId, ModelPricing> = {
       'on thinking plus text, so budget it (64K+ if you run xhigh/max effort). ' +
       'thinking {type:"disabled"} is only legal at effort high or below; pairing it with xhigh/max returns a 400. ' +
       'Min cacheable prompt 512 tokens (half of Opus 4.8), so short system prompts now cache. ' +
-      'Fast Mode supported at 2x ($10/$50). Batch $2.50/$12.50. 1M context at standard rates; ' +
+      'Fast Mode in research preview at 2x ($10/$50). Batch $2.50/$12.50. 1M context at standard rates; ' +
       '128K max output (300K on Batch via the output-300k-2026-03-24 beta). ' +
       'Ships cybersecurity safety classifiers -- a cyber refusal can auto-fall-back to Opus 4.8 via the ' +
       'server-side fallbacks param. Knowledge cutoff May 2026. Earliest retirement: 2027-07-24. ' +
-      'GA on Claude API, Claude Platform on AWS, Bedrock (anthropic.claude-opus-5), and Vertex AI.',
+      'GA on Claude API, Claude Platform on AWS, Bedrock (anthropic.claude-opus-5), and Google Cloud.',
   },
   'opus-4-8': {
     id: 'opus-4-8',
@@ -252,6 +256,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     maxOutput: '128K',
     fastModeCapable: true,
     fastModeMultiplier: 2,
+    fastModeStatus: 'research preview, removed 2026-11-30',
     tokenizerOverhead: 1.3,
     minCacheTokens: 1024,
     lifecycle: 'legacy',
@@ -260,7 +265,8 @@ export const MODELS: Record<ModelId, ModelPricing> = {
       'so there is no cost reason to stay -- migrate unless your prompts are tuned to this snapshot, ' +
       'or you need thinking fully off or forced tool_choice, both of which Opus 5.5 rejects. ' +
       'Keeps Priority Tier, which Opus 5.5 does not offer. ' +
-      'Adaptive thinking, off by default; effort defaults to high. Fast Mode supported at 2x ($10/$50). ' +
+      'Adaptive thinking, off by default; effort defaults to high. Fast Mode at 2x ($10/$50) is deprecated: ' +
+      'removed 2026-11-30, after which speed "fast" returns an error. ' +
       '1M context at standard rates. Min cacheable prompt 1,024 tokens. Knowledge cutoff Jan 2026. ' +
       'Still the server-side fallback target for Opus 5 cyber refusals. Earliest retirement: 2027-05-28.',
   },
@@ -458,7 +464,8 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     notes:
       'Legacy since the Haiku 5.5 launch (not deprecated). Extended thinking. 200K context. ' +
       'Min cacheable prompt 4,096 tokens, so short system prompts get no cache discount here. ' +
-      'Haiku 5.5 is 10x cheaper per token up to 100K prompt tokens. Earliest retirement: 2026-10-15.',
+      'Haiku 5.5 is 10x cheaper per token up to 100K prompt tokens. Active; no retirement announced ' +
+      '(its earliest date, 2026-10-15, has passed).',
   },
   'mythos-5-1': {
     id: 'mythos-5-1',
@@ -503,7 +510,7 @@ export const MODELS: Record<ModelId, ModelPricing> = {
       "Fable 5's capabilities without the safety classifiers, so stop_reason \"refusal\" never " +
       'occurs. Same specs and pricing as Fable 5, including the $1/MTok cache read. ' +
       'Superseded by Mythos 5.1 (which reads at $0.25/MTok). ' +
-      'Limited availability to approved Project Glasswing customers only. ' +
+      "Available only through Anthropic's verification programs, such as the Cyber Verification Program. " +
       'Min cacheable prompt 512 tokens. Successor to Mythos Preview.',
   },
   mythos: {
@@ -537,14 +544,15 @@ export const BATCH_DISCOUNT = 0.5
 export const REGIONAL_ENDPOINT_PREMIUM = 1.1
 export const DATA_RESIDENCY_PREMIUM = 1.1
 
-// Subscription pricing -- monthly vs annual.
+// Subscription pricing -- monthly vs annual (https://claude.com/pricing, read 2026-11-01).
 // Pro annual = $200 up front, billed yearly (effective ~$16.67/mo, ~17% off).
+// Max ($100, 5x Pro) and Ultra ($200, formerly Max 20x) are monthly only.
 export const SUBSCRIPTION_PRICING = {
   proMonthly: 20,
   proAnnualUpfront: 200,
   proAnnualEffectiveMonthly: 200 / 12,
-  max5x: 100,
-  max20x: 200,
+  max: 100,
+  ultra: 200,
 }
 
 export const TOKEN_ESTIMATES = {

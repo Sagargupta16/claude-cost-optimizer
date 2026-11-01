@@ -65,6 +65,11 @@ Verified **2026-10-09**. The facts most often got wrong:
   Sonnet 4.6 and earlier use the old tokenizer. Opus 4.5 cut $15/$75 to $5/$25, so Opus 5.5 is not
   the first Opus price cut.
 - **No vague ranges.** Every saving is a sourced or computed number with its source or formula.
+- **Plan names (2026-11-01)**: Free, Pro, Max ($100, was "Max 5x"), Ultra ($200, was "Max 20x"; 10x Pro
+  weekly, no 5-hour limit when verified), Team, Enterprise. "Extra usage" is now "usage credits".
+- **Google Cloud names**: Anthropic's docs say "Claude Models on Google Cloud (Google managed)" for what
+  was Vertex AI, plus "(Anthropic managed)" since 2026-10-22. Keep env var names like `CLAUDE_CODE_USE_VERTEX`.
+- **Hooks**: `Stop` fires every turn, `SessionEnd` once; a message for the user goes in `systemMessage`.
 
 After a rate change, update every file listed at the end of that doc, then run
 `python scripts/check-pricing-sync.py` and `python scripts/check-rate-values.py`. CI runs both on every PR.

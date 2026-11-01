@@ -149,7 +149,7 @@ const LOCK_FILES = [
 // Claude Code does not read this file; it is detected only to flag it and convert its patterns.
 const IGNORE_FILE = ".claudeignore";
 const IGNORE_FILE_FINDING =
-  "`.claudeignore` is not read by Claude Code -- it appears nowhere in Claude Code's documentation. Move its patterns into permissions.deny as Read(...) rules.";
+  "`.claudeignore` is not read by Claude Code -- its permissions docs say the file has no effect. Move its patterns into permissions.deny as Read(...) rules.";
 // Suggested when a project has no Read deny rules at all.
 const DEFAULT_READ_DENY = [
   "Read(./node_modules/**)",

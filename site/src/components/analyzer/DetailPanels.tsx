@@ -60,8 +60,8 @@ function IgnoreFileMigration({ rules }: Readonly<{ rules: string[] }>) {
     <>
       <StatRow label=".claudeignore" value="Not read by Claude Code" health="bad" />
       <p className={styles.notFound}>
-        It appears nowhere in Claude Code's documentation and scores
-        nothing. Its patterns as Read deny rules:
+        Claude Code's permissions docs say the file has no effect, so it
+        scores nothing. Its patterns as Read deny rules:
       </p>
       <EntryChips items={rules} limit={10} />
       {rules.length > 0 && (

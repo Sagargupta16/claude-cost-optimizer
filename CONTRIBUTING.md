@@ -59,7 +59,7 @@ If you want to help but don't know where to start, here are specific things we n
 - **Skill improvements** -- better cost-mode prompts, new intensity levels, edge case handling in `skills/cost-mode/SKILL.md`
 - **CLAUDE.md templates** for: Flutter, Svelte, Vue, Angular, Elixir, C#/.NET
 - **Benchmark data** comparing costs between Opus, Sonnet, and Haiku for real tasks
-- **Case studies** from teams with measured before/after spend on production projects (/usage, Console or OpenTelemetry numbers)
+- **Case studies** from teams with measured before/after spend on production projects (/usage, Console, OpenTelemetry or Usage and Cost Analytics API numbers)
 - **Pricing corrections** if any numbers in the guides are outdated
 - **Tool improvements** to the token estimator, usage analyzer, or Repo Analyzer
 - **Typo fixes and wording improvements** in any guide -- always welcome

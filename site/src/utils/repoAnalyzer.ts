@@ -306,7 +306,7 @@ function ignorePatternsAsReadRules(content: string): string[] {
 // Claude Code does not read this file. It is fetched only to flag it and convert its patterns.
 const IGNORE_FILE = '.claudeignore'
 const IGNORE_FILE_FINDING =
-  "`.claudeignore` is not read by Claude Code -- it appears nowhere in Claude Code's documentation. Move its patterns into permissions.deny as Read(...) rules."
+  "`.claudeignore` is not read by Claude Code -- its permissions docs say the file has no effect. Move its patterns into permissions.deny as Read(...) rules."
 
 function parseSettings(content: string): Record<string, unknown> | null {
   try {
@@ -456,15 +456,21 @@ function scoreFileReadExclusions(f: AnalysisResult['fileReadExclusions']): Categ
  * together or the CLI, the badge and the web analyzer will disagree.
  */
 export function computeCostControls(s: Record<string, unknown>): boolean {
-  // Reasoning tokens bill at the output rate and effort defaults to "high", so
-  // pinning below that is the biggest lever here after model choice.
+  // Reasoning tokens bill at the output rate. Claude Code defaults to "medium"
+  // on Opus 5.5, Sonnet 5.5 and Haiku 5.5 and "high" on most other models, so
+  // pinning low or medium is the biggest lever here after model choice.
   const effort = s.effortLevel
   if (typeof effort === 'string' && ['low', 'medium'].includes(effort.trim().toLowerCase())) {
     return true
   }
-  // Fast Mode is a flat 2x on input and output.
-  if (s.fastMode === false) return true
-  if (s.alwaysThinkingEnabled === false) return true
+  // maxEffortLevel caps effort on every provider; "max" sets no cap.
+  const cap = s.maxEffortLevel
+  if (typeof cap === 'string' && ['low', 'medium', 'high', 'xhigh'].includes(cap.trim().toLowerCase())) {
+    return true
+  }
+  // Fast Mode is a flat 2x on input and output. alwaysThinkingEnabled: false is
+  // not counted: it has no effect on the always-thinking 5.5 and Fable models.
+  if (s.fastMode === false || s.fastModePerSessionOptIn === true) return true
   // The closest real analogue of a spend cap: an enforced allowlist can keep
   // Opus- and Fable-tier models out of a project entirely.
   if (s.enforceAvailableModels === true && Array.isArray(s.availableModels) && s.availableModels.length > 0) {
@@ -693,8 +699,8 @@ export async function analyzeRepo(
   // maxCost / costLimit / maxMonthlyCost; none of those is in the Claude Code
   // settings schema (checked 2026-09-06 against schemastore, 142 top-level
   // properties, no spend cap among them), so it scored a key the product
-  // ignores. Value-aware on purpose: fastMode true doubles the bill and
-  // effortLevel "max" raises it, so the key being present is not enough.
+  // ignores. Value-aware on purpose: fastMode true doubles the bill and a
+  // high effortLevel raises it, so the key being present is not enough.
   const hasCostControls = settingsRaw ? computeCostControls(settingsRaw) : false
 
   // File-read exclusions: Read(...) rules in permissions.deny. A committed
@@ -888,7 +894,7 @@ function configRecommendations(r: RecommendationInput): string[] {
     }
     if (!r.settings.hasCostControls) {
       recs.push(
-        'Add cost controls Claude Code actually reads. There is no spend-cap setting, so maxMonthlyCost and budgetCap are silently ignored: use "effortLevel": "medium" (reasoning tokens bill as output), "fastMode": false (declines the flat 2x), "autoCompactEnabled": true, or "enforceAvailableModels" with "availableModels" to keep Opus- and Fable-tier models out. A real spend ceiling needs a PreToolUse hook, not a setting.',
+        'Add cost controls Claude Code actually reads. There is no spend-cap setting, so maxMonthlyCost and budgetCap are silently ignored: use "effortLevel": "medium" (reasoning tokens bill as output), "maxEffortLevel": "high" (caps effort on every provider), "fastMode": false (declines the flat 2x) or "fastModePerSessionOptIn": true, "autoCompactEnabled": true, or "enforceAvailableModels" with "availableModels" to keep Opus- and Fable-tier models out. A real spend ceiling needs a PreToolUse hook, not a setting.',
       )
     }
   }

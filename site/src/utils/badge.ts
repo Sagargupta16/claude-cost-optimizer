@@ -70,7 +70,7 @@ function scoreClaudeMd(lines: number, tokens: number): CategoryScore {
 }
 
 const IGNORE_FILE_FINDING =
-  "`.claudeignore` is not read by Claude Code -- it appears nowhere in Claude Code's documentation. Move its patterns into permissions.deny as Read(...) rules."
+  "`.claudeignore` is not read by Claude Code -- its permissions docs say the file has no effect. Move its patterns into permissions.deny as Read(...) rules."
 
 function scoreFileReadExclusions(
   rules: number,
@@ -110,7 +110,7 @@ function scoreSettings(hasModel: boolean, hasCostControls: boolean): CategorySco
     recommendation = 'Configure a default model in .claude/settings.json to avoid accidentally using expensive models.'
   } else if (!hasCostControls) {
     recommendation =
-      'Add a cost control Claude Code actually reads: "effortLevel": "medium", "fastMode": false, "autoCompactEnabled": true, or "enforceAvailableModels" with "availableModels". There is no spend-cap setting, so maxMonthlyCost and budgetCap are silently ignored.'
+      'Add a cost control Claude Code actually reads: "effortLevel": "medium", "maxEffortLevel": "high", "fastMode": false, "fastModePerSessionOptIn": true, "autoCompactEnabled": true, or "enforceAvailableModels" with "availableModels". There is no spend-cap setting, so maxMonthlyCost and budgetCap are silently ignored.'
   }
 
   return { name: 'Settings', score, maxScore: 25, recommendation }
@@ -155,7 +155,7 @@ export function scoreBadge(inputs: BadgeInputs): BadgeResult {
   const encodedGrade = encodeURIComponent(grade)
   const encodedColor = color.replace('#', '')
   const badgeUrl = `https://img.shields.io/badge/claude_cost_optimizer-${encodedGrade}-${encodedColor}?style=for-the-badge`
-  const badgeMarkdown = `[![Claude Cost Optimizer Grade](${badgeUrl})](https://sagargupta16.github.io/claude-cost-optimizer/badge)`
+  const badgeMarkdown = `[![Claude Cost Optimizer Grade](${badgeUrl})](https://sagargupta.online/claude-cost-optimizer/badge)`
 
   return {
     totalScore,

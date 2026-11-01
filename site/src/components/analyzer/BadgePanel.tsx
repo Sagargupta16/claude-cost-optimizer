@@ -6,7 +6,7 @@ export function BadgePanel({ grade }: Readonly<{ grade: AnalysisResult['grade'] 
   const encodedGrade = encodeURIComponent(grade.letter)
   const encodedColor = grade.color.replace('#', '')
   const badgeUrl = `https://img.shields.io/badge/claude_cost_optimizer-${encodedGrade}-${encodedColor}?style=for-the-badge`
-  const markdown = `[![Claude Cost Optimizer Grade](${badgeUrl})](https://sagargupta16.github.io/claude-cost-optimizer/analyzer)`
+  const markdown = `[![Claude Cost Optimizer Grade](${badgeUrl})](https://sagargupta.online/claude-cost-optimizer/analyzer)`
   return (
     <Panel title="Your Badge">
       <div className={styles.badgePreview}>

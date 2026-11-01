@@ -153,8 +153,8 @@ FILE_READ_RUBRIC_MAX = 15
 # Claude Code does not read this file; it is detected only to say so.
 IGNORE_FILE = ".claudeignore"
 IGNORE_FILE_FINDING = (
-    "`.claudeignore` is not read by Claude Code -- it appears nowhere in Claude "
-    "Code's documentation. Move its patterns into permissions.deny as Read(...) rules."
+    "`.claudeignore` is not read by Claude Code -- its permissions docs say the "
+    "file has no effect. Move its patterns into permissions.deny as Read(...) rules."
 )
 
 
@@ -234,15 +234,19 @@ def has_cost_controls(data: dict) -> bool:
     properties, no spend cap among them), so the check rewarded a key the
     product ignores.
 
-    Value-aware on purpose: "fastMode": true doubles the bill and
-    "effortLevel": "max" raises it, so presence of the key is not enough.
+    Value-aware on purpose: "fastMode": true doubles the bill and a high
+    "effortLevel" raises it, so presence of the key is not enough.
+    "alwaysThinkingEnabled": false does not count: it has no effect on Opus 5.5,
+    Sonnet 5.5, Haiku 5.5 or the Fable models, which always think
+    (code.claude.com/docs/en/settings-reference, read 2026-11-01).
     """
     effort = data.get("effortLevel")
     if isinstance(effort, str) and effort.strip().lower() in ("low", "medium"):
         return True
-    if data.get("fastMode") is False:
+    cap = data.get("maxEffortLevel")
+    if isinstance(cap, str) and cap.strip().lower() in ("low", "medium", "high", "xhigh"):
         return True
-    if data.get("alwaysThinkingEnabled") is False:
+    if data.get("fastMode") is False or data.get("fastModePerSessionOptIn") is True:
         return True
     models = data.get("availableModels")
     if (

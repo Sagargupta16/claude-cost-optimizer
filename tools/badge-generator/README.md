@@ -67,10 +67,12 @@ A `.claudeignore` scores nothing: Claude Code does not read it. When one exists 
 
 | Condition | Points |
 |-----------|--------|
-| Model + a real cost control (`effortLevel` low/medium, `fastMode: false`, `alwaysThinkingEnabled: false`, `enforceAvailableModels` with `availableModels`, or `autoCompactEnabled: true`) | 25 |
+| Model + a real cost control (`effortLevel` low/medium, `maxEffortLevel`, `fastMode: false`, `fastModePerSessionOptIn: true`, `enforceAvailableModels` with `availableModels`, or `autoCompactEnabled: true`) | 25 |
 | Model only | 15 |
 | Exists, no model | 5 |
 | Missing | 0 |
+
+`alwaysThinkingEnabled: false` is not counted: it has no effect on Opus 5.5, Sonnet 5.5, Haiku 5.5 or the Fable models, which always think ([settings reference](https://code.claude.com/docs/en/settings-reference#alwaysthinkingenabled), read 2026-11-01).
 
 ### MCP Servers Scoring
 
@@ -105,7 +107,7 @@ Project: /home/user/my-project
   CLAUDE.md              15/25  250 lines, ~3,223 tokens across 1 file(s)
     ! 250 lines -- over Anthropic's 200-line guidance for CLAUDE.md. Longer files consume more context and reduce adherence. Move workflow-specific instructions into skills or path-scoped .claude/rules/ so they load on demand.
   File-read exclusions   20/25  6 Read deny rule(s); lock files covered
-    ! `.claudeignore` is not read by Claude Code -- it appears nowhere in Claude Code's documentation. Move its patterns into permissions.deny as Read(...) rules.
+    ! `.claudeignore` is not read by Claude Code -- its permissions docs say the file has no effect. Move its patterns into permissions.deny as Read(...) rules.
   Settings                5/25  no model pin or cost controls
   MCP Servers            25/25  0 MCP servers
 
@@ -148,7 +150,7 @@ Markdown:
       "rubric_score": 12,
       "rubric_max": 15,
       "findings": [
-        "`.claudeignore` is not read by Claude Code -- it appears nowhere in Claude Code's documentation. Move its patterns into permissions.deny as Read(...) rules."
+        "`.claudeignore` is not read by Claude Code -- its permissions docs say the file has no effect. Move its patterns into permissions.deny as Read(...) rules."
       ]
     },
     "settings": {"score": 5, "detail": "no model pin or cost controls", "has_model": false, "has_cost_controls": false},

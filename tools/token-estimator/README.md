@@ -97,7 +97,7 @@ File reads are contained to the current directory tree or your home directory; p
 
 ## Pricing
 
-The estimator uses current Claude API pricing (as of 2026-10-09):
+The estimator uses current Claude API pricing (as of 2026-11-01):
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
 |-------|:---------------------:|:----------------------:|:-------------------------:|
@@ -121,6 +121,8 @@ The estimator uses current Claude API pricing (as of 2026-10-09):
 Cache hits have three multipliers: 0.1x base input by default, 0.025x on Fable 5.1 and Mythos 5.1, and 0.05x on Opus 5.5 and Sonnet 5.5 (95% off).
 
 Batch API pricing is 50% off the standard rates above (Opus 5.5 batch: $2/$10; legacy Opus 5 batch: $2.50/$12.50; Fable 5 batch: $5/$25; Haiku 5.5 batch: $0.05/$0.25 up to 100K prompt tokens, $0.25/$1.25 above).
+
+Fast Mode is Opus 5.5, Opus 5 and Opus 4.8 only. Opus 5.5 has it generally available since 2026-10-15 with no beta header; Opus 5 and Opus 4.8 are a research preview that needs the `fast-mode-2026-02-01` beta header, and Opus 4.8's fast mode is deprecated and removed on 2026-11-30 ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01). The Cache Hit column is n/a because this tool does not price cache reads at fast mode rates; Anthropic stacks the caching multipliers on top of fast mode pricing.
 
 Sonnet 5 is $2/$10 permanently -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15. Sonnet 5.5 (released 2026-09-28) launched at the same $2/$10 and moved Sonnet 5 to legacy.
 

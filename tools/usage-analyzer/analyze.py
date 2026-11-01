@@ -20,7 +20,7 @@ import os
 import sys
 from pathlib import Path
 
-# Claude model pricing per 1M tokens (verified 2026-10-09; Haiku 5.5 released 2026-10-07)
+# Claude model pricing per 1M tokens (verified 2026-11-01; Haiku 5.5 released 2026-10-07)
 # "fable" = Fable 5.1 (most capable, 2.5x Opus 5.5); "opus" = Opus 5.5, the
 # recommended default Opus at $4/$20 (20% below Opus 5); "opus-5" and
 # "opus-4.8"/"opus-4.7"/"opus-4.6" = legacy at $5/$25. Opus 5.5 runs adaptive

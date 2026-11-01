@@ -26,7 +26,7 @@ except ImportError:
     sys.exit(1)
 
 
-# Claude model pricing per 1M tokens (verified 2026-10-09; Haiku 5.5 released 2026-10-07)
+# Claude model pricing per 1M tokens (verified 2026-11-01; Haiku 5.5 released 2026-10-07)
 # NOTE: 1M context on Fable 5.1/Fable 5/Opus 5.5/Opus 5/Opus 4.8/4.7/4.6/Sonnet 5.5/Sonnet 5/Sonnet 4.6
 # is billed at standard rates (no long-context premium). The old "2x over 200K" pricing
 # only applied to Opus 4.1 and older.
@@ -176,8 +176,10 @@ MODEL_PRICING = {
         "cache_hit": None,
         "name": "Opus 5.5 (Fast Mode)",
         "note": (
-            "Research preview, Claude API only. 2x Opus 5.5's own base rate ($8/$40), "
-            "which undercuts the $10/$50 Fast rate on Opus 5 and 4.8 (fast_mode_opus_5)."
+            "Generally available since 2026-10-15 (no beta header) on the Claude API, "
+            "Google Cloud (Anthropic managed) and Foundry on Azure. 2x Opus 5.5's own base "
+            "rate ($8/$40), which undercuts the $10/$50 Fast rate on Opus 5 and 4.8 "
+            "(fast_mode_opus_5)."
         ),
     },
     "fast_mode_opus_5": {
@@ -186,7 +188,8 @@ MODEL_PRICING = {
         "cache_hit": None,
         "name": "Opus 5 / 4.8 (Fast Mode)",
         "note": (
-            "Research preview. Flat 2x standard Opus 5 / 4.8 rates ($10/$50), "
+            "Research preview (beta header fast-mode-2026-02-01); Opus 4.8 Fast Mode is "
+            "removed on 2026-11-30. Flat 2x standard Opus 5 / 4.8 rates ($10/$50), "
             "Claude API + Managed Agents. Not available with Batch API. "
             "The old 6x tier is gone: Opus 4.7 errors on speed=fast, and Opus 4.6 "
             "silently runs standard speed at standard rates."

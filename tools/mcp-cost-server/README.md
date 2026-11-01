@@ -90,10 +90,10 @@ Returns a breakdown of cost by component (system prompt, CLAUDE.md, MCP schemas,
 
 - System prompt: ~3,500 tokens (fixed, loaded every turn)
 - CLAUDE.md: ~10 tokens per line (loaded every turn; measured on this repo's root CLAUDE.md and its 14 CLAUDE.md templates: 20,161 cl100k tokens over 2,048 lines, 9.8 per line, and about 30% more on Claude 4.7+ models)
-- MCP servers: ~1,500 tokens per server, this tool's own assumption rather than a published figure. It models full schemas, which load up front only when tool search is off (`ENABLE_TOOL_SEARCH=false`, a custom `ANTHROPIC_BASE_URL`, or models older than the Claude 4.5 generation on Google Cloud). Tool search is on by default, and then only tool names and server instructions enter context until Claude uses a tool
+- MCP servers: ~1,500 tokens per server, this tool's own assumption rather than a published figure. It models full schemas, which load up front only when tool search is off (`ENABLE_TOOL_SEARCH=false`, `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS` set, a HIPAA configuration, Microsoft Foundry deployments hosted on Azure, or models older than the Claude 4.5 generation on Google Cloud (Google managed, formerly Vertex AI)). Tool search is on by default, including behind a custom `ANTHROPIC_BASE_URL` since v2.1.304 (a 400 or 422 from the gateway is retried without it), and then only tool names and server instructions enter context until Claude uses a tool ([MCP tool search](https://code.claude.com/docs/en/mcp#configure-tool-search), read 2026-11-01)
 - Conversation history: ~1,500 tokens per turn (cumulative)
 - Output: ~500 tokens per turn
-- Caching: each turn bills the way Claude Code caches a conversation: the previous request is a cache read and only the new exchange is a 5-minute cache write (1.25x input); a prompt under the model's minimum cacheable length is billed at full input ([Claude Code prompt caching](https://code.claude.com/docs/en/prompt-caching)). For reference, Anthropic measured coding agent loops on its API reading a median 88.5% of input from cache (upper quartile 93.4%, 14 days ending 2026-08-23; [cost guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence))
+- Caching: each turn bills the way Claude Code caches a conversation: the previous request is a cache read and only the new exchange is a 5-minute cache write (1.25x input); a prompt under the model's minimum cacheable length is billed at full input ([Claude Code prompt caching](https://code.claude.com/docs/en/prompt-caching)). For reference, Anthropic measured agent loops on its API reading a median 84.2% of input from cache (upper quartile 91.7%; 14 days ending 2026-08-23, 303,003 organization-days from 106,487 organizations; [cost guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), read 2026-11-01)
 
 ### compare_models
 
@@ -114,7 +114,7 @@ Returns cost for each model, identifies the cheapest option, and shows the perce
 
 ## Pricing Reference
 
-All estimates use current API pricing (verified 2026-10-09, per 1M tokens):
+All estimates use current API pricing (verified 2026-11-01, per 1M tokens):
 
 | Model | Input | Output | Cache Hit | Min cacheable prompt |
 |-------|-------|--------|-----------|---------------------:|
@@ -133,7 +133,7 @@ All estimates use current API pricing (verified 2026-10-09, per 1M tokens):
 
 Cache hits have three multipliers: 0.1x base input by default, 0.025x on Fable 5.1 and Mythos 5.1, and 0.05x on Opus 5.5 and Sonnet 5.5.
 
-Token estimation uses a ~4 characters per token approximation. That ratio fits pre-4.7 models; Anthropic puts the current tokenizer at about 2.5 characters per token for general text (1M tokens is roughly 2.5M characters, per the [models overview](https://platform.claude.com/docs/en/about-claude/models/overview)), so on Claude 4.7 and later models these counts can run about 37% low (computed: 1 - 2.5/4). Use the [token counting API](https://platform.claude.com/docs/en/build-with-claude/token-counting) for exact numbers.
+Token estimation uses a ~4 characters per token approximation. That ratio fits pre-4.7 models; Anthropic puts the current tokenizer at about 2.5 characters per token for general text (1M tokens is roughly 2.5M characters, per the [models overview](https://platform.claude.com/docs/en/models/overview)), so on Claude 4.7 and later models these counts can run 37.5% low (computed: 1 - 2.5/4). Use the [token counting API](https://platform.claude.com/docs/en/build-with-claude/token-counting) for exact numbers.
 
 **Minimum cacheable prompt.** A `cache_control` block on a prefix shorter than the model's floor is silently ignored: no error, no `cache_creation_input_tokens`, and full input price on every turn. Both `estimate_cost` and `session_estimate` emit a warning when your prefix falls below the floor for the selected model.
 
@@ -143,7 +143,7 @@ Token estimation uses a ~4 characters per token approximation. That ratio fits p
 
 **Sonnet 5.5 note.** Sonnet 5.5 (released 2026-09-28) has the same $2/$10 and tokenizer as Sonnet 5, and since 2026-10-07 half the cache-read price ($0.10 vs $0.20), but adaptive thinking is on by default (effort `high`) and reasoning tokens bill as output, so the ~500 output tokens per turn is a floor here too. `thinking: {type: "disabled"}` returns a 400; the lowest setting is `thinking: {type: "between_tools"}`, accepted at effort `high` or below. Effort levels are recalibrated, so re-run your effort sweep rather than carrying a Sonnet 5 setting over.
 
-Fast Mode is 2x each model's own base rate -- $8/$40 on Opus 5.5 and $10/$50 on Opus 5 and Opus 4.8, the only models that support it -- and this server does not model it. The old 6x tier on Opus 4.7 / 4.6 no longer exists: Opus 4.7 errors on `speed: "fast"`, and Opus 4.6 silently runs at standard speed and standard rates.
+Fast Mode is 2x each model's own base rate -- $8/$40 on Opus 5.5 (generally available since 2026-10-15, no beta header) and $10/$50 on Opus 5 and Opus 4.8 (research preview, `fast-mode-2026-02-01` beta header; Opus 4.8's is deprecated and removed on 2026-11-30), the only models that support it ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01) -- and this server does not model it. The old 6x tier on Opus 4.7 / 4.6 no longer exists: Opus 4.7 errors on `speed: "fast"`, and Opus 4.6 silently runs at standard speed and standard rates.
 
 ## Development
 

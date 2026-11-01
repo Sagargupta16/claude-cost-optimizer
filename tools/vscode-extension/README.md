@@ -7,7 +7,7 @@ A lightweight VS Code extension that shows estimated token count and Claude API 
 - **Status bar token count**: Shows `~1,247 tokens | $0.004` for the active file, updated in real time as you type.
 - **Estimate Current File**: Detailed breakdown of input/output costs across all Claude model tiers (Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5, legacy Fable/Opus/Sonnet/Haiku snapshots including Sonnet 5 and Haiku 4.5).
 - **Estimate CLAUDE.md Per-Turn Cost**: Finds all CLAUDE.md files in the workspace and calculates how much they add to each turn of a Claude Code session. Warns when the file is too small to be cacheable on the selected model.
-- **Check Project Configuration**: Audits your workspace for CLAUDE.md and .claude/settings.json, including file-read exclusions (`Read(...)` rules under `permissions.deny`). Reports missing files and suggests improvements. A `.claudeignore` file is not read by Claude Code -- it appears nowhere in Claude Code's documentation -- so move its patterns into `permissions.deny`.
+- **Check Project Configuration**: Audits your workspace for CLAUDE.md and .claude/settings.json, including file-read exclusions (`Read(...)` rules under `permissions.deny`). Reports missing files and suggests improvements. A `.claudeignore` file has no effect in Claude Code (the [permissions page](https://code.claude.com/docs/en/permissions), read 2026-11-01, says to use Read deny rules instead), so move its patterns into `permissions.deny`.
 - **CLAUDE.md size warning**: The status bar turns yellow when a CLAUDE.md file exceeds the configured line threshold, since large instruction files increase per-turn costs.
 
 ## Installation
@@ -59,11 +59,11 @@ The extension uses a character-based heuristic rather than a real BPE tokenizer:
 - Prose files average ~3.5 characters per token
 - The ratio is blended based on how many syntax characters the file contains
 
-This is fast and dependency-free but not calibrated against Claude's tokenizer: Anthropic gives about 2.5 characters per token for general text on the current tokenizer (1M tokens is roughly 2.5M characters, per the [models overview](https://platform.claude.com/docs/en/about-claude/models/overview)), below the 3.5-4 used here. For exact counts use the [token counting API](https://platform.claude.com/docs/en/build-with-claude/token-counting).
+This is fast and dependency-free but not calibrated against Claude's tokenizer: Anthropic gives about 2.5 characters per token for general text on the current tokenizer (1M tokens is roughly 2.5M characters, per the [models overview](https://platform.claude.com/docs/en/models/overview)), below the 3.5-4 used here. For exact counts use the [token counting API](https://platform.claude.com/docs/en/build-with-claude/token-counting).
 
 ## Pricing Data
 
-Costs are based on Claude API pricing as of 2026-10-09:
+Costs are based on Claude API pricing as of 2026-11-01:
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Min cacheable prompt |
 |-------|:---------------------:|:----------------------:|:--------------------:|

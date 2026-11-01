@@ -41,3 +41,6 @@ tools/mcp-cost-server/dist/
 
 # Local Claude Code dev-preview config
 .claude/launch.json
+
+# Local research and scratch files
+.scratch/

@@ -22,9 +22,9 @@ Usage:
 
 No external dependencies. Pure Python 3.10+ stdlib.
 
-Pricing data verified 2026-10-09 against:
+Pricing data verified 2026-11-01 against:
     https://platform.claude.com/docs/en/about-claude/pricing
-    https://platform.claude.com/docs/en/about-claude/models/overview
+    https://platform.claude.com/docs/en/models/overview
     https://platform.claude.com/docs/en/models/haiku-5-5/overview
     https://platform.claude.com/docs/en/models/sonnet-5-5/overview
     https://platform.claude.com/docs/en/models/opus-5-5/overview
@@ -45,12 +45,13 @@ from typing import Any
 
 # -- Pricing data (mirrors site/src/utils/pricing.ts) ------------------------
 
-# Models priced as of 2026-10-09. Prices are USD per 1M tokens.
+# Models priced as of 2026-11-01. Prices are USD per 1M tokens.
 # `fast_mode` marks the models that honor `speed: "fast"` (a flat 2x of the
 # model's own base on both input and output). Since Opus 5.5's release on
 # 2026-09-22 that is Opus 5.5, Opus 5 and Opus 4.8 only: Opus 4.7 errors on
 # `speed: "fast"`, and Opus 4.6 silently downgrades to standard speed at
-# standard rates. The old 6x tier no longer exists.
+# standard rates. The old 6x tier no longer exists. Opus 4.8 Fast Mode is
+# deprecated and removed on 2026-11-30 (Anthropic release notes, 2026-10-30).
 # `cache_hit` has three multipliers: 0.1x input on most models, 0.05x on
 # Opus 5.5 ($0.20/MTok) and Sonnet 5.5 ($0.10/MTok since 2026-10-07), and 0.025x
 # on Fable 5.1 / Mythos 5.1 ($0.25/MTok) -- read the field, never recompute it as
@@ -247,8 +248,8 @@ GITIGNORE = ".gitignore"
 # say so and convert its patterns into Read deny rules.
 IGNORE_FILE = ".claudeignore"
 IGNORE_FILE_FINDING = (
-    "`.claudeignore` is not read by Claude Code -- it appears nowhere in Claude "
-    "Code's documentation. Move its patterns into permissions.deny as Read(...) rules."
+    "`.claudeignore` is not read by Claude Code -- its permissions docs say the "
+    "file has no effect. Move its patterns into permissions.deny as Read(...) rules."
 )
 
 # Lock files at the project root that the Read deny rules should cover.
@@ -628,26 +629,34 @@ _MODEL_KEYS: tuple[str, ...] = ("model", "defaultModel", "preferredModel")
 #
 # The points now go to settings Claude Code really reads that bound spend. Each
 # entry is value-aware on purpose: the key being present is not enough, because
-# "fastMode": true doubles the bill and "effortLevel": "max" raises it.
+# "fastMode": true doubles the bill and a high "effortLevel" raises it.
+# "alwaysThinkingEnabled": false is not counted: it has no effect on Opus 5.5,
+# Sonnet 5.5, Haiku 5.5 or the Fable models, which always think
+# (code.claude.com/docs/en/settings-reference, read 2026-11-01).
 
 
 def _cost_control_signals(data: dict[str, Any]) -> list[str]:
     """Real settings whose configured value reduces or bounds spend."""
     signals: list[str] = []
 
-    # Reasoning tokens bill at the output rate, and effort defaults to "high",
-    # so pinning it below that is the largest lever here after model choice.
+    # Reasoning tokens bill at the output rate. Claude Code's default effort is
+    # "medium" on Opus 5.5, Sonnet 5.5 and Haiku 5.5 and "high" on most other
+    # models, so pinning low or medium is the largest lever after model choice.
     effort = data.get("effortLevel")
     if isinstance(effort, str) and effort.strip().lower() in ("low", "medium"):
         signals.append(f'effortLevel="{effort}"')
 
-    # Fast Mode is a flat 2x on input and output. Declining it explicitly is a
-    # real saving; leaving it on is the thing to warn about.
+    # A cap holds on every provider; "max" sets no cap.
+    cap = data.get("maxEffortLevel")
+    if isinstance(cap, str) and cap.strip().lower() in ("low", "medium", "high", "xhigh"):
+        signals.append(f'maxEffortLevel="{cap}"')
+
+    # Fast Mode is a flat 2x on input and output. Declining it explicitly, or
+    # making it a per-session opt-in, is a real saving.
     if data.get("fastMode") is False:
         signals.append("fastMode=false")
-
-    if data.get("alwaysThinkingEnabled") is False:
-        signals.append("alwaysThinkingEnabled=false")
+    if data.get("fastModePerSessionOptIn") is True:
+        signals.append("fastModePerSessionOptIn=true")
 
     # The closest real analogue of a spend cap: an enforced allowlist can keep
     # Opus- and Fable-tier models out of a project entirely.
@@ -752,8 +761,10 @@ def score_settings(project: Path) -> CategoryResult:
             "settings schema and are silently ignored, so adding one buys nothing. "
             "Use settings it actually reads:\n"
             '    "effortLevel": "medium"          reasoning tokens bill as output\n'
+            '    "maxEffortLevel": "high"         caps effort on every provider\n'
             '    "fastMode": false                declines the flat 2x Fast Mode '
             "multiplier\n"
+            '    "fastModePerSessionOptIn": true  a saved /fast no longer carries over\n'
             '    "autoCompactEnabled": true       bounds the context growth that '
             "drives input cost\n"
             '    "enforceAvailableModels": true with "availableModels": '
@@ -1440,7 +1451,8 @@ def score_user_settings(settings: dict[str, Any]) -> CategoryResult:
     if not signals:
         cat.fixes.append(
             "Set a cost control Claude Code reads: /effort low or medium per model (saved under "
-            'modelSettings), "fastMode": false, or "availableModels" with "enforceAvailableModels".'
+            'modelSettings), "maxEffortLevel", "fastMode": false, "fastModePerSessionOptIn": true, '
+            'or "availableModels" with "enforceAvailableModels".'
         )
     return cat
 
@@ -1745,7 +1757,7 @@ def rate(project: Path) -> RateResult:
 # -- Output formatters -------------------------------------------------------
 
 _BAR_WIDTH = 20
-_PRICING_VERIFIED_DATE = "2026-10-09"
+_PRICING_VERIFIED_DATE = "2026-11-01"
 
 
 def _ratio_color(ratio: float) -> str:
@@ -1918,7 +1930,7 @@ def _build_parser() -> argparse.ArgumentParser:
         f"(default: last {_USAGE_DAYS_DEFAULT} days): cache hit rate, context size, "
         "model mix and list-price spend per model",
     )
-    parser.add_argument("--version", action="version", version="claude-rate 0.2.0")
+    parser.add_argument("--version", action="version", version="claude-rate 0.3.0")
     return parser
 
 

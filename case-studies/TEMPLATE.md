@@ -10,7 +10,7 @@
 | **Tech stack** | <!-- e.g., React + TypeScript, FastAPI + Python, MERN --> |
 | **Codebase size** | <!-- e.g., ~45K lines across 320 files --> |
 | **Team size** | <!-- e.g., 3 developers using Claude Code --> |
-| **Claude Code plan** | <!-- e.g., Max 5x ($100/mo) --> |
+| **Claude Code plan** | <!-- e.g., Max ($100/mo), Ultra ($200/mo, formerly Max 20x), Team Premium seat, or API key --> |
 | **Primary model used** | <!-- e.g., Opus 5.5, Sonnet 5.5, Haiku 5.5, Fable 5.1, or legacy Opus 5, Opus 4.8, Sonnet 5, Sonnet 4.6, Haiku 4.5 --> |
 | **Duration of test** | <!-- e.g., 2 weeks before, 2 weeks after --> |
 
@@ -28,7 +28,7 @@ Describe how Claude Code was being used before any optimizations were applied.
 | Estimated daily cost | $<!-- e.g., 14.40 --> |
 | Estimated monthly cost | $<!-- e.g., 316.80 --> |
 | CLAUDE.md line count | <!-- e.g., 280 --> |
-| Read deny rules in permissions.deny | <!-- count, e.g., 8 (a .claudeignore is not read by Claude Code, so it does not count) --> |
+| Read deny rules in permissions.deny | <!-- count, e.g., 8 (a .claudeignore has no effect in Claude Code, so it does not count) --> |
 | MCP servers connected | <!-- e.g., 5 --> |
 
 ### Pain Points
