@@ -12,10 +12,20 @@
 #
 # Exit codes: 0 = allow (never blocks)
 
-TOOL="${HOOK_TOOL_NAME:-unknown}"
+# Claude Code sends the hook payload as JSON on stdin; tool_name and
+# session_id come from there (it sets no per-tool environment variables).
+INPUT="$(cat)"
+read -r TOOL SESSION_ID < <(printf '%s' "$INPUT" | python3 -c "
+import sys, json
+try:
+    data = json.load(sys.stdin)
+except ValueError:
+    data = {}
+print(data.get('tool_name') or 'unknown', (data.get('session_id') or 'default').replace(' ', '_'))
+" 2>/dev/null || echo "unknown default")
 LOG_DIR="${TMPDIR:-/tmp}/claude-cost-log"
 mkdir -p "$LOG_DIR"
-SESSION_LOG="$LOG_DIR/session-$(date +%Y%m%d).log"
+SESSION_LOG="$LOG_DIR/session-$(date +%Y%m%d)-${SESSION_ID}.log"
 
 # Estimate tokens by tool type (rough averages)
 case "$TOOL" in
@@ -42,9 +52,10 @@ case "$TOOL" in
 esac
 
 # Per-model rates in dollars per 1M tokens (verified 2026-10-09).
-# Defaults to the "opus" alias (Opus 5.5) when no model is set; unrecognized
-# model strings fall through to the legacy Opus rate.
-MODEL="${HOOK_MODEL_ID:-${ANTHROPIC_MODEL:-opus}}"
+# Hook input carries no model, so this reads COST_LOGGER_MODEL (this script's
+# own override), then ANTHROPIC_MODEL, then defaults to the "opus" alias
+# (Opus 5.5); unrecognized model strings fall through to the legacy Opus rate.
+MODEL="${COST_LOGGER_MODEL:-${ANTHROPIC_MODEL:-opus}}"
 case "$MODEL" in
   *haiku-4-5*|*haiku-4.5*)
     # Legacy Haiku 4.5. Must match before the generic Haiku branch below.
@@ -100,9 +111,9 @@ COUNT=$(wc -l < "$SESSION_LOG" 2>/dev/null || echo 0)
 
 # Warn at thresholds (informational only, never blocks)
 if [[ "$COUNT" -eq 50 ]]; then
-  echo '{"result": "50 tool calls this session. Consider starting fresh if switching tasks."}'
+  echo '{"systemMessage": "50 tool calls this session. Consider starting fresh if switching tasks."}'
 elif [[ "$COUNT" -eq 100 ]]; then
-  echo '{"result": "100 tool calls. Session history is expensive. Run /compact or start a new session."}'
+  echo '{"systemMessage": "100 tool calls. Session history is expensive. Run /compact or start a new session."}'
 fi
 
 exit 0

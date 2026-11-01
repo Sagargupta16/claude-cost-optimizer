@@ -8,7 +8,7 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 // -------------------------------------------------------------------
-// Pricing tables -- verified 2026-10-09
+// Pricing tables -- verified 2026-11-01
 //
 // cacheHitPerMillion has three multipliers: 0.1x input by default, 0.025x on
 // Fable 5.1 / Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok) and

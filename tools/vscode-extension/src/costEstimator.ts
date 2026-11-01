@@ -17,7 +17,7 @@ export interface CostBreakdown {
   model: string;
 }
 
-/** Per-1M-token pricing verified 2026-10-09. */
+/** Per-1M-token pricing verified 2026-11-01. */
 export const PRICING: Record<string, { input: number; output: number }> = {
   fable: { input: 10, output: 50 },
   "fable-5": { input: 10, output: 50 },

@@ -11,7 +11,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "claude-rate"
-version = "0.2.0"
+version = "0.3.0"
 description = "Grade a Claude Code setup for cost-efficiency, locally: score, fixes, and cache-aware monthly spend."
 readme = "README.md"
 requires-python = ">=3.10"

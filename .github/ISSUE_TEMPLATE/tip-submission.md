@@ -49,6 +49,8 @@ assignees: ''
 - [ ] Haiku
 - [ ] Pro plan
 - [ ] Max plan
+- [ ] Ultra plan (formerly Max 20x)
+- [ ] Team / Enterprise
 - [ ] API usage
 
 ## Additional Context

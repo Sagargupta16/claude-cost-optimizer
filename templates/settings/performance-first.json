@@ -6,6 +6,7 @@
     "Opus for complex tasks. Fewest restrictions, maximum capability.",
     "Best for: complex architecture work, critical debugging, code reviews.",
     "Trade-off: highest cost per session. Use for high-value tasks only.",
+    "\"opus\" is Opus 5.5 on the Anthropic API, Bedrock, Google Cloud (Google managed, formerly Vertex AI) and Claude Platform on AWS, but Opus 4.6 on Foundry -- pin claude-opus-5-5 there (code.claude.com/docs/en/model-config, read 2026-11-01).",
     "Copy this file to ~/.claude/settings.json or .claude/settings.json"
   ],
 

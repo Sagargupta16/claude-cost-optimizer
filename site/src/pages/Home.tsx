@@ -108,7 +108,7 @@ const levers = [
   {
     title: 'Model routing',
     savings: '40x',
-    description: 'Haiku 5.5 costs 1/40 of Opus 5.5 per token while the prompt stays under 100K tokens. Anthropic measured it at 1/20 of Opus 5.5 per GPQA question (85% vs 91% accuracy).',
+    description: "Haiku 5.5 costs 1/40 of Opus 5.5 per token while the prompt stays under 100K tokens. Anthropic measured it at about 1/20 of Opus 5.5's cost per correct GPQA Diamond answer (85% vs 91% accuracy).",
     source: 'Anthropic',
     link: COST_GUIDE,
   },
@@ -117,7 +117,7 @@ const levers = [
     savings: '84%',
     description: "Context editing with the memory tool cut token use 84% in Anthropic's 100-turn agentic search eval. In Claude Code the levers are /compact, /clear and fresh sessions.",
     source: 'Anthropic',
-    link: 'https://claude.com/blog/context-management',
+    link: 'https://claude.com/resources/articles/context-management',
   },
 ]
 
@@ -402,7 +402,7 @@ function LevelsSection() {
       <SectionHead eyebrow="Pick your intensity" title="Three Intensity Levels">
         <p className={styles.sectionSub}>
           None of the three is benchmarked. Closest measurement: Anthropic cut output
-          tokens 39% and cost per run 14% by asking for shorter answers
+          tokens 39% and cost per run 13% by asking for shorter answers
           {' ('}<a href={COST_GUIDE} target="_blank" rel="noopener noreferrer">cost guide</a>{').'}
         </p>
       </SectionHead>
@@ -496,9 +496,10 @@ function LeversSection() {
         ))}
       </div>
       <p className={styles.leversFine} data-stagger style={staggerStyle(5)}>
-        No typical whole-workload figure has been published. Anthropic's one
-        stacked measurement, its cookbook agent, cut cost per task 13x at the
-        same pass rate.{' '}
+        No typical whole-workload figure has been published. Anthropic's stacked
+        measurements: its cookbook agent cut cost per task 13x at the same pass
+        rate, and a search over effort and model cut a tau2-bench agent 61% within
+        2 points.{' '}
         <a
           href="https://github.com/Sagargupta16/claude-cost-optimizer#how-far-can-you-actually-go"
           target="_blank"

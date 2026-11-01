@@ -64,31 +64,32 @@ Only suggest model changes when it would save meaningful cost, and at a task bou
 
 Haiku 5.5 is priced by prompt length: $0.10/$0.50 up to 100,000 prompt tokens, $0.50/$2.50 above, on the whole request, and cache reads count toward the line. It stays cheapest on short subagent and classification calls; a long Haiku session that crosses 100K pays 5x per token from then on, so suggest `/compact` or a fresh subagent before that.
 
-Opus 5.5 ($4/$20, released 2026-09-22) is the recommended default Opus. Its adaptive thinking cannot be disabled and thinking bills as output, so brevity rules don't shrink it; effort does. Default effort is `medium`: suggest `/effort low` for routine turns, re-running only failures at `high` (Anthropic's published run on Opus 5.5: ~97% pass at ~$0.17/task vs 95.3% at $0.29 with everything at `high`).
+Opus 5.5 ($4/$20, released 2026-09-22) is the recommended default Opus. Its adaptive thinking cannot be disabled and thinking bills as output, so brevity rules don't shrink it; effort does. Default effort is `medium`: suggest `/effort low` for routine turns, re-running only failures at `high` (Anthropic's published run on Opus 5.5: about 97% pass at about $0.17/task vs 95.3% at $0.29 with everything at `high`).
 
-After a model migration, suggest auditing the old prompts: prompts written for an older model make the new one over-work (Anthropic's published run: Opus 4.8 prompts cost 36% more per ticket on Opus 5, for no accuracy gain). `max_tokens` is a backstop, not a knob: keep 64,000 for agentic work (a 16,384 cap ended about a quarter of Opus 5.5's attempts on Anthropic's repository benchmark). Fast Mode bills a flat 2x ($8/$40 on Opus 5.5).
+After a model migration, suggest auditing the old prompts: prompts written for an older model make the new one over-work (Anthropic's published run: Opus 4.8 prompts cost 36% more per ticket on Opus 5, for no accuracy gain). `max_tokens` is a backstop, not a knob: keep 64,000 for agentic work (a 16,384 cap ended about a quarter of Opus 5.5's attempts on Anthropic's repository benchmark). Fast Mode bills a flat 2x ($8/$40 on Opus 5.5), comes out of usage credits on a subscription, and keeps a cache separate from standard speed, so each toggle can re-read the conversation uncached: turn it on at session start or not at all.
 
 ## Session Awareness
 
 The prompt cache is what makes long sessions cheap. Protect it:
-- Session start: pick model and effort once. Switching model mid-task rebuilds the cache (each model has its own); effort changes keep it only on Opus 5.5 and Fable 5.1 (API key or subscription)
+- Session start: pick model and effort once. Switching model mid-task rebuilds the cache (each model has its own); effort changes keep it only on Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 with an API key or subscription (not on Bedrock, Google Cloud's Agent Platform or a gateway)
 - Between unrelated tasks: suggest `/clear` (costs nothing)
 - After 20+ turns or at a natural break: suggest `/compact`. Cheap while the cache is warm; after an idle gap longer than the TTL it reprocesses the full history uncached. TTL is 1 hour for the main conversation on a subscription within plan usage; 5 minutes for subagents, and for everything on an API key, a cloud provider or usage credits
+- Stepping away: with the 1-hour TTL, Claude Code compacts a 200K+ token conversation after about 54 idle minutes, before the cache expires (idle compaction, v2.1.299). Resuming an old conversation re-reads it uncached, and Pro and Max plans warn when that would use a noticeable share of the 5-hour limit (v2.1.304): for a stale task, suggest a fresh session
 - Abandoning a wrong path: suggest `/rewind` (returns to an already-cached prefix) instead of `/compact`
 - Simple unrelated question mid-complex-session: suggest a `model: haiku` subagent, not `/model haiku`, which rebuilds the cache
 - Multi-file change: suggest plan mode (Shift+Tab) before implementation
 - CLAUDE.md edits mid-session keep the cache but apply only after `/clear`, `/compact` or restart
 - When about to read many files: prefer targeted reads over broad searches
-- "Where did it go?": `/usage` shows session cost and the `Prompt cache (main)` hit share; `/context` shows what fills context
+- "Where did it go?": `/usage` shows session cost and the `Prompt cache (main)` hit share, and each of its warnings is a one-line fix that `f` applies (v2.1.305); `/context` shows what fills context
 
 ## Workflow Levers
 
 Nudge only when the user is doing the thing:
-- Verbose test/build output: suggest a PreToolUse hook that filters it to failures (Anthropic's costs page: tens of thousands of tokens down to hundreds). rtk (rtk-ai/rtk) proxies common dev commands; its own claim is 60-90% on those commands
+- Verbose test/build output: suggest a PreToolUse hook that filters it to failures (Anthropic's costs page: tens of thousands of tokens down to hundreds). rtk (rtk-ai/rtk) proxies common dev commands; its own claim is output "up to 90% smaller", which it says is not the same cut in your bill
 - A CLI exists (`gh`, `aws`, `gcloud`): prefer it over that service's MCP server; it adds no tool listing. MCP tool search is on by default, so idle servers cost names and instructions, not full schemas. Disable unused ones with `/mcp`
-- Simple delegated work (search, summarize, triage): subagent with `model: haiku`. Agent teams use ~7x the tokens of a standard session when teammates run in plan mode
+- Simple delegated work (search, summarize, triage): subagent with `model: haiku`; `CLAUDE_CODE_SUBAGENT_EFFORT` sets the effort subagents run at when nothing else names one (v2.1.316). Agent teams (experimental, off by default) use ~7x the tokens of a standard session when teammates run in plan mode
 - Many installed skills: each one's description is in context every turn unless it sets `disable-model-invocation: true`. `/skill-doctor` reports what each skill costs
-- Claude opening `dist/`, `node_modules/`, lock files: add `Read(./dist/**)`-style rules to `permissions.deny` in `.claude/settings.json`. `.claudeignore` is not a Claude Code feature. No published figure for the saving
+- Claude opening `dist/`, `node_modules/`, lock files: add `Read(./dist/**)`-style rules to `permissions.deny` in `.claude/settings.json`. The permissions docs say a `.claudeignore` file has no effect. No published figure for the saving
 - CLAUDE.md over 200 lines: Anthropic's guidance is under 200; move workflow-specific parts into skills or path-scoped `.claude/rules/`
 - Symbol hunts across many files: a code intelligence plugin's go-to-definition replaces grep plus reading many files
 - Screenshots: 1280x720 caps an image near 1,200 tokens; downscale larger ones

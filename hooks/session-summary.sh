@@ -1,10 +1,14 @@
 #!/usr/bin/env bash
-# session-summary.sh - Summarize a Claude Code session on Stop
+# session-summary.sh - Summarize a Claude Code session on SessionEnd
 #
-# Hook type: Stop
-# Purpose: When a session ends, read the session data from stdin,
-#          print a brief summary, and append it to a persistent log
-#          file for historical tracking.
+# Hook type: SessionEnd (not Stop: Stop fires every time Claude finishes a
+#            response, so the counter cleanup below would reset the budget
+#            tracker after every turn; https://code.claude.com/docs/en/hooks)
+# Purpose: When a session ends, read the session data from stdin
+#          (session_id, transcript_path, cwd, reason), and append a brief
+#          summary to a persistent log file for historical tracking.
+#          Claude Code discards SessionEnd output, so the log file is
+#          where the summary goes.
 #
 # Configuration (environment variables):
 #   BUDGET_LOG_DIR     - directory for log files (default: /tmp/claude-budget)
@@ -94,7 +98,8 @@ mkdir -p "$LOG_DIR" 2>/dev/null || true
 } >> "$LOG_FILE" 2>/dev/null || true
 
 # ---------------------------------------------------------------------------
-# Output summary as a message for the user to see in the terminal
+# Print the summary as JSON. Claude Code discards SessionEnd output, so this
+# only shows when you run the script by hand; the log file above is the record.
 # ---------------------------------------------------------------------------
 # Escape newlines for JSON output
 JSON_MSG="$(printf '%s' "$SUMMARY" | python3 -c "
@@ -103,7 +108,7 @@ text = sys.stdin.read()
 print(json.dumps(text))
 " 2>/dev/null || echo '"Session complete."')"
 
-printf '{"message":%s}\n' "$JSON_MSG"
+printf '{"systemMessage":%s}\n' "$JSON_MSG"
 
 # ---------------------------------------------------------------------------
 # Clean up the budget tracker counter file for this session (optional)

@@ -4,7 +4,7 @@
 
 `claude-rate` scans your project directory and grades your Claude Code (and adjacent AI tooling) configuration for cost-efficiency. Get a 0-100 score, an A+ to F letter grade, a per-category breakdown, copy-pasteable fix suggestions, and an estimated monthly spend on every active model tier.
 
-Unlike the [web analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer) (which only sees what's on GitHub), `claude-rate` runs on the actual filesystem and inspects things the web tool can't:
+Unlike the [web analyzer](https://sagargupta.online/claude-cost-optimizer/analyzer/) (which only sees what's on GitHub), `claude-rate` runs on the actual filesystem and inspects things the web tool can't:
 
 - Real MCP server count from `.mcp.json`
 - Hook configuration in `.claude/settings.json`
@@ -72,7 +72,7 @@ curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/m
 ```
 
 - **`--user`** grades `~/.claude` (or `$CLAUDE_CONFIG_DIR`), which loads in every project: always-loaded instructions (`CLAUDE.md` plus `rules/` files without `paths:` frontmatter, which load at launch), the skill listing (every skill's description is in context each turn unless it sets `disable-model-invocation: true`), user and local MCP servers from `~/.claude.json`, cost controls in user settings, and user-level `Read(...)` deny rules. It reads counts and setting names only, never values.
-- **`--usage [DAYS]`** reads your Claude Code transcripts (`~/.claude/projects/**/*.jsonl`, last 30 days by default) and grades what actually happened: the share of prompt tokens read from cache, median and p90 prompt size, and the share of list-price spend on legacy models. It reads only token counts and model names, dedupes the per-content-block records by message id, and prices each request the way Anthropic bills it (5-minute and 1-hour cache writes, the Haiku 5.5 prompt-length tier, Fast Mode at 2x). The dollar total is list price: on a Pro or Max plan you pay the plan price, so use it to compare models and habits.
+- **`--usage [DAYS]`** reads your Claude Code transcripts (`~/.claude/projects/**/*.jsonl`, last 30 days by default) and grades what actually happened: the share of prompt tokens read from cache, median and p90 prompt size, and the share of list-price spend on legacy models. It reads only token counts and model names, dedupes the per-content-block records by message id, and prices each request the way Anthropic bills it (5-minute and 1-hour cache writes, the Haiku 5.5 prompt-length tier, Fast Mode at 2x). The dollar total is list price: on a subscription plan you pay the plan price, so use it to compare models and habits.
 
 Example against a sample `~/.claude` (14 skills, 5 user MCP servers, 6 sessions of synthetic transcripts):
 
@@ -105,7 +105,7 @@ Your measured usage (last 30 days)
 | `--user` | Global instructions | 25 | Always-loaded user instructions stay small (they load in every session of every project) |
 | `--user` | Skill listing | 20 | The skill and plugin descriptions in context each turn stay small |
 | `--user` | MCP servers (user) | 20 | Few servers at user and local scope |
-| `--user` | Settings (user) | 20 | A default model is pinned and a cost control Claude Code reads is set (`/effort` per model under `modelSettings`, `fastMode: false`, `availableModels` with `enforceAvailableModels`). A top-level `effortLevel` does not count: Opus 5.5 and later ignore it |
+| `--user` | Settings (user) | 20 | A default model is pinned and a cost control Claude Code reads is set (`/effort` low or medium per model under `modelSettings`, `maxEffortLevel`, `fastMode: false`, `fastModePerSessionOptIn: true`, `availableModels` with `enforceAvailableModels`, or `autoCompactEnabled: true`). A top-level `effortLevel` in user settings does not count: Opus 5.5 and later ignore it there |
 | `--user` | Read deny rules (user) | 15 | Deny rules for `.env`, dependencies and build output apply in every project |
 | `--usage` | Cache hit rate | 50 | 95% or more of prompt tokens are cache reads |
 | `--usage` | Context size | 30 | Median prompt under 50,000 tokens |
@@ -117,12 +117,12 @@ Your measured usage (last 30 days)
 claude-rate -- Claude / AI setup audit
 ============================================================
 Project: /home/sagar/work/my-project
-Verified against Anthropic pricing as of: 2026-10-09
+Verified against Anthropic pricing as of: 2026-11-01
 
   CLAUDE.md                [############--------]  12/20  250 lines primary (over the 200-line guidance); ~3,098 tokens total across 1 file(s)
     ! 250 lines -- over Anthropic's 200-line guidance for CLAUDE.md. Longer files consume more context and reduce adherence. Move workflow-specific instructions into skills or path-scoped .claude/rules/ so they load on demand.
   File-read exclusions     [################----]  12/15  6 Read deny rule(s); lock files covered
-    ! `.claudeignore` is not read by Claude Code -- it appears nowhere in Claude Code's documentation. Move its patterns into permissions.deny as Read(...) rules.
+    ! `.claudeignore` is not read by Claude Code -- its permissions docs say the file has no effect. Move its patterns into permissions.deny as Read(...) rules.
   .claude/settings.json    [#####---------------]   4/15  found at .claude/settings.json; permissions defined
   MCP servers              [####################]  15/15  no MCP servers configured (lowest overhead)
   Hooks                    [--------------------]   0/10  no hooks configured
@@ -173,7 +173,7 @@ With `--fix`, the File-read exclusions entry prints the `.claudeignore` patterns
 |----------|----:|----------------|
 | **CLAUDE.md** | 20 | Primary file (root `CLAUDE.md`, else `.claude/CLAUDE.md`) line count: up to 100 lines 12, up to 200 10, up to 300 6, up to 500 3, more 1. Plus estimated tokens (chars / 4) across both files: up to 2,000 8, up to 4,000 6, up to 8,000 4, up to 16,000 2, more 0. CLAUDE.md loads in full at launch, so over 200 lines is flagged against Anthropic's 200-line guidance |
 | **File-read exclusions** | 15 | `Read(...)` rules in `permissions.deny` (`.claude/settings.json`, else `.claude/settings.local.json`): 10+ rules 13, 5-9 10, 1-4 6, none 0. +2 when every lock file at the root (`package-lock.json`, `pnpm-lock.yaml`, `yarn.lock`, `poetry.lock`, `Cargo.lock`, `uv.lock`) is covered by a rule containing its name, `*.lock` or `*lock*`. A `.claudeignore` scores nothing -- Claude Code does not read it -- and `--fix` converts its patterns to Read rules |
-| **.claude/settings.json** | 15 | Default model pinned (6); a cost control Claude Code reads -- `effortLevel` low/medium, `fastMode: false`, `alwaysThinkingEnabled: false`, `enforceAvailableModels` with `availableModels`, or `autoCompactEnabled: true` (5); permissions defined (4) |
+| **.claude/settings.json** | 15 | Default model pinned (6); a cost control Claude Code reads -- `effortLevel` low/medium, `maxEffortLevel`, `fastMode: false`, `fastModePerSessionOptIn: true`, `enforceAvailableModels` with `availableModels`, or `autoCompactEnabled: true` (5); permissions defined (4). `alwaysThinkingEnabled: false` is not counted: it has no effect on Opus 5.5, Sonnet 5.5, Haiku 5.5 or the Fable models, which always think ([settings reference](https://code.claude.com/docs/en/settings-reference#alwaysthinkingenabled), read 2026-11-01) |
 | **MCP servers** | 15 | Total count across `.mcp.json` and `settings.json`: none 15, 1-3 13, 4-5 10, 6-8 6, 9-12 3, more 0. With tool search on (the default) each server adds its tool names and server instructions to context; full tool schemas load up front only when tool search is off |
 | **Hooks** | 10 | Count of configured hooks (PreToolUse, PostToolUse, Stop, etc.) for budget tracking and cost logging |
 | **Security & hygiene** | 10 | `.env` / credentials presence vs `.gitignore` coverage, plus a regex scan for leaked API keys (`sk-...`, `AKIA...`, `ghp_...`) in tracked files |
@@ -237,7 +237,7 @@ claude-rate . --json | jq '.grade, .cost_estimate."sonnet-5-5".per_month'
 
 ## Why a separate tool from the web analyzer?
 
-The [web analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer) is aimed at **public repos** -- paste a GitHub URL, get a grade. But it can only see what's exposed via the GitHub Contents API. It can't:
+The [web analyzer](https://sagargupta.online/claude-cost-optimizer/analyzer/) is aimed at **public repos** -- paste a GitHub URL, get a grade. But it can only see what's exposed via the GitHub Contents API. It can't:
 
 - See your local `.claude/settings.local.json` (gitignored)
 - Detect untracked secrets that haven't been pushed yet
@@ -248,7 +248,7 @@ The [web analyzer](https://sagargupta16.github.io/claude-cost-optimizer/analyzer
 
 ## Pricing data
 
-All cost estimates use Anthropic's published rates **verified 2026-10-09**:
+All cost estimates use Anthropic's published rates **verified 2026-11-01**:
 
 - Fable 5.1: $10/$50 per 1M tokens (1M context, most capable model); Fable 5: $10/$50 (legacy)
 - Opus 5.5: $4/$20 per 1M tokens (1M context, released 2026-09-22) -- Anthropic's recommended starting model for most workloads, and 20% below Opus 5
@@ -282,7 +282,7 @@ Sonnet 5.5 costs the same as Sonnet 5 ($2/$10) and uses the same tokenizer, so m
 - **Effort levels are recalibrated.** The same level does not produce the same amount of thinking as on Sonnet 5, so re-run your effort sweep. Anthropic's starting points: `high` in general, `medium` for well-specified agentic coding.
 - **Forced `tool_choice` (`any` / `tool`) returns a 400**, as do non-default `temperature` / `top_p` / `top_k`. Use `auto` with strict tool use or structured outputs.
 - **Minimum cacheable prompt is 512 tokens** (1,024 on Sonnet 5), so short system prompts that never cached on Sonnet 5 now do.
-- **In Claude Code, `sonnet` is Sonnet 5.5 only on the Anthropic API.** On Bedrock, Google Cloud and Foundry it is Sonnet 4.5 ($3/$15, 200K context; deprecated, retirement scheduled for 2026-11-30), and on Claude Platform on AWS it is Sonnet 4.6 ($3/$15). Pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) or set `ANTHROPIC_DEFAULT_SONNET_MODEL`. Needs Claude Code v2.1.284 or later.
+- **In Claude Code, `sonnet` is Sonnet 5.5 only on the Anthropic API.** On Bedrock, Google Cloud (Google managed, formerly Vertex AI) and Foundry it is Sonnet 4.5 ($3/$15, 200K context; deprecated, retirement scheduled for 2026-11-30), and on Claude Platform on AWS it is Sonnet 4.6 ($3/$15). Pin `claude-sonnet-5-5` (Bedrock: `anthropic.claude-sonnet-5-5`) or set `ANTHROPIC_DEFAULT_SONNET_MODEL`. Needs Claude Code v2.1.284 or later.
 
 ### Haiku 5.5 cost gotchas
 
@@ -297,11 +297,12 @@ Haiku 5.5 is 10x cheaper per token than Haiku 4.5 up to 100K prompt tokens and 2
 
 ### Fast Mode
 
-`speed: "fast"` (with the `fast-mode-2026-02-01` beta header) is **Opus 5.5, Opus 5 and Opus 4.8 only**, at a flat **2x** of each model's base: $8/$40 on Opus 5.5, $10/$50 on the other two. The older 6x tier no longer exists. Opus 4.7 returns an error on `speed: "fast"` with no fallback, and Opus 4.6 accepts the field but silently runs at standard speed and standard rates (`usage.speed` comes back `"standard"`). Claude API and Managed Agents only (Opus 5.5: Claude API only, as a research preview); cannot combine with Batch or Priority Tier, and switching speeds invalidates the prompt cache.
+`speed: "fast"` is **Opus 5.5, Opus 5 and Opus 4.8 only**, at a flat **2x** of each model's base: $8/$40 on Opus 5.5, $10/$50 on the other two. Opus 5.5 has it generally available (out of research preview since 2026-10-15) with no beta header, on the Claude API, Claude Models on Google Cloud (Anthropic managed) and Microsoft Foundry. Opus 5 and Opus 4.8 are a research preview on the Claude API only and need the `fast-mode-2026-02-01` beta header; Opus 4.8's fast mode is deprecated (2026-10-30) and removed on 2026-11-30, after which `speed: "fast"` on `claude-opus-4-8` returns an error with no fallback. The older 6x tier no longer exists. Opus 4.7 returns an error on `speed: "fast"` with no fallback, and Opus 4.6 accepts the field but silently runs at standard speed and standard rates (`usage.speed` comes back `"standard"`). Managed Agents support it on the Claude API only. It cannot combine with Batch or Priority Tier, and fast and standard speed keep separate prompt caches, so switching speeds invalidates the cache. In Claude Code, subscription users pay for fast mode with usage credits only ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode) and [Claude Code fast mode](https://code.claude.com/docs/en/fast-mode), read 2026-11-01).
 
 Sources:
 - [platform.claude.com/docs/en/about-claude/pricing](https://platform.claude.com/docs/en/about-claude/pricing)
-- [platform.claude.com/docs/en/about-claude/models/overview](https://platform.claude.com/docs/en/about-claude/models/overview)
+- [platform.claude.com/docs/en/models/overview](https://platform.claude.com/docs/en/models/overview)
+- [platform.claude.com/docs/en/build-with-claude/fast-mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode)
 - [platform.claude.com/docs/en/models/opus-5-5/overview](https://platform.claude.com/docs/en/models/opus-5-5/overview)
 - [platform.claude.com/docs/en/models/sonnet-5-5/overview](https://platform.claude.com/docs/en/models/sonnet-5-5/overview)
 - [platform.claude.com/docs/en/models/haiku-5-5/overview](https://platform.claude.com/docs/en/models/haiku-5-5/overview)
@@ -310,7 +311,7 @@ Sources:
 
 - **Heuristic scoring.** Token estimates assume 30 turns/session, 3 sessions/day, 22 working days/month, ~1,500 new tokens and 500 output tokens per turn, with each turn reading the previous request from cache. Your actual usage may differ; treat the dollar numbers as order-of-magnitude.
 - **Static analysis only.** It reads files; it doesn't trace actual API calls. Use [usage-analyzer](../usage-analyzer/) for measured per-session costs.
-- **Stdlib only.** Intentional -- no `tiktoken`, no `requests`, runs anywhere Python 3.10+ runs. Token counts are estimated as characters / 4, then multiplied by the tokenizer overhead. Anthropic's [models overview](https://platform.claude.com/docs/en/about-claude/models/overview) puts the current tokenizer at about 2.5 characters per token (1M tokens is roughly 2.5M characters), so these counts can run low: treat them as a floor.
+- **Stdlib only.** Intentional -- no `tiktoken`, no `requests`, runs anywhere Python 3.10+ runs. Token counts are estimated as characters / 4, then multiplied by the tokenizer overhead. Anthropic's [models overview](https://platform.claude.com/docs/en/models/overview) puts the current tokenizer at about 2.5 characters per token (1M tokens is roughly 2.5M characters), so these counts can run low: treat them as a floor.
 
 ## License
 

@@ -26,11 +26,11 @@
 >
 > **Sonnet 5.5 cost note**: Sonnet 5.5 (released 2026-09-28) posts the same $2/$10 as Sonnet 5 and uses the same tokenizer; since 2026-10-07 its cache read is $0.10 (0.05x base input), half Sonnet 5's $0.20. Adaptive thinking is on by default (effort `high`; reasoning bills as output) and effort levels are recalibrated, so re-run your effort sweep rather than carrying a Sonnet 5 setting over. To stop up-front thinking on routine turns, send `thinking: {type: "between_tools"}` at `high` effort or below; `thinking: {type: "disabled"}` returns a 400. Fast Mode is not available.
 >
-> **Opus 5.5 cost note**: Opus 5.5 (released 2026-09-22) posts $4/$20, 20% below Opus 5, and reads cache at 0.05x base input. Adaptive thinking is **always on** (it cannot be disabled; reasoning bills as output) and effort defaults to `medium` (Opus 5: `high`), so re-baseline cost on your own tasks rather than scaling the Opus figures below by 0.8. Fast Mode is $8/$40 (2x its base).
+> **Opus 5.5 cost note**: Opus 5.5 (released 2026-09-22) posts $4/$20, 20% below Opus 5, and reads cache at 0.05x base input. Adaptive thinking is **always on** (it cannot be disabled; reasoning bills as output) and effort defaults to `medium` (Opus 5: `high`), so re-baseline cost on your own tasks rather than scaling the Opus figures below by 0.8. Fast Mode is $8/$40 (2x its base), generally available since 2026-10-15 with no beta header ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01).
 >
-> **Opus 5 cost warning**: Opus 5 (GA 2026-07-24, now legacy) posts the same $5/$25 as Opus 4.8, but adaptive thinking is **on by default** and reasoning tokens bill as output at the normal output rate. An untuned Opus 5 run therefore costs more than the same task on Opus 4.8 at identical posted rates. Tune `output_config.effort` (`low`/`medium`/`high`/`xhigh`/`max`, default `high`) down for routine work before comparing cost figures. Fast Mode ($10/$50, a flat 2x) is available on Opus 5 and Opus 4.8; Opus 5.5 also supports it at $8/$40.
+> **Opus 5 cost warning**: Opus 5 (GA 2026-07-24, now legacy) posts the same $5/$25 as Opus 4.8, but adaptive thinking is **on by default** and reasoning tokens bill as output at the normal output rate. An untuned Opus 5 run therefore costs more than the same task on Opus 4.8 at identical posted rates. Tune `output_config.effort` (`low`/`medium`/`high`/`xhigh`/`max`, default `high`) down for routine work before comparing cost figures. Fast Mode ($10/$50, a flat 2x) is a research preview on Opus 5 and Opus 4.8, on the Claude API only and with the `fast-mode-2026-02-01` beta header; Opus 4.8's fast mode is deprecated (2026-10-30) and removed on 2026-11-30, after which `speed: "fast"` on `claude-opus-4-8` returns an error with no fallback ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01). Opus 5.5 supports it at $8/$40 with no beta header.
 >
-> **Fable 5** (GA 2026-06-09, $10/$50) is not benchmarked here yet -- it doubles every $5/$25 Opus cost figure below for the same token counts (2.5x Opus 5.5). For task-routing purposes, treat it as a tier above Opus reserved for work where Opus 5.5 quality is insufficient. Benchmark contributions welcome.
+> **Fable 5.1** (released 2026-09-01, $10/$50, the same posted rate as legacy Fable 5, which went GA 2026-06-09) is not benchmarked here yet -- it doubles every $5/$25 Opus cost figure below for the same token counts (2.5x Opus 5.5). For task-routing purposes, treat it as a tier above Opus reserved for work where Opus 5.5 quality is insufficient; Anthropic's [models overview](https://platform.claude.com/docs/en/models/overview), read 2026-11-01, points to it for demanding reasoning and long-horizon agentic work, or when Opus 5.5 at higher effort still falls short. Benchmark contributions welcome.
 
 ## How to Read This
 
@@ -262,9 +262,12 @@ claude --model haiku
 
 # Switch mid-session for a harder task (use /model command)
 # `sonnet` is Sonnet 5.5 on the Anthropic API but Sonnet 4.5 ($3/$15, 200K, deprecated) on
-# Bedrock, Google Cloud and Foundry -- pin it there with ANTHROPIC_DEFAULT_SONNET_MODEL
+# Bedrock, Google Cloud (Google managed, formerly Vertex AI) and Foundry, and Sonnet 4.6
+# on Claude Platform on AWS -- pin it there with ANTHROPIC_DEFAULT_SONNET_MODEL
 # `haiku` is Haiku 5.5 on the Anthropic API (Claude Code v2.1.293+) but Haiku 4.5 on
 # Claude Platform on AWS, Bedrock, Google Cloud and Foundry -- pin ANTHROPIC_DEFAULT_HAIKU_MODEL
+# `opus` is Opus 5.5 everywhere except Foundry, where it is Opus 4.6
+# (code.claude.com/docs/en/model-config, read 2026-11-01)
 /model sonnet
 
 # Or start separate sessions per model

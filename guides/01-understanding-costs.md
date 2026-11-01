@@ -22,9 +22,9 @@
 
 ## Token Pricing
 
-Every interaction with Claude Code consumes tokens. Tokens are the fundamental billing unit. On models before Opus 4.7 that is roughly 1 token per 4 characters of English text, or about 0.75 words per token; on the current tokenizer 1M tokens is roughly 2.5M characters or 555K words, about 2.5 characters per token ([Anthropic models overview](https://platform.claude.com/docs/en/about-claude/models/overview)). This repo's estimates assume about 10 tokens per line of code and 10 per line of CLAUDE.md. The CLAUDE.md figure is measured: this repo's 15 CLAUDE.md files (the templates plus the root file) hold 20,161 tokens over 2,048 lines, 9.8 per line counting blank lines (12.3 per non-blank line). That count used tiktoken's cl100k encoding, the same pre-4.7 basis as the repo's other estimates; expect about 30% more on the current tokenizer.
+Every interaction with Claude Code consumes tokens. Tokens are the fundamental billing unit. On models before Opus 4.7 that is roughly 1 token per 4 characters of English text, or about 0.75 words per token; on the current tokenizer 1M tokens is roughly 2.5M characters or 555K words, about 2.5 characters per token ([Anthropic models overview](https://platform.claude.com/docs/en/models/overview), read 2026-11-01). This repo's estimates assume about 10 tokens per line of code and 10 per line of CLAUDE.md. The CLAUDE.md figure is measured: this repo's 15 CLAUDE.md files (the templates plus the root file) hold 20,161 tokens over 2,048 lines, 9.8 per line counting blank lines (12.3 per non-blank line). That count used tiktoken's cl100k encoding, the same pre-4.7 basis as the repo's other estimates; expect about 30% more on the current tokenizer.
 
-### Current Model Pricing (verified 2026-10-09)
+### Current Model Pricing (verified 2026-11-01)
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M) | 5m Cache Write | 1h Cache Write | Context Window | Max Output |
 |-------|:---------------------:|:----------------------:|:---------------------:|:--------------:|:--------------:|:--------------:|:----------:|
@@ -36,7 +36,7 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 | **Opus 4.7** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K |
-| Opus 4.1 (retired 2026-08-05, still on Bedrock + Google Cloud) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
+| Opus 4.1 (retired 2026-08-05 on the Claude API, still on Bedrock + Google Cloud (Google managed, formerly Vertex AI)) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
 | **Sonnet 5.5** (latest Sonnet) | $2.00 | $10.00 | **$0.10** | $2.50 | $4.00 | 1M | 128K |
 | **Sonnet 5** (legacy) | $2.00 | $10.00 | $0.20 | $2.50 | $4.00 | see note | see note |
 | **Sonnet 4.6** | $3.00 | $15.00 | $0.30 | $3.75 | $6.00 | 1M | 64K |
@@ -44,8 +44,10 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 | **Haiku 5.5** (latest Haiku), prompt <= 100K tokens | $0.10 | $0.50 | $0.01 | $0.125 | $0.20 | 1M | 128K |
 | **Haiku 5.5**, prompt > 100K tokens | $0.50 | $2.50 | $0.05 | $0.625 | $1.00 | 1M | 128K |
 | **Haiku 4.5** (legacy) | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
-| **Opus 5.5 (Fast Mode)** | $8.00 (2x) | $40.00 (2x) | N/A | -- | -- | 1M (included) | 128K |
-| **Opus 5 / 4.8 (Fast Mode)** | $10.00 (2x) | $50.00 (2x) | N/A | -- | -- | 1M (included) | 128K |
+| **Opus 5.5 (Fast Mode)** | $8.00 (2x) | $40.00 (2x) | $0.40 | $10.00 | $16.00 | 1M (included) | 128K |
+| **Opus 5 / 4.8 (Fast Mode, research preview)** | $10.00 (2x) | $50.00 (2x) | $1.00 | $12.50 | $20.00 | 1M (included) | 128K |
+
+> The Fast Mode cache columns are computed: the fast input rate x the model's cache multipliers (0.05x hit on Opus 5.5, 0.1x on Opus 5 / 4.8, 1.25x 5m write, 2x 1h write), because Anthropic's [fast mode page](https://platform.claude.com/docs/en/build-with-claude/fast-mode) says caching multipliers apply on top of fast mode pricing (read 2026-11-01). Opus 4.8 fast mode is deprecated and ends 2026-11-30; see [Fast Mode Pricing](#fast-mode-pricing).
 
 > **Opus 5.5** (released 2026-09-22, `claude-opus-5-5`): **$4/$20, 20% below Opus 5's $5/$25** -- the first Opus price cut since Opus 4.5 lowered $15/$75 to $5/$25 on 2025-11-24 ([Opus 4.5 announcement](https://www.anthropic.com/news/claude-opus-4-5)). Cache hits cost $0.20/1M, **0.05x base input (95% off)**; 5m cache write $5, 1h cache write $8; Batch $2/$10. 1M context (default and max), 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), knowledge cutoff Jun 2026, same tokenizer as Opus 4.7+, minimum cacheable prompt 512 tokens, tool-use system prompt 286 tokens. Bedrock ID `anthropic.claude-opus-5-5`; `claude-opus-5-5` on Google Cloud, Microsoft Foundry and Claude Platform on AWS. Retirement not sooner than 2027-09-22. Anthropic's models overview now says to "start with Claude Opus 5.5 for most workloads"; Fable 5.1 is for demanding reasoning and long-horizon work.
 >
@@ -57,46 +59,46 @@ Every interaction with Claude Code consumes tokens. Tokens are the fundamental b
 > - **No Priority Tier** (Opus 4.8 keeps it). Fast Mode is supported at 2x its own base ($8/$40).
 > - Refusals return `stop_reason: "refusal"` with `stop_details`; categories include bio and reasoning_extraction as well as cyber.
 >
-> **Opus 5** (legacy since the Opus 5.5 launch; GA 2026-07-24, `claude-opus-5`): identical posted price to Opus 4.8 ($5/$25), so the upgrade is free at the posted rate. 1M context at standard rates, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), knowledge cutoff May 2026, Batch $2.50/$12.50, minimum cacheable prompt 512 tokens. Adaptive thinking with effort levels low/medium/high/xhigh/max, defaulting to `high` on both the Claude API and Claude Code. Bedrock ID `anthropic.claude-opus-5`, Google Cloud `claude-opus-5`; GA on Claude API, Claude Platform on AWS, Bedrock, and Vertex AI. Earliest retirement not sooner than 2027-07-24. Anthropic's models overview now points to Opus 5.5 instead, which costs 20% less; Fable 5.1 is the most capable model.
+> **Opus 5** (legacy since the Opus 5.5 launch; GA 2026-07-24, `claude-opus-5`): identical posted price to Opus 4.8 ($5/$25), so the upgrade is free at the posted rate. 1M context at standard rates, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), knowledge cutoff May 2026, Batch $2.50/$12.50, minimum cacheable prompt 512 tokens. Adaptive thinking with effort levels low/medium/high/xhigh/max, defaulting to `high` on both the Claude API and Claude Code. Bedrock ID `anthropic.claude-opus-5`, Google Cloud `claude-opus-5`; GA on Claude API, Claude Platform on AWS, Bedrock, and Google Cloud. Earliest retirement not sooner than 2027-07-24. Anthropic's models overview now points to Opus 5.5 instead, which costs 20% less; Fable 5.1 is the most capable model.
 >
 > **Cost-relevant breaking changes vs Opus 4.8**:
 > - **Thinking is on by default.** Omit the `thinking` param and you get adaptive thinking. Reasoning tokens bill as **output** at $25/1M. `max_tokens` is a hard cap on thinking **plus** text, so an unchanged small `max_tokens` can be eaten by thinking before the answer is written. Raise it to 64K+ if you run `xhigh` or `max` effort.
 > - `thinking: {type: "disabled"}` is allowed only at effort `high` or below. Combining it with `xhigh` or `max` returns a **400 error**.
 > - Minimum cacheable prompt drops from 1,024 tokens (Opus 4.8) to **512** (Opus 5), so shorter prefixes now qualify for the cache discount.
 > - Ships cybersecurity safety classifiers. Cyber refusals can auto-fall-back to Opus 4.8 via the server-side `fallbacks` param with beta header `server-side-fallback-2026-07-01`.
-> - New beta `mid-conversation-tool-changes-2026-07-01` lets tool definitions change between turns **without** invalidating the prompt cache. Previously that was a cache-busting move.
+> - New beta `mid-conversation-tool-changes-2026-07-01` lets tool definitions change between turns **without** invalidating the prompt cache. Previously that was a cache-busting move. The current header is `inline-tools-2026-09-15` (a `tool_addition` block in a mid-conversation system message can carry a full tool definition); the older one still works for changes that name a tool by reference ([Opus 5.5 migration guide](https://platform.claude.com/docs/en/models/opus-5-5/migration-guide), read 2026-11-01).
 > - Output runs **longer** than Opus 4.8 by default, so re-tune verbosity instructions. Opus 5 also self-verifies, which means carried-over "double-check your work" instructions now pay twice for the same behavior.
 >
 > **Opus 4.8 is now legacy**: Anthropic's models-overview page moved `claude-opus-4-8` into the Legacy accordion. Retirement date is unchanged at not sooner than 2027-05-28, and it stays the server-side fallback target for Opus 5 cyber refusals. Opus 5.5 costs 20% less ($4/$20), so there is no cost reason to stay on it. The only reasons to pin it are prompts tuned to that snapshot, needing thinking off (Opus 5 rejects it at `xhigh`/`max`, Opus 5.5 always), or Priority Tier, which Opus 5.5 does not offer.
 >
 > **Fable 5** (legacy, GA 2026-06-09): Anthropic's Mythos-class tier above Opus at **2.5x Opus 5.5's rates** ($10/$50; 2x legacy Opus 5). Always-on adaptive thinking, no Fast Mode, Batch supported ($5/$25), 30-day data retention required. Safety classifiers can refuse a request (`stop_reason: "refusal"`) -- pre-output refusals are not billed. From a cost standpoint, treat Fable 5 as a deliberate splurge for the hardest tasks, not a default.
 >
-> **Sonnet 5.5** (released 2026-09-28, `claude-sonnet-5-5`): **$2/$10, the same as Sonnet 5**, with the same cache writes and batch rates, but since 2026-10-07 cache hits cost **$0.10/1M, 0.05x base input (95% off)** -- half Sonnet 5's $0.20; 5m cache write $2.50, 1h cache write $4; Batch $1/$5. 1M context at standard rates, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), knowledge cutoff Jun 2026, same tokenizer as Sonnet 5 (the same text gives the same token count), minimum cacheable prompt **512** tokens (Sonnet 5: 1,024), tool-use system prompt 286 tokens (Sonnet 5: 354). Adaptive thinking is on by default with default effort `high`; no Fast Mode. Bedrock ID `anthropic.claude-sonnet-5-5`; `claude-sonnet-5-5` on Google Cloud, Microsoft Foundry and Claude Platform on AWS. Earliest retirement not sooner than 2027-09-28. It is the current Sonnet flagship; Anthropic's models overview still says to start with Opus 5.5 for most workloads.
+> **Sonnet 5.5** (released 2026-09-28, `claude-sonnet-5-5`): **$2/$10, the same as Sonnet 5**, with the same cache writes and batch rates, but since 2026-10-07 cache hits cost **$0.10/1M, 0.05x base input (95% off)** -- half Sonnet 5's $0.20; 5m cache write $2.50, 1h cache write $4; Batch $1/$5. 1M context at standard rates, 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), knowledge cutoff Jun 2026, same tokenizer as Sonnet 5 (the same text gives the same token count), minimum cacheable prompt **512** tokens (Sonnet 5: 1,024), tool-use system prompt 286 tokens (Sonnet 5: 354). Adaptive thinking is on by default; default effort is `high` on the Claude API and `medium` in Claude Code ([models overview](https://platform.claude.com/docs/en/models/overview), [model-config page](https://code.claude.com/docs/en/model-config), read 2026-11-01); no Fast Mode. Bedrock ID `anthropic.claude-sonnet-5-5`; `claude-sonnet-5-5` on Google Cloud, Microsoft Foundry and Claude Platform on AWS. Earliest retirement not sooner than 2027-09-28. It is the current Sonnet flagship; Anthropic's models overview still says to start with Opus 5.5 for most workloads.
 >
 > **Cost-relevant breaking changes vs Sonnet 5** (each returns a 400 when old code is carried over):
 > - `thinking: {type: "disabled"}` and manual `budget_tokens` return 400. The lowest setting is `thinking: {type: "between_tools"}`, which turns off up-front thinking and is accepted only at `low`, `medium` and `high` effort. Reasoning tokens bill as output at $10/1M.
 > - **Effort levels are recalibrated**: the same level does not produce the same amount of thinking as on Sonnet 5, so re-run your effort sweep instead of carrying a setting over. Anthropic's starting points: `high` in general, `medium` for well-specified agentic coding and multistep tool use.
 > - Forced `tool_choice` (`any`/`tool`) returns 400 -- use `auto` plus strict tool use or structured outputs. Non-default `temperature`/`top_p`/`top_k` also return 400.
-> - Thinking blocks are tied to the model and conversation, so keep conversations append-only: replaying a Sonnet 5.5 thinking block after editing earlier history can return 400. On the Claude API and Google Cloud the `computer_20251124` tool is rejected (use `computer_toolset_20260801`). The advisor tool rejects Opus 4.8, Opus 4.7 and Sonnet 5 as advisors for a Sonnet 5.5 executor.
+> - Thinking blocks are tied to the model and conversation, so keep conversations append-only: replaying a Sonnet 5.5 thinking block after editing earlier history can return 400. On the Claude API and Google Cloud the `computer_20251124` tool is rejected (use `computer_toolset_20260801`). The advisor tool rejects Opus 4.8, Opus 4.7, Sonnet 5 and Haiku 5.5 as advisors for a Sonnet 5.5 executor ([what's new in Sonnet 5.5](https://platform.claude.com/docs/en/models/sonnet-5-5/whats-new-sonnet-5-5), read 2026-11-01).
 > - Mid-conversation tool changes (beta), mid-conversation system messages and per-message effort (beta) are supported, which Sonnet 5 does not offer, so tools and instructions can change mid-conversation without losing the prompt cache.
 >
-> **Sonnet 5** (legacy since the Sonnet 5.5 launch, still Active and not deprecated): **$2/$10 permanently** -- the launch intro rate became standard and the increase to $3/$15 was cancelled. Minimum cacheable prompt 1,024 tokens. Retirement not sooner than 2027-06-30. Sonnet 5.5 replaced it as the Sonnet-tier migration target at the same price. Context window and max output are not restated here -- check the [Anthropic models overview](https://docs.claude.com/en/docs/about-claude/models/overview) before you size a request against them.
+> **Sonnet 5** (legacy since the Sonnet 5.5 launch, still Active and not deprecated): **$2/$10 permanently** -- the launch intro rate became standard and the increase to $3/$15 was cancelled. Minimum cacheable prompt 1,024 tokens. Retirement not sooner than 2027-06-30. Sonnet 5.5 replaced it as the Sonnet-tier migration target at the same price. Context window and max output are not restated here -- check the [Anthropic models overview](https://platform.claude.com/docs/en/models/overview) before you size a request against them.
 >
 > **Haiku 5.5** (released 2026-10-07, `claude-haiku-5-5`; Bedrock `anthropic.claude-haiku-5-5`): the current Haiku, for "high-volume, latency-sensitive tasks such as classification, extraction, routing" and subagent work. **The first model priced by prompt length**: **$0.10/$0.50** per 1M when the prompt is at most 100,000 tokens (cache hit $0.01, 5m write $0.125, 1h write $0.20, Batch $0.05/$0.25) and **$0.50/$2.50** above it (cache hit $0.05, 5m write $0.625, 1h write $1.00, Batch $0.25/$1.25). Prompt length counts every input token, cache reads and writes included, and each request is priced on its own: a request over the line pays the higher input and output rates even when part of its prompt is a cache hit. Cache hits are 0.1x of the tier's own input price. The cliff: a 100,000-token prompt costs $0.010 of input, a 100,001-token prompt $0.050. Regional endpoints add 10% as on other current models ($0.11/$0.55 at the lower tier on Bedrock regional). 1M context, 128K max output (300K on Batch via `output-300k-2026-03-24`), minimum cacheable prompt **512** (Haiku 4.5: 4,096), tool-use system prompt 286 tokens (`auto`/`none`) / 406 (`any`/`tool`; forced tool use is supported). It uses the newer Claude 4.7+ tokenizer, so the same text is ~30% more tokens than on Haiku 4.5: per task that is roughly 7.7x cheaper than Haiku 4.5 at <= 100K and ~1.5x cheaper above. Adaptive thinking is on by default at effort `medium`; on the API `thinking: {type: "disabled"}` still works at `high` effort or below, but Claude Code cannot turn it off. No Fast Mode. Knowledge cutoff Jun 2026. Earliest retirement not sooner than 2027-10-07. Breaking changes versus Haiku 4.5 are in [Guide 03](03-model-selection.md#migrating-to-haiku-55).
 >
-> **Haiku 4.5** is now legacy (still Active, not deprecated; earliest retirement 2026-10-15). **Sonnet 4.5** is deprecated: retirement scheduled for 2026-11-30 on the Claude API, with Sonnet 5.5 the recommended replacement.
+> **Haiku 4.5** is now legacy: Active, with no retirement announced (its earliest date, 2026-10-15, has passed; [deprecations page](https://platform.claude.com/docs/en/about-claude/model-deprecations), read 2026-11-01). **Sonnet 4.5** is deprecated: retirement scheduled for 2026-11-30 on the Claude API, with Sonnet 5.5 the recommended replacement.
 >
 > **1M context at standard rates**: Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 bill the full 1M window at the standard per-token rate -- no long-context premium. **Sonnet 5.5 at $2/$10 is the cheapest of them** (legacy Sonnet 5 costs the same per token), so reach for it before an Opus tier on long-context work. Haiku 5.5 also has a 1M window and is cheaper still, but it is the one exception to flat pricing: every request over 100K prompt tokens bills at $0.50/$2.50. (The earlier "2x over 200K" pricing applied to Opus 4.1 and older. Note that Opus 4.5, Sonnet 4.5, and Haiku 4.5 are 200K-only.)
 >
 > **New tokenizer caveat**: Opus 4.7 and later (including Opus 4.8, Opus 5 and Opus 5.5) use the same Opus-4.7-generation tokenizer, which produces **about 30% more tokens** for the same source text ([Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing): "approximately 30% more tokens for the same text"; the exact increase depends on content). Posted pricing stayed at $5/$25 through Opus 5 (Opus 5.5 cut it to $4/$20), but effective per-task cost is about 30% higher than it would have been on Opus 4.6.
 >
-> **Subscriptions**: Pro **$20/mo** (or **$200/yr ≈ $16.67/mo** with annual billing -- 16.7% off: $200 vs 12 x $20). Max 5x $100/mo. Max 20x $200/mo. **Batch API**: 50% discount on both input and output. **Cache write**: 1.25x base input price (5-min TTL), 2x base input price (1-hour TTL). Since 2026-10-07 Max 5x and Max 20x include $100 and $200 of monthly Claude API credit (Claude Console API only, **not Claude Code**, no rollover). **Cache hit/refresh**: 0.1x base input price on every model except Fable 5.1 / Mythos 5.1 (0.025x) and Opus 5.5 and Sonnet 5.5 (0.05x). **Regional endpoints** (Bedrock / Vertex AI / Claude API `inference_geo: "us"`, scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all future models): +10%.
+> **Subscriptions**: Pro **$20/mo** (or **$200/yr ≈ $16.67/mo** with annual billing -- 16.7% off: $200 vs 12 x $20). Max **$100/mo** (formerly sold as Max 5x; 5x Pro usage every 5 hours and every week) and Ultra **$200/mo** (formerly Max 20x; 10x Pro usage every week, with no 5-hour limit for verified accounts; existing Max 20x subscribers moved over automatically at the same price, and secondary reports date the rename 2026-10-30, with no Anthropic post found). Max and Ultra are monthly only; annual billing is Pro and Team only ([pricing](https://claude.com/pricing), [Ultra plan](https://support.claude.com/en/articles/17728952-what-is-the-ultra-plan), [Max plan](https://support.claude.com/en/articles/11049741-what-is-the-max-plan), read 2026-11-01). **Batch API**: 50% discount on both input and output. **Cache write**: 1.25x base input price (5-min TTL), 2x base input price (1-hour TTL). Since 2026-10-07 Max and Ultra include $100 and $200 of monthly API credits (Team: $20 per Standard seat and $100 per Premium seat, pooled and capped at $500/month; no rollover; 7 days on the plan first). They do **not** cover interactive Claude Code (terminal, IDE, desktop, web) or usage credits, but they do cover `claude -p` and the Agent SDK run with an API key from the linked Console organization ([monthly API credits](https://support.claude.com/en/articles/17154008-monthly-api-credits-for-max-ultra-and-team-plans), read 2026-11-01). **Cache hit/refresh**: 0.1x base input price on every model except Fable 5.1 / Mythos 5.1 (0.025x) and Opus 5.5 and Sonnet 5.5 (0.05x). **Regional endpoints** (Bedrock / Google Cloud (Google managed) / Claude API `inference_geo: "us"`, scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all future models): +10%.
 
 ### Off-Peak 2x Usage Events
 
-Anthropic periodically runs promotional events that **double usage limits** during off-peak hours. Past examples include "Spring Break for Claude Code" (March 2026) which offered 2x limits outside the peak window of **8 AM - 2 PM ET** and on all weekends.
+No off-peak promotion is running: none appears on the [pricing page](https://claude.com/pricing) or in the Help Center usage articles (read 2026-11-01). The one documented event ran from 2026-03-13 to 2026-03-28 and doubled 5-hour usage outside the weekday **8 AM - 2 PM ET** peak (Help Center article 14063676, which is now offline). It has ended, so do not treat 8 AM - 2 PM ET as a standing schedule.
 
-These promotions are **not permanent** -- they come and go. Watch the [Anthropic blog](https://www.anthropic.com/news) and [Claude Code support page](https://support.claude.com) for active promotions. When available, shifting heavy work to off-peak hours effectively **halves your cost per unit of work**. Users in Asia, India, and Australia benefit the most since their entire workday falls outside US peak hours.
+If Anthropic runs another one, its announcement carries its own dates and terms. Check the pricing page and the [Claude Help Center](https://support.claude.com) before moving heavy work to different hours.
 
 ### What These Numbers Mean in Practice
 
@@ -177,11 +179,11 @@ Prompt length counts all input tokens, including cache reads and writes, and eac
 
 > **Practical implication**: Sending a 300K-token input on Opus 5.5 costs $1.20 at the $4/1M rate ($1.50 on legacy Opus 5 at $5/1M). Under the old pricing, the Opus 5 request would have been $3.00 (entire request at the 2x rate). Long agentic sessions, large-codebase audits, and big-document analysis are now significantly cheaper. On Haiku 5.5 the same 300K input costs $0.15, all of it at the > 100K rate of $0.50/1M.
 
-> **AWS Bedrock / Vertex AI**: Claude models are available on AWS Bedrock and Google Vertex AI at the same pricing for global (cross-region) inference. Regional inference profiles carry a **+10% surcharge** over the standard API rates.
+> **Amazon Bedrock / Google Cloud**: Claude models are available on Amazon Bedrock and on Claude Models on Google Cloud (Google managed, formerly Vertex AI) at the same pricing for global (cross-region) inference. Regional and multi-region endpoints carry a **+10% premium** over global endpoints ([pricing page](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-11-01). Since 2026-10-22 there is also Claude Models on Google Cloud (Anthropic managed): the Claude API operated by Anthropic, reached through your Google Cloud project, with Google Cloud IAM for access, billing through Google Cloud Marketplace, and the same 1.1x data residency rate as the first-party API ([release notes](https://platform.claude.com/docs/en/release-notes/overview)).
 
 ### Fast Mode Pricing
 
-Fast Mode is a beta (research preview) feature available for **Claude Opus 5.5, Opus 5 and Opus 4.8 only** (`claude-opus-5-5`, `claude-opus-5`, `claude-opus-4-8`). Same model weights, same intelligence -- just faster output token generation at premium pricing. All three supported models run at **2x** their own standard rates; the old 6x tier no longer exists. [Join the waitlist](https://claude.com/fast-mode).
+Fast Mode is available for **Claude Opus 5.5, Opus 5 and Opus 4.8 only** (`claude-opus-5-5`, `claude-opus-5`, `claude-opus-4-8`). **Opus 5.5 is out of research preview** (since 2026-10-15): it needs no beta header and no access request. Opus 5 and Opus 4.8 stay in research preview on the Claude API and still need the `fast-mode-2026-02-01` beta header. **Fast mode on Opus 4.8 is deprecated (2026-10-30) and ends on 2026-11-30**; after that `speed: "fast"` on `claude-opus-4-8` returns an error, with no fallback ([fast mode page](https://platform.claude.com/docs/en/build-with-claude/fast-mode), [release notes](https://platform.claude.com/docs/en/release-notes/overview), read 2026-11-01). Same model weights, same intelligence -- just faster output token generation at premium pricing. All three supported models run at **2x** their own standard rates; the old 6x tier no longer exists. For Opus 5, contact your account manager or [join the waitlist](https://claude.com/fast-mode); Opus 5.5 needs neither.
 
 | | Input (per 1M) | Output (per 1M) | Multiplier vs Standard |
 |---|:---:|:---:|:---:|
@@ -189,7 +191,7 @@ Fast Mode is a beta (research preview) feature available for **Claude Opus 5.5, 
 | **Fast Mode Opus 5.5** | $8.00 | $40.00 | **2x** |
 | **Standard Opus 5 / 4.8 / 4.7 / 4.6** | $5.00 | $25.00 | 1x |
 | **Fast Mode Opus 5** | $10.00 | $50.00 | **2x** |
-| **Fast Mode Opus 4.8** | $10.00 | $50.00 | **2x** |
+| **Fast Mode Opus 4.8** (ends 2026-11-30) | $10.00 | $50.00 | **2x** |
 | **Opus 4.7 with `speed: "fast"`** | -- | -- | **error, no fallback** |
 | **Opus 4.6 with `speed: "fast"`** | $5.00 | $25.00 | silently 1x (standard speed) |
 
@@ -199,15 +201,15 @@ Key details about Fast Mode:
 - **Up to 2.5x output tokens/second**: The speed gain is on output tokens per second (OTPS), **not** time-to-first-token (TTFT). If you're optimizing for TTFT, Fast Mode does not help.
 - **1M context included**: Fast Mode is priced at the 2x multiplier across the full context window, including requests over 200K input tokens. No additional 2x long-context multiplier stacked on top.
 - **Cache stacks on top**: Prompt-caching multipliers (1.25x 5m write, 2x 1h write, and the model's hit multiplier: 0.1x on Opus 5 / 4.8, 0.05x on Opus 5.5) apply to Fast Mode rates. So a Fast Mode Opus 5 5m cache write costs $10 × 1.25 = $12.50 / MTok, and a Fast Mode Opus 5 cache hit costs $10 × 0.1 = $1.00 / MTok.
-- **Switching invalidates cache**: Fast and Standard speeds do not share cached prefixes. If you toggle speeds mid-conversation, you'll pay a full cache-write cost again.
+- **Switching invalidates cache**: Fast and Standard speeds keep separate caches and do not share cached prefixes, so every toggle can read the conversation uncached again, including an automatic fallback to standard speed after a rate limit (and the later return to fast). The first time you turn Fast Mode on mid-conversation, the next request reads the whole context uncached at fast rates, so turn it on at the start of a session ([Claude Code prompt-caching page](https://code.claude.com/docs/en/prompt-caching#turning-on-fast-mode), read 2026-11-01).
 - **Opus 4.7 now errors**: `speed: "fast"` on Opus 4.7 returns an error, with **no fallback** to standard speed. The request fails outright.
 - **Opus 4.6 silently degrades**: `speed: "fast"` on Opus 4.6 runs at standard speed and standard rates. No error is raised; `usage.speed` comes back `"standard"`. You do not overpay, but you also do not get the speedup, so check the field rather than assuming.
-- **Fast Mode surface**: Claude API + Managed Agents only. Not available on Bedrock, Vertex AI, Microsoft Foundry, Claude Platform on AWS, the Batch API, or Priority Tier.
+- **Fast Mode surface**: Opus 5.5 runs on the Claude API (Messages API and Managed Agents), on Claude Models on Google Cloud (Anthropic managed) and on Microsoft Foundry (hosted on Azure). Opus 5 and Opus 4.8 run on the Claude API only. Fast Mode is not offered on Amazon Bedrock, Google Cloud (Google managed) or Claude Platform on AWS.
 - **Not available with Batch API**: 50% batch discount cannot be combined with Fast Mode.
 - **Not available with Priority Tier**: Fast Mode and Priority Tier are mutually exclusive.
-- **Not available on Claude Platform on AWS**: First-party API only.
-- **Activation**: Set `speed: "fast"` in your request and include the `anthropic-beta: fast-mode-2026-02-01` header.
-- **Dedicated rate limits**: Fast Mode has its own rate limit pool separate from Standard Opus. Headers like `anthropic-fast-output-tokens-remaining` track it.
+- **Activation**: Set `speed: "fast"` in your request. On Opus 5 and Opus 4.8 also include the `anthropic-beta: fast-mode-2026-02-01` header; Opus 5.5 needs no header, and requests that still send it keep working.
+- **Dedicated rate limits**: Fast Mode has its own rate limit pool separate from Standard Opus. Headers like `anthropic-fast-output-tokens-remaining` track it. Opus 5.5 has a default fast mode rate limit in the Start, Build and Scale usage tiers, so there is no access request.
+- **In Claude Code**: `/fast` toggles it on Opus 5.5, Opus 5 and Opus 4.8 only, and not on Bedrock, Google Cloud, Microsoft Foundry or Claude Platform on AWS. Subscription users pay for it with usage credits only (it is not included in plan usage), and Team and Enterprise owners must enable it first ([Claude Code fast mode page](https://code.claude.com/docs/en/fast-mode), read 2026-11-01).
 - **Use case**: Time-sensitive tasks where latency directly impacts revenue or user experience -- urgent debugging, live demos, real-time agentic loops. Almost never worth it for routine interactive coding.
 
 On Opus 5.5 at 2x its standard rate, the [worked 30-turn session](#worked-example-cost-of-a-30-turn-session) below would go from $1.21 on standard Opus 5.5 to **$2.43** on Fast Mode (legacy Opus 5: $1.89 standard, $3.77 Fast); the cache multipliers apply to the Fast rates, so the whole bill doubles. Use it deliberately and sparingly.
@@ -246,6 +248,8 @@ Input Token Composition Per Turn
 4. Tool Results                           Varies widely
    └── File contents from Read tool:      ~10 tokens/line of code
        Grep/Glob search results:          only the matching lines
+                                          (on macOS, Linux and WSL these run
+                                          as grep and find through Bash)
        Bash command output:               the whole output, unless a
                                           hook filters it
        Edit tool confirmations:           a short confirmation
@@ -286,6 +290,8 @@ Output Token Composition Per Turn
 
 > **Opus 5.5 / Opus 5 `max_tokens` trap**: `max_tokens` is a hard cap on thinking **plus** text. Carry over a small `max_tokens` from an older setup and thinking can consume the whole budget before the answer is written -- you pay for the turn and get no usable output. `max_tokens` is a backstop, not a cost knob: on Anthropic's internal repository-task benchmark a 16,384-token cap ended about a quarter of Opus 5.5's attempts and 43% of Fable 5.1's, and the guidance is 64,000 for agentic work, or 128,000 when a cut-off attempt is costly ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). "Just turn thinking off" is not available on Opus 5.5 at all (`thinking: {type: "disabled"}` returns 400), and on legacy Opus 5 only at effort `high` or below.
 
+> **Setting effort in Claude Code**: Claude Code defaults to `medium` on Opus 5.5, Sonnet 5.5 and Haiku 5.5, `xhigh` on Opus 4.7 and `high` on the other models. `/effort` saves a level per model under `modelSettings`; a top-level `effortLevel` in your user settings does not apply to Opus 5.5 and newer, while one in project, local or managed settings (or passed with `--settings`) applies to every model. `effortLevel` and `modelSettings` accept only `low`, `medium`, `high` and `xhigh`; `max` is session-only (the flag, `/effort` or `CLAUDE_CODE_EFFORT_LEVEL`). Putting `ultrathink` in a prompt runs that turn at `xhigh` on Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 (v2.1.311), and `CLAUDE_CODE_DISABLE_ULTRATHINK` turns it off (v2.1.316). To cap effort, `maxEffortLevel` works on any plan and provider, and Enterprise admins can set per-role caps ([model-config page](https://code.claude.com/docs/en/model-config#adjust-effort-level), [changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
+
 ### The Hidden Multiplier: Conversation History
 
 This is the most important concept in Claude Code cost optimization.
@@ -305,7 +311,7 @@ The cost **accelerates** with each turn. A 30-turn session does not cost 30x a s
 
 ### How the Context Window Works
 
-Claude's context window (1M tokens for Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 4.6, and Haiku 5.5; 200K for legacy Haiku 4.5) is the maximum amount of text it can process in a single turn. Think of it as Claude's working memory.
+Claude's context window (1M tokens for Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 4.6, and Haiku 5.5; 200K for legacy Haiku 4.5) is the maximum amount of text it can process in a single turn. Think of it as Claude's working memory. In Claude Code, models with a native 1M window (Fable, Sonnet 5 and later, Haiku 5.5, Opus 4.7 and later) need no `[1m]` suffix, and the suffix label was dropped in v2.1.311 (still accepted); Opus 4.6 and Sonnet 4.6 reach 1M only through their `[1m]` variant, which is included on Max, Ultra, Team and Enterprise for Opus 4.6 and needs usage credits for Sonnet 4.6 on every plan ([model-config page](https://code.claude.com/docs/en/model-config#extended-context), read 2026-11-01).
 
 ```
 Context Window (1M tokens for Opus/Sonnet/Haiku 5.5, 200K for Haiku 4.5)
@@ -328,6 +334,8 @@ As your session progresses, the context window fills with conversation history. 
 2. This can cause Claude to "forget" earlier context and decisions
 3. You pay for a very large number of input tokens per turn at this point
 4. Quality degrades because Claude loses important context
+
+Claude Code also compacts a conversation you leave idle. Since v2.1.299, a conversation of 200K or more tokens that sits idle for about 54 minutes is compacted before its one-hour cache expires, so your next message sends a summary instead of reprocessing the whole history. It needs the one-hour TTL and auto-compaction on; `CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS` changes the 200,000-token minimum (floor 100,000), and `"idleCompaction": false` or `/config` turns it off. Wider coverage since v2.1.314: VS Code, the desktop app's Code tab, and Bedrock, Google Cloud, Foundry and LLM gateways once the one-hour cache is on ([settings reference](https://code.claude.com/docs/en/settings-reference#idlecompaction), [changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
 
 ### Context Window Cost at Capacity
 
@@ -444,15 +452,15 @@ The cache is prefix-based -- it works from the beginning of the prompt forward. 
 |--------|-------------|:--------:|
 | Editing CLAUDE.md mid-session | Does **not** invalidate the cache. The edit also does not apply until the next `/clear`, `/compact`, or restart, because root and user CLAUDE.md are read once at session start | NONE |
 | Normal conversation progression | Only new content is uncached (expected and fine) | LOW |
-| Switching models mid-session | Complete cache miss (different model = different cache) | HIGH |
-| Changing effort level | Invalidates the cache, except on Opus 5.5 and Fable 5.1 with an API key or subscription, where effort changes keep it | HIGH (NONE on Opus 5.5 / Fable 5.1) |
+| Switching models mid-session | Complete cache miss (different model = different cache). This includes a skill or command whose frontmatter names a different `model` (for that turn), and an automatic model fallback after a safety-classifier flag ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching#switching-models), read 2026-11-01) | HIGH |
+| Changing effort level | Invalidates the cache on most models. On Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 with an API key or a Claude subscription, effort changes keep it. That exemption does not apply on Amazon Bedrock, Google Cloud's Agent Platform, a Claude apps gateway, with `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS`, or under a HIPAA configuration, where an effort change rebuilds the cache like on other models ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching#changing-effort-level), read 2026-11-01) | HIGH (NONE on those four models, outside the exceptions) |
 | Gap between turns longer than the TTL | Cache expires. In Claude Code the main conversation gets a **one-hour** TTL on a Claude subscription within plan usage (subagents, workflows and compaction get five minutes); on an API key, a cloud provider, or usage credits it is **five minutes**. Set it with `promptCacheTtl` or `CLAUDE_CODE_PROMPT_CACHE_TTL` (`5m` or `1h`; subagents via `subagentPromptCacheTtl`), Claude Code v2.1.242+ | MEDIUM |
 | Adding/removing MCP servers (or a plugin that provides them) | Invalidates the cache **only when MCP tool search is off**. Tool search is on by default, and then connecting or removing a server keeps the cache | HIGH with tool search off, NONE by default |
 | Denying an entire tool | Invalidates the cache only when tool search is off. Scoped rules such as `Read(./dist/**)` never do | HIGH with tool search off, NONE by default |
 | Compaction (`/compact`) | Rebuilds the conversation layer, so history is cached again from the summary | MEDIUM |
 | Accumulating many images, or upgrading Claude Code | Each invalidates the cache | MEDIUM |
-| Changing tool definitions mid-conversation | Historically a full cache bust. On Opus 5, the `mid-conversation-tool-changes-2026-07-01` beta lets tool definitions change between turns **without** invalidating the cache. Sonnet 5.5 supports mid-conversation tool changes (beta) too; Sonnet 5 does not | HIGH without the beta, LOW with it |
-| Toggling Fast Mode mid-session | Fast and Standard speeds do not share cached prefixes | HIGH |
+| Changing tool definitions mid-conversation | Historically a full cache bust. On Opus 5, the `mid-conversation-tool-changes-2026-07-01` beta lets tool definitions change between turns **without** invalidating the cache (the current header is `inline-tools-2026-09-15`). Sonnet 5.5 supports mid-conversation tool changes (beta) too; Sonnet 5 does not | HIGH without the beta, LOW with it |
+| Toggling Fast Mode mid-session | Fast and Standard speeds keep separate caches, so each toggle (and an automatic fallback to standard speed after a rate limit) can read the conversation uncached again | HIGH |
 | Prefix below the model's minimum cacheable length | Nothing is cached at all, silently (see the table above) | HIGH |
 
 Actions that **keep** the cache in Claude Code: editing repo files, editing CLAUDE.md mid-session, changing permission mode, changing output style, invoking skills or commands, `/recap`, `/rewind`, and spawning a subagent. To see how the cache is doing, `/usage` shows a `Prompt cache (main)` line with hit share, misses, the likely cause, and whether the cache is warm or cold (v2.1.251+).
@@ -461,9 +469,9 @@ Actions that **keep** the cache in Claude Code: editing repo files, editing CLAU
 
 1. **Edit CLAUDE.md whenever you like, but expect a delay.** A mid-session edit keeps the cache, and it also does not take effect until the next `/clear`, `/compact`, or restart.
 2. **Keep sessions focused.** Linear conversations cache better than branching ones.
-3. **Avoid switching models or effort mid-session** unless the savings from a cheaper setting outweigh the cache loss. Effort changes are free on Opus 5.5 and Fable 5.1 (API key or subscription).
-4. **Know your TTL.** A pause longer than the TTL expires the cache: one hour for the main conversation on a subscription within plan usage, five minutes on an API key, a cloud provider, or usage credits. Pick it yourself with `promptCacheTtl` (`5m` or `1h`).
-5. **Compact while the cache is warm.** `/compact` sends a summarization request that reads the prefix from cache while warm, so it costs a fraction of the context size; after a break longer than the TTL it reprocesses the full history uncached. `/clear` costs nothing, and `/rewind` returns to an already-cached prefix.
+3. **Avoid switching models or effort mid-session** unless the savings from a cheaper setting outweigh the cache loss. Effort changes keep the cache on Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 with an API key or a Claude subscription, but not on Amazon Bedrock, Google Cloud's Agent Platform, a Claude apps gateway, with `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS`, or under a HIPAA configuration.
+4. **Know your TTL.** A pause longer than the TTL expires the cache: one hour for the main conversation on a subscription within plan usage, five minutes on an API key, a cloud provider, or usage credits. Pick it yourself with `promptCacheTtl` (`5m` or `1h`). To confirm which TTL your cache writes used, run `claude -p "hello" --output-format json` and read `usage.cache_creation` (`ephemeral_1h_input_tokens` against `ephemeral_5m_input_tokens`), or read `cache_creation_1h_tokens` and `cache_creation_5m_tokens` on OpenTelemetry `api_request` events (v2.1.300+) ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching#choose-the-ttl-yourself), [changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
+5. **Compact while the cache is warm.** `/compact` sends a summarization request that reads the prefix from cache while warm, so it costs a fraction of the context size; after a break longer than the TTL it reprocesses the full history uncached. `/clear` costs nothing, and `/rewind` returns to an already-cached prefix. On the one-hour TTL, Claude Code compacts a 200K+ token conversation that has been idle about 54 minutes, before the cache expires.
 6. **Check your prefix clears the model's floor.** Below the minimum cacheable length there is no discount and no warning. Opus 5.5 and Opus 5 share the most forgiving Opus-tier floor, 512 tokens, and Sonnet 5.5 and Haiku 5.5 match it (1,024 on Sonnet 5, Sonnet 4.6 and Sonnet 4.5; 4,096 on legacy Haiku 4.5).
 7. **Leave MCP tool search on.** It is the default, and with it on, connecting or removing an MCP server keeps the cache.
 
@@ -476,29 +484,31 @@ Actions that **keep** the cache in Claude Code: editing repo files, editing CLAU
 Run `/usage` at any point during a Claude Code session to see:
 
 - A Session block with the total cost so far
-- A plan usage breakdown, attributed to skills, subagents, plugins, and MCP servers
+- A plan usage breakdown, attributed to skills, subagents, plugins, and MCP servers, with one-line recommendations (press `f` to have Claude Code apply the ones it can, v2.1.305+); large cache misses show under "What's contributing to your limits usage?"
 - A `Prompt cache (main)` line: hit share, misses, likely cause, and warm/cold state (v2.1.251+)
 
-`/insights` complements it with a report on how you work.
+`/cost` and `/stats` remain as typing shortcuts that open the relevant `/usage` tab. `/insights` complements it with a report on how you work.
+
+The Session block looks like this (Claude Code [costs page](https://code.claude.com/docs/en/costs), read 2026-11-01):
 
 ```
 > /usage
 
-Session Usage:
-  Input tokens:  47,832  (~$0.14 at Sonnet pricing)
-  Output tokens: 12,451  (~$0.19 at Sonnet pricing)
-  Cache hits:    38,200  (saved ~$0.10)
-  Total cost:    ~$0.23
-  Turns:         15
+Total cost:            $0.55
+Total duration (API):  6m 20s
+Total duration (wall): 6h 33m 10s
+Total code changes:    0 lines added, 0 lines removed
+Usage by model:
+   claude-sonnet-4-6:  1.2k input, 5.3k output, 940.0k cache read, 50.0k cache write ($0.55)
 ```
 
 Use `/usage` as a habit check -- run it every 10 turns or so to see if your session is staying within expected bounds.
 
 ### What Normal Spend Looks Like
 
-For a baseline, Anthropic's Claude Code costs page puts the enterprise average at about **$13 per developer per active day** and **$150-250 per developer per month**, with 90% of users under $30 per active day. Background token usage is typically under $0.04 per session. If your numbers sit well above that range, start with [Why Sessions Get Expensive](#why-sessions-get-expensive).
+For a baseline, Anthropic's Claude Code costs page puts the enterprise average at about **$13 per developer per active day** and **$150-250 per developer per month**, with 90% of users under $30 per active day. If your numbers sit well above that range, start with [Why Sessions Get Expensive](#why-sessions-get-expensive).
 
-Usage can also climb without new prompts from you. Prompt suggestions send a request after each response (mostly cache reads; you can turn them off), and an idle session still spends on scheduled `/loop` tasks, cross-session messages and goal check-ins (at most 3 idle check-ins per goal since v2.1.246; `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` turns them off). `/usage` flags any behavior that accounts for 10% or more of your recent usage ([Claude Code costs page](https://code.claude.com/docs/en/costs)).
+Usage can also climb without new prompts from you. Session recap and idle compaction can use tokens while you are idle (the costs page gives no figure for either), prompt suggestions send a request after each response (mostly cache reads; you can turn them off), and an idle session still spends on scheduled `/loop` tasks, cross-session messages and goal check-ins (at most 3 idle check-ins per goal since v2.1.246; `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` turns them off). `/usage` flags any behavior that accounts for 10% or more of your recent usage ([Claude Code costs page](https://code.claude.com/docs/en/costs)).
 
 ### The `--max-budget-usd` Flag (Print Mode Only)
 
@@ -521,7 +531,7 @@ When the cap is reached, the run stops. This prevents runaway runs -- especially
 - Delegating Claude Code usage to team members through scripts
 - Working on tasks that might spiral into unexpected complexity
 
-Interactive sessions have no per-session dollar cap. Watch `/usage`, set a Console workspace spend limit (API key) or a usage-credits spend limit (subscription), or use a PreToolUse budget hook such as [hooks/budget-tracker.sh](../hooks/budget-tracker.sh).
+Interactive sessions have no per-session dollar cap. Watch `/usage`, set a Console workspace spend limit (API key) or a usage-credits spend limit (subscription), or use a PreToolUse budget hook such as [hooks/budget-tracker.sh](../hooks/budget-tracker.sh). To see API spend by model, workspace, API key or user, Anthropic launched the Usage and Cost Analytics API in beta on 2026-10-29 (`/v1/organizations/analytics/usage` and `/cost`, beta header `analytics-usage-cost-2026-08-24`); the older Usage and Cost API is now legacy but still supported ([release notes](https://platform.claude.com/docs/en/release-notes/overview), read 2026-11-01).
 
 ### Recommended Budget Caps by Task Type
 
@@ -561,7 +571,7 @@ You are building a new API endpoint for a Node.js/Express application. The sessi
 - Average Claude response: ~400 tokens of text + ~300 tokens of tool calls = ~700 output tokens
 - Average tool results per turn: ~2,500 tokens (file reads, command outputs)
 - So each turn adds **3,300 tokens** to the next request (700 response + 2,500 tool results + 100 next message), and turn N's prompt is 4,440 + (N - 1) x 3,300 tokens
-- Prompt caching billed the way Claude Code does it: each request reads the whole previous request from cache (0.1x input on Sonnet 4.6) and writes only what is new (1.25x input, 5-minute TTL), with no pause longer than the TTL. That reads 94% of all input from cache, close to the upper quartile Anthropic measured for coding agent loops (median 88.5%, upper quartile 93.4%, [cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence))
+- Prompt caching billed the way Claude Code does it: each request reads the whole previous request from cache (0.1x input on Sonnet 4.6) and writes only what is new (1.25x input, 5-minute TTL), with no pause longer than the TTL. That reads 94% of all input from cache (computed: 1,468,560 / 1,568,700 = 93.6%). For comparison, Anthropic measured agent loops on its API at a median 84.2% of input read from cache and an upper quartile of 91.7% (14 days ending 2026-08-23, 303,003 organization-days from 106,487 organizations); about 72% of coding organization-days read 80% or more, the top decile of coding reads 95.9% or more, and in a six-hour sample of coding requests with 25 or more prior tool calls, 92% of input was read, 7% written and under 1% uncached ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), reference 17, read 2026-11-01). So this example sits above the upper quartile and just under the coding top decile
 
 ### Turn-by-Turn Cost Calculation
 
@@ -667,7 +677,7 @@ Without prompt caching, every input token is charged at full price ($3/1M on all
 | Turns 21-30 | $0.47 | $2.66 |
 | **Total** | **$1.13** | **$5.02** |
 
-> Prompt caching saved **$3.89** on this session -- a **77% reduction** (computed: 1 - $1.13 / $5.02), and 83% of the input cost. Rows are rounded; totals are exact sums. On Anthropic's own benchmarks caching cut agent-loop cost by a factor of 2.7 to 5.3 ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). This is why preserving the cache is so important.
+> Prompt caching saved **$3.89** on this session -- a **77% reduction** (computed: 1 - $1.13 / $5.02), and 83% of the input cost. Rows are rounded; totals are exact sums. In Anthropic's own measurements caching cut cost by a factor of 4.8 to 7.2 on a research agent and by 83% to 86% on a small triage agent; priced without caching, a run costs 3.3x (Opus 5.5, SWE-bench Pro), 3.1x (Sonnet 5.5, SWE-bench Pro), 1.7x (Haiku 5.5, Managed Agents tasks) and 7.3x (Sonnet 5.5, triage agent) as much ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence#why-caching-comes-first), read 2026-11-01). On DeepResearch Bench II caching takes Fable 5.1 from $40.58 to $5.64 a task and Sonnet 5.5 from $5.13 to $1.05. This is why preserving the cache is so important.
 
 ### What This Session Would Cost on Different Models
 
@@ -800,7 +810,7 @@ Computed with the worked example's turn (3,300 new tokens, 700 output) at a 50K-
 
 - **Opus 5.5 to Sonnet 5.5**: the switch writes 50K x $2.50/1M = $0.125 instead of reading it for $0.01, a $0.115 loss; each later turn then costs $0.020 instead of $0.041, so it breaks even after about 6 turns.
 - **Opus 5.5 to Haiku 5.5, context under 100K**: the switch writes 50K x $0.125/1M = $0.006, less than the $0.01 cache read Opus 5.5 would bill, so it pays from the first turn.
-- **Opus 5.5 to Haiku 5.5, context over 100K**: Haiku 5.5's write rate jumps to $0.625/1M, 3.1x Opus 5.5's $0.20 read. At 150K the switch costs $0.094 against $0.03 to stay, so for a single answer it is cheaper to let Opus 5.5 reply; over two or more turns Haiku still wins. Anthropic's [2026-04-30 post on Claude Code caching](https://claude.com/blog/lessons-from-building-claude-code-prompt-caching-is-everything) makes the same point for switching to Haiku 100K tokens into an Opus conversation.
+- **Opus 5.5 to Haiku 5.5, context over 100K**: Haiku 5.5's write rate jumps to $0.625/1M, 3.1x Opus 5.5's $0.20 read. At 150K the switch costs $0.094 against $0.03 to stay, so for a single answer it is cheaper to let Opus 5.5 reply; over two or more turns Haiku still wins. Anthropic's [2026-04-30 post on Claude Code caching](https://claude.dev/blog/lessons-from-building-claude-code-prompt-caching-is-everything/) makes the same point for switching to Haiku 100K tokens into an Opus conversation.
 
 ---
 
@@ -812,7 +822,7 @@ Computed with the worked example's turn (3,300 new tokens, 700 output) at a 50K-
 
 3. **Prompt caching cut this guide's 30-turn Sonnet 4.6 session 77% ($1.13 vs $5.02, 83% of the input cost), and 82% at Opus 5.5 or Sonnet 5.5 rates**, where cache reads cost 0.05x (computed: $1.21 vs $6.69 uncached on Opus 5.5). Do not break the cache unnecessarily.
 
-4. **CLAUDE.md loads on every turn.** Anthropic's guidance is to target under 200 lines per file; nothing is truncated past that, it just costs more and is followed less. Every line you cut saves tokens across your entire session.
+4. **CLAUDE.md loads on every turn.** Anthropic's guidance is to target under 200 lines per file; nothing that loads at launch is truncated past that (on-demand files are capped per file, see [Guide 02](02-context-optimization.md#what-actually-loads-and-what-gets-truncated)), it just costs more and is followed less. Every line you cut saves tokens across your entire session.
 
 5. **Model selection matters, and Haiku 5.5 widens the bottom gap again.** Haiku 5.5 at $0.10/$0.50 vs Opus 5.5 at $4/$20 is a 40x difference while the prompt stays at or under 100K tokens (8x above, where Haiku 5.5 bills $0.50/$2.50); legacy Haiku 4.5 at $1/$5 was 4x. Use the cheapest model that gets the job done, and judge it by cost per completed task, not cost per token: a cheaper model that fails still bills. The new tokenizer (Opus 4.7 and later, about 30% more tokens for the same text per Anthropic's pricing page) slightly re-widens the effective gap against pre-4.7 models.
 

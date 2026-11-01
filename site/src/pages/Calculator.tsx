@@ -74,8 +74,7 @@ function FastModeToggle({
       />
       <span>
         Fast Mode ({MODELS[model].fastModeMultiplier ?? FAST_MODE_MULTIPLIER}x cost
-        --{' '}
-        {MODELS[model].name} research preview)
+        {MODELS[model].fastModeStatus ? ` -- ${MODELS[model].name} ${MODELS[model].fastModeStatus}` : ''})
       </span>
     </label>
   )

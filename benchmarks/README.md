@@ -13,7 +13,7 @@ Each benchmark file compares costs along a specific dimension: task type, model 
 
 ### Pricing Reference
 
-All cost calculations use the following rates (verified 2026-10-09):
+All cost calculations use the following rates (verified 2026-11-01):
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
 |-------|:---------------------:|:----------------------:|:-------------------------:|
@@ -116,7 +116,7 @@ When submitting results, please include:
 ### [Your Scenario Name]
 
 **Environment:**
-- Model: [Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Opus 5 / Sonnet 5 / Opus 4.8 / Opus 4.7 / Opus 4.6 / Sonnet 4.6 / Haiku 4.5 (legacy)]
+- Model: [Fable 5.1 / Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Opus 5 / Sonnet 5 / Opus 4.8 / Opus 4.7 / Opus 4.6 / Sonnet 4.6 / Haiku 4.5 (legacy)]
 - CLAUDE.md: [line count] lines (~[token count] tokens)
 - Codebase: [language/framework], [approximate size]
 - Date: [YYYY-MM-DD]

@@ -7,7 +7,7 @@ A custom Claude Code slash command that audits your project's configuration and 
 When you run `/optimize` in Claude Code, it inspects your project for cost-related configuration and produces a structured report:
 
 1. **CLAUDE.md audit** -- checks existence, line count against Anthropic's 200-line guidance, and structure
-2. **File-read exclusions audit** -- counts `Read(...)` rules in `permissions.deny` and checks coverage of common expensive paths. A `.claudeignore` is not a Claude Code feature (Claude Code never reads it), so the command flags one and converts its patterns to `Read(...)` rules
+2. **File-read exclusions audit** -- counts `Read(...)` rules in `permissions.deny` and checks coverage of common expensive paths. A `.claudeignore` file has no effect in Claude Code (the [permissions page](https://code.claude.com/docs/en/permissions), read 2026-11-01, says to use Read deny rules instead), so the command flags one and converts its patterns to `Read(...)` rules
 3. **settings.json audit** -- checks model configuration and cost-related flags
 4. **MCP server audit** -- counts connected servers, checks whether tool search is on (the default), and flags servers that duplicate a CLI
 5. **Conversation pattern check** -- looks for custom commands and large files

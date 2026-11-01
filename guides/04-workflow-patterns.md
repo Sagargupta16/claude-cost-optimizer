@@ -166,11 +166,15 @@ Add this to your CLAUDE.md to encourage cost-efficient delegation:
 - Subagents should return concise summaries, not raw file contents
 ```
 
-To pin the cheap model rather than asking for it, set `model: haiku` in the subagent's definition frontmatter -- Anthropic's costs page (code.claude.com/docs/en/costs) recommends exactly that for simple subagent tasks. On the Anthropic API `haiku` is Haiku 5.5 (Claude Code v2.1.293+); on Bedrock, Google Cloud, Microsoft Foundry and Claude Platform on AWS it is still legacy Haiku 4.5, so set `ANTHROPIC_DEFAULT_HAIKU_MODEL` there (Bedrock: `anthropic.claude-haiku-5-5`). Two Haiku 5.5 properties suit subagents: short subagent calls stay in the cheap under-100K tier, and its 512-token cache floor (Haiku 4.5: 4,096) means a subagent's short system prompt actually caches instead of paying full input price on every call. The same page warns about the opposite end: agent teams use about **7x the tokens** of a standard session when teammates run in plan mode, so fan out deliberately.
+To pin the cheap model rather than asking for it, set `model: haiku` in the subagent's definition frontmatter -- Anthropic's costs page (code.claude.com/docs/en/costs) recommends exactly that for simple subagent tasks. On the Anthropic API `haiku` is Haiku 5.5 (Claude Code v2.1.293+); on Amazon Bedrock, Google Cloud (Google managed, formerly Vertex AI), Microsoft Foundry and Claude Platform on AWS it is still legacy Haiku 4.5, so set `ANTHROPIC_DEFAULT_HAIKU_MODEL` there (Bedrock: `anthropic.claude-haiku-5-5`). Two Haiku 5.5 properties suit subagents: short subagent calls stay in the cheap under-100K tier, and its 512-token cache floor (Haiku 4.5: 4,096) means a subagent's short system prompt actually caches instead of paying full input price on every call. The same page warns about the opposite end: agent teams (experimental and off by default; `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` turns them on) use about **7x the tokens** of a standard session when teammates run in plan mode, so fan out deliberately.
 
-Delegation is not cheap by default: the built-in Explore subagent runs on the main conversation's model, not Haiku. To explore on Haiku, define your own `Explore` with `model: haiku`, or set `CLAUDE_CODE_SUBAGENT_MODEL=haiku` plus `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` (v2.1.257+). Since v2.1.292 the Agent tool also takes an `effort` parameter ([sub-agents docs](https://code.claude.com/docs/en/sub-agents), [changelog](https://code.claude.com/docs/en/changelog)).
+Delegation is not cheap by default: the built-in Explore subagent runs on the main conversation's model, not Haiku (when the main model is Fable, Explore runs on the Opus alias with a subscription, a Console account or a gateway). To explore on Haiku, define your own `Explore` with `model: haiku`, or set `CLAUDE_CODE_SUBAGENT_MODEL=haiku` plus `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` (v2.1.257+).
 
-**Measured elsewhere:** in Anthropic's [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization), moving the work into a subagent cut one agent loop's cost 78% ($1.7945 to $0.3978). No Claude Code measurement exists, and subagents add their own requests: Anthropic measured multi-agent systems at about 15x the tokens of a chat ([multi-agent research post](https://www.anthropic.com/engineering/multi-agent-research-system)). Subagents save when they read far more than they return and run on a cheaper model.
+Effort follows the same pattern: a subagent's `effort` frontmatter overrides the session level (but not `CLAUDE_CODE_EFFORT_LEVEL`), the Agent tool takes a per-invocation `effort` parameter since v2.1.292, and since v2.1.316 `CLAUDE_CODE_SUBAGENT_EFFORT` sets the level subagents run at when nothing else names one, instead of inheriting the session's. The changelog states only that; the docs do not yet say where it ranks against the other sources ([sub-agents docs](https://code.claude.com/docs/en/sub-agents), [changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
+
+Forks differ from ordinary subagents: a fork inherits the parent's system prompt, tools and whole conversation, so its first request reads the parent's cache, while an ordinary subagent starts a fresh cache on a 5-minute TTL ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching#subagents-and-the-cache)). Fork subagents are on by default in `claude -p`, the Agent SDK, the desktop app and VS Code since v2.1.302, as they already were in the terminal; `CLAUDE_CODE_FORK_SUBAGENT=0` turns them off.
+
+**Measured elsewhere:** in Anthropic's [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization), moving the work into a subagent cut one agent loop's cost 78% ($1.7945 to $0.3978). No Claude Code measurement exists, and subagents add their own requests: Anthropic measured multi-agent systems at about 15x the tokens of a chat ([multi-agent research post](https://www.anthropic.com/research/multi-agent-research-system), read 2026-11-01). Subagents save when they read far more than they return and run on a cheaper model.
 
 ---
 
@@ -274,11 +278,11 @@ Do not add tests unless I ask.
 3. **Consistent behavior**: Same approach every time, no exploratory overhead
 4. **Amortized prompt design**: You spend time writing the prompt once, and every invocation benefits
 
-**Estimated savings: no published figure.** Commands and skills load their instructions only when invoked, as messages, so they keep the prompt cache ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching)). A skill's description is the exception: it sits in the skill listing on every turn whether or not the skill runs. `/skill-doctor` (Claude Code v2.1.252+) reports what each skill costs and how often it is used, and says where to turn off the ones you never invoke ([skills docs](https://code.claude.com/docs/en/skills)).
+**Estimated savings: no published figure.** Commands and skills load their instructions only when invoked, as messages, so they keep the prompt cache ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching)). Two exceptions. A command or skill whose frontmatter names a `model` other than the session's is a model switch for that turn, and that turn reads the whole conversation with no cache hits (the `model: haiku` commands above are best run early in a session or on a small context; the session model resumes on your next prompt). And a skill's description sits in the skill listing on every turn whether or not the skill runs, within a cap of 1% of the context window (least-used skills lose their descriptions first; `skillOverrides` can set a skill to `name-only`). `/skill-doctor` (Claude Code v2.1.252+) reports what each skill costs and how often it is used, and says where to turn off the ones you never invoke ([skills docs](https://code.claude.com/docs/en/skills)).
 
 ### Hooks: Filter Output Before Claude Reads It
 
-A command controls what Claude is asked; a hook controls what Claude reads back. Anthropic's costs page gives the example of a `PreToolUse` hook that filters test output down to the failures, which it says cuts tens of thousands of tokens to hundreds. The same idea applies to any noisy command (builds, linters, installs): let the hook strip the passing lines so only the signal enters context. Anthropic publishes the token range, not a session-level percentage, so measure your own before and after with `/usage`.
+A command controls what Claude is asked; a hook controls what Claude reads back. Anthropic's costs page gives the example of a `PreToolUse` hook that filters test output down to the failures, which it says cuts tens of thousands of tokens to hundreds. The same idea applies to any noisy command (builds, linters, installs): let the hook strip the passing lines so only the signal enters context. Anthropic publishes the token range, not a session-level percentage, so measure your own before and after with `/usage`. Match the hook on `Bash` for command output. A matcher on `Read|Glob|Grep` misses searches on macOS, Linux and WSL, where Claude Code leaves Glob and Grep out of the default tools and runs `grep` and `find` through Bash, so the searches reach your hooks and permission rules as `Bash` calls (on Windows they are default tools) ([tools reference](https://code.claude.com/docs/en/tools-reference#glob-tool-behavior), read 2026-11-01).
 
 Filtering matters more on Haiku 5.5 subagents: unfiltered test or build output can push a subagent's prompt past 100K tokens, and then the whole request bills at $0.50/$2.50 instead of $0.10/$0.50. Trimmed output keeps short subagent calls in the cheap tier, and a short, stable system prompt above Haiku 5.5's 512-token floor keeps caching.
 
@@ -469,6 +473,10 @@ This single CLAUDE.md entry removes the clarification turns it answers in advanc
 
 ## Structured Multi-Step Work with TodoWrite
 
+### Check Availability First
+
+The task-tracking tools are no longer on by default for every model. Since Claude Code v2.1.268 the task tools (`TaskCreate`, `TaskGet`, `TaskUpdate`, `TaskList`) are provided by default only on Opus 4.7, Sonnet 4.6, Haiku 4.5 and earlier models, and `TodoWrite` is off by default in their favor (`CLAUDE_CODE_ENABLE_TASKS=0` brings it back where the tools exist). On the current lineup (Opus 5.5, Sonnet 5.5, Haiku 5.5, Fable) Claude Code leaves them out, because on newer models Claude keeps track of multi-step work without a written checklist and the tools' definitions and reminders take up context. To use them anyway, export `CLAUDE_CODE_ENABLE_TODO_TOOLS=1` or name a tool in `--allowedTools` ([tools reference](https://code.claude.com/docs/en/tools-reference#task-tool-availability), read 2026-11-01). On current models an instruction such as "use TodoWrite" in your CLAUDE.md or prompt therefore adds nothing unless you opt in, and the opt-in costs the context the tools occupy. The rest of this section applies to sessions that have the tools.
+
 ### The Problem: Lost Context in Long Tasks
 
 During complex tasks, Claude Code can lose track of what it has done and what remains. This leads to:
@@ -479,14 +487,14 @@ During complex tasks, Claude Code can lose track of what it has done and what re
 
 ### The Solution: TodoWrite
 
-Claude Code's TodoWrite tool creates an explicit task list that persists across turns. Using it:
+Claude Code's task list (the task tools, or TodoWrite where it is enabled) creates an explicit checklist that persists across turns. Using it:
 - Prevents duplicate work (Claude checks the list before each step)
 - Ensures completeness (no steps are forgotten)
 - Reduces context re-processing (the todo list is a compact summary of state)
 
 ### How to Trigger TodoWrite Usage
 
-Add this to your CLAUDE.md:
+On a model that has the tools (or after you opt in), add this to your CLAUDE.md:
 
 ```markdown
 # Multi-Step Tasks
@@ -506,7 +514,7 @@ Plan all steps first, then execute them one at a time."
 
 ### Why TodoWrite Saves Money
 
-Without TodoWrite:
+Illustrative turn counts (no published measurement). Without the task list:
 ```
 Turn 1: Read files, start implementing (then forget what's left)
 Turn 2: Re-read some files, continue (duplicated reads)
@@ -516,7 +524,7 @@ Turn 5-8: More duplicated work
 Total: 8 turns, heavy token waste
 ```
 
-With TodoWrite:
+With the task list:
 ```
 Turn 1: Create todo list with 5 steps, start step 1
 Turn 2: Complete step 1, start step 2
@@ -526,7 +534,7 @@ Turn 5: Complete step 5
 Total: 5 turns, no wasted reads
 ```
 
-**Estimated savings: no published figure.**
+**Estimated savings: no published figure.** On current models Anthropic's tools reference says Claude tracks multi-step work without the checklist, so measure before turning the tools on.
 
 ---
 
@@ -538,10 +546,14 @@ The `/compact` command tells Claude Code to compress the conversation history. I
 
 - **Automatic trigger** (Anthropic's docs): Claude Code auto-compacts when the context nears the window, at about **967K tokens** by default on 1M-window models (Fable, Sonnet 5 and later, Haiku 5.5, Opus 4.7 and later). `/autocompact` sets the point anywhere from 100K to 1M and is saved per model since v2.1.288 (2026-10-02); subagents get their own `autoCompactWindow` since v2.1.296 (2026-10-09) ([model-config page](https://code.claude.com/docs/en/model-config), [changelog](https://code.claude.com/docs/en/changelog)).
 
-Based on community research into Claude Code's observed behavior (not documented by Anthropic), here are more specifics:
+- **Idle compaction** (since v2.1.299): a conversation of 200K or more tokens left idle about 54 minutes is compacted before its one-hour cache expires, so your next message sends a summary instead of the whole history. It needs the one-hour TTL and auto-compaction on. `CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS` sets the minimum (default 200,000, floor 100,000), and `"idleCompaction": false` or the `/config` row (v2.1.302+) turns it off; VS Code and the desktop app's Code tab got it in v2.1.314 ([settings reference](https://code.claude.com/docs/en/settings-reference#idlecompaction), [changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
 
-- **What is preserved**: After compaction, the **4 most recent messages** are preserved verbatim. Everything older is replaced with a summary.
-- **What the summary contains**: The generated summary includes tool mentions from the session, up to 3 recent user requests, up to 8 key files that were referenced, and an inference of the current work being done. This is designed to retain enough context for Claude to continue working without losing track of the task.
+What Anthropic documents about what survives a compaction (Claude Code [context window page](https://code.claude.com/docs/en/context-window#what-survives-compaction), read 2026-11-01):
+
+- **Comes back from disk or is rebuilt**: the system prompt and output style still apply; project-root CLAUDE.md, unscoped rules and auto memory are re-injected; skill descriptions are rebuilt and re-sent (v2.1.304+).
+- **Re-read**: up to five files Claude read or edited, most recently modified first; a file over 5,000 tokens comes back as a path reference without its content. Invoked skill bodies return capped at 5,000 tokens each and 25,000 tokens total, oldest dropped first.
+- **Loads again on demand, not kept**: path-scoped rules and nested CLAUDE.md files are summarized away with the rest of the conversation and reload when Claude next touches a matching file, so a rule that must persist belongs in the project-root CLAUDE.md.
+- **Summarized**: the rest of the conversation becomes a structured summary. Anthropic documents no fixed number of recent messages kept verbatim (an earlier version of this guide quoted "4 most recent messages" from unsourced community write-ups; it is dropped), so do not plan around one.
 - **Manual /compact is still valuable**: Even though auto-compaction exists, running `/compact` manually before the threshold gives you more control over the timing. You can also provide a focus hint (e.g., `/compact Focus on the auth refactor`) to influence what the summary prioritizes.
 
 ### What /clear, /compact and /rewind Cost
@@ -554,7 +566,7 @@ From Anthropic's prompt-caching page for Claude Code (code.claude.com/docs/en/pr
 | `/compact` | A summarization request that reads the prefix from cache while it is warm, so a fraction of the context size. After a break longer than the cache TTL it reprocesses the full history uncached | Compaction rebuilds the conversation layer, so later turns re-cache it |
 | `/rewind` | Returns to an already-cached prefix | Keeps the cache |
 
-So compact **before** a break, not after one. The TTL is one hour for the main conversation on a Claude subscription within plan usage, and five minutes on an API key, a cloud provider, or once you draw on usage credits (set it with `promptCacheTtl` or `CLAUDE_CODE_PROMPT_CACHE_TTL`, Claude Code v2.1.242+). `/usage` shows a `Prompt cache (main)` line with hit share and whether the cache is warm (v2.1.251+).
+So compact **before** a break, not after one. The TTL is one hour for the main conversation on a Claude subscription within plan usage, and five minutes on an API key, a cloud provider, or once you draw on usage credits (set it with `promptCacheTtl` or `CLAUDE_CODE_PROMPT_CACHE_TTL`, Claude Code v2.1.242+). `/usage` shows a `Prompt cache (main)` line with hit share and whether the cache is warm (v2.1.251+). Since v2.1.304, Pro and Max users are warned when resuming an inactive conversation would use a noticeable share of the 5-hour limit, and can start a new conversation instead ([changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
 
 ### When to Compact
 
@@ -745,7 +757,7 @@ Here is what a cost-optimized Claude Code session looks like in practice. The ph
 
 ### Phase 3: Implement (7 turns)
 - Execute the plan step by step
-- Use TodoWrite for multi-step work
+- Use the task list (TodoWrite) for multi-step work on models that have it; current models track steps without it
 - Delegate file searches and simple subtasks to subagents
 - Batch related changes into single turns
 - Use commands for repetitive operations
@@ -784,12 +796,12 @@ One Opus-specific caveat for the per-turn numbers above: on Opus 5.5 adaptive th
 | Batch operations | $0.01 per avoided turn at 50K context (Opus 5.5) | None (habit change) |
 | Front-loaded requirements | No published figure | None (habit change) |
 | Eliminate clarification loops | No published figure | Low (better prompts) |
-| TodoWrite for multi-step work | No published figure | None (built-in) |
+| TodoWrite for multi-step work | No published figure; off by default on current models | None (built-in on older models, opt-in on current ones) |
 | /compact at breakpoints | 32% (Anthropic long triage run; nothing on short loops) | None (built-in) |
 | Smart commit strategy | No published figure | Low (CLAUDE.md update) |
 | Knowing when not to use Claude Code | No published figure | None (judgment) |
 
-> No published measurement covers these workflow patterns, alone or combined. The measured levers are in the README's [How far can you actually go?](../README.md#how-far-can-you-actually-go): cache pricing, Batch (50% off), effort (Opus 5.5 at medium costs about 70% of high on SWE-bench Pro, per Anthropic's [cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)), and model routing.
+> No published measurement covers these workflow patterns, alone or combined. The measured levers are in the README's [How far can you actually go?](../README.md#how-far-can-you-actually-go): cache pricing, Batch (50% off), effort (Opus 5.5 at medium costs 72% of high on SWE-bench Pro, computed: $0.21 / $0.29 a task, per Anthropic's [cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence#tune-effort), read 2026-11-01), and model routing.
 
 ---
 

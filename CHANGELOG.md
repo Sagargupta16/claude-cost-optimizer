@@ -1,5 +1,26 @@
 # Changelog
 
+## [1.18.0] - 2026-11-01
+
+A line-by-line freshness pass against Anthropic's live pages. No API rate changed and no model was released since 2026-10-07, but plan names, a Google Cloud product name, Fast Mode status and many measured figures did, and three repo hooks and five graders had bugs the docs now expose. Every stamp moves to verified 2026-11-01.
+
+### Changed
+- **Plan names.** Max 5x is now **Max** ($100) and Max 20x is now **Ultra** ($200, 10x Pro usage a week, no 5-hour limit for verified accounts; [claude.com/pricing](https://claude.com/pricing)). Every guide, table and template uses the new names; Ultra is never described as 20x Pro. Team Standard and Premium seats (1.25x and 6.25x Pro), the new Enterprise seat ($20 plus usage at API rates), usage credits (formerly extra usage) and prepaid usage bundles are documented. Monthly API credits cover `claude -p` and the Agent SDK with a Console API key, not interactive Claude Code.
+- **Google Cloud naming.** Anthropic's docs call the Google-operated offering Claude Models on Google Cloud (Google managed), formerly Vertex AI, and a new Claude Models on Google Cloud (Anthropic managed) launched 2026-10-22. Guide 06 gets a section for it.
+- **Fast Mode.** Opus 5.5 is out of research preview (2026-10-15, no beta header) on the Claude API, Google Cloud (Anthropic managed) and Foundry on Azure; Opus 5 and 4.8 stay in research preview; **Opus 4.8 Fast Mode is removed on 2026-11-30**. Fast and standard speed keep separate caches. The calculator labels each model's status.
+- **Cost guide figures** (Anthropic rewrote [the page](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)): caching is now a factor of 4.8 to 7.2 on a research agent and 83% to 86% on a triage agent (was 2.7x to 5.3x); the coding-loop "median 88.5%, upper quartile 93.4%" is gone (agent loops: 84.2% median, 91.7% upper quartile); 5-minute vs 1-hour cache is about 19% on Sonnet 5.5; shorter answers cut cost 13% (not 14%); Haiku 5.5 is about 1/20 of Opus 5.5 per correct GPQA answer (not per question); Fable 5.1's effort results on DeepResearch Bench II are restated; the cookbook is no longer the only stacked measurement.
+- **Claude Code facts**: the effort-change cache exemption now covers Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 (not on Bedrock, Agent Platform or gateways); on-demand CLAUDE.md files are capped per file since v2.1.309; tool search is on by default behind a custom `ANTHROPIC_BASE_URL`; Claude Code's default effort for Sonnet 5.5 is `medium`; TodoWrite is off by default on current models; Glob and Grep run through Bash on macOS and Linux; the "background usage under $0.04 per session" figure is gone from the costs page and removed here.
+- **New developments documented**: idle compaction, the resume warning, `CLAUDE_CODE_SUBAGENT_EFFORT`, `maxEffortLevel`, `ultrathink` at `xhigh`, `/usage` fixes, fork subagents, pooled gateway budgets, the Usage and Cost Analytics API, API version `2026-10-21` (sampling parameters return 400 on every model), 128 MB requests and OpenTelemetry export.
+- **Links** repointed where Anthropic moved pages (models overview, Opus 5 migration guide, the claude.com blog and anthropic.com engineering posts, the Vertex page) and the project site URL moved to sagargupta.online. Community tool star counts read 2026-11-01.
+- **claude-rate 0.3.0** and every other grader (badge generator, CI audit action, web analyzer, badge checker): `alwaysThinkingEnabled: false` no longer counts as a cost control (it has no effect on the always-thinking 5.5 and Fable models); `maxEffortLevel` and `fastModePerSessionOptIn: true` now do. The `.claudeignore` finding cites the permissions page, which now says the file has no effect.
+
+### Fixed
+- **The session-summary hook ran on `Stop`**, which fires after every response, and deleted the budget tracker's counter, so the tool-call budget never counted past one turn. It now runs on `SessionEnd`.
+- **Hook warnings were never shown**: the scripts printed `message` and `result`, which are not hook output fields. They now print `systemMessage`.
+- **`cost-logger.sh` logged every call as "unknown"**: it read `HOOK_TOOL_NAME`, which Claude Code does not set. It now reads `tool_name` and `session_id` from stdin and keeps one log per session instead of per day.
+- Tool token overheads in the pricing data: text editor +974 tokens on Claude 4.7 and later (+745 earlier), not +700; bash +325 on every Claude 4.7+ model.
+- Guide 05's usage-analyzer examples used flags the tool does not have.
+
 ## [1.17.2] - 2026-10-24
 
 ### Changed

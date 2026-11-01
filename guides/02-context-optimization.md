@@ -1,6 +1,6 @@
 # Guide 02: Context Optimization
 
-> Every token in your input is a token you pay for. This guide covers practical strategies to reduce input tokens without sacrificing Claude's ability to help you. No combined measurement exists for them; the measured ones: with caching on, Anthropic's input trimming (image resizing plus tool search) took a further 26% off a short run and 21% off a long one ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)), and reading a CSV through code execution instead of the prompt cut a request 79% in Anthropic's [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization).
+> Every token in your input is a token you pay for. This guide covers practical strategies to reduce input tokens without sacrificing Claude's ability to help you. No one has measured these Claude Code habits combined (Anthropic's two stacked measurements are API agents that combine other levers, see the README's [How far can you actually go?](../README.md#how-far-can-you-actually-go)); the measured ones: with caching on, Anthropic's input trimming (image resizing plus tool search) took a further 26% off a short run and 21% off a long one ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), read 2026-11-01), and reading a CSV through code execution instead of the prompt cut a request 79% in Anthropic's [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization).
 
 ---
 
@@ -49,16 +49,16 @@ This makes CLAUDE.md the highest-leverage optimization target because:
 2. It is under your direct control
 3. Many CLAUDE.md files carry content Claude rarely needs; Anthropic's target is under 200 lines per file
 
-### What Actually Loads (No Character Cap)
+### What Actually Loads (and What Gets Truncated)
 
-Claude Code does not truncate CLAUDE.md, and there is no per-file or total character cap. What loads, per Anthropic's memory docs:
+Claude Code does not truncate the CLAUDE.md files that load at launch, and there is no total character cap. It does cap files that load on demand, and it truncates `MEMORY.md`. What loads, per Anthropic's [memory docs](https://code.claude.com/docs/en/memory) (read 2026-11-01):
 
-- **In full, at launch**: every CLAUDE.md and CLAUDE.local.md in the directory hierarchy above your working directory.
-- **On demand**: CLAUDE.md files in subdirectories load when Claude reads files there. Rules in `.claude/rules/` with `paths:` frontmatter load when Claude reads a matching file. Skills load when invoked.
-- **Every turn, even unused**: each skill's description in the skill listing ("Every skill in the skill listing adds to your context on every turn, whether or not Claude ever uses it"; `description` plus `when_to_use` is cut at 1,536 characters). Run `/skill-doctor` (Claude Code v2.1.252+) to see what each skill costs and how often it is used; it flags skills that have never been invoked and says where to turn them off ([skills docs](https://code.claude.com/docs/en/skills)).
-- **The one real truncation**: auto memory. Only the first 200 lines or 25KB of `MEMORY.md`, whichever comes first, load at session start.
+- **In full, at launch**: every CLAUDE.md and CLAUDE.local.md in the directory hierarchy above your working directory, as long as each file is 4 MiB or smaller (Claude Code skips a larger file and loads none of it).
+- **On demand, with a per-file cap**: CLAUDE.md and CLAUDE.local.md files in subdirectories (and the files they `@import`), rules in a subdirectory's `.claude/rules/`, and path-scoped rules (`paths:` frontmatter) load when Claude reads a matching file. Since v2.1.309 each such file is capped at 40,000 characters on a 200K window and 150,000 characters on a 1M window (200,000 on Opus 4.6 and Sonnet 4.6). Over the cap, Claude receives only the start of the file plus a note to read the rest with the Read tool, so later instructions are missing until it does. Skills load when invoked.
+- **Every turn, even unused**: each skill's description in the skill listing ("Every skill in the skill listing adds to your context on every turn, whether or not Claude ever uses it"; `description` plus `when_to_use` is cut at 1,536 characters, `skillListingMaxDescChars`). The whole listing is capped at 1% of the context window (`skillListingBudgetFraction`, default 0.01); over the cap, Claude Code keeps every skill's name but drops the descriptions of the least-used skills first, so Claude is less likely to pick them on its own. `skillOverrides` can set a skill to `name-only` (name without description), `user-invocable-only` or `off`. Run `/skill-doctor` (Claude Code v2.1.252+) to see what each skill costs and how often it is used; it flags skills that have never been invoked and says where to turn them off ([skills docs](https://code.claude.com/docs/en/skills), [settings reference](https://code.claude.com/docs/en/settings-reference#skilllistingbudgetfraction), read 2026-11-01).
+- **Truncated: auto memory.** Only the first 200 lines or 25KB of `MEMORY.md`, whichever comes first, load at session start.
 
-Anthropic's size guidance, verbatim: "target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence." So the reason to stay small is token cost in every session plus adherence, not a cutoff. `@path` imports help organize a long file, but imported files still load at launch, so they do not reduce tokens.
+Anthropic's size guidance, verbatim: "target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence." So the reason to stay small is token cost in every session plus adherence, not a cutoff at launch. `@path` imports help organize a long file, but imported files still load at launch, so they do not reduce tokens.
 
 What this means in practice:
 
@@ -72,7 +72,7 @@ What this means in practice:
 
 ### The 150-Line Budget (Approximate Guideline)
 
-Anthropic's target is under **200 lines** per CLAUDE.md file; this guide aims for about **150 lines** to leave headroom. Nothing is cut off past either number -- every extra line just costs tokens on every turn. Here is the cost breakdown by size:
+Anthropic's target is under **200 lines** per CLAUDE.md file; this guide aims for about **150 lines** to leave headroom. Nothing that loads at launch is cut off past either number -- every extra line just costs tokens on every turn. Here is the cost breakdown by size:
 
 | CLAUDE.md Size | Tokens Per Turn | 30-Turn Session, Warm Cache (Sonnet 4.6) | 30-Turn Session, Warm Cache (Opus 5.5) | 30-Turn Session, No Cache (Sonnet 4.6) | Monthly, Warm Cache (Opus 5.5, 110 sessions) |
 |:--------------:|:---------------:|:----------------------------------------:|:--------------------------------------:|:--------------------------------------:|:--------------------------------------------:|
@@ -418,11 +418,11 @@ Auth: Passport.js + JWT | Search: Elasticsearch | Hosting: AWS ECS
 
 ## Read Deny Rules: Stop Reading Junk
 
-> `.claudeignore` is not a Claude Code feature. It appears nowhere in Claude Code's documentation, and Claude Code does not read it. If you created one from an earlier version of this guide, convert it with the rule [below](#converting-an-existing-claudeignore).
+> `.claudeignore` is not a Claude Code feature. Claude Code's permissions page says a `.claudeignore` file "has no effect" and tells you to move its entries into `Read` deny rules ([permissions page](https://code.claude.com/docs/en/permissions), read 2026-11-01). If you created one from an earlier version of this guide, convert it with the rule [below](#converting-an-existing-claudeignore).
 
 ### What Read Deny Rules Do
 
-The documented way to keep Claude's file tools out of paths is `permissions.deny` with `Read(...)` rules in `.claude/settings.json`. Read deny rules apply to Claude's built-in file tools, to the file commands Claude Code recognizes in Bash (`cat`, `head`, `tail`, `sed`, `tee`), and to redirection targets.
+The documented way to keep Claude's file tools out of paths is `permissions.deny` with `Read(...)` rules in `.claude/settings.json`. Read deny rules apply to Claude's built-in file tools, to the file commands Claude Code recognizes in Bash (`cat`, `head`, `tail`, `sed`, `tee`), and to redirection targets. A `Read` deny also blocks the Edit and Write tools on that path. They do not cover a command that reads files without naming them, such as `grep -r pattern .` run from the directory that holds the file, or a script that opens files itself ([permissions page](https://code.claude.com/docs/en/permissions), read 2026-11-01). On macOS, Linux and WSL, Claude searches through `grep` and `find` in Bash rather than the Grep and Glob tools, so those searches reach your hooks and permission rules as `Bash` calls ([tools reference](https://code.claude.com/docs/en/tools-reference#glob-tool-behavior)).
 
 Patterns use gitignore syntax:
 
@@ -559,7 +559,7 @@ Anthropic's costs page notes that code intelligence plugins replace grep-then-re
 
 **7. Run code over data files instead of reading them**
 
-Ask Claude to write and run a short script (`python`, `jq`, `awk`) over a CSV, log or JSON file rather than reading it into the conversation. Anthropic measured the API version of this: 25 aggregate questions over a 1,862-row CSV, answered through code execution on the uploaded file, were 25/25 correct for $0.40; with the CSV pasted into the prompt, 6/25 correct for $5.01. Code execution cost 92% less (1 - $0.40 / $5.01) and got every answer right ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)).
+Ask Claude to write and run a short script (`python`, `jq`, `awk`) over a CSV, log or JSON file rather than reading it into the conversation. Anthropic measured the API version of this: 25 aggregate questions over a 1,862-row CSV, answered through code execution on the uploaded file, were 25/25 correct for $0.40; with the CSV pasted into the prompt, 7/25 correct for $5.01. Code execution cost 92% less (1 - $0.40 / $5.01) and got every answer right ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence#keep-data-files-out-of-the-prompt), read 2026-11-01).
 
 ### File Read Cost Reference
 
@@ -578,9 +578,9 @@ Ask Claude to write and run a short script (`python`, `jq`, `awk`) over a CSV, l
 
 File reads are not the only tool results that pile up in history:
 
-- **Filter verbose output with a hook.** Hooks can preprocess output before Claude sees it. Anthropic's example is a PreToolUse hook that filters test output down to failures, which cuts tens of thousands of tokens to hundreds.
-- **Prefer CLI tools to MCP servers where one exists** (`gh`, `aws`, `gcloud`, `sentry-cli`). They add no per-tool listing. MCP tool search is on by default, so only tool names and server instructions enter context until Claude uses a specific tool; full schemas load up front only when tool search is off (`ENABLE_TOOL_SEARCH=false`, a custom `ANTHROPIC_BASE_URL`, or models older than the Claude 4.5 generation on Google Cloud). Disable unused servers with `/mcp`.
-- **Watch MCP output size.** Claude Code warns when an MCP tool result exceeds 10,000 tokens and caps it at 25,000 by default (`MAX_MCP_OUTPUT_TOKENS`).
+- **Filter verbose output with a hook.** Hooks can preprocess output before Claude sees it. Anthropic's example is a PreToolUse hook that filters test output down to failures, which cuts tens of thousands of tokens to hundreds. Match `Bash` for command output; a matcher on `Read|Glob|Grep` misses searches on macOS, Linux and WSL, where Claude runs `grep` and `find` through Bash ([tools reference](https://code.claude.com/docs/en/tools-reference#glob-tool-behavior), read 2026-11-01).
+- **Prefer CLI tools to MCP servers where one exists** (`gh`, `aws`, `gcloud`, `sentry-cli`). They add no per-tool listing. MCP tool search is on by default, including behind a custom `ANTHROPIC_BASE_URL` since v2.1.304 (a 400 or 422 from the gateway is retried without it), so only tool names and server instructions enter context until Claude uses a specific tool; full schemas load up front only when tool search is off (`ENABLE_TOOL_SEARCH=false`, Google Cloud (Google managed, formerly Vertex AI) models earlier than Opus 4.5, Sonnet 4.5 and Haiku 4.5, or a Microsoft Foundry deployment hosted on Azure that rejects it) ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching#connecting-or-removing-an-mcp-server), [changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01). Disable unused servers with `/mcp`.
+- **Watch MCP output size.** Claude Code warns when an MCP tool result exceeds 10,000 tokens and caps it at 25,000 by default (`MAX_MCP_OUTPUT_TOKENS`). MCP tool descriptions and server instructions sent up front are capped at 4,096 characters by default (2,048 before v2.1.296; 16,384 for a description loaded through tool search), and `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` replaces both limits ([env vars](https://code.claude.com/docs/en/env-vars), read 2026-11-01).
 
 ---
 
@@ -603,6 +603,10 @@ Savings: 72,500 tokens of input per turn going forward (80,000 - 7,500)
 ```
 
 Claude Code also compacts on its own when the context nears the window: at about 967K tokens by default on 1M-window models. `/autocompact` sets that point anywhere from 100K to 1M and is saved per model since v2.1.288, and subagents get their own `autoCompactWindow` since v2.1.296 ([model-config page](https://code.claude.com/docs/en/model-config), [changelog](https://code.claude.com/docs/en/changelog)). On Haiku 5.5 the lowest setting, 100K, sits right at its price line ($0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above).
+
+Idle conversations are compacted too: since v2.1.299 a conversation of 200K or more tokens left idle about 54 minutes is compacted before its one-hour cache expires, so your next message sends a summary instead of the whole history. It needs the one-hour TTL and auto-compaction on; `CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS` sets the minimum (default 200,000, floor 100,000) and `"idleCompaction": false` (or the `/config` row, v2.1.302+) turns it off ([settings reference](https://code.claude.com/docs/en/settings-reference#idlecompaction), read 2026-11-01).
+
+What a compaction keeps, per Claude Code's [context window page](https://code.claude.com/docs/en/context-window#what-survives-compaction) (read 2026-11-01): the system prompt and output style still apply, while project-root CLAUDE.md, unscoped rules and auto memory are re-injected from disk; skill descriptions are rebuilt and re-sent (v2.1.304+); up to five recently read or edited files are re-read, and a file over 5,000 tokens comes back as a path only; invoked skill bodies return capped at 5,000 tokens each and 25,000 tokens total, oldest dropped first. Path-scoped rules and nested CLAUDE.md files load again on demand, so a rule that must survive compaction belongs in the project-root CLAUDE.md.
 
 ### When to Use /compact
 
@@ -634,7 +638,7 @@ Two cheaper alternatives: `/clear` costs nothing when you no longer need the old
 
 The rule of thumb: **with a warm cache, `/compact` pays for itself only over many later turns**, because the history it removes was already billing at the cache-read rate. Computed on Opus 5.5 for 80,000 tokens of history compacted to a 7,500-token summary: the summary request costs $0.17 (80K cache read x $0.20/1M plus 7,500 output tokens x $20/1M), re-caching the summary $0.04 (7,500 x $5/1M), and each later turn then reads 72,500 fewer cached tokens, $0.0145 less. Break-even is after about 14 turns, the same on Sonnet 5.5 (every rate halves) and about 8 on Sonnet 4.6, whose cache reads cost 0.1x. So compact to keep Claude focused and to stay under a price line such as Haiku 5.5's 100K, not to cut per-turn cost on a short remainder.
 
-What Anthropic measured: on a long triage run, pruning stale tool results at task boundaries saved 39% and compaction 32%; on a 20-issue run neither saved anything and context editing cost 74% more ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)). In the [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) loop, context editing cut 12%, compaction 16%, jagged pruning 29% and moving the work into a subagent 78%.
+What Anthropic measured: on a long triage run, pruning stale tool results at task boundaries saved 39% and compaction 32%; on a 20-issue run neither saved anything and context editing cost 73% more ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence#manage-the-context-lifecycle), read 2026-11-01). In the [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) loop, context editing cut 12%, compaction 16%, jagged pruning 29% and moving the work into a subagent 78%.
 
 ### Custom Compact Prompts
 
@@ -693,14 +697,16 @@ Don't read the full files -- just tell me file names and line numbers.
 
 By asking for a summary, you signal Claude to delegate the heavy search to a subagent and return only the distilled result.
 
-For simple subagent tasks, set `model: haiku` in the subagent definition, as Anthropic's costs page suggests. On the Anthropic API that alias is Haiku 5.5 (Claude Code v2.1.293+), priced at $0.10/$0.50 per 1M up to 100K prompt tokens and $0.50/$2.50 above, so a subagent that returns file names and line numbers instead of reading whole files stays in the cheap tier. On Bedrock, Google Cloud, Microsoft Foundry and Claude Platform on AWS the alias still means legacy Haiku 4.5. Do not assume delegation picks Haiku for you: the built-in Explore subagent uses the main conversation's model ([sub-agents docs](https://code.claude.com/docs/en/sub-agents)).
+For simple subagent tasks, set `model: haiku` in the subagent definition, as Anthropic's costs page suggests. On the Anthropic API that alias is Haiku 5.5 (Claude Code v2.1.293+), priced at $0.10/$0.50 per 1M up to 100K prompt tokens and $0.50/$2.50 above, so a subagent that returns file names and line numbers instead of reading whole files stays in the cheap tier. On Amazon Bedrock, Google Cloud (Google managed, formerly Vertex AI), Microsoft Foundry and Claude Platform on AWS the alias still means legacy Haiku 4.5. Do not assume delegation picks Haiku for you: the built-in Explore subagent uses the main conversation's model (when the main model is Fable, Explore runs on the Opus alias with a subscription, a Console account or a gateway) ([sub-agents docs](https://code.claude.com/docs/en/sub-agents), read 2026-11-01).
+
+**An ordinary subagent and a fork start differently.** An ordinary subagent has its own system prompt and tools, so its first request does not read the parent's cache; it warms a cache of its own on a 5-minute TTL, even on a subscription. A fork (`subagent_type: "fork"`) inherits the parent's system prompt, tools and whole conversation, so its first request reads the parent's cache, but it also carries all of the parent's context ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching#subagents-and-the-cache), read 2026-11-01). Since v2.1.302 forks are on by default in `claude -p`, the Agent SDK, the desktop app and VS Code, as they already were in the terminal; `CLAUDE_CODE_FORK_SUBAGENT=0` turns them off ([changelog](https://code.claude.com/docs/en/changelog)). For isolating a large read, an ordinary subagent keeps the main context clean; a fork starts cheap on the cache but is not small.
 
 ### When Subagents Are Not Worth It
 
 - **Very short tasks** -- The overhead of spawning a subagent (separate context initialization) may cost more than just doing it inline for simple lookups
 - **Tasks requiring tight interaction** -- If the subagent's result determines your next 5 prompts, the back-and-forth negates the isolation benefit
 - **Already-small context** -- If your main context is under 20K tokens, isolation savings are minimal
-- **Agent teams by default** -- Anthropic's costs page says agent teams use about 7x the tokens of a standard session when teammates run in plan mode
+- **Agent teams** -- experimental and off by default (`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` turns them on); Anthropic's costs page says they use about 7x the tokens of a standard session when teammates run in plan mode
 
 ---
 
@@ -781,7 +787,7 @@ Make sure to add error handling with our standard AppError class
 Run npm test after making changes
 ```
 
-Each repetition costs about 22 tokens of input (the 56-character first example at about 2.5 characters per token on the current tokenizer, per Anthropic's [models overview](https://platform.claude.com/docs/en/about-claude/models/overview)). Across 5 sessions a day, that is about 110 wasted tokens per instruction per day. Not huge individually, but these add up across many such habits.
+Each repetition costs about 22 tokens of input (the 56-character first example at about 2.5 characters per token on the current tokenizer, per Anthropic's [models overview](https://platform.claude.com/docs/en/models/overview), read 2026-11-01). Across 5 sessions a day, that is about 110 wasted tokens per instruction per day. Not huge individually, but these add up across many such habits.
 
 ### The Solution: Put It in CLAUDE.md Once
 
@@ -823,7 +829,7 @@ project/
 
 This lets you move domain-specific instructions out of the root CLAUDE.md (reducing its size) while still having them available when relevant.
 
-> **Important**: There is no shared character budget and nothing is truncated. What you pay is tokens: once `src/client/CLAUDE.md` loads, its tokens sit in context alongside the root file. Keep each file lean -- Anthropic's target is under 200 lines per CLAUDE.md file.
+> **Important**: There is no shared character budget, but each on-demand file has its own cap (since v2.1.309: 40,000 characters on a 200K window, 150,000 on a 1M window, 200,000 on Opus 4.6 and Sonnet 4.6), and Claude receives only the start of a file over it. What you pay is tokens: once `src/client/CLAUDE.md` loads, its tokens sit in context alongside the root file. Keep each file lean -- Anthropic's target is under 200 lines per CLAUDE.md file.
 
 **Example: moving frontend rules to `src/client/CLAUDE.md`**
 
@@ -885,7 +891,7 @@ Apply these in order of impact:
 | New sessions for new tasks | About 23% for an 80-turn day split into eight sessions (derived: $2.51 vs $1.94 on Opus 5.5); `/clear` itself costs nothing | Ongoing habit |
 | **Combined** | **Not measured combined** | |
 
-Each figure applies to its own slice of spend, so they do not simply add, and no one has published a combined measurement. Sources: the [cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) (compaction), the [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) (subagent loop), and Claude Code's [costs page](https://code.claude.com/docs/en/costs) and [prompt-caching page](https://code.claude.com/docs/en/prompt-caching). Price your own before and after with `/usage`.
+Each figure applies to its own slice of spend, so they do not simply add, and no one has published a combined measurement of these Claude Code habits (Anthropic's two stacked measurements, in the README's [How far can you actually go?](../README.md#how-far-can-you-actually-go), combine API levers: cache breakpoints, model and effort). Sources: the [cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) (compaction), the [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization) (subagent loop), and Claude Code's [costs page](https://code.claude.com/docs/en/costs) and [prompt-caching page](https://code.claude.com/docs/en/prompt-caching). Price your own before and after with `/usage`.
 
 ---
 

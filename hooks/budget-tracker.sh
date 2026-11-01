@@ -5,29 +5,24 @@
 # Purpose: Counts cumulative tool invocations in a session and warns
 #          when approaching a configurable threshold.
 #
-# Claude Code pipes JSON to stdin on each hook invocation. The JSON
-# payload has the following structure (based on observed behavior):
+# Claude Code pipes JSON to stdin on each hook invocation
+# (https://code.claude.com/docs/en/hooks). The fields used here:
 #
 #   {
+#     "session_id": "abc123",
 #     "hook_event_name": "PreToolUse",
 #     "tool_name": "Read",
-#     "tool_input": {"file_path": "/path/to/file"},
-#     "tool_input_json": "{\"file_path\": \"/path/to/file\"}",
-#     "tool_output": "...",            (PostToolUse only)
-#     "tool_result_is_error": false     (PostToolUse only)
+#     "tool_input": {"file_path": "/path/to/file"}
 #   }
 #
-# Claude Code also sets these environment variables for hooks:
-#   HOOK_EVENT      - "PreToolUse" or "PostToolUse"
-#   HOOK_TOOL_NAME  - the tool name (e.g., "Read", "Bash", "Edit")
-#   HOOK_TOOL_INPUT - tool input as a string
-#   HOOK_TOOL_IS_ERROR - "0" or "1" (PostToolUse only)
-#   HOOK_TOOL_OUTPUT   - tool output (PostToolUse only)
+# Claude Code sets no per-tool environment variables for hooks; read the tool
+# name from stdin.
 #
 # Exit code semantics for hooks:
-#   0 - Allow the tool call (stdout is captured as feedback to Claude)
-#   2 - Deny the tool call (stdout is used as the denial message)
-#   Any other - Warn (tool continues, but a warning is logged)
+#   0 - Success: Claude Code applies any JSON output fields, such as
+#       "systemMessage" (a warning shown to the user)
+#   2 - Blocking error: the tool call is stopped and stderr is the reason
+#   Any other - Non-blocking error: the tool call goes ahead with a notice
 #
 # This script always exits 0 (allow) -- it only provides informational
 # warnings, never blocks tool execution.
@@ -65,13 +60,8 @@ except Exception:
     print('default')
 " 2>/dev/null || echo "default")"
 
-# Grab the tool name from the HOOK_TOOL_NAME environment variable.
-# This is simpler and more reliable than parsing JSON. Fall back to
-# JSON parsing if the env var is not set (older Claude Code versions).
-if [[ -n "${HOOK_TOOL_NAME:-}" ]]; then
-    TOOL_NAME="$HOOK_TOOL_NAME"
-else
-    TOOL_NAME="$(printf '%s' "$INPUT" | python3 -c "
+# The tool name arrives on stdin as tool_name.
+TOOL_NAME="$(printf '%s' "$INPUT" | python3 -c "
 import sys, json
 try:
     data = json.load(sys.stdin)
@@ -79,7 +69,6 @@ try:
 except Exception:
     print('unknown')
 " 2>/dev/null || echo "unknown")"
-fi
 
 # ---------------------------------------------------------------------------
 # Ensure log directory exists
@@ -112,14 +101,13 @@ printf '%d' "$NEXT" > "$COUNTER_FILE" 2>/dev/null || true
 WARN_AT=$(( TOOL_LIMIT * WARN_PERCENT / 100 ))
 
 if [[ "$NEXT" -ge "$TOOL_LIMIT" ]]; then
-    # Over the limit -- output a warning message via JSON stdout.
-    # Claude Code hooks can return JSON with a "message" field to surface
-    # information to the user.
-    printf '{"message":"[Budget] Tool call %d of %d -- limit reached. Consider starting a new session or raising BUDGET_TOOL_LIMIT."}\n' \
+    # Over the limit -- output a warning via JSON stdout. "systemMessage" is
+    # the hook output field Claude Code shows to the user.
+    printf '{"systemMessage":"[Budget] Tool call %d of %d -- limit reached. Consider starting a new session or raising BUDGET_TOOL_LIMIT."}\n' \
         "$NEXT" "$TOOL_LIMIT"
 elif [[ "$NEXT" -ge "$WARN_AT" ]]; then
     REMAINING=$((TOOL_LIMIT - NEXT))
-    printf '{"message":"[Budget] Tool call %d of %d -- %d remaining before limit."}\n' \
+    printf '{"systemMessage":"[Budget] Tool call %d of %d -- %d remaining before limit."}\n' \
         "$NEXT" "$TOOL_LIMIT" "$REMAINING"
 fi
 

@@ -4,10 +4,11 @@
   "_comment": [
     "BALANCED SETTINGS - Recommended default profile.",
     "Sonnet for most tasks. Reasonable limits, good quality-to-cost ratio.",
-    "\"sonnet\" is Sonnet 5.5 on the Anthropic API but Sonnet 4.5 ($3/$15, 200K; deprecated, retirement scheduled for 2026-11-30) on Bedrock, Google Cloud and Foundry -- pin claude-sonnet-5-5 (Bedrock: anthropic.claude-sonnet-5-5) there.",
+    "\"sonnet\" is Sonnet 5.5 on the Anthropic API but Sonnet 4.5 ($3/$15, 200K; deprecated, retirement scheduled for 2026-11-30) on Bedrock, Google Cloud (Google managed, formerly Vertex AI) and Foundry, and Sonnet 4.6 on Claude Platform on AWS -- pin claude-sonnet-5-5 (Bedrock: anthropic.claude-sonnet-5-5) there.",
     "\"haiku\" is Haiku 5.5 on the Anthropic API (Claude Code v2.1.293+) but Haiku 4.5 on Claude Platform on AWS, Bedrock, Google Cloud and Foundry -- set ANTHROPIC_DEFAULT_HAIKU_MODEL to pin it (it also sets the model for background functionality).",
     "Best for: most teams, daily development, standard feature work.",
     "Read(...) deny rules keep Claude's file tools out of deps, build output and secrets (.claudeignore is not a Claude Code feature).",
+    "The Stop hook runs each time Claude finishes responding (every turn), not once at the end of a session; SessionEnd is the event that fires when a session terminates (https://code.claude.com/docs/en/hooks, read 2026-11-01).",
     "Copy this file to ~/.claude/settings.json or .claude/settings.json"
   ],
 
@@ -50,7 +51,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'Session paused - review token usage with /usage'",
+            "command": "echo 'Response finished - review token usage with /usage'",
             "timeout": 5
           }
         ]

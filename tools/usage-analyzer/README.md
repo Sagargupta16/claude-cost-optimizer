@@ -92,7 +92,7 @@ Useful for piping into other tools or dashboards.
 
 ## Models and Pricing
 
-Cost estimates use current Claude API pricing (as of 2026-10-09, after the Opus 5.5 release on 2026-09-22, the Sonnet 5.5 release on 2026-09-28 and the Haiku 5.5 release on 2026-10-07). The analyzer reads the `model` field out of your session records and matches it against these keys:
+Cost estimates use current Claude API pricing (as of 2026-11-01, after the Opus 5.5 release on 2026-09-22, the Sonnet 5.5 release on 2026-09-28 and the Haiku 5.5 release on 2026-10-07). The analyzer reads the `model` field out of your session records and matches it against these keys:
 
 | Model | Detected from | Input (per 1M) | Output (per 1M) | Cache Hit (per 1M) |
 |-------|---------------|:--------------:|:---------------:|:------------------:|
@@ -112,7 +112,7 @@ Cost estimates use current Claude API pricing (as of 2026-10-09, after the Opus 
 | Haiku 5.5 (`haiku`), prompt <= 100K tokens | `haiku-5-5`, `haiku-5.5`, or a `haiku` string no row below matches | $0.10 | $0.50 | $0.01 |
 | Haiku 5.5 (`haiku`), prompt > 100K tokens | same as the row above | $0.50 | $2.50 | $0.05 |
 | Haiku 4.5 (`haiku-4.5`, legacy) | `haiku-4-5`, `haiku-4.5` | $1.00 | $5.00 | $0.10 |
-| Haiku 3.5 (`haiku-3.5`) | `3-5-haiku`, `haiku-3-5`, `haiku-3.5` | $0.80 | $4.00 | $0.08 |
+| Haiku 3.5 (`haiku-3.5`, retired on the Claude API) | `3-5-haiku`, `haiku-3-5`, `haiku-3.5` | $0.80 | $4.00 | $0.08 |
 
 Notes:
 
@@ -161,6 +161,6 @@ Actionable suggestions based on your usage patterns, linking back to strategies 
 ## Tips
 
 - Run the analyzer weekly to track spending trends.
-- After optimizing your setup (trimming CLAUDE.md, adding `Read(...)` deny rules under `permissions.deny` in `.claude/settings.json`), re-analyze to measure the impact. A `.claudeignore` file is not a Claude Code feature and is never read, so move any patterns you keep there into those deny rules.
+- After optimizing your setup (trimming CLAUDE.md, adding `Read(...)` deny rules under `permissions.deny` in `.claude/settings.json`), re-analyze to measure the impact. A `.claudeignore` file has no effect in Claude Code (the [permissions page](https://code.claude.com/docs/en/permissions), read 2026-11-01, says to use Read deny rules instead), so move any patterns you keep there into those deny rules.
 - Use `--json` output to build your own cost tracking dashboards.
 - Focus on the top 2-3 most expensive sessions for the highest ROI.

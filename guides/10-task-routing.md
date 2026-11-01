@@ -42,7 +42,7 @@ These tasks have deterministic solutions. Using Claude for them is like using a 
 
 ### Implementing Tier 0 with Hooks
 
-You can use Claude Code hooks to intercept tool calls and handle simple patterns without burning tokens. See the [model-routing hook example](#model-routing-hook) below.
+You can use Claude Code hooks to watch tool calls and build awareness of where tokens go. See the [model-routing hook example](#model-routing-hook) below, which logs a cost estimate per call.
 
 ### Implementing Tier 0 with Custom Commands
 
@@ -62,7 +62,7 @@ This uses Claude only as a command runner (minimal output tokens) rather than a 
 
 ## Tier 1: Cheap Model for Simple Tasks
 
-Tasks that need some reasoning but not deep analysis. Haiku 5.5 handles these at $0.10/$0.50 per 1M tokens up to 100K prompt tokens, $0.50/$2.50 above. The 100K counts the whole prompt, cached history included, so Tier 1 means short, self-contained calls: at or under the line Haiku 5.5 is 40x cheaper per token than Opus 5.5, above it only 8x. Anthropic positions it for high-volume, latency-sensitive work such as classification, extraction, routing and subagent tasks. Per answered question the gap is smaller than per token: Anthropic measured Haiku 5.5 at about 1/20 of Opus 5.5's cost per GPQA Diamond question, at 85% accuracy vs 91% ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)).
+Tasks that need some reasoning but not deep analysis. Haiku 5.5 handles these at $0.10/$0.50 per 1M tokens up to 100K prompt tokens, $0.50/$2.50 above. The 100K counts the whole prompt, cached history included, so Tier 1 means short, self-contained calls: at or under the line Haiku 5.5 is 40x cheaper per token than Opus 5.5, above it only 8x. Anthropic positions it for high-volume, latency-sensitive work such as classification, extraction, routing and subagent tasks. Per correct answer the gap is smaller than per token: Anthropic measured Haiku 5.5 at about a twentieth of Opus 5.5's cost per correct answer on GPQA Diamond, and about a tenth of Sonnet 5.5's, at 85% accuracy vs 91% for each of Opus 5.5 and Sonnet 5.5 ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), read 2026-11-01).
 
 ### Tier 1 Tasks
 
@@ -88,7 +88,7 @@ Switch models before the task:
 write tests for src/utils/parser.ts
 ```
 
-Switch at the start of a task, not deep into one. A model switch starts a fresh cache, so the new model rewrites the whole conversation before it answers. Anthropic's [2026-04-30 post on Claude Code's caching](https://claude.com/blog/lessons-from-building-claude-code-prompt-caching-is-everything) says switching to Haiku 100K tokens into an Opus conversation costs more than letting Opus answer. Re-priced for Haiku 5.5, that holds only above 100K: a 5-minute cache write on Haiku 5.5 is $0.125 per 1M up to 100K prompt tokens, below the $0.20 Opus 5.5 cache read, but $0.625 above, 3.1x the Opus read (computed: 0.625 / 0.20; rates from [Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing)).
+Switch at the start of a task, not deep into one. A model switch starts a fresh cache, so the new model rewrites the whole conversation before it answers. Anthropic's [2026-04-30 post on Claude Code's caching](https://claude.dev/blog/lessons-from-building-claude-code-prompt-caching-is-everything/) (read 2026-11-01) says switching to Haiku 100K tokens into an Opus conversation costs more than letting Opus answer. Re-priced for Haiku 5.5, that holds only above 100K: a 5-minute cache write on Haiku 5.5 is $0.125 per 1M up to 100K prompt tokens, below the $0.20 Opus 5.5 cache read, but $0.625 above, 3.1x the Opus read (computed: 0.625 / 0.20; rates from [Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing)).
 
 Or use pre-assigned custom commands:
 
@@ -100,7 +100,7 @@ Focus on edge cases and error paths. Keep tests concise.
 
 Then delegate to haiku: `claude --model haiku -p "/test src/utils/parser.ts"`
 
-The `haiku` alias means Haiku 5.5 only on the Anthropic API (Claude Code v2.1.293+). On Claude Platform on AWS, Bedrock, Google Cloud and Foundry it still resolves to legacy Haiku 4.5 at $1/$5, 10x Haiku 5.5's per-token rate up to 100K prompt tokens; pin `ANTHROPIC_DEFAULT_HAIKU_MODEL` to `claude-haiku-5-5` (Bedrock: `anthropic.claude-haiku-5-5`) there.
+The `haiku` alias means Haiku 5.5 only on the Anthropic API (Claude Code v2.1.293+). On Claude Platform on AWS, Bedrock, Google Cloud (Google managed, formerly Vertex AI; Claude Code calls it Google Cloud's Agent Platform) and Foundry it still resolves to legacy Haiku 4.5 at $1/$5, 10x Haiku 5.5's per-token rate up to 100K prompt tokens; pin `ANTHROPIC_DEFAULT_HAIKU_MODEL` to `claude-haiku-5-5` (Bedrock: `anthropic.claude-haiku-5-5`) there ([model-config alias table](https://code.claude.com/docs/en/model-config), read 2026-11-01).
 
 ---
 
@@ -180,7 +180,7 @@ The biggest win per task is Tier 0. Every task you handle with a CLI tool instea
 
 ## Model-Routing Hook
 
-This hook logs a cost estimate for each tool call, helping you understand where tokens go. Add it to your hooks config to build awareness of your spending patterns.
+This hook logs a cost estimate for each tool call, helping you understand where tokens go. Add it to your hooks config to build awareness of your spending patterns. It reads the tool name from the JSON payload Claude Code sends on stdin and warns through `systemMessage` ([hooks reference](https://code.claude.com/docs/en/hooks), read 2026-11-01). It only logs and warns; it does not reroute a call.
 
 ```bash
 #!/bin/bash
@@ -188,7 +188,8 @@ This hook logs a cost estimate for each tool call, helping you understand where 
 # Logs estimated cost per tool call to a session file.
 # Use with PreToolUse hook to build cost awareness.
 
-TOOL="${HOOK_TOOL_NAME:-unknown}"
+# Claude Code sends the hook payload as JSON on stdin and sets no per-tool environment variables.
+TOOL="$(python3 -c 'import sys, json; print(json.load(sys.stdin).get("tool_name") or "unknown")' 2>/dev/null || echo unknown)"
 LOG_DIR="${TMPDIR:-/tmp}/claude-cost-log"
 mkdir -p "$LOG_DIR"
 SESSION_LOG="$LOG_DIR/session-$(date +%Y%m%d).log"
@@ -222,9 +223,9 @@ COUNT=$(wc -l < "$SESSION_LOG" 2>/dev/null || echo 0)
 
 # Warn at thresholds
 if [ "$COUNT" -eq 50 ]; then
-  echo '{"result": "50 tool calls this session. Consider starting fresh if switching tasks."}'
+  echo '{"systemMessage": "50 tool calls this session. Consider starting fresh if switching tasks."}'
 elif [ "$COUNT" -eq 100 ]; then
-  echo '{"result": "100 tool calls. Session history is getting expensive. Run /compact or start new session."}'
+  echo '{"systemMessage": "100 tool calls. Session history is getting expensive. Run /compact or start new session."}'
 fi
 
 exit 0

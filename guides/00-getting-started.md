@@ -27,7 +27,7 @@ Add `permissions.deny` rules to `.claude/settings.json` in your project root. `R
 
 Adapt to your stack. Patterns use gitignore syntax: `./path` is relative to the project, `*` matches within one path segment, `**` across directories, and a bare filename such as `Read(.env)` matches at any depth.
 
-> `.claudeignore` is not a Claude Code feature: it appears nowhere in Claude Code's documentation and Claude Code does not read it. If you made one, convert each line: `dir/` becomes `Read(./dir/**)`, a line with a `/` elsewhere becomes `Read(./line)` (strip a leading `/`), and a bare name or glob becomes `Read(line)`. Skip blank lines, `#` comments and `!` negations.
+> `.claudeignore` is not a Claude Code feature: Claude Code's permissions page says a `.claudeignore` file "has no effect" and tells you to move its entries into `Read` deny rules ([permissions page](https://code.claude.com/docs/en/permissions), read 2026-11-01). If you made one, convert each line: `dir/` becomes `Read(./dir/**)`, a line with a `/` elsewhere becomes `Read(./line)` (strip a leading `/`), and a bare name or glob becomes `Read(line)`. Skip blank lines, `#` comments and `!` negations.
 
 **Savings: no published measurement.** The effect depends on how often Claude would otherwise open those files. Scoped rules like `Read(./dist/**)` do not change which tools Claude sees, so they do not invalidate the prompt cache.
 
@@ -51,8 +51,8 @@ Keep it focused:
 
 **What to cut**: verbose explanations, full API docs, things Claude can figure out from the code.
 
-There is no character cap: CLAUDE.md files in the directories above your working directory load in full at launch. Anthropic's guidance is to "target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence." Every line costs tokens in every session, so move situational content somewhere that loads on demand:
-- **Skills** for workflow-specific instructions (PR reviews, DB migrations). A skill's body loads only when it runs, but its description sits in the skill listing on every turn; `/skill-doctor` (Claude Code v2.1.252+) reports what each skill costs and how often it is used, so you can turn off the ones you never invoke ([skills docs](https://code.claude.com/docs/en/skills))
+There is no character cap on the files that load at launch: CLAUDE.md files in the directories above your working directory load in full (a file over 4 MiB is skipped). Files that load on demand are capped per file, see [Guide 02](02-context-optimization.md#what-actually-loads-and-what-gets-truncated) ([memory page](https://code.claude.com/docs/en/memory), read 2026-11-01). Anthropic's guidance is to "target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence." Every line costs tokens in every session, so move situational content somewhere that loads on demand:
+- **Skills** for workflow-specific instructions (PR reviews, DB migrations). A skill's body loads only when it runs, but its description sits in the skill listing on every turn (the listing is capped at 1% of the context window, and the least-used skills lose their descriptions first); `/skill-doctor` (Claude Code v2.1.252+) reports what each skill costs and how often it is used, so you can turn off the ones you never invoke ([skills docs](https://code.claude.com/docs/en/skills))
 - **Path-scoped rules** in `.claude/rules/` (with `paths:` frontmatter) or a **subdirectory CLAUDE.md** for rules that apply to one part of the tree; both load when Claude reads a matching file
 
 `@path` imports help you organize a long file, but imported files still load at launch, so they do not cut tokens.
@@ -73,7 +73,7 @@ You don't need Opus for everything. Quick rule:
 | Feature implementation, debugging | Sonnet 5.5 | Good balance, 2x cheaper than Opus 5.5 |
 | Tests, docs, formatting, renames | Haiku 5.5 | Fastest, 40x cheaper per token than Opus 5.5 while the prompt stays under 100K tokens |
 
-Haiku 5.5 is priced by prompt length: $0.10/$0.50 per 1M up to 100K prompt tokens, $0.50/$2.50 above (cache reads and writes count toward the 100K), so keep its prompts short. `/model haiku` selects Haiku 5.5 on the Anthropic API (Claude Code v2.1.293+); on Bedrock, Google Cloud, Microsoft Foundry and Claude Platform on AWS it still means legacy Haiku 4.5 ($1/$5).
+Haiku 5.5 is priced by prompt length: $0.10/$0.50 per 1M up to 100K prompt tokens, $0.50/$2.50 above (cache reads and writes count toward the 100K), so keep its prompts short. `/model haiku` selects Haiku 5.5 on the Anthropic API (Claude Code v2.1.293+); on Amazon Bedrock, Google Cloud (Google managed, formerly Vertex AI), Microsoft Foundry and Claude Platform on AWS it still means legacy Haiku 4.5 ($1/$5) ([model-config page](https://code.claude.com/docs/en/model-config), read 2026-11-01).
 
 Switch models mid-session:
 
@@ -86,13 +86,13 @@ Switch models mid-session:
 
 **Opus 5.5 caveat** (released 2026-09-22, $4/$20, 20% below Opus 5's $5/$25): adaptive thinking is **always on** -- `thinking: {type: "disabled"}` returns a 400, so effort is the only control. Default effort is `medium` (Opus 5 defaulted to `high`), and reasoning tokens bill as output at $20/1M. Code that disabled thinking on Opus 5 now pays for thinking it did not pay for before, so re-baseline cost after migrating and lower it with `/effort`. `max_tokens` caps thinking plus text together, so a small cap can be spent on thinking before the answer is written. Details in [Guide 01](01-understanding-costs.md#token-pricing).
 
-**Savings: 97.5% per token on each task you move from Opus 5.5 to Haiku 5.5** (prompts up to 100K tokens; 87.5% above). Your bill falls by that times the share of spend you move: move 30% and the bill drops 29% (computed from the [Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing): 1 - $0.10/$4 = 97.5%, 1 - $0.50/$4 = 87.5%, 0.30 x 0.975 = 29%). Anthropic measured the per-answer gap at about 1/20 rather than 1/40: on GPQA Diamond, Haiku 5.5 cost about a twentieth of Opus 5.5 per question, at 85% accuracy vs 91% ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)).
+**Savings: 97.5% per token on each task you move from Opus 5.5 to Haiku 5.5** (prompts up to 100K tokens; 87.5% above). Your bill falls by that times the share of spend you move: move 30% and the bill drops 29% (computed from the [Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing): 1 - $0.10/$4 = 97.5%, 1 - $0.50/$4 = 87.5%, 0.30 x 0.975 = 29%). Anthropic measured the per-answer gap at about 1/20 rather than 1/40: on GPQA Diamond, Haiku 5.5 cost about a twentieth of Opus 5.5 per correct answer (and about a tenth of Sonnet 5.5), at 85% accuracy vs 91% for each of the two ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)).
 
 ---
 
 ## Step 4: Use Plan Mode before coding (0 minutes)
 
-Before asking Claude to implement something complex, type:
+Before asking Claude to implement something complex, prefix the prompt with:
 
 ```
 /plan
@@ -103,7 +103,7 @@ This makes Claude think through the approach before writing code. The result:
 - Less back-and-forth correction
 - Smaller conversation history (the biggest cost driver in long sessions)
 
-Exit plan mode with `/plan` again when you're ready to code. You can also press Shift+Tab to cycle into plan mode.
+You can also press Shift+Tab to cycle into plan mode. Approve the plan, or press Shift+Tab again, when you're ready to code ([permission modes page](https://code.claude.com/docs/en/permission-modes), read 2026-11-01).
 
 **Savings: no published figure.** Plan mode keeps the prompt cache (its instructions arrive as messages, per Claude Code's [prompt-caching page](https://code.claude.com/docs/en/prompt-caching)), and Anthropic's [costs page](https://code.claude.com/docs/en/costs) recommends it to avoid expensive re-work.
 

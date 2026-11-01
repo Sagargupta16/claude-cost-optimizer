@@ -17,7 +17,7 @@ assignees: ''
 - **Project type**: <!-- e.g., React + TypeScript, Python FastAPI, etc. -->
 - **CLAUDE.md size**: <!-- approximate line count -->
 - **Claude Code version**: <!-- if known -->
-- **Plan**: <!-- Pro / Max / API -->
+- **Plan**: <!-- Pro / Max / Ultra / Team / Enterprise / API -->
 - **Operating system**: <!-- e.g., macOS, Linux, Windows -->
 - **Other relevant config**: <!-- Read deny rules in permissions.deny, custom commands, MCP servers, etc. -->
 

@@ -6,17 +6,18 @@ Hooks that track tool call usage per session, warn when approaching limits, and 
 
 Claude Code hooks are shell commands that run automatically in response to specific events during a Claude Code session. They are configured in `settings.json` and execute as subprocesses -- they receive JSON on stdin with event data and can output JSON to stdout to surface messages to the user.
 
-Supported hook events:
+Claude Code has about 30 hook events ([hooks reference](https://code.claude.com/docs/en/hooks), read 2026-11-01). The ones that matter for cost tracking:
 
 | Event | When It Fires |
 |-------|---------------|
 | `PreToolUse` | Before a tool call is executed |
 | `PostToolUse` | After a tool call completes |
-| `Notification` | When Claude Code generates a notification |
-| `Stop` | When a session ends (the model stops responding) |
-| `SubagentStop` | When a subagent finishes its task |
+| `Stop` | When Claude finishes responding -- every turn, not once per session |
+| `SubagentStop` | When a subagent finishes |
+| `PreCompact` / `PostCompact` | Before and after a compaction |
+| `SessionEnd` | When a session terminates (`/clear`, `/resume`, logout, exit) |
 
-Each hook entry has a `matcher` (regex matched against the tool name) and a list of shell commands to run. The `matcher` field is a regex string -- `".*"` matches all tools, `""` matches the event itself (used for Stop/Notification).
+Each hook entry has a `matcher` and a list of handlers. For tool events the `matcher` is matched against the tool name -- `".*"` matches all tools; `""` matches every occurrence of events that have no tool. On macOS, Linux and WSL, Claude Code leaves the Glob and Grep tools out of the default tool set and searches with `find` and `grep` through Bash, so a matcher on `Glob|Grep` only fires on Windows or when those tools are turned back on ([tools reference](https://code.claude.com/docs/en/tools-reference), read 2026-11-01).
 
 ## What These Hooks Do
 
@@ -34,23 +35,23 @@ Counts every tool invocation in the session. Warns when approaching a configurab
 Logs estimated token count and cost for each tool call to a daily log file. Helps you understand where tokens go and which operations are expensive.
 
 - Estimates input/output tokens by tool type (Read, Edit, Bash, Agent, etc.)
-- Logs each call with timestamp, tool name, token estimate, and cost
-- Warns at 50 and 100 tool calls to suggest session refresh
+- Reads `tool_name` and `session_id` from the JSON on stdin (Claude Code sets no per-tool environment variables)
+- Logs each call with timestamp, tool name, token estimate, and cost; prices by `COST_LOGGER_MODEL`, then `ANTHROPIC_MODEL`, then Opus 5.5 (hook input carries no model)
+- Warns at 50 and 100 tool calls in a session to suggest a refresh
 - Never blocks -- informational only
-- Review logs at `/tmp/claude-cost-log/session-YYYYMMDD.log`
+- Review logs at `/tmp/claude-cost-log/session-YYYYMMDD-<session_id>.log`
 
-### session-summary.sh (Stop)
+### session-summary.sh (SessionEnd)
 
-Runs when the session ends. Produces a summary and appends it to a persistent log file.
+Runs when the session ends. Produces a summary and appends it to a persistent log file. Register it on `SessionEnd`, not `Stop`: `Stop` fires after every response, so the counter cleanup below would reset the budget tracker every turn (this repo had it on `Stop` until 1.18.0).
 
-- Extracts session metadata (model, turns, tool calls, duration) from the stop event
-- Reads the budget tracker's counter file for accurate tool call counts
+- Logs the session id and the budget tracker's tool call count (the SessionEnd payload carries `session_id`, `transcript_path`, `cwd` and `reason`; model, turns and duration are not in it and log as `n/a`)
 - Writes a timestamped entry to `sessions.log` for historical tracking
 - Cleans up the per-session counter file
 
 ### Going further: hooks that cut tokens
 
-These three hooks count and log; they do not shrink anything Claude reads. Anthropic's [costs page](https://code.claude.com/docs/en/costs) describes the bigger lever: a hook that preprocesses output, such as a PreToolUse hook that filters test output down to the failures, can cut tens of thousands of tokens to hundreds. [rtk](https://github.com/rtk-ai/rtk) packages the same idea as a CLI proxy that compresses common dev-command output; its own claim is 60-90% on those commands, not measured by this repo, and its README adds that this "is not the same as cutting your bill by 90%".
+These three hooks count and log; they do not shrink anything Claude reads. Anthropic's [costs page](https://code.claude.com/docs/en/costs) describes the bigger lever: a hook that preprocesses output, such as a PreToolUse hook that filters test output down to the failures, can cut tens of thousands of tokens to hundreds. [rtk](https://github.com/rtk-ai/rtk) packages the same idea as a CLI proxy that compresses common dev-command output; its GitHub description claims 60-90% on those commands (its README now says "up to 90% smaller", read 2026-11-01), not measured by this repo, and its README adds that this is not the same as cutting your bill by the same amount.
 
 ## Installation
 
@@ -94,7 +95,7 @@ Example (using the provided `settings-example.json` as a reference):
         ]
       }
     ],
-    "Stop": [
+    "SessionEnd": [
       {
         "matcher": "",
         "hooks": [
@@ -146,12 +147,14 @@ All configuration is through environment variables. Set them in your shell profi
 
 The default of 50 tool calls is a reasonable starting point for cost-conscious usage. Adjust based on your workflow:
 
+These are starting points to tune, not measurements:
+
 | Workflow | Suggested Limit |
 |----------|:--------------:|
-| Quick bug fixes, simple edits | 20-30 |
-| Moderate feature work | 50-75 |
-| Large refactors, multi-file changes | 100-150 |
-| Exploration and research | 150+ |
+| Quick bug fixes, simple edits | 25 |
+| Moderate feature work | 60 |
+| Large refactors, multi-file changes | 125 |
+| Exploration and research | 200 |
 
 ## How It Works
 
@@ -161,15 +164,15 @@ The default of 50 tool calls is a reasonable starting point for cost-conscious u
 Claude Code event
     |
     v
-stdin (JSON) --> budget-tracker.sh --> stdout (JSON warning or empty)
+stdin (JSON) --> budget-tracker.sh --> stdout ({"systemMessage": ...} warning, or empty)
                      |
                      v
               /tmp/claude-budget/session-{id}.count  (counter file)
 
-Claude Code Stop event
+Claude Code SessionEnd event
     |
     v
-stdin (JSON) --> session-summary.sh --> stdout (JSON summary message)
+stdin (JSON) --> session-summary.sh --> stdout (discarded by Claude Code on SessionEnd)
                      |
                      v
               /tmp/claude-budget/sessions.log  (persistent log)
@@ -178,34 +181,19 @@ stdin (JSON) --> session-summary.sh --> stdout (JSON summary message)
 
 ### Hook Input Format
 
-Based on community research into Claude Code's observed behavior, hooks receive both a JSON payload on stdin and environment variables.
-
-**JSON payload on stdin** (PreToolUse/PostToolUse):
+Hooks receive a JSON payload on stdin ([hooks reference](https://code.claude.com/docs/en/hooks), read 2026-11-01). Every event carries `session_id`, `transcript_path`, `cwd` and `hook_event_name`; tool events add `tool_name`, `tool_input` and `tool_use_id`, and `effort.level` where the model has effort. A PreToolUse example:
 
 ```json
 {
+  "session_id": "abc123",
   "hook_event_name": "PreToolUse",
   "tool_name": "Read",
   "tool_input": {"file_path": "/path/to/file"},
-  "tool_input_json": "{\"file_path\": \"/path/to/file\"}",
-  "tool_output": "...",
-  "tool_result_is_error": false
+  "tool_use_id": "toolu_01"
 }
 ```
 
-Note: `tool_output` and `tool_result_is_error` are only present in PostToolUse events.
-
-**Environment variables** set by Claude Code for each hook invocation:
-
-| Variable | Description | Availability |
-|----------|-------------|--------------|
-| `HOOK_EVENT` | Event name (`"PreToolUse"`, `"PostToolUse"`) | All hook events |
-| `HOOK_TOOL_NAME` | The tool being called (e.g., `"Read"`, `"Bash"`, `"Edit"`) | PreToolUse, PostToolUse |
-| `HOOK_TOOL_INPUT` | Tool input as a string | PreToolUse, PostToolUse |
-| `HOOK_TOOL_IS_ERROR` | `"0"` or `"1"` | PostToolUse only |
-| `HOOK_TOOL_OUTPUT` | The tool's output | PostToolUse only |
-
-Using environment variables (e.g., `$HOOK_TOOL_NAME`) is simpler and more reliable than parsing the JSON payload for common fields like tool name.
+Claude Code sets no per-tool environment variables such as `HOOK_TOOL_NAME`; read the tool name from stdin. It does set `CLAUDE_PROJECT_DIR`. The payload has no model or token counts.
 
 ### Hook Exit Code Semantics
 
@@ -213,19 +201,18 @@ The exit code from a hook script controls whether the tool call proceeds:
 
 | Exit Code | Meaning | Behavior |
 |:---------:|---------|----------|
-| **0** | Allow | Tool call proceeds. Anything printed to stdout is captured as feedback to Claude. |
-| **2** | Deny | Tool call is blocked. Stdout is used as the denial message shown to Claude. |
-| **Any other** | Warn | Tool call proceeds, but a warning is logged. |
+| **0** | Success | Tool call proceeds. Claude Code applies any JSON output fields the hook printed. |
+| **2** | Blocking error | Tool call is blocked. Stderr is the reason. |
+| **Any other** | Non-blocking error | Tool call proceeds, with a hook error notice. |
 
 The budget-tracker.sh script always exits 0 (allow) because it is informational only -- it warns but never blocks tool execution.
 
 ### Hook Output Format
 
-Hooks can print text to stdout. The behavior depends on the exit code:
-
-- **Exit 0**: stdout is captured as feedback to Claude (can be plain text or JSON with a `message` field)
-- **Exit 2**: stdout is used as the denial reason shown to Claude
-- **Empty stdout**: the hook ran silently with no feedback
+- **Exit 0 with JSON**: the fields apply. `systemMessage` is a warning shown to the user, which is what these scripts print. A `message` or `result` field is not a hook output field; JSON that fails validation shows as a hook error (these scripts printed those until 1.18.0, so their warnings never appeared).
+- **Exit 0 with plain text or nothing**: success; the text is not shown in the transcript.
+- **Exit 2**: blocks the action; stderr is the reason.
+- **SessionEnd**: Claude Code discards the output fields, so a summary hook has to write to a file.
 
 ## Troubleshooting
 
@@ -242,4 +229,4 @@ Hooks can print text to stdout. The behavior depends on the exit code:
 - Tool call counting is a proxy for cost, not an exact measure. A single Read of a large file costs more tokens than a Glob call, but both count as one tool call.
 - The counter file is session-scoped. If Claude Code does not provide a session ID in the hook payload, all calls fall back to a shared "default" counter.
 - These hooks do not have access to actual token counts or dollar amounts -- Claude Code does not expose billing data to hooks.
-- The Stop event payload schema may vary between Claude Code versions. The scripts handle missing fields gracefully.
+- The scripts handle missing payload fields gracefully, falling back to `default` and `n/a`.
