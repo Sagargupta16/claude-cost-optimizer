@@ -1213,8 +1213,9 @@ def estimate_costs(claude_md_chars: int, mcp_count: int) -> dict[str, dict[str, 
 #
 # Everything here reads local files only and sends nothing anywhere. From
 # ~/.claude.json and settings it reads counts and setting names, never values
-# (they can hold credentials); from transcripts it reads token counts and model
-# names, never message content.
+# (they can hold credentials); from transcripts it reads token counts, model
+# names, timestamps, session ids and the record fields in _RECORD_META_KEYS, plus
+# the text of Claude Code's own API error messages; never message content.
 
 # Skill listing: each skill's description plus when_to_use sits in context on
 # every turn, capped at 1,536 characters (code.claude.com/docs/en/skills).
@@ -1518,6 +1519,55 @@ def _request_cost(model: dict[str, Any], usage: dict[str, Any]) -> tuple[float, 
     return dollars, prompt
 
 
+@dataclass(slots=True)
+class _UsageRecord:
+    """One billed API request from a transcript, with the fields the usage reports group by.
+
+    `meta` holds the record's own scalar fields named in _RECORD_META_KEYS (cwd,
+    gitBranch, version, entrypoint, effort, agentId, requestId and the
+    attribution* tags) when present, plus `diagnostics` from the message when
+    Claude Code wrote one. `sidechain` is True for subagent requests.
+    """
+
+    message_id: str
+    model: str
+    usage: dict[str, Any]
+    timestamp: str
+    session_id: str
+    path: Path
+    sidechain: bool
+    meta: dict[str, Any]
+
+
+@dataclass(slots=True)
+class _TranscriptEvent:
+    """A transcript record that bills nothing but explains spend.
+
+    kind is "compact_boundary" (meta: trigger, preTokens, postTokens, durationMs),
+    "api_error" (a retried request; meta: level, retryAttempt, maxRetries,
+    retryInMs, isNetworkDown, rateLimits) or "error_message" (the error Claude
+    Code showed; meta: error, such as "rate_limit", and the first 300
+    characters of its text).
+    """
+
+    kind: str
+    timestamp: str
+    session_id: str
+    path: Path
+    sidechain: bool
+    meta: dict[str, Any]
+
+
+_RECORD_META_KEYS = (
+    "cwd", "gitBranch", "version", "entrypoint", "effort", "agentId", "requestId",
+    "attributionSkill", "attributionMcpServer", "attributionMcpTool", "attributionPlugin", "attributionAgent",
+)
+_USAGE_KEYS = ("input_tokens", "cache_read_input_tokens", "cache_creation_input_tokens", "output_tokens", "speed")
+_COMPACT_KEYS = ("trigger", "preTokens", "postTokens", "durationMs")
+_RETRY_KEYS = ("level", "retryAttempt", "maxRetries", "retryInMs")
+_EVENT_MARKERS = ('"compact_boundary"', '"api_error"', '"isApiErrorMessage":true')
+
+
 @dataclass
 class _UsageTotals:
     files: int = 0
@@ -1529,17 +1579,24 @@ class _UsageTotals:
     output: int = 0
     output_dollars: float = 0.0
     fast_requests: int = 0
+    history_start: str = ""
     prompts: list[int] = field(default_factory=list)
     by_model: dict[str, dict[str, float]] = field(default_factory=dict)
+    sessions: set[str] = field(default_factory=set)
+    records: list[_UsageRecord] = field(default_factory=list)
+    events: list[_TranscriptEvent] = field(default_factory=list)
 
-    def add(self, model_id: str, usage: dict[str, Any]) -> None:
+    def add(self, record: _UsageRecord) -> None:
+        usage = record.usage
         self.requests += 1
+        self.records.append(record)
+        self.sessions.add(record.session_id)
         self.fresh += usage.get("input_tokens") or 0
         self.cache_read += usage.get("cache_read_input_tokens") or 0
         self.cache_write += usage.get("cache_creation_input_tokens") or 0
         self.output += usage.get("output_tokens") or 0
         self.fast_requests += usage.get("speed") == "fast"
-        key = _model_key(model_id)
+        key = _model_key(record.model)
         if key is None:
             self.unpriced += 1
             return
@@ -1552,44 +1609,116 @@ class _UsageTotals:
         row["dollars"] += dollars
 
 
-def _assistant_usage(line: str) -> tuple[str, str, dict[str, Any]] | None:
-    """(message id, model, usage) of an assistant transcript record, else None."""
-    if '"usage"' not in line or '"assistant"' not in line:
+def _slim_usage(usage: dict[str, Any]) -> dict[str, Any]:
+    """The usage fields the cost math reads, so a 30-day scan stays small in memory."""
+    slim = {key: usage[key] for key in _USAGE_KEYS if usage.get(key)}
+    split = usage.get("cache_creation")
+    if isinstance(split, dict) and split.get("ephemeral_1h_input_tokens"):
+        slim["cache_creation"] = {"ephemeral_1h_input_tokens": split["ephemeral_1h_input_tokens"]}
+    return slim
+
+
+def _event_meta(record: dict[str, Any]) -> dict[str, Any]:
+    """The few scalar fields of a compaction or retry record that the reports read."""
+    if record.get("subtype") == "compact_boundary":
+        compact = record.get("compactMetadata")
+        return {k: compact[k] for k in _COMPACT_KEYS if k in compact} if isinstance(compact, dict) else {}
+    meta = {k: record[k] for k in _RETRY_KEYS if k in record}
+    error = record.get("error") if isinstance(record.get("error"), dict) else {}
+    meta.update({k: error[k] for k in ("isNetworkDown", "rateLimits") if error.get(k) is not None})
+    return meta
+
+
+def _error_text(message: dict[str, Any]) -> str:
+    content = message.get("content")
+    blocks = content if isinstance(content, list) else []
+    return " ".join(b.get("text", "") for b in blocks if isinstance(b, dict))[:300]
+
+
+def _transcript_entry(line: str, path: Path) -> _UsageRecord | _TranscriptEvent | None:
+    """The billed request or the event on one transcript line, else None.
+
+    Only lines that can hold one are parsed: assistant records with usage, and
+    the compaction, retry and error records named in _EVENT_MARKERS.
+    """
+    billed = '"usage"' in line and '"assistant"' in line
+    if not billed and not any(marker in line for marker in _EVENT_MARKERS):
         return None
     try:
         record = json.loads(line)
     except ValueError:
         return None
+    if not isinstance(record, dict):
+        return None
+    common = (record.get("timestamp") or "", record.get("sessionId") or path.stem, path, bool(record.get("isSidechain")))
+    if record.get("type") == "system" and record.get("subtype") in ("compact_boundary", "api_error"):
+        return _TranscriptEvent(record["subtype"], *common, _event_meta(record))
     message = record.get("message") if record.get("type") == "assistant" else None
-    if not isinstance(message, dict) or not isinstance(message.get("usage"), dict):
+    if not isinstance(message, dict):
         return None
+    if record.get("isApiErrorMessage"):
+        return _TranscriptEvent("error_message", *common, {"error": record.get("error"), "text": _error_text(message)})
     model = message.get("model") or ""
-    if not message.get("id") or model.startswith("<"):
+    if not isinstance(message.get("usage"), dict) or not message.get("id") or model.startswith("<"):
         return None
-    return message["id"], model, message["usage"]
+    meta = {k: sys.intern(v) if isinstance(v, str) else v for k in _RECORD_META_KEYS if (v := record.get(k)) not in (None, "")}
+    if isinstance(message.get("diagnostics"), dict):
+        meta["diagnostics"] = message["diagnostics"]
+    return _UsageRecord(message["id"], sys.intern(model), _slim_usage(message["usage"]), *common, meta)
+
+
+def _keep_latest(best: dict[str, _UsageRecord], record: _UsageRecord) -> None:
+    """Keep one record per message id: the one with the most output tokens.
+
+    A response is streamed as one record per content block, all with the same
+    message id. Their usage blocks are snapshots taken as the response grows, so
+    the first one can undercount output; the largest is the final count.
+    """
+    held = best.get(record.message_id)
+    if held is None:
+        best[record.message_id] = record
+        return
+    new_out, held_out = record.usage.get("output_tokens") or 0, held.usage.get("output_tokens") or 0
+    if new_out > held_out or (new_out == held_out and record.timestamp < held.timestamp):
+        best[record.message_id] = record
 
 
 def collect_usage(days: int) -> _UsageTotals:
     """Sum the last `days` days of Claude Code transcripts under <config dir>/projects.
 
-    A response is written as one record per content block, all carrying the same
-    message id and usage, so each id is counted once.
+    Records are windowed by their own timestamp: a file modified today can hold
+    records from weeks ago. File mtime is only a pre-filter (a file last written
+    before the window holds nothing inside it). Each message id is counted once,
+    across main and subagent files, at its final usage snapshot (_keep_latest).
+    `records` and `events` keep every request and event in the window, oldest
+    first, for the reports built on top.
     """
     totals = _UsageTotals()
     root = _claude_dir() / "projects"
-    cutoff = time.time() - days * 86_400
-    seen: set[str] = set()
-    for path in root.rglob("*.jsonl") if root.is_dir() else []:
-        if path.stat().st_mtime < cutoff:
+    floor = time.time() - days * 86_400
+    cutoff = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime(floor))
+    best: dict[str, _UsageRecord] = {}
+    older_files = False
+    for path in sorted(root.rglob("*.jsonl")) if root.is_dir() else []:
+        if path.stat().st_mtime < floor:
+            older_files = True
             continue
-        before = totals.requests
         with path.open(encoding="utf-8", errors="replace") as handle:
-            for parsed in filter(None, map(_assistant_usage, handle)):
-                message_id, model, usage = parsed
-                if message_id not in seen:
-                    seen.add(message_id)
-                    totals.add(model, usage)
-        totals.files += totals.requests > before
+            for entry in filter(None, (_transcript_entry(line, path) for line in handle)):
+                if entry.timestamp and (not totals.history_start or entry.timestamp < totals.history_start):
+                    totals.history_start = entry.timestamp
+                if isinstance(entry, _UsageRecord):
+                    _keep_latest(best, entry)
+                elif entry.timestamp >= cutoff:
+                    totals.events.append(entry)
+    for record in sorted(best.values(), key=lambda r: r.timestamp):
+        if not record.timestamp or record.timestamp >= cutoff:
+            totals.add(record)
+    totals.events.sort(key=lambda e: e.timestamp)
+    totals.files = len({record.path for record in totals.records})
+    if older_files or totals.history_start[:19] <= cutoff:
+        # Transcripts older than the window are on disk, so the window is fully covered.
+        totals.history_start = ""
     return totals
 
 
@@ -1639,7 +1768,9 @@ def _usage_facts(totals: _UsageTotals, days: int) -> dict[str, Any]:
     models = sorted(totals.by_model.items(), key=lambda kv: kv[1]["dollars"], reverse=True)
     return {
         "days": days,
-        "sessions": totals.files,
+        "sessions": len(totals.sessions),
+        "transcript_files": totals.files,
+        "history_start": totals.history_start[:10] or None,
         "requests": totals.requests,
         "unpriced_requests": totals.unpriced,
         "list_price_dollars": round(spend, 2),
@@ -1704,16 +1835,39 @@ def _score_models(facts: dict[str, Any], fast_requests: int) -> CategoryResult:
     return cat
 
 
-def rate_usage(days: int) -> ScopeResult:
-    """Grade measured usage from local transcripts: cache efficiency, context size, model mix."""
+def rate_usage(days: int, options: argparse.Namespace | None = None) -> ScopeResult:
+    """Grade measured usage from local transcripts: cache efficiency, context size, model mix.
+
+    `options` is the parsed command line, for the report flags; None means defaults.
+    Each report below adds its own keys to `facts`; the grade reads only the three
+    categories.
+    """
     totals = collect_usage(days)
     facts = _usage_facts(totals, days)
     name = f"Your measured usage (last {days} days)"
     if not totals.prompts:
         # Nothing to measure: report that rather than grading an empty sample.
         return ScopeResult(name, 0, 0, "n/a", [], facts)
+    # [A1] usage facts
+
+    # [A2] usage facts
+
+    # [A3] usage facts
+
     categories = [_score_cache(totals), _score_context(totals), _score_models(facts, totals.fast_requests)]
     return _scope(name, categories, facts)
+
+
+# -- Usage reports: cache breaks, spend by class and session, limit hits [A1] ---
+
+
+# -- Usage reports: attribution, what-if repricing, pace and plan fit [A2] -------
+
+
+# -- Usage reports: tool output [A3] ---------------------------------------------
+
+
+# -- Live modes: statusline, transcript pricing, cache guard [C] -----------------
 
 
 # -- Main rate function ------------------------------------------------------
@@ -1872,7 +2026,8 @@ def _print_usage_facts(facts: dict[str, Any]) -> None:
         print(f"  {DIM}No transcripts found in the last {facts.get('days')} days.{RESET}")
         return
     print(
-        f"  {facts['requests']:,} requests in {facts['sessions']:,} session file(s); "
+        f"  {facts['requests']:,} requests in {facts['sessions']:,} session(s) "
+        f"({facts['transcript_files']:,} transcript files); "
         f"list-price total ${facts['list_price_dollars']:,.2f}, "
         f"{facts['output_share']:.0%} of it output"
     )
@@ -1884,6 +2039,11 @@ def _print_usage_facts(facts: dict[str, Any]) -> None:
     )
     if facts.get("unpriced_requests"):
         print(f"  {DIM}{facts['unpriced_requests']:,} request(s) on models without a price row were counted but not priced.{RESET}")
+    if facts.get("history_start"):
+        print(
+            f"  {DIM}Transcripts on disk start {facts['history_start']}, so this covers less than {facts['days']} days "
+            f"(Claude Code deletes transcripts after cleanupPeriodDays, 30 by default).{RESET}"
+        )
 
 
 # -- CLI entry point ---------------------------------------------------------
@@ -1930,6 +2090,14 @@ def _build_parser() -> argparse.ArgumentParser:
         f"(default: last {_USAGE_DAYS_DEFAULT} days): cache hit rate, context size, "
         "model mix and list-price spend per model",
     )
+    # [A2] flags
+
+    # [A3] flags
+
+    # [B1] flags
+
+    # [C] flags
+
     parser.add_argument("--version", action="version", version="claude-rate 0.3.0")
     return parser
 
@@ -1946,12 +2114,21 @@ def _emit(result: RateResult, scopes: list[ScopeResult], args: argparse.Namespac
         _print_scope(scope, args.show_fixes)
         if "facts" in scope.to_dict() and scope.facts.get("days"):
             _print_usage_facts(scope.facts)
+            # [A1] usage printers
+
+            # [A2] usage printers
+
+            # [A3] usage printers
+
     if scopes:
         print()
 
 
 def main() -> None:
     args = _build_parser().parse_args()
+    # [C] standalone modes: return before the project scan
+
+    # [A2] standalone modes
 
     if not Path(args.path).is_dir():
         print(f"{RED}Error:{RESET} '{args.path}' is not a directory", file=sys.stderr)
@@ -1963,9 +2140,10 @@ def main() -> None:
     if args.user:
         scopes.append(rate_user(project))
     if args.usage is not None:
-        scopes.append(rate_usage(max(1, args.usage)))
+        scopes.append(rate_usage(max(1, args.usage), args))
 
     _emit(result, scopes, args)
+    # [B1] exit gates
 
     if args.strict and result.grade in ("C", "D", "F"):
         sys.exit(1)
