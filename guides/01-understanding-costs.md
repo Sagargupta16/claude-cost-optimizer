@@ -231,6 +231,8 @@ Input Token Composition Per Turn
        use tools, format responses, etc. You cannot change this.
        3,500 is this repo's modelling assumption; the real prompt
        plus tool definitions varies by Claude Code version.
+       /context shows yours, or claude-rate --usage (0.4.0 or
+       later) for the startup floor across your own history.
 
 2. CLAUDE.md Contents                     ~10 tokens/line (variable)
    └── Your project's CLAUDE.md file is injected in full on every
@@ -531,7 +533,7 @@ When the cap is reached, the run stops. This prevents runaway runs -- especially
 - Delegating Claude Code usage to team members through scripts
 - Working on tasks that might spiral into unexpected complexity
 
-Interactive sessions have no per-session dollar cap. Watch `/usage`, set a Console workspace spend limit (API key) or a usage-credits spend limit (subscription), or use a PreToolUse budget hook such as [hooks/budget-tracker.sh](../hooks/budget-tracker.sh). To see API spend by model, workspace, API key or user, Anthropic launched the Usage and Cost Analytics API in beta on 2026-10-29 (`/v1/organizations/analytics/usage` and `/cost`, beta header `analytics-usage-cost-2026-08-24`); the older Usage and Cost API is now legacy but still supported ([release notes](https://platform.claude.com/docs/en/release-notes/overview), read 2026-11-01).
+Claude Code has no built-in dollar cap for interactive sessions. This repo's [hooks/budget-tracker.sh](../hooks/budget-tracker.sh) adds one as an opt-in PreToolUse hook: set `BUDGET_SESSION_USD` (or `BUDGET_DAY_USD`, `BUDGET_TURN_USD`) and it prices the session's own transcript, subagents included, with claude-rate, then asks before the next tool call once the list-price estimate passes the cap; with `BUDGET_HARD_DENY=1` it denies every tool call from 120% of the cap. In a `-p` run, where no one can answer the prompt, Claude Code denies an `ask` anyway ([hooks reference](https://code.claude.com/docs/en/hooks#pretooluse-decision-control), read 2026-11-03). The estimate is list price, and the transcript is written asynchronously and can lag the conversation, so the cap can trip a request late; [Guide 05](05-team-budgeting.md#controls-that-enforce-a-budget) has the setup. Otherwise watch `/usage`, or set a Console workspace spend limit (API key) or a usage-credits spend limit (subscription). To see API spend by model, workspace, API key or user, Anthropic launched the Usage and Cost Analytics API in beta on 2026-10-29 (`/v1/organizations/analytics/usage` and `/cost`, beta header `analytics-usage-cost-2026-08-24`); the older Usage and Cost API is now legacy but still supported ([release notes](https://platform.claude.com/docs/en/release-notes/overview), read 2026-11-01).
 
 ### Recommended Budget Caps by Task Type
 

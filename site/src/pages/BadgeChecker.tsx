@@ -50,7 +50,8 @@ const FLAG_FIELDS: FlagFieldSpec[] = [
   { key: 'hasModelConfigured', label: 'Default model configured' },
   {
     key: 'hasCostControls',
-    label: 'Cost controls set (effortLevel, maxEffortLevel, fastMode: false, fastModePerSessionOptIn, autoCompactEnabled, or enforceAvailableModels)',
+    label:
+      'Cost controls set (effortLevel, maxEffortLevel, fastMode: false, fastModePerSessionOptIn, autoCompactEnabled, autoCompactWindow under 1M, enforceAvailableModels, env MAX_MCP_OUTPUT_TOKENS under 25000, or a forced CLAUDE_CODE_SUBAGENT_MODEL)',
   },
 ]
 

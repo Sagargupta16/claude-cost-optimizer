@@ -1,0 +1,36 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv5.0.5 [39m[90mC:/Code/GitHub/community/claude-cost-optimizer/site[39m
+
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mratesForPrompt[2m > [22mbills Haiku 5.5 at the low tier up to and including 100,000 prompt tokens[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mratesForPrompt[2m > [22mmoves the whole Haiku 5.5 request to the high tier at 100,001 prompt tokens[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mratesForPrompt[2m > [22mkeeps one rate across the full window on models without a prompt-length tier[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mturnInputCost[2m > [22mwrites the whole prompt to the 5-minute cache on turn 1[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mturnInputCost[2m > [22mreads the previous request from cache and writes only the new part[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mturnInputCost[2m > [22mpays full input when the prompt is under the minimum cacheable length[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mturnInputCost[2m > [22mprices a Haiku 5.5 turn that crosses 100K at the high tier, cache read included[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mcache multipliers[2m > [22mopus-5 reads cache at 0.9 off base input[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mcache multipliers[2m > [22mhaiku-5-5 reads cache at 0.9 off base input[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mcache multipliers[2m > [22mopus-5-5 reads cache at 0.95 off base input[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mcache multipliers[2m > [22msonnet-5-5 reads cache at 0.95 off base input[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mcache multipliers[2m > [22mfable-5-1 reads cache at 0.975 off base input[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mcache multipliers[2m > [22mmythos-5-1 reads cache at 0.975 off base input[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/pricing.test.ts[2m > [22mcache multipliers[2m > [22mprices every 5-minute write at 1.25x and every 1-hour write at 2x base input[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/calculator.test.ts[2m > [22mREADME worked example (Opus 5.5, 30 turns)[2m > [22mcosts $0.82 a session before the cleanup (15,000-token prefix)[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/calculator.test.ts[2m > [22mREADME worked example (Opus 5.5, 30 turns)[2m > [22mcosts $0.72 a session after the cleanup (5,500-token prefix), a 12% saving[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/calculator.test.ts[2m > [22mREADME worked example (Opus 5.5, 30 turns)[2m > [22mmatches the monthly figures at 3 sessions a day for 22 days[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/calculator.test.ts[2m > [22mREADME worked example (Opus 5.5, 30 turns)[2m > [22mcosts $4.95 uncached, where the same cleanup saves 23%[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/calculator.test.ts[2m > [22mREADME worked example (Opus 5.5, 30 turns)[2m > [22mputs output at 36% of the cached session ($0.30 of $0.8229)[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/calculator.test.ts[2m > [22mcalculate[2m > [22mprices the calculator default session at $0.7419 (CHANGELOG 1.16.0)[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/calculator.test.ts[2m > [22mcalculate[2m > [22msplits the monthly cost into categories that add back to the total[32m 1[2mms[22m[39m
+ [32m✓[39m src/utils/calculator.test.ts[2m > [22mcalculate[2m > [22mdoubles every turn under Fast Mode on Opus 5.5 ($8/$40)[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/calculator.test.ts[2m > [22mcalculate[2m > [22mignores Fast Mode on a model that does not support it[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/calculator.test.ts[2m > [22mcalculate[2m > [22mnever reports an optimized cost above the current one[32m 13[2mms[22m[39m
+ [32m✓[39m src/utils/calculator.test.ts[2m > [22mHaiku 5.5 prompt-length tier[2m > [22mwarns on the first turn whose prompt passes 100,000 tokens[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/calculator.test.ts[2m > [22mHaiku 5.5 prompt-length tier[2m > [22mbills that turn at the high tier and the one before it at the low tier[32m 0[2mms[22m[39m
+ [32m✓[39m src/utils/calculator.test.ts[2m > [22mHaiku 5.5 prompt-length tier[2m > [22mstays silent when the session never reaches the line[32m 0[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m2 passed[39m[22m[90m (2)[39m
+[2m      Tests [22m [1m[32m27 passed[39m[22m[90m (27)[39m
+[2m   Start at [22m 13:34:35
+[2m   Duration [22m 188ms[2m (import 35%, tests 32%, transform 21%, worker 12%)[22m
+

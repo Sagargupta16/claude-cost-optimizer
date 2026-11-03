@@ -10,6 +10,8 @@ A Claude Code subscription is the fixed-price way to pay for Claude Code. Unlike
 
 - [Understanding Claude Code Plans](#understanding-claude-code-plans)
 - [How Plan Usage Works](#how-plan-usage-works)
+  - [Blocked by a Limit Right Now](#blocked-by-a-limit-right-now)
+  - [Pace Your Limits](#pace-your-limits)
 - [Choosing the Right Plan](#choosing-the-right-plan)
 - [Getting Maximum Value From Each Plan](#getting-maximum-value-from-each-plan)
 - [When to Upgrade](#when-to-upgrade)
@@ -121,6 +123,34 @@ Unlike API billing, where every token has a price, subscription plans meter usag
 | Usage credits turned on | Work continues past the limit, billed from usage credits at standard API rates up to the monthly spend limit you set (`/usage-credits`) |
 
 Your subscription cost stays fixed unless you turn on usage credits (formerly called extra usage), and you set their monthly spend limit yourself, with optional auto-reload ([Manage usage credits](https://support.claude.com/en/articles/12429409-manage-usage-credits-for-paid-claude-plans), read 2026-11-01). Usage credits can also be prepaid as usage bundles at a discount: $50 of usage for $45, $250 for $200 and $1,000 for $700, up to $2,000 of bundles a month on Pro, Max and Ultra; bundle credit applies only once you are past your plan's limits with usage credits on ([Buy usage bundles](https://support.claude.com/en/articles/14246112-buy-usage-bundles), read 2026-11-01). The trade-off of staying inside the plan is that a heavy day hits the 5-hour or weekly window and stops you until it resets. On Claude Code v2.1.234 or later, Claude Code can wait out the reset and continue the interrupted task automatically.
+
+### Blocked by a Limit Right Now
+
+Find your message below. The first four points repeat the rules above with a link to each; the last two are new here and cite their sources.
+
+- **5-hour or weekly limit**: shared across all models, so `/model` does not get you back in; the message gives the reset time ([Usage Allowance Model](#usage-allowance-model)).
+- **A model-specific limit** ("Opus limit"): switch to a model outside that family with `/model` ([table above](#rate-limiting-vs-overage)).
+- **Keep working now**: run `/usage-credits` if usage credits are on; the work bills at API rates up to the monthly spend limit you set ([table above](#rate-limiting-vs-overage)).
+- **Do not resume an old conversation right after the reset** unless you need it verbatim: its cache has expired, so the first message re-reads all of it ([Usage Allowance Model](#usage-allowance-model)).
+- **Wait it out in the session**: on v2.1.234 or later, an interactive session signed in with a claude.ai subscription waits and then continues the interrupted task on its own after the reset. The `autoContinueAtUsageLimit` setting controls it (default `true`; read from user and managed settings, and a project or local settings file that sets it turns the feature off when neither of those does). Keep the session open: exiting ends the wait. After three automatic continuations it stops, and `/rate-limit-options` lets you start a wait yourself or cancel one ([interactive mode](https://code.claude.com/docs/en/interactive-mode), [settings reference](https://code.claude.com/docs/en/settings-reference#autocontinueatusagelimit), read 2026-11-03).
+- **A spend limit message** (individual, organization or team budget): your usage credits reached a spend limit, so the fix is to raise it, not to wait. On Pro, Max and Ultra, when you reach the limit with usage credits left, Claude Code prompts you to raise or remove it without leaving the CLI; on Team and Enterprise an admin raises it under Organization settings > Usage. When the message also names a plan reset time, waiting until then works too ([costs page](https://code.claude.com/docs/en/costs), read 2026-11-03).
+
+To count how often this happens, `claude-rate --usage` (claude-rate 0.4.0 or later) counts the rate-limit and billing errors recorded in your local transcripts, by week (`limit_hits` in its `--json` output). Claude Code deletes transcripts older than `cleanupPeriodDays`, 30 days by default, so the count covers at most that window ([costs page](https://code.claude.com/docs/en/costs), read 2026-11-03).
+
+### Pace Your Limits
+
+A subscriber's status line gets the plan windows as input: `rate_limits.five_hour` and `rate_limits.seven_day`, each with `used_percentage` (0 to 100) and `resets_at` (Unix epoch seconds), for Pro, Max and Ultra after the session's first response. Either window can be absent (a verified Ultra account has no 5-hour limit), and Claude Code drops a window once its reset time passes ([status line docs](https://code.claude.com/docs/en/statusline), read 2026-11-03). Pace compares what you have used with how much of the window has gone by:
+
+```
+elapsed share = (window length - (resets_at - now)) / window length
+                window length: 18,000 s (5 hours) or 604,800 s (7 days)
+pace          = used_percentage - 100 x elapsed share
+                above 0: you are using the window faster than an even rate
+```
+
+For example, 62% of the 5-hour window used with 1 hour 40 minutes to the reset: elapsed share = (18,000 - 6,000) / 18,000 = 66.7%, so pace = 62 - 66.7 = -4.7 points, a little behind an even rate.
+
+`claude-rate --statusline` (claude-rate 0.4.0 or later) reads that same input and prints the 5-hour and weekly windows in your status line; [templates/settings/statusline.json](../templates/settings/statusline.json) has the settings snippet. On an API key, Bedrock or Google Cloud there are no plan windows, and `claude-rate --burn MINUTES` instead shows list-price spend over the last `MINUTES` minutes (default 60) from your local transcripts: the total, the same as a rate per hour, the split by model and the costliest session (`--watch SECONDS`, 15 or more, redraws it). On a subscription those dollars are API-equivalent list price, a measure of how fast you are burning, not of how much allowance is left: Anthropic does not publish plan limits in tokens.
 
 ### How Model Choice Affects Allowance Consumption
 
@@ -451,6 +481,8 @@ Computed for one workload: 30-turn Sonnet 5.5 sessions at this repo's calculator
 
 > **Opus 5.5 moves this break-even in both directions -- re-measure.** Its posted price is $4/$20, 20% below Opus 5's $5/$25, which pulls API-side cost down. But thinking is always on (it cannot be disabled) and reasoning tokens bill as output at $20/MTok. If your API-side estimate was built with thinking off, your real per-session output spend on Opus 5.5 is higher than that estimate -- so you cross the subscription break-even at fewer sessions per day than the table above implies. If you simply omitted effort on Opus 5, the new `medium` default thinks less than Opus 5's `high` did. Re-measure against actual Opus 5.5 usage before concluding that API billing is cheaper for you. On the API you can claw cost back by lowering the effort level; on a subscription the same lever stretches your allowance instead.
 
+**Your own ratio.** `claude-rate --usage --plan pro|max|ultra` (claude-rate 0.4.0 or later) divides the API-equivalent list-price spend in your local Claude Code transcripts, scaled to 30 days (spend x 30 / days covered, over the last 30 days by default), by that plan's monthly price ($20, $100, $200). Above 1 means the plan cost less than list price for that work; it says nothing about whether the work fits the plan's limits, which Anthropic does not publish in tokens. It sees only Claude Code transcripts on this machine, while a plan's usage is one pool shared by Claude, Claude Code and Cowork ([Usage Allowance Model](#usage-allowance-model)), so work on other devices and in the other apps is missing from it. On an API key, Bedrock or Google Cloud there is no plan to compare.
+
 ---
 
 ## Worked Examples
@@ -665,7 +697,7 @@ Run through this checklist at the end of each billing cycle to ensure you are on
 
 ### 1. Check Rate Limit Frequency
 
-How often did you hit rate limits this month?
+How often did you hit rate limits this month? `claude-rate --usage` (claude-rate 0.4.0 or later) counts them by week from your local transcripts, so you can answer from data rather than memory (see [Blocked by a Limit Right Now](#blocked-by-a-limit-right-now)).
 
 | Frequency | Interpretation | Action |
 |-----------|---------------|--------|
@@ -696,7 +728,7 @@ Look for sessions with unusually high token consumption. Common culprits:
 - Unused MCP servers (with default tool search only their tool names and server instructions load, but full schemas load when tool search is off; disable unused ones with `/mcp`, and check `/context` for what is consuming space)
 - Idle sessions that keep spending: scheduled `/loop` tasks, cross-session messages (`crossSessionInbound: hold`), and goal check-ins (at most 3 idle check-ins per goal since v2.1.246; `CLAUDE_CODE_GOAL_CHECKIN_MINUTES=0` turns them off). Prompt suggestions also send a request after each response, mostly cache reads, and can be turned off. Session recap and idle compaction can also use tokens while you are idle; the costs page gives no figure for them ([Claude Code costs docs](https://code.claude.com/docs/en/costs), read 2026-11-01)
 
-Use the [Usage Analyzer](../tools/usage-analyzer/README.md) tool for detailed session breakdowns.
+For per-session dollars, `claude-rate --usage --by session` (claude-rate 0.4.0 or later) lists the last 30 days of sessions in your local transcripts with their list-price spend, cache reads and writes included.
 
 ### 4. Compare Month-Over-Month
 

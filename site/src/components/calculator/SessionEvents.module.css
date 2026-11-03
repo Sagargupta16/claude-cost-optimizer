@@ -1,0 +1,70 @@
+.head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+.note {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+}
+
+/* Label beside the text on wide cards, above it on a phone. */
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 8.5rem) minmax(0, 1fr);
+  gap: 0.25rem 0.85rem;
+  padding: 0.65rem 0.8rem;
+  background-color: var(--bg);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.row:hover {
+  border-color: var(--text-muted);
+  transform: translateX(3px);
+}
+
+.rowActive {
+  border-left-color: var(--accent-blue);
+}
+
+@media (max-width: 560px) {
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.term {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.rowActive .text {
+  color: var(--text);
+}
+
+.link {
+  color: var(--accent-blue);
+  white-space: nowrap;
+}

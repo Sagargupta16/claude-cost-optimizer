@@ -17,15 +17,15 @@ This repo is an installable Claude Code skill and a documentation/tooling projec
 - `skills/cost-mode/` - The installable skill; `SKILL.md` is the source of truth
 - `plugins/`, `.claude-plugin/`, `.agents/plugins/` - Distribution copies and registries
 - `guides/` - Deep-dive guides 00-11 + `diagrams.md`
-- `benchmarks/`, `templates/`, `cheatsheet.md` - Measurements, configs, quick reference
-- `tools/` - 8 CLI tools; see [`tools/README.md`](tools/README.md) for the list
-- `hooks/` - Budget-enforcement and cost-logging hooks (wired up in `.claude/settings.json`)
+- `benchmarks/`, `templates/`, `cheatsheet.md` - Measurements, configs, quick reference; `benchmarks/METHOD.md` sets the rules for any measured number, and `benchmarks/cost-mode-eval/` is the cost-mode harness (built, not run)
+- `tools/` - 8 CLI tools (usage-analyzer is retired and points to `claude-rate --usage --by session`); see [`tools/README.md`](tools/README.md)
+- `hooks/` - budget-tracker (dollar caps), cost-logger and session-summary, wired up in `.claude/settings.json`; cache-guard, handoff-loader and output-trim are opt-in through `hooks/settings-example.json`
 - `site/` - React + Vite + TS site (calculator, badge checker, analyzer) on GitHub Pages
 - `case-studies/` - Submission template only; no stories published yet
 - `docs/pricing-data.md` - Pricing source of truth; `docs/pricing-reference.md` - the user-facing pricing tables and migration notes (moved out of the README)
 - `docs/diagrams/` - The README's two orrery figures, each a spec plus the light/dark SVGs rendered from it: `toolkit.yaml` (where each tool runs; re-render after adding or moving a tool) and `build.yaml` (pricing source, rate copies, distribution, CI checks; re-render after changing any of those)
-- `scripts/` - Consistency checks run by CI (`check-rate-values.py` compares every code copy of the rates against `rate.py`), plus `capture-screenshots.py` for the README images and the social preview
-- Tests: `site/src/utils/*.test.ts` (vitest, `npm test`), `tools/claude-rate/tests/` (unittest), `tools/mcp-cost-server/test/` (node:test over stdio)
+- `scripts/` - Consistency checks run by CI (`check-rate-values.py` compares every code copy of the rates against `rate.py`; `eval-output-filter.py` replays the output-trim fixtures), `check-live-pricing.py` (the weekly drift alarm), `measure-compact-flags.py` (the table in `benchmarks/search-ladder.md`), plus `capture-screenshots.py` for the README images and the social preview
+- Tests: `site/src/utils/*.test.ts` (vitest, `npm test`, incl. `repoAnalyzer.test.ts`), `tools/claude-rate/tests/` (6 unittest files), `scripts/tests/` (unittest), `tools/mcp-cost-server/test/` (node:test over stdio)
 
 ## Writing Conventions
 
@@ -70,6 +70,8 @@ Verified **2026-10-09**. The facts most often got wrong:
 - **Google Cloud names**: Anthropic's docs say "Claude Models on Google Cloud (Google managed)" for what
   was Vertex AI, plus "(Anthropic managed)" since 2026-10-22. Keep env var names like `CLAUDE_CODE_USE_VERTEX`.
 - **Hooks**: `Stop` fires every turn, `SessionEnd` once; a message for the user goes in `systemMessage`.
+- **Drift alarm**: the weekly `pricing-drift.yml` runs `scripts/check-live-pricing.py` and opens or updates a
+  "Live pricing drift" issue when `rate.py` and the live pricing page differ.
 
 After a rate change, update every file listed at the end of that doc, then run
 `python scripts/check-pricing-sync.py` and `python scripts/check-rate-values.py`. CI runs both on every PR.

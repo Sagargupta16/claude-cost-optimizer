@@ -67,12 +67,21 @@ A `.claudeignore` scores nothing: Claude Code does not read it. When one exists 
 
 | Condition | Points |
 |-----------|--------|
-| Model + a real cost control (`effortLevel` low/medium, `maxEffortLevel`, `fastMode: false`, `fastModePerSessionOptIn: true`, `enforceAvailableModels` with `availableModels`, or `autoCompactEnabled: true`) | 25 |
+| Model + a real cost control (`effortLevel` low/medium, `maxEffortLevel`, `fastMode: false`, `fastModePerSessionOptIn: true`, `enforceAvailableModels` with `availableModels`, `autoCompactEnabled: true`, an auto-compact window under 1,000,000, `MAX_MCP_OUTPUT_TOKENS` under 25000 in `env`, or `CLAUDE_CODE_SUBAGENT_MODEL` with `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1`) | 25 |
 | Model only | 15 |
 | Exists, no model | 5 |
 | Missing | 0 |
 
 `alwaysThinkingEnabled: false` is not counted: it has no effect on Opus 5.5, Sonnet 5.5, Haiku 5.5 or the Fable models, which always think ([settings reference](https://code.claude.com/docs/en/settings-reference#alwaysthinkingenabled), read 2026-11-01).
+
+Each newer control counts only at a value that bounds spend ([settings](https://code.claude.com/docs/en/settings-reference), [env-vars](https://code.claude.com/docs/en/env-vars) and [model-config](https://code.claude.com/docs/en/model-config) references, read 2026-11-03):
+
+- **Auto-compact window**: the top-level `autoCompactWindow`, a `modelSettings` entry's `autoCompactWindow`, or `CLAUDE_CODE_AUTO_COMPACT_WINDOW` in `env`, from 100,000 up to but not including 1,000,000. Models with a native 1M window compact at about 967K by default.
+- **`MAX_MCP_OUTPUT_TOKENS`**: under its 25,000-token default.
+- **`CLAUDE_CODE_SUBAGENT_MODEL`**: a haiku or sonnet model, only together with `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` (on its own it is a default that a subagent's `model` field overrides), and only when it is a different family from `model`.
+- `bashOutputMaxChars` does not count: the settings reference documents it as a way to raise the Bash output limit.
+
+The settings entry also carries findings that do not change the score: `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION` in `env` is a no-op since v2.1.224, and a `model` of Haiku 5.5 (`claude-haiku-5-5`, or `haiku` with no Bedrock, Google Cloud, Foundry, Claude Platform on AWS or Mantle flag in `env`) with no auto-compact window gets a note about its 100,000-token price line.
 
 ### MCP Servers Scoring
 
@@ -153,7 +162,7 @@ Markdown:
         "`.claudeignore` is not read by Claude Code -- its permissions docs say the file has no effect. Move its patterns into permissions.deny as Read(...) rules."
       ]
     },
-    "settings": {"score": 5, "detail": "no model pin or cost controls", "has_model": false, "has_cost_controls": false},
+    "settings": {"score": 5, "detail": "no model pin or cost controls", "has_model": false, "has_cost_controls": false, "findings": []},
     "mcp_servers": {"score": 25, "detail": "0 MCP servers", "count": 0}
   }
 }

@@ -11,10 +11,15 @@
 - [Before and After: CLAUDE.md Optimization](#before-and-after-claudemd-optimization)
 - [Read Deny Rules: Stop Reading Junk](#read-deny-rules-stop-reading-junk)
 - [File Read Strategies](#file-read-strategies)
+  - [The Search Ladder](#the-search-ladder)
+  - [Native Caps on Output, Reads and Compaction](#native-caps-on-output-reads-and-compaction)
+  - [Keep Tool Output Small](#keep-tool-output-small)
+    - [Ask Commands for Compact Output](#ask-commands-for-compact-output)
 - [Using /compact to Reset Context](#using-compact-to-reset-context)
 - [Subagents: Isolating Context-Heavy Work](#subagents-isolating-context-heavy-work)
 - [Writing Concise Prompts](#writing-concise-prompts)
 - [Memory Files vs Inline Instructions](#memory-files-vs-inline-instructions)
+- [See Cost Live](#see-cost-live)
 - [Putting It All Together](#putting-it-all-together)
 
 ---
@@ -537,7 +542,7 @@ For finding patterns across files, Grep is much cheaper than reading entire file
 Search for all uses of deprecated_function across the src/ directory
 ```
 
-Grep returns only the matching lines: a 20-match search is about 200 tokens at this guide's 10 tokens per line, against about 5,000 for a full read of one 500-line file.
+Grep returns file paths by default and only the matching lines in its `content` mode: a 20-match search is about 200 tokens at this guide's 10 tokens per line, against about 5,000 for a full read of one 500-line file.
 
 **5. Avoid "read and understand" prompts for large files**
 
@@ -557,9 +562,24 @@ This signals Claude to scan efficiently rather than ingest the whole file into a
 
 Anthropic's costs page notes that code intelligence plugins replace grep-then-read-many-files with one go-to-definition call. If a plugin exists for your language, it is the cheapest way for Claude to find a symbol.
 
+Third-party code search and retrieval MCP servers are a different trade: they bring their own index, and their tool names and server instructions sit in context on every turn. [Guide 07](07-mcp-agent-costs.md#code-search-and-retrieval-servers) covers what their published claims measure and when one pays for itself.
+
 **7. Run code over data files instead of reading them**
 
 Ask Claude to write and run a short script (`python`, `jq`, `awk`) over a CSV, log or JSON file rather than reading it into the conversation. Anthropic measured the API version of this: 25 aggregate questions over a 1,862-row CSV, answered through code execution on the uploaded file, were 25/25 correct for $0.40; with the CSV pasted into the prompt, 7/25 correct for $5.01. Code execution cost 92% less (1 - $0.40 / $5.01) and got every answer right ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence#keep-data-files-out-of-the-prompt), read 2026-11-01).
+
+### The Search Ladder
+
+Search narrow, read last. Pick the row for what you need and stop at the first step that answers it. The tool behaviour in each cell is from Claude Code's [tools reference](https://code.claude.com/docs/en/tools-reference#grep-tool-behavior) (read 2026-11-03):
+
+| You want to | Start with | Then | Watch for |
+|-------------|-----------|------|-----------|
+| **Locate** a symbol, string or file | Grep in `files_with_matches` mode (its default: paths only) or `count` mode (matches per file plus a total); LSP workspace symbol search if a code intelligence plugin is installed. On macOS, Linux and WSL, where the Grep tool is absent by default, `git grep -l` or `git grep -c` | Grep `content` mode on only the files that matched | The Grep tool and `git grep` skip gitignored files. Plain `grep -r` does not, so it walks `node_modules` and build output, and Read deny rules do not cover it |
+| **Understand** how it works | LSP list symbols in the file, or a Grep for the definition | Read with `offset` and `limit` around it, and read the body before describing what it does | A signature is not the behaviour |
+| **Modify** it | Edit on the lines you already read | For a change across files, LSP find references, then Edit each site | Do not re-Read a file that has not changed since the last Read |
+| **Debug** an error | Grep for the exact error string | Read the lines around each match | Start from the message, not from the file you suspect |
+
+The LSP tool stays inactive until you install a code intelligence plugin for the language, and it is inactive in cloud sessions. `git grep` exiting 1 (no match) counts as a normal result, not a failure. The four intents follow the agent search rule in [TrNgTien/vfs](https://github.com/TrNgTien/vfs/blob/HEAD/.cursor/rules/vfs-agent-search.mdc) (MIT); the tool in each row is this guide's choice, since vfs sends the locate step to its own signature extractor. No one has published what these habits save in a session, and this repo has not measured them; the compact-output side of the same habit is measured on this repo [below](#ask-commands-for-compact-output).
 
 ### File Read Cost Reference
 
@@ -574,13 +594,60 @@ Ask Claude to write and run a short script (`python`, `jq`, `awk`) over a CSV, l
 
 > "Cost to add it" is one 5-minute cache write ($3.75/MTok on Sonnet 4.6). "30-turn carry cost" is that write plus a cache read on each of the next 30 turns: tokens x ($3.75 + 30 x $0.30) / 1M on Sonnet 4.6, tokens x ($5 + 30 x $0.20) / 1M on Opus 5.5. A pause longer than the cache TTL adds a full re-write of the whole context, this file included.
 
+### Native Caps on Output, Reads and Compaction
+
+Claude Code already caps how much one tool result puts into context and decides when a session compacts. These knobs move those limits ([settings reference](https://code.claude.com/docs/en/settings-reference#bashoutputmaxchars), [env vars](https://code.claude.com/docs/en/env-vars), [tools reference](https://code.claude.com/docs/en/tools-reference#output-limits), [model-config page](https://code.claude.com/docs/en/model-config#set-the-auto-compact-window), all read 2026-11-03). None has a published saving: they change where the cut falls, not how much Claude needs to read.
+
+| Knob | Set in | Default | What it does | Cost note |
+|------|--------|---------|--------------|-----------|
+| `bashOutputMaxChars` | Any settings file (v2.1.261+) | Unset: up to 30,000 characters of a successful command inline | Sets the inline ceiling and the read-back window together, clamped to 4,000-128,000. Past it, Claude gets the path of a saved file plus a preview of up to the first 2,000 characters, and reads or searches the file when it needs the rest | Anthropic documents it as a way to *raise* the limit. A failing command is cut to about 10,000 characters inline (a head-and-tail excerpt, no file path) whatever you set, so a lower cap trims only large successful output, and saves nothing when Claude then reads the saved file back |
+| `BASH_MAX_OUTPUT_LENGTH` | Environment | 30,000 characters, ceiling 150,000 | How much output Claude Code reads back from the command's working file, which is also the window a failing command's excerpt is cut from. It does not raise the inline ceiling | Ignored once `bashOutputMaxChars` is set |
+| `CLAUDE_CODE_FILE_READ_MAX_OUTPUT_TOKENS` | Environment | 25,000 tokens per Read call; a whole file over 256 KB is refused | Changes the per-call limit. A whole file over it returns its first page with a `PARTIAL view` notice, and Claude reads on with `offset` and `limit`. Since v2.1.296 Claude can pass `allow_large: true` to read a whole file or a long range in one call, sized against the room left in the context window instead of these limits | A bigger read stays in history and is re-read from cache on every later turn. `allow_large` is Claude's call (for example when you ask for the entire file), so ask for a line range when you need one |
+| `autoCompactWindow` | Any settings file, top level for every model; per model under `modelSettings` (v2.1.288+), which is what `/autocompact` writes | Unset: the window tuned for the model ([about 967K on 1M-window models](#using-compact-to-reset-context)) | How full the context gets before automatic compaction: 100,000 to 1,000,000 tokens, capped at the model's window | A smaller window means earlier and more frequent compactions, each one a summary request; [The /compact Trade-Off](#the-compact-trade-off) has the break-even |
+| `CLAUDE_CODE_AUTO_COMPACT_WINDOW` | Environment (`k` and `M` suffixes since v2.1.304) | Unset | The same window, for scripts and cloud environments. A bare number is tokens, so `200` means 200 tokens and is treated as the 100K minimum with a warning | Outranks every other way to set the window (below). While it is set, the status line's `used_percentage` no longer shows when compaction will run |
+| `CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS` | Environment (v2.1.217+) | 20 | How many subagents can run at once in one session before the Agent tool refuses another. Plain whole numbers only; it can change the cap but not remove it | Bounds a fan-out's burst, not its total: the per-session total cap, `CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION`, was removed in v2.1.224 and is now a no-op |
+
+Covered elsewhere, not repeated here: the MCP output cap `MAX_MCP_OUTPUT_TOKENS` ([Keep Tool Output Small](#keep-tool-output-small)), the 967K auto-compact default and per-subagent `autoCompactWindow` ([Using /compact](#using-compact-to-reset-context)), and `CLAUDE_CODE_SUBAGENT_MODEL` ([Guide 04](04-workflow-patterns.md#claudemd-subagent-guidelines)).
+
+**Which compaction window wins**, highest first, per the model-config page: `CLAUDE_CODE_AUTO_COMPACT_WINDOW` (unless Claude Code warns that its value isn't a usable size and ignores it), then the `--autocompact` launch flag, then the per-model window `/autocompact` saved under `modelSettings`, then a top-level `autoCompactWindow`, then the tuned default. Within one settings file the per-model entry beats the top-level key for that model. A managed-settings window outranks what `/autocompact` saves (the command saves your value, but the session keeps the managed one); it does not outrank the `--autocompact` flag. Worked through for a `~/.claude/settings.json` holding `"autoCompactWindow": 500000` and `"modelSettings": {"claude-haiku-5-5": {"autoCompactWindow": 100000}}`:
+
+| Session | Window used | Why |
+|---------|:-----------:|-----|
+| Opus 5.5, nothing else set | 500,000 | No per-model entry for Opus 5.5, so the top-level key applies |
+| Haiku 5.5, nothing else set | 100,000 | The per-model entry beats the top-level key in the same file |
+| Haiku 5.5 started with `claude --autocompact 300k` | 300,000 | The flag beats saved settings for that launch, without changing them |
+| Any model with `CLAUDE_CODE_AUTO_COMPACT_WINDOW=200000` exported | 200,000 | The variable beats the flag and both settings |
+| Opus 5.5 with neither key, flag nor variable | About 967,000 | The tuned default for a 1M-window model |
+
+The docs say the window sets how full the context gets before compaction, and the 1M default compacts at about 967K, short of the full window. They do not say whether a 100,000 window compacts at 100,000 tokens or earlier, so treat the exact trigger point of a small window as unverified.
+
 ### Keep Tool Output Small
 
 File reads are not the only tool results that pile up in history:
 
-- **Filter verbose output with a hook.** Hooks can preprocess output before Claude sees it. Anthropic's example is a PreToolUse hook that filters test output down to failures, which cuts tens of thousands of tokens to hundreds. Match `Bash` for command output; a matcher on `Read|Glob|Grep` misses searches on macOS, Linux and WSL, where Claude runs `grep` and `find` through Bash ([tools reference](https://code.claude.com/docs/en/tools-reference#glob-tool-behavior), read 2026-11-01).
+- **Filter verbose output with a hook.** Hooks can preprocess output before Claude sees it, for example a hook that filters test output (Anthropic's costs page example is a PreToolUse hook; this repo ships an opt-in PostToolUse one for green runs, [hooks/output-trim.sh](../hooks/README.md#trim-noisy-build-and-test-output-opt-in)). For its example, Anthropic's claim is tens of thousands of tokens cut to hundreds. Match `Bash` for command output; a matcher on `Read|Glob|Grep` misses searches on macOS, Linux and WSL, where Claude runs `grep` and `find` through Bash ([tools reference](https://code.claude.com/docs/en/tools-reference#glob-tool-behavior), read 2026-11-01).
 - **Prefer CLI tools to MCP servers where one exists** (`gh`, `aws`, `gcloud`, `sentry-cli`). They add no per-tool listing. MCP tool search is on by default, including behind a custom `ANTHROPIC_BASE_URL` since v2.1.304 (a 400 or 422 from the gateway is retried without it), so only tool names and server instructions enter context until Claude uses a specific tool; full schemas load up front only when tool search is off (`ENABLE_TOOL_SEARCH=false`, Google Cloud (Google managed, formerly Vertex AI) models earlier than Opus 4.5, Sonnet 4.5 and Haiku 4.5, or a Microsoft Foundry deployment hosted on Azure that rejects it) ([prompt-caching page](https://code.claude.com/docs/en/prompt-caching#connecting-or-removing-an-mcp-server), [changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01). Disable unused servers with `/mcp`.
 - **Watch MCP output size.** Claude Code warns when an MCP tool result exceeds 10,000 tokens and caps it at 25,000 by default (`MAX_MCP_OUTPUT_TOKENS`). MCP tool descriptions and server instructions sent up front are capped at 4,096 characters by default (2,048 before v2.1.296; 16,384 for a description loaded through tool search), and `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` replaces both limits ([env vars](https://code.claude.com/docs/en/env-vars), read 2026-11-01).
+
+#### Ask Commands for Compact Output
+
+Before filtering output after the fact, ask the command for less: most CLIs have a compact form, and output that is never printed never reaches the context. Ask Claude for these forms, or put the ones you rely on in CLAUDE.md:
+
+| Instead of | Ask for | Measured on this repo at commit `8e337f0` |
+|-----------|---------|-------------------------------------------|
+| `git log -20` | `git log --oneline -20` | 23,373 vs 1,603 characters (about 7,597 vs 521 estimated tokens), 93.1% shorter; both fit inline |
+| `git diff A B` | `git diff --stat A B`, then the diff of the one file you need | 124,148 vs 367 characters. The full diff is over the 30,000-character inline cap, so it arrives as a file path plus a 2,000-character preview and its cost depends on what Claude reads next: no saving is computed |
+| `git show A` | `git show --stat A` | 124,351 vs 570 characters; over the inline cap, so no saving is computed |
+| `git status` | `git status --short` | Not measured: the output depends on the working tree, not a commit |
+| `gh pr view` | `gh pr view --json title,state,statusCheckRollup` | Not measured: needs network and GitHub auth |
+| `gh run view --log` | `gh run view --log-failed` | Not measured: needs network and GitHub auth |
+| `docker ps` | `docker ps --format "{{.Names}} {{.Status}}"` | Not measured: needs a Docker daemon |
+| `kubectl get pods` | `kubectl get pods -o name`, or `-o custom-columns=...` | Not measured: needs a cluster |
+| `aws ec2 describe-instances` | the same with `--query "Reservations[].Instances[].InstanceId" --output text` | Not measured: needs AWS credentials and resources |
+| `pytest` | `pytest -q --tb=short` | Not measured: this repo's Python tests use unittest. A failing run is cut to about 10,000 characters inline anyway |
+| `jest` | `jest --silent` | Not measured: this repo's site tests use vitest |
+
+The measured rows come from [scripts/measure-compact-flags.py](../scripts/measure-compact-flags.py), which runs each pair of read-only git commands at the pinned commit with fixed output settings; [benchmarks/search-ladder.md](../benchmarks/search-ladder.md) has the full output. One repo and one commit, so they show the size of the gap, not a session saving. Estimated tokens use this repo's convention, characters / 4 x 1.3 (the 4.7+ tokenizer factor); [Guide 01](01-understanding-costs.md)'s 2.5 characters per token would give about 23% more. The inline caps are from the [tools reference](https://code.claude.com/docs/en/tools-reference#output-limits) (read 2026-11-03).
 
 ---
 
@@ -602,7 +669,7 @@ Savings: 72,500 tokens of input per turn going forward (80,000 - 7,500)
          (with a warm cache those were cache reads: $0.0145 per turn on Opus 5.5)
 ```
 
-Claude Code also compacts on its own when the context nears the window: at about 967K tokens by default on 1M-window models. `/autocompact` sets that point anywhere from 100K to 1M and is saved per model since v2.1.288, and subagents get their own `autoCompactWindow` since v2.1.296 ([model-config page](https://code.claude.com/docs/en/model-config), [changelog](https://code.claude.com/docs/en/changelog)). On Haiku 5.5 the lowest setting, 100K, sits right at its price line ($0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above).
+Claude Code also compacts on its own when the context nears the window: at about 967K tokens by default on 1M-window models. `/autocompact` sets that point anywhere from 100K to 1M and is saved per model since v2.1.288, and subagents get their own `autoCompactWindow` since v2.1.296 ([model-config page](https://code.claude.com/docs/en/model-config), [changelog](https://code.claude.com/docs/en/changelog)). On Haiku 5.5 the lowest setting, 100K, sits right at its price line ($0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above; [Guide 03](03-model-selection.md#migrating-to-haiku-55) has the Haiku note). The settings key, the environment variable and which one wins are in [Native Caps on Output, Reads and Compaction](#native-caps-on-output-reads-and-compaction).
 
 Idle conversations are compacted too: since v2.1.299 a conversation of 200K or more tokens left idle about 54 minutes is compacted before its one-hour cache expires, so your next message sends a summary instead of the whole history. It needs the one-hour TTL and auto-compaction on; `CLAUDE_CODE_IDLE_COMPACT_MIN_TOKENS` sets the minimum (default 200,000, floor 100,000) and `"idleCompaction": false` (or the `/config` row, v2.1.302+) turns it off ([settings reference](https://code.claude.com/docs/en/settings-reference#idlecompaction), read 2026-11-01).
 
@@ -859,6 +926,25 @@ Invoke with `/deploy` when needed. This keeps the checklist out of CLAUDE.md and
 
 ---
 
+## See Cost Live
+
+Claude Code pipes a JSON description of the session into your status line command on every update. `claude-rate --statusline` (claude-rate 0.4.0 or later) reads that JSON and prints at most two lines: the model, how full the context is, the session's estimated cost and, once the prompt cache reports, whether the cache is warm, when it goes cold and what re-caching would add to the next request over a warm read, priced from the same rate table as the rest of claude-rate. The settings snippet is in [templates/settings/statusline.json](../templates/settings/statusline.json); [tools/claude-rate](../tools/claude-rate/README.md) documents the output.
+
+What the fields behind it mean, per Claude Code's [status line page](https://code.claude.com/docs/en/statusline) (read 2026-11-03):
+
+| Field | What it is | Caveat |
+|-------|-----------|--------|
+| `cost.total_cost_usd` | Claude Code's own estimate of the session's cost, computed on your machine | List price unless the `modelPricing` managed setting is in effect, so it can differ from your bill; a response billed at the 1.1x data-residency rate counts at 1.1x ([costs page](https://code.claude.com/docs/en/costs), read 2026-11-03), which claude-rate's own figures do not apply. Resets to $0 when `/clear` starts a new session |
+| `context_window.used_percentage` | Share of the context window in use | Input tokens only (uncached input, cache writes and cache reads), no output. Can be null early in a session. Measured against the full window, so it does not say when compaction runs if `CLAUDE_CODE_AUTO_COMPACT_WINDOW` is set |
+| `prompt_cache` (v2.1.251+) | Hit ratio, misses, warm or cold, TTL, expiry time, `recache_tokens_if_cold`, and from v2.1.260 the likely cause of the last miss | Main conversation only: subagent requests are not counted. Absent until the first response; `recache_tokens_if_cold` is null right after a compaction |
+| `rate_limits` | 5-hour and 7-day limit use with reset times, or a Claude apps gateway spend limit | Present only for claude.ai Pro, Max and Ultra subscribers, or behind a gateway that sets a spend limit, and only after the first response. API key and cloud provider sessions get none |
+
+What a cold cache costs, computed from the docs' sample payload (`claude-opus-5-5`, `ttl: "1h"`, `recache_tokens_if_cold: 45000`): re-writing those tokens instead of reading them adds 45,000 x ($8.00 1-hour write - $0.20 cache read) / 1M = $0.351 to the next request. On the 5-minute TTL it is 45,000 x ($5.00 - $0.20) / 1M = $0.216 ([Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing) rates for Opus 5.5).
+
+Setup notes from the same page: Claude Code re-runs the command on every update, debounced at 300 ms, and cancels a run still in progress when the next update arrives; `refreshInterval` (seconds, minimum 1) adds a timer, which keeps a countdown current while the session is idle. So the command must start fast and must not download anything: point it at an installed `claude-rate` or at `python` with an absolute path, never at `curl ... | python`, `irm`, `npx @latest` or `uvx`, which can fetch code on each run and slow every refresh. On Windows, Claude Code runs status line commands through Git Bash or PowerShell, so write the path with forward slashes. A copy installed with `install.sh --install` keeps the rates it shipped with; reinstall after a price change.
+
+---
+
 ## Putting It All Together
 
 ### The Context Optimization Checklist
@@ -867,12 +953,12 @@ Apply these in order of impact:
 
 - [ ] **Audit CLAUDE.md** -- target under 200 lines per file (Anthropic's guidance); move workflow instructions to skills and area-specific rules to path-scoped `.claude/rules/` or nested CLAUDE.md files
 - [ ] **Add Read deny rules** -- copy the `permissions.deny` block from this guide into `.claude/settings.json` and customize
-- [ ] **Set budget caps** -- `claude -p --max-budget-usd 5 "..."` on scripted runs (print mode only), and a budget hook such as [hooks/budget-tracker.sh](../hooks/budget-tracker.sh) for interactive sessions
+- [ ] **Set budget caps** -- `claude -p --max-budget-usd 5 "..."` on scripted runs (print mode only), and a budget hook such as [hooks/budget-tracker.sh](../hooks/budget-tracker.sh) for interactive sessions (`BUDGET_SESSION_USD` sets a list-price dollar cap, [Guide 05](05-team-budgeting.md#controls-that-enforce-a-budget))
 - [ ] **Use `/compact` after 20 turns** -- or sooner if `/usage` shows high input token counts
 - [ ] **Reference specific files and lines** in prompts -- avoid triggering full-file reads
 - [ ] **Batch related changes** into single prompts -- fewer turns = less history growth
 - [ ] **Use subagents for search-heavy tasks** -- keep search results out of main context
-- [ ] **Filter verbose tool output** -- e.g. a PreToolUse hook that keeps only failing tests
+- [ ] **Keep tool output small** -- ask for the [compact form](#ask-commands-for-compact-output) first (`git log --oneline`, `--stat`), then cut what is left with a hook that filters test output (Anthropic's costs page example is a PreToolUse hook; this repo ships an opt-in PostToolUse one for green runs, [hooks/output-trim.sh](../hooks/README.md#trim-noisy-build-and-test-output-opt-in))
 - [ ] **Move domain rules to nested CLAUDE.md files** -- reduce root file size
 - [ ] **Create commands for rare workflows** -- deploy, migrate, audit procedures
 - [ ] **Start new sessions for new tasks** -- do not carry stale context

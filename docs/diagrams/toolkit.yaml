@@ -2,6 +2,7 @@
 # Rendered with orrery (github.com/Sagargupta16/orrery):
 #   orrery render docs/diagrams/toolkit.yaml -o docs/diagrams/toolkit -f svg --theme both
 # Reviewed at README width: orrery review docs/diagrams/toolkit.yaml --width 880
+# Checked against the code: orrery verify docs/diagrams/toolkit.yaml
 title: How the toolkit fits together
 subtitle: What each tool reads, where it runs and what it gives back
 direction: down
@@ -12,34 +13,37 @@ layout: { merge: false, layering: simplex }
 groups:
   github: { type: zone, label: On GitHub, icon: logos:github-icon, cols: 2 }
   local: { type: zone, label: On your machine, icon: tabler:device-laptop, cols: 1 }
-  # Claude Code loads the skill, calls the MCP server's tools and runs the hooks.
-  session: { type: zone, label: In a Claude Code session, icon: logos:claude-icon, cols: 1 }
+  # Claude Code loads the skill, calls the MCP server's tools, runs the hooks and runs the status line command.
+  session: { type: zone, label: In a Claude Code session, icon: logos:claude-icon, cols: 2 }
 
 nodes:
   # What the tools read
-  public: { icon: github:repo, label: Any public repo, evidence: "site/src/utils/repoAnalyzer.ts:85#GITHUB_API" }
-  repo: { icon: tabler:folder-code, label: Your repo, note: "CLAUDE.md, .claude/", evidence: "tools/claude-rate/rate.py:416#CLAUDE.md" }
-  config: { icon: github:file-directory, label: ~/.claude, note: "settings, skills, transcripts", evidence: "tools/claude-rate/rate.py:1567#projects" }
+  public: { icon: github:repo, label: Any public repo, evidence: "site/src/utils/repoAnalyzer.ts:97#GITHUB_API" }
+  repo: { icon: tabler:folder-code, label: Your repo, note: "CLAUDE.md, .claude/", evidence: "tools/claude-rate/rate.py#CLAUDE.md" }
+  config: { icon: github:file-directory, label: ~/.claude, note: "settings, skills, transcripts", evidence: "tools/claude-rate/rate.py#projects" }
 
   # The composite Action runs on GitHub Actions; the web tools are a static site on Pages with no backend.
-  analyzer: { icon: tabler:report-search, label: Repo Analyzer, note: GitHub Pages, in: github, evidence: "site/src/utils/repoAnalyzer.ts:85#GITHUB_API" }
-  action: { icon: logos:github-actions, label: Cost Audit Action, note: composite action, in: github, evidence: "tools/actions/claude-cost-audit/action.yml:34#audit.py" }
-  badge: { icon: tabler:rosette, label: Badge Checker, note: GitHub Pages, in: github, evidence: "site/src/pages/BadgeChecker.tsx:352#scoreBadge" }
-  calculator: { icon: tabler:calculator, label: Cost Calculator, note: GitHub Pages, in: github, evidence: "site/src/pages/Calculator.tsx:3#calculate" }
+  action: { icon: logos:github-actions, label: Cost Audit Action, note: "composite action, token gate", in: github, evidence: ["tools/actions/claude-cost-audit/action.yml:42#audit.py", "tools/actions/claude-cost-audit/action.yml:9#max-context-tokens"] }
+  analyzer: { icon: tabler:report-search, label: Repo Analyzer, note: GitHub Pages, in: github, evidence: "site/src/utils/repoAnalyzer.ts:97#GITHUB_API" }
+  badge: { icon: tabler:rosette, label: Badge Checker, note: GitHub Pages, in: github, evidence: "site/src/pages/BadgeChecker.tsx:353#scoreBadge" }
+  calculator: { icon: tabler:calculator, label: Cost Calculator, note: GitHub Pages, in: github, evidence: "site/src/pages/Calculator.tsx:293#calculate" }
 
   # Local, outside a session. The extension is not on the Marketplace yet (tools/vscode-extension/README.md).
-  rate: { icon: logos:python, label: claude-rate, note: one stdlib Python file, in: local, evidence: "tools/claude-rate/rate.py:1941#main" }
+  # claude-rate also runs inside a session: the hooks call it with --transcript and --hook, the status line runs it with --statusline.
+  rate: { icon: logos:python, label: claude-rate, note: "one stdlib Python file, also run by the hooks and the status line", in: local, evidence: ["tools/claude-rate/rate.py#def main", "tools/claude-rate/rate.py#def _run_statusline", "hooks/budget-tracker.sh:22#--transcript", "hooks/cache-guard.sh:54#--hook cache-guard"] }
   vscode: { icon: logos:visual-studio-code, label: VS Code extension, note: "VSIX, not on Marketplace", in: local, evidence: "tools/vscode-extension/src/statusBar.ts:19#createStatusBarItem" }
 
-  # Inside a session
+  # Inside a session. The hooks and the status line are one node because both run claude-rate; the opt-in hooks do not.
+  hooks: { icon: tabler:webhook, label: Hooks and status line, note: "budget caps, cache guard, status line", in: session, evidence: ["hooks/budget-tracker.sh:22#--transcript", "hooks/cache-guard.sh:54#--hook cache-guard", "hooks/session-summary.sh:9#--transcript", "templates/settings/statusline.json:19#claude-rate --statusline"] }
+  optin: { icon: tabler:scissors, label: Opt-in hooks, note: "output trim, handoff loader", in: session, evidence: ["hooks/output-trim.sh:5#output_trim.py", "hooks/handoff-loader.sh:4#Opt-in"] }
   mcp: { icon: logos:model-context-protocol-icon, label: MCP cost server, note: 3 tools over stdio, in: session, evidence: "tools/mcp-cost-server/src/index.ts:451#StdioServerTransport" }
   skill: { icon: tabler:puzzle, label: cost-mode skill, note: /cost-mode, in: session, evidence: "skills/cost-mode/SKILL.md:2#cost-mode" }
-  hooks: { icon: tabler:webhook, label: Budget hooks, note: "PreToolUse, Stop", in: session, evidence: ".claude/settings.json:52#budget-tracker.sh" }
 
   # What you get back
-  grade: { icon: tabler:award, label: Grade and badge, note: "A+ to F, fixes, shields.io URL", evidence: "tools/claude-rate/rate.py:1135#badge_url" }
+  lean: { icon: tabler:filter, label: Leaner context, note: "trimmed build output, handoff notes", rank: last, evidence: ["hooks/output_trim.py#updatedToolOutput", "hooks/handoff-loader.sh:85#additionalContext"] }
+  nudges: { icon: tabler:message-chatbot, label: In-session nudges, note: "model hints, budget and cache warnings", rank: last, evidence: ["hooks/budget-tracker.sh:347#systemMessage", "tools/claude-rate/rate.py#def cache_guard"] }
+  grade: { icon: tabler:award, label: Grade and badge, note: "A+ to F, fixes, shields.io URL", evidence: "tools/claude-rate/rate.py#def badge_url" }
   estimate: { icon: tabler:coins, label: Cost estimate, note: "file, session, month", evidence: "tools/mcp-cost-server/src/index.ts:360#session_estimate" }
-  nudges: { icon: tabler:message-chatbot, label: In-session nudges, note: "model hints, budget warnings", rank: last, evidence: "hooks/budget-tracker.sh:122#remaining" }
 
 edges:
   - public -> analyzer: REST API
@@ -49,5 +53,6 @@ edges:
   - action, analyzer, badge -> grade
   - rate -> grade
   - rate -> estimate
-  - calculator, vscode, mcp -> estimate
+  - calculator, vscode, mcp, hooks -> estimate
   - skill, hooks -> nudges
+  - optin -> lean

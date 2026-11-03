@@ -1,0 +1,14 @@
+{
+  "id": "model-routing",
+  "title": "A model-routing question",
+  "category": "routing",
+  "expect_gain": true,
+  "graders": [
+    {
+      "type": "regex",
+      "pattern": "(?=.*\\bopus\\b)(?=.*\\b(haiku|sonnet|sed|codemod|find.and.replace|IDE)\\b)",
+      "flags": "is",
+      "label": "names Opus for the design job and a cheaper model or tool for the rename"
+    }
+  ]
+}

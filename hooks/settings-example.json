@@ -2,13 +2,29 @@
   "$schema": "https://json.schemastore.org/claude-code-settings.json",
 
   "_comment": [
-    "Example Claude Code settings with budget enforcement hooks.",
-    "Copy this file to ~/.claude/settings.json (global) or .claude/settings.json (project).",
-    "Update the paths below to point to wherever you cloned claude-cost-optimizer.",
-    "Environment variables (optional):",
-    "  BUDGET_TOOL_LIMIT  - max tool calls before warning (default: 50)",
-    "  BUDGET_WARN_AT     - warn at this percentage of the limit (default: 80)",
-    "  BUDGET_LOG_DIR     - directory for counter/log files (default: /tmp/claude-budget)"
+    "Example Claude Code settings with the budget and cache hooks from claude-cost-optimizer.",
+    "Merge the hooks block into ~/.claude/settings.json (global) or .claude/settings.json (project).",
+    "Update the paths below to point to wherever you cloned claude-cost-optimizer. Keep each script in hooks/ next to tools/claude-rate/rate.py, or set CLAUDE_RATE_PY to rate.py's full path.",
+    "PreModelSwitch needs Claude Code v2.1.251 or later. The schemastore schema declared above does not list PreModelSwitch yet (read 2026-11-03), so an editor that validates against it flags that one key; Claude Code accepts it. Drop the PreModelSwitch block if your editor setup rejects the file.",
+    "SessionEnd has \"timeout\": 10 because SessionEnd hooks share a 1.5-second budget by default, and pricing a long session's transcript from scratch can take longer (it reuses budget-tracker's state when there is one).",
+    "Do not give the PreModelSwitch entry a short timeout: a PreModelSwitch hook that reaches its timeout blocks the switch. cache-guard.sh stops its own work after 3 seconds.",
+    "_opt_in_hooks is not read by Claude Code. Move its SessionStart entry into hooks to load the notes /handoff (templates/commands/handoff.md) writes, once, after /clear.",
+    "Move its PostToolUse entry into hooks to trim the output of green build, install and test runs before Claude reads it (output-trim.sh, Claude Code 2.1.121 or later). Keep output_trim.py in the same folder; failed runs are never trimmed.",
+    "Environment variables (optional; set them in your shell or in an env block):",
+    "  BUDGET_TOOL_LIMIT        - max tool calls before warning (default: 50)",
+    "  BUDGET_WARN_AT           - warn at this percentage of the limit (default: 80)",
+    "  BUDGET_LOG_DIR           - counter, marker, state and log files (default: /tmp/claude-budget; %TEMP%\\claude-budget on Windows)",
+    "  BUDGET_SESSION_USD_WARN  - one warning when session spend passes this many dollars",
+    "  BUDGET_SESSION_USD       - session cap: warn at 70/80/90%, ask at 100% and every +25% after",
+    "  BUDGET_DAY_USD           - the same ladder for today's spend across sessions",
+    "  BUDGET_TURN_USD          - the same ladder for one prompt's spend",
+    "  BUDGET_HARD_DENY         - 1 = deny tool calls once a cap is 120% spent",
+    "  CLAUDE_RATE_PY           - full path to tools/claude-rate/rate.py",
+    "  CACHE_GUARD_MIN_TOKENS   - stale-resume warnings start at this context size (default: 50000)",
+    "  HANDOFF_MAX_AGE_HOURS    - the loader ignores notes older than this (default: 24)",
+    "  CLAUDE_TRIM_OFF          - 1 = output-trim.sh leaves every output unchanged (kill switch)",
+    "  CLAUDE_TRIM_MIN_CHARS    - output-trim.sh leaves output shorter than this alone (default: 2000)",
+    "Every dollar figure is a list-price estimate; on a Pro, Max or Ultra plan it is API-equivalent value, not your bill."
   ],
 
   "hooks": {
@@ -29,7 +45,55 @@
         "hooks": [
           {
             "type": "command",
-            "command": "bash /path/to/claude-cost-optimizer/hooks/session-summary.sh"
+            "command": "bash /path/to/claude-cost-optimizer/hooks/session-summary.sh",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "resume|fork",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /path/to/claude-cost-optimizer/hooks/cache-guard.sh"
+          }
+        ]
+      }
+    ],
+    "PreModelSwitch": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /path/to/claude-cost-optimizer/hooks/cache-guard.sh"
+          }
+        ]
+      }
+    ]
+  },
+
+  "_opt_in_hooks": {
+    "SessionStart": [
+      {
+        "matcher": "clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /path/to/claude-cost-optimizer/hooks/handoff-loader.sh"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash /path/to/claude-cost-optimizer/hooks/output-trim.sh"
           }
         ]
       }

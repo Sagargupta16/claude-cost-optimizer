@@ -10,12 +10,21 @@ const perM = (tokens: number, rate: number) => (tokens / 1_000_000) * rate
 describe('ratesForPrompt', () => {
   it('bills Haiku 5.5 at the low tier up to and including 100,000 prompt tokens', () => {
     const rates = ratesForPrompt(MODELS['haiku-5-5'], 100_000)
-    expect(rates).toEqual({ inputPer1M: 0.1, outputPer1M: 0.5, cacheHitPer1M: 0.01, cacheWrite5mPer1M: 0.125 })
+    expect(rates).toEqual({ inputPer1M: 0.1, outputPer1M: 0.5, cacheHitPer1M: 0.01, cacheWritePer1M: 0.125 })
   })
 
   it('moves the whole Haiku 5.5 request to the high tier at 100,001 prompt tokens', () => {
     const rates = ratesForPrompt(MODELS['haiku-5-5'], 100_001)
-    expect(rates).toEqual({ inputPer1M: 0.5, outputPer1M: 2.5, cacheHitPer1M: 0.05, cacheWrite5mPer1M: 0.625 })
+    expect(rates).toEqual({ inputPer1M: 0.5, outputPer1M: 2.5, cacheHitPer1M: 0.05, cacheWritePer1M: 0.625 })
+  })
+
+  it('writes at the 1-hour rate when asked, on each Haiku 5.5 tier its own', () => {
+    expect(ratesForPrompt(MODELS['opus-5-5'], 20_000, '1h').cacheWritePer1M).toBe(8)
+    expect(ratesForPrompt(MODELS['opus-5-5'], 20_000, '5m').cacheWritePer1M).toBe(5)
+    expect(ratesForPrompt(MODELS['haiku-5-5'], 100_000, '1h').cacheWritePer1M).toBe(0.2)
+    expect(ratesForPrompt(MODELS['haiku-5-5'], 100_001, '1h').cacheWritePer1M).toBe(1)
+    // The TTL changes only the write rate.
+    expect(ratesForPrompt(MODELS['haiku-5-5'], 100_001, '1h').cacheHitPer1M).toBe(0.05)
   })
 
   it('keeps one rate across the full window on models without a prompt-length tier', () => {
@@ -50,6 +59,21 @@ describe('turnInputCost', () => {
     const { readDollars, writeDollars } = turnInputCost(MODELS['haiku-5-5'], 101_000, 99_500)
     expect(readDollars).toBeCloseTo(perM(99_500, 0.05), 10)
     expect(writeDollars).toBeCloseTo(perM(1_500, 0.625), 10)
+  })
+
+  it('writes the new part at 2x input on the 1-hour TTL and reads at the same rate', () => {
+    const { readDollars, writeDollars } = turnInputCost(opus, 21_500, 20_000, '1h')
+    expect(readDollars).toBeCloseTo(perM(20_000, 0.2), 10)
+    expect(writeDollars).toBeCloseTo(perM(1_500, 8), 10) // 2 x $4
+  })
+
+  it('defaults to the 5-minute TTL', () => {
+    expect(turnInputCost(opus, 20_000, 0)).toEqual(turnInputCost(opus, 20_000, 0, '5m'))
+  })
+
+  it('ignores the TTL under the minimum cacheable length (full input either way)', () => {
+    const haiku45 = MODELS.haiku
+    expect(turnInputCost(haiku45, 4_000, 0, '1h').writeDollars).toBeCloseTo(perM(4_000, 1), 10)
   })
 })
 

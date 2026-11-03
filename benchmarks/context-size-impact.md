@@ -100,7 +100,7 @@ Including all input tokens (system prompt, conversation history, file reads, CLA
 
 Claude Code reads files during tasks (to understand existing code, check types, review tests). File read results become part of the conversation context and are re-sent on every subsequent turn.
 
-We measured the impact of reading files of different sizes during a 10-turn session.
+The tables below compute the impact of reading files of different sizes during a 10-turn session (tokens x turns x the input rate, pre-cache; not measured).
 
 | File Size | Approximate Tokens | Example |
 |:---------:|:------------------:|---------|

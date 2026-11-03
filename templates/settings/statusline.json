@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+
+  "_comment": [
+    "STATUS LINE - claude-rate --statusline (claude-rate 0.4.0 or later). Merge the statusLine block into ~/.claude/settings.json.",
+    "Keep it in user settings. In a committed project .claude/settings.json the command runs for every teammate who trusts the folder, and a machine-specific path or Python breaks it for them.",
+    "Row 1: model, effort, fast tag, context fill, Claude Code's own session cost estimate (cost.total_cost_usd, which follows any modelPricing table your organization sets), then the 5-hour and 7-day limit windows on Pro, Max and Ultra: used %, pace against an even burn (+12 means 12 points ahead), the run-out time when the current pace ends before the reset, and the reset countdown.",
+    "Row 2, once the session has a cache (Claude Code v2.1.251 or later): warm or cold, the countdown to cold, 'if cold +$0.35' (the list price of re-writing the cached prompt instead of reading it: tokens x (write rate - cache read rate) from claude-rate's rate table; the docs' sample, 45,000 tokens on Opus 5.5 at the 1-hour TTL, gives 45,000 x ($8.00 - $0.20) / 1M = $0.35), hit ratio and misses with the last cause (v2.1.260 or later).",
+    "Command, by setup: 'claude-rate --statusline' after 'uv tool install claude-rate' or 'pipx install claude-rate'; or 'python3 /abs/path/to/claude-cost-optimizer/tools/claude-rate/rate.py --statusline'. Write the path with forward slashes, on Windows too: Git Bash drops unquoted backslashes and the line goes blank.",
+    "The npm shim (npm install -g @sagargupta16/claude-rate) starts node and probes for Python before running rate.py, on every refresh, so it is the slowest form. Never use uvx, npx ...@latest, irm or curl | python here: they resolve or download the package on every refresh and run whatever was published last.",
+    "Each run starts a Python process and loads rate.py; do not count on any form above finishing inside Claude Code's 300 ms debounce. Claude Code cancels a run that is still going when the next update arrives, so during a burst of updates it shows the run that finishes after the burst.",
+    "refreshInterval 60 keeps the minute countdowns current while you are idle. Claude Code already re-runs the command when a warm cache reaches expires_at and when a limit window reaches resets_at (code.claude.com/docs/en/statusline, read 2026-11-03).",
+    "An installed copy keeps the rates it shipped with, and so does an install.sh --install snapshot: upgrade claude-rate after a price change or the dollar figure goes stale. Every dollar it computes is a list-price estimate; on a Pro, Max or Ultra plan it is API-equivalent value, not your bill.",
+    "Set NO_COLOR=1 to turn the ANSI colours off. To check it by hand, pipe a payload in: echo '{\"model\":{\"id\":\"claude-opus-5-5\",\"display_name\":\"Opus\"}}' | claude-rate --statusline"
+  ],
+
+  "statusLine": {
+    "type": "command",
+    "command": "claude-rate --statusline",
+    "refreshInterval": 60
+  }
+}

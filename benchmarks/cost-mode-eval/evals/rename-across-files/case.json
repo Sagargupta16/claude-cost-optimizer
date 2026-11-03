@@ -1,0 +1,41 @@
+{
+  "id": "rename-across-files",
+  "title": "Rename a function across source, tests and notes",
+  "category": "code",
+  "expect_gain": true,
+  "graders": [
+    {
+      "type": "command",
+      "argv": ["python", "-m", "unittest", "-q"],
+      "label": "unit tests pass (run by the harness after the session)"
+    },
+    {
+      "type": "file_regex",
+      "glob": "*.py",
+      "pattern": "fetch_user",
+      "match": false,
+      "label": "no Python file still uses the old name"
+    },
+    {
+      "type": "file_regex",
+      "glob": "*.md",
+      "pattern": "fetch_user",
+      "match": false,
+      "label": "the notes no longer use the old name"
+    },
+    {
+      "type": "file_regex",
+      "glob": "users.py",
+      "pattern": "def load_user\\(",
+      "match": true,
+      "label": "the definition carries the new name"
+    },
+    {
+      "type": "file_regex",
+      "glob": "service.py",
+      "pattern": "Hello, \\{user\\['name'\\]\\}",
+      "match": true,
+      "label": "unrelated code is untouched"
+    }
+  ]
+}

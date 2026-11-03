@@ -16,11 +16,18 @@ Canonical sources:
     Fable 5 pricing, as rate.py's _PRICE_ALIASES says.
   - Minimum cacheable prompt: MODELS in site/src/utils/pricing.ts, the only
     complete copy of that field; the MCP server's copy must agree with it.
-  - Models rate.py does not carry (Opus 4.5, Opus 4.1, Sonnet 4.5, Haiku 3.5,
-    Mythos Preview): every copy that has one must agree with every other. A
-    model with a single copy has nothing to agree with, so its rates are only
-    as good as that copy; the site's vitest suite checks the 1.25x and 2x
-    cache-write multipliers on every pricing.ts row.
+  - Models rate.py does not carry (Opus 4.5, Sonnet 4.5, Mythos Preview):
+    every copy that has one must agree with every other. A model with a
+    single copy has nothing to agree with, so its rates are only as good as
+    that copy; the site's vitest suite checks the 1.25x and 2x cache-write
+    multipliers on every pricing.ts row.
+  - A row only rate.py has (a model no copy lists) is never visited: the
+    check walks the values each copy holds, so adding a model to rate.py first
+    cannot fail it, and a copy is compared the day it gains the row.
+  - Tokenizer factor: tokenizer_overhead on each MODEL_PRICING row in
+    estimate.py against rate.py MODELS (Mythos 5.1 against Fable 5.1, "@fast"
+    rows against their base model). It is a multiplier, not a rate, so it is
+    not in RATE_FIELDS, which every reader must supply.
 
 Copies checked: site/src/utils/pricing.ts, tools/mcp-cost-server/src/index.ts,
 tools/vscode-extension/src/costEstimator.ts, tools/token-estimator/estimate.py,
@@ -491,6 +498,23 @@ def _across_copies(values: list[Value], canon: dict) -> list[str]:
     return errors
 
 
+def _tokenizer_overheads(root: Path) -> list[str]:
+    """4. estimate.py's tokenizer_overhead against rate.py (a multiplier, not a rate)."""
+    models = _assigned_literal(RATE_PY, "MODELS", root)
+    rows = _assigned_literal(ESTIMATE_PY, "MODEL_PRICING", root)
+    errors = []
+    for key, row in rows.items():
+        canon = ESTIMATE_KEYS[key].split("@")[0]
+        expected = models[PRICE_ALIASES.get(canon, canon)]["tokenizer_overhead"]
+        found = row.get("tokenizer_overhead")
+        if found is None or not _same(found, expected):
+            errors.append(
+                f"{ESTIMATE_PY.as_posix()}: {key} tokenizer_overhead = {found}, "
+                f"but rate.py has {expected} for {canon}"
+            )
+    return errors
+
+
 def check(root: Path) -> tuple[list[str], int, int]:
     canon = canonical_rates(root)
     values = [v for reader in READERS for v in reader(root)]
@@ -498,6 +522,7 @@ def check(root: Path) -> tuple[list[str], int, int]:
         _against_rate_py(values, canon)
         + _against_cache_floors(values)
         + _across_copies(values, canon)
+        + _tokenizer_overheads(root)
     )
     files = len({v.file for v in values})
     return errors, len(values), files
@@ -521,7 +546,8 @@ def main() -> int:
         return 1
     print(
         f"OK, {count} values in {files} copies agree with {RATE_PY.as_posix()} (rates)"
-        f" and {PRICING_TS.as_posix()} (cache floors)"
+        f" and {PRICING_TS.as_posix()} (cache floors);"
+        f" {ESTIMATE_PY.as_posix()} tokenizer_overhead matches rate.py"
     )
     return 0
 

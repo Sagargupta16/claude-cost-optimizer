@@ -18,6 +18,7 @@ The biggest hidden cost in Claude Code is not the model -- it is wasted turns. E
 - [Avoiding Clarification Loops](#avoiding-clarification-loops)
 - [Structured Multi-Step Work with TodoWrite](#structured-multi-step-work-with-todowrite)
 - [Using /compact at Natural Breakpoints](#using-compact-at-natural-breakpoints)
+  - [Hand Off, Then /clear](#hand-off-then-clear)
 - [Git Commit Strategies](#git-commit-strategies)
 - [When NOT to Use Claude Code](#when-not-to-use-claude-code)
 - [Putting It All Together: The Optimal Session](#putting-it-all-together-the-optimal-session)
@@ -168,6 +169,8 @@ Add this to your CLAUDE.md to encourage cost-efficient delegation:
 
 To pin the cheap model rather than asking for it, set `model: haiku` in the subagent's definition frontmatter -- Anthropic's costs page (code.claude.com/docs/en/costs) recommends exactly that for simple subagent tasks. On the Anthropic API `haiku` is Haiku 5.5 (Claude Code v2.1.293+); on Amazon Bedrock, Google Cloud (Google managed, formerly Vertex AI), Microsoft Foundry and Claude Platform on AWS it is still legacy Haiku 4.5, so set `ANTHROPIC_DEFAULT_HAIKU_MODEL` there (Bedrock: `anthropic.claude-haiku-5-5`). Two Haiku 5.5 properties suit subagents: short subagent calls stay in the cheap under-100K tier, and its 512-token cache floor (Haiku 4.5: 4,096) means a subagent's short system prompt actually caches instead of paying full input price on every call. The same page warns about the opposite end: agent teams (experimental and off by default; `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` turns them on) use about **7x the tokens** of a standard session when teammates run in plan mode, so fan out deliberately.
 
+Copy-ready definitions are in [templates/agents/](../templates/agents/): a read-only scout, a reviewer and an implementer, each with a pinned `model` and a short, fixed return format, so the parent reads a small report instead of the subagent's working. A definition with no `model` runs on `CLAUDE_CODE_SUBAGENT_MODEL` if you set one, otherwise on the main conversation's model, and a `model` the Agent call passes outranks the frontmatter ([sub-agents docs](https://code.claude.com/docs/en/sub-agents#choose-a-model), read 2026-11-03).
+
 Delegation is not cheap by default: the built-in Explore subagent runs on the main conversation's model, not Haiku (when the main model is Fable, Explore runs on the Opus alias with a subscription, a Console account or a gateway). To explore on Haiku, define your own `Explore` with `model: haiku`, or set `CLAUDE_CODE_SUBAGENT_MODEL=haiku` plus `CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1` (v2.1.257+).
 
 Effort follows the same pattern: a subagent's `effort` frontmatter overrides the session level (but not `CLAUDE_CODE_EFFORT_LEVEL`), the Agent tool takes a per-invocation `effort` parameter since v2.1.292, and since v2.1.316 `CLAUDE_CODE_SUBAGENT_EFFORT` sets the level subagents run at when nothing else names one, instead of inheriting the session's. The changelog states only that; the docs do not yet say where it ranks against the other sources ([sub-agents docs](https://code.claude.com/docs/en/sub-agents), [changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
@@ -282,7 +285,7 @@ Do not add tests unless I ask.
 
 ### Hooks: Filter Output Before Claude Reads It
 
-A command controls what Claude is asked; a hook controls what Claude reads back. Anthropic's costs page gives the example of a `PreToolUse` hook that filters test output down to the failures, which it says cuts tens of thousands of tokens to hundreds. The same idea applies to any noisy command (builds, linters, installs): let the hook strip the passing lines so only the signal enters context. Anthropic publishes the token range, not a session-level percentage, so measure your own before and after with `/usage`. Match the hook on `Bash` for command output. A matcher on `Read|Glob|Grep` misses searches on macOS, Linux and WSL, where Claude Code leaves Glob and Grep out of the default tools and runs `grep` and `find` through Bash, so the searches reach your hooks and permission rules as `Bash` calls (on Windows they are default tools) ([tools reference](https://code.claude.com/docs/en/tools-reference#glob-tool-behavior), read 2026-11-01).
+A command controls what Claude is asked; a hook controls what Claude reads back, for example a hook that filters test output (Anthropic's costs page example is a `PreToolUse` hook that keeps the failures, which it says cuts tens of thousands of tokens to hundreds; this repo ships an opt-in PostToolUse one for green runs, [hooks/output-trim.sh](../hooks/README.md#trim-noisy-build-and-test-output-opt-in)). The same idea applies to any noisy command (builds, linters, installs): let the hook strip the passing lines so only the signal enters context. Anthropic publishes the token range, not a session-level percentage, so measure your own before and after with `/usage`. Match the hook on `Bash` for command output. A matcher on `Read|Glob|Grep` misses searches on macOS, Linux and WSL, where Claude Code leaves Glob and Grep out of the default tools and runs `grep` and `find` through Bash, so the searches reach your hooks and permission rules as `Bash` calls (on Windows they are default tools) ([tools reference](https://code.claude.com/docs/en/tools-reference#glob-tool-behavior), read 2026-11-01).
 
 Filtering matters more on Haiku 5.5 subagents: unfiltered test or build output can push a subagent's prompt past 100K tokens, and then the whole request bills at $0.50/$2.50 instead of $0.10/$0.50. Trimmed output keeps short subagent calls in the cheap tier, and a short, stable system prompt above Haiku 5.5's 512-token floor keeps caching.
 
@@ -293,7 +296,7 @@ Filtering matters more on Haiku 5.5 subagents: unfiltered test or build output c
 ### The Problem
 
 Each Claude Code turn includes fixed overhead:
-- System prompt (3,500 tokens is this repo's modelling assumption; Claude Code's real system prompt plus its tool definitions is larger)
+- System prompt (3,500 tokens is this repo's modelling assumption; Claude Code's real system prompt plus its tool definitions is larger: `/context` shows yours, or `claude-rate --usage` (claude-rate 0.4.0 or later) for your own history)
 - CLAUDE.md content
 - Conversation history
 - Tool definitions (MCP tools are deferred by default under tool search: only their names and server instructions load until Claude uses one)
@@ -567,6 +570,27 @@ From Anthropic's prompt-caching page for Claude Code (code.claude.com/docs/en/pr
 | `/rewind` | Returns to an already-cached prefix | Keeps the cache |
 
 So compact **before** a break, not after one. The TTL is one hour for the main conversation on a Claude subscription within plan usage, and five minutes on an API key, a cloud provider, or once you draw on usage credits (set it with `promptCacheTtl` or `CLAUDE_CODE_PROMPT_CACHE_TTL`, Claude Code v2.1.242+). `/usage` shows a `Prompt cache (main)` line with hit share and whether the cache is warm (v2.1.251+). Since v2.1.304, Pro and Max users are warned when resuming an inactive conversation would use a noticeable share of the 5-hour limit, and can start a new conversation instead ([changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
+
+### Hand Off, Then /clear
+
+Starting fresh is cheapest when the old conversation is large and its cache has gone cold, but `/clear` also drops the task state. A handoff keeps it: before a break or a `/clear`, ask Claude for a brief of at most 40 lines (goal, what is done, what is next, files touched, open questions, commands to re-run) and give it to the new session. [templates/commands/handoff.md](../templates/commands/handoff.md) is a `/handoff` command that writes the brief to `.claude/handoff.md` and also prints it in chat, so it works with no hook; the opt-in [hooks/handoff-loader.sh](../hooks/handoff-loader.sh) loads it back after a `/clear` ([hooks/README.md](../hooks/README.md) lists when it loads and what it refuses). Add `.claude/handoff.md` to `.gitignore`. The pattern is inspired by [Continuous-Claude-v3](https://github.com/parcadei/Continuous-Claude-v3)'s handoff loop (MIT); the single file, its size cap and the loader's guards are this repo's design.
+
+What it saves, computed on Opus 5.5 at the 5-minute cache rates ($5.00 per 1M written, $0.20 read). The session size is the example payload in Anthropic's [hooks reference](https://code.claude.com/docs/en/hooks#sessionstart-input) (read 2026-11-03), a resume with `context_tokens: 182340` after 90 minutes, not a measured session (the example names `claude-opus-5` and estimates $1.1396, which is 182,340 x $6.25/1M, Opus 5's 5-minute write rate; the table reprices it at Opus 5.5). The fresh session's 20,000-token prefix (system prompt, tools, CLAUDE.md) and the 1,500-token handoff are assumptions:
+
+| Step | Resume the old session | Fresh session plus handoff |
+|------|------------------------|----------------------------|
+| Write the handoff, before the break (cache warm) | -- | 182,340 x $0.20/1M read + 1,500 output x $20/1M = $0.066 |
+| First request after a break past the TTL (cache cold) | 182,340 x $5.00/1M = $0.912 | 21,500 x $5.00/1M = $0.108 |
+| First request after a short pause (cache warm) | 182,340 x $0.20/1M = $0.036 | 21,500 x $5.00/1M = $0.108 |
+| Each later turn | 182,340 x $0.20/1M = $0.036 | 21,500 x $0.20/1M = $0.004 |
+
+- **Cold**: the fresh start saves $0.80 on the first request ($0.912 - $0.108), $0.74 after paying for the handoff, and $0.032 on every later turn (160,840 fewer tokens read).
+- **Warm**: resuming is cheaper at first. The fresh start is $0.138 behind after its first request ($0.108 + $0.066 - $0.036) and catches up after about 4.3 more turns ($0.138 / $0.032), so it pays only if the task runs on and the old detail is not needed.
+- **Late handoff**: asked for after the TTL, the handoff request itself re-writes the whole old conversation, $0.912 here, which wipes out the saving. Write it before you step away.
+
+On the 1-hour TTL (a subscription's main conversation within plan usage) every write costs 1.6x these figures ($8.00 vs $5.00 per 1M on Opus 5.5), the cache stays warm for an hour instead of five minutes, and you pay in plan allowance rather than dollars.
+
+Check what Claude Code already does before adding a step: since v2.1.304 Pro and Max users are warned when resuming would take a noticeable share of the 5-hour limit, and can start a new conversation that looks the old one up when you refer to it ([Guide 09](09-subscription-value.md#usage-allowance-model)); [idle compaction](#how-compact-works) summarizes a 200K+ conversation before its one-hour cache expires; and `/compact` with a focus hint keeps a summary inside the same session. The opt-in cache guard ([hooks/cache-guard.sh](../hooks/cache-guard.sh)) reads the resume payload and, when the cache has likely expired and the context is at least `CACHE_GUARD_MIN_TOKENS` (default 50,000), says what re-caching the old conversation will cost before the first request. A handoff adds the most when you `/clear` between tasks, or work on the 5-minute TTL (API key, cloud provider, usage credits).
 
 ### When to Compact
 

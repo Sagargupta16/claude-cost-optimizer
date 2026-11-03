@@ -1,0 +1,21 @@
+{
+  "id": "fix-failing-test",
+  "title": "Fix a seeded bug so a failing test passes",
+  "category": "code",
+  "expect_gain": true,
+  "graders": [
+    {
+      "type": "command",
+      "argv": ["python", "-m", "unittest", "-q"],
+      "label": "unit tests pass (run by the harness after the session)"
+    },
+    {
+      "type": "file_regex",
+      "glob": "test_pricing.py",
+      "pattern": "assertEqual\\(apply_discount\\(200\\.0, 10\\), 180\\.0\\)",
+      "match": true,
+      "label": "the test file still holds its original assertion"
+    },
+    {"type": "tool_used", "tools": ["Edit", "Write"], "label": "edited a file"}
+  ]
+}

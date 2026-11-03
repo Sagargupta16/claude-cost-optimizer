@@ -2,7 +2,7 @@
 
 Estimate how many tokens a file or text will consume when sent to Claude, and calculate the associated cost across models.
 
-This uses the `cl100k_base` encoding from [tiktoken](https://github.com/openai/tiktoken) as an approximation for Claude's tokenizer. Actual Claude token counts differ (Claude 4.7 and later models produce about 30% more tokens for the same text; see [Accuracy Note](#accuracy-note)), but this provides a reliable estimate for cost planning.
+This counts with the `cl100k_base` encoding from [tiktoken](https://github.com/openai/tiktoken), which is not Claude's tokenizer, then scales the count by 1.3 for the models on the Claude 4.7 and later tokenizer, because Anthropic says that tokenizer produces approximately 30% more tokens for the same text (see [Accuracy Note](#accuracy-note)). Both numbers are estimates for cost planning, not Claude token counts.
 
 ## Installation
 
@@ -20,24 +20,28 @@ No other dependencies are required. Python 3.10+ recommended.
 python tools/token-estimator/estimate.py path/to/file.py
 ```
 
-Output:
+Output for this tool's own source file (`estimate.py`), abridged to four of the fifteen rows, measured 2026-11-03; your file's numbers will differ:
 
 ```
   Token Estimate
   --------------------------------------------------
-  Source:     file.py
-  Lines:      142
-  Characters: 4,831
-  Tokens:     1,247
+  Source:      estimate.py
+  Lines:       560
+  Characters:  20,374
+  cl100k:      5,761
+  4.7+ models: ~7,489 (cl100k x 1.3, estimate)
 
   Cost Estimate (single input pass)
   --------------------------------------------------
-  Model          Input Cost    $/1M tokens
-  ..............  ............  ..............
-  Opus 5.5         $0.0050           $4.00
-  Sonnet 5.5       $0.0025           $2.00
-  Haiku 5.5        $0.0001           $0.10
+  Model                       Tokens   Input Cost    $/1M tokens
+  ........................ ......... ............ ..............
+  Opus 5.5                     7,489       $0.030          $4.00
+  Opus 4.6 (legacy)            5,761       $0.029          $5.00
+  Sonnet 5.5                   7,489       $0.015          $2.00
+  Haiku 5.5                    7,489      $0.0007          $0.10
 ```
+
+Each row is priced on its own model's count: the models on the 4.7+ tokenizer (Opus 5.5, Sonnet 5.5, Haiku 5.5 and the rest) on `round(cl100k x 1.3)`, and Opus 4.6, Sonnet 4.6 and Haiku 4.5 on the raw cl100k count.
 
 ### Analyze CLAUDE.md cost over a session
 
@@ -47,22 +51,20 @@ The `--per-turn` flag projects cost over N conversation turns. This is essential
 python tools/token-estimator/estimate.py CLAUDE.md --per-turn 50
 ```
 
-Output includes a projection table:
+Output includes a projection table (this repository's `CLAUDE.md`, 76 lines, 5,288 characters, 1,445 cl100k tokens, abridged to four rows, measured 2026-11-03):
 
 ```
   Per-Turn Projection (50 turns)
   --------------------------------------------------
-  Tokens per turn:  890
-  Total tokens:     44,500
-
-  Model          Total Cost     Per Turn
-  ..............  ............  ............
-  Opus 5.5         $0.178        $0.0036
-  Sonnet 5.5       $0.089        $0.0018
-  Haiku 5.5       $0.0044        $0.0001
+  Model                     Tokens/turn   Total Cost     Per Turn
+  ........................ ............ ............ ............
+  Opus 5.5                        1,878       $0.376      $0.0075
+  Opus 4.6 (legacy)               1,445       $0.361      $0.0072
+  Sonnet 5.5                      1,878       $0.188      $0.0038
+  Haiku 5.5                       1,878      $0.0094      $0.0002
 ```
 
-On Haiku 5.5 the price tier comes from the tokens per turn (one request), not the session total: 890 tokens is under 100,000, so all 50 turns are priced at $0.10/1M. A single file or turn over 100,000 tokens is priced at $0.50/1M, and its `$/1M tokens` column shows that rate.
+On Haiku 5.5 the price tier comes from the tokens per turn (one request, on the scaled count), not the session total: 1,878 tokens is under 100,000, so all 50 turns are priced at $0.10/1M. A single file or turn over 100,000 scaled tokens is priced at $0.50/1M, and its `$/1M tokens` column shows that rate.
 
 ### Filter to a specific model
 
@@ -83,6 +85,8 @@ cat CLAUDE.md | python tools/token-estimator/estimate.py -
 python tools/token-estimator/estimate.py CLAUDE.md --json
 python tools/token-estimator/estimate.py CLAUDE.md --per-turn 50 --json
 ```
+
+`tokens` at the top level is the raw cl100k count, labelled by `tokens_basis`. Each entry under `costs` has its own `tokens` (the count scaled for that model's tokenizer) and a `basis` of `cl100k` or `cl100k x 1.3 (estimate)`; with `--per-turn`, its `per_turn_tokens` and `total_tokens` use that scaled count too.
 
 ## Flags Reference
 
@@ -126,7 +130,7 @@ Fast Mode is Opus 5.5, Opus 5 and Opus 4.8 only. Opus 5.5 has it generally avail
 
 Sonnet 5 is $2/$10 permanently -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15. Sonnet 5.5 (released 2026-09-28) launched at the same $2/$10 and moved Sonnet 5 to legacy.
 
-> **Haiku 5.5 note.** Haiku 5.5 (released 2026-10-07) is the first model priced by prompt length: $0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above. Anthropic prices each request on its own, and the prompt length counts cache reads and writes, so a 100,001-token prompt pays 5x the input rate of a 100,000-token one. This tool picks the tier from one request's tokens (with `--per-turn`, the tokens per turn). Haiku 5.5 counts ~30% more tokens than Haiku 4.5 for the same text, so treat a count near 100K as over the line. Minimum cacheable prompt is 512 tokens (Haiku 4.5: 4,096).
+> **Haiku 5.5 note.** Haiku 5.5 (released 2026-10-07) is the first model priced by prompt length: $0.10/$0.50 up to 100K prompt tokens, $0.50/$2.50 above. Anthropic prices each request on its own, and the prompt length counts cache reads and writes, so a 100,001-token prompt pays 5x the input rate of a 100,000-token one. This tool picks the tier from one request's tokens (with `--per-turn`, the tokens per turn). Haiku 5.5 counts ~30% more tokens than Haiku 4.5 for the same text, so the tier test uses the scaled count (cl100k x 1.3, an estimate): a text of 80,001 cl100k tokens is ~104,001 scaled tokens and is priced at $0.50/1M, so treat a count near 100K as borderline. Minimum cacheable prompt is 512 tokens (Haiku 4.5: 4,096).
 
 > **Sonnet 5.5 note.** Sonnet 5.5 has the same input and output price and tokenizer as Sonnet 5, so this tool's input-cost numbers are identical for both; its cache read is half Sonnet 5's ($0.10 vs $0.20 since 2026-10-07). Its minimum cacheable prompt drops to 512 tokens (Sonnet 5: 1,024). Adaptive thinking is on by default, reasoning bills as output, and effort levels are recalibrated, so re-baseline your real output bill after migrating.
 
@@ -143,4 +147,6 @@ Sonnet 5 is $2/$10 permanently -- the launch rate was labelled introductory thro
 
 ## Accuracy Note
 
-This tool uses OpenAI's `cl100k_base` tokenizer as an approximation. Claude uses a different tokenizer internally, so counts may differ. Note that the newer tokenizer (Opus 4.7 and later, including Opus 4.8, Opus 5, and Opus 5.5, plus Fable 5, Fable 5.1, Mythos 5.1, Sonnet 5.5, Sonnet 5 and Haiku 5.5) produces about 30% more tokens for the same text ([Anthropic pricing page](https://platform.claude.com/docs/en/about-claude/pricing); [token counting](https://platform.claude.com/docs/en/build-with-claude/token-counting) lists the Fable and Mythos models), so treat these estimates as a lower bound for those models. Sonnet 4.6 and earlier use the previous tokenizer. On Haiku 5.5 (~30% more tokens than Haiku 4.5) the gap matters most near its 100K price threshold. Opus 5.5 shares that tokenizer exactly, so token counts need no re-baselining when moving from Opus 4.7, 4.8, or 5. For cost planning purposes, this is accurate enough to make informed decisions.
+This tool counts with OpenAI's `cl100k_base` tokenizer, which is not Claude's, so every count is an estimate. Anthropic's [pricing page](https://platform.claude.com/docs/en/about-claude/pricing) says Claude 4.7 and later models use a newer tokenizer that produces approximately 30% more tokens for the same text, that the exact increase depends on the content, and that Claude Sonnet 4.6 and earlier models use the previous tokenizer ([token counting](https://platform.claude.com/docs/en/build-with-claude/token-counting) lists the Fable and Mythos models). So the cost tables price Fable 5.1, Fable 5, Mythos 5.1, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Sonnet 5.5, Sonnet 5, Haiku 5.5 and both Fast Mode rows on `round(cl100k x 1.3)`, and Opus 4.6, Sonnet 4.6 and Haiku 4.5 on the raw cl100k count. The factor is each model's `tokenizer_overhead`, a copy of the one in `claude-rate` that `scripts/check-rate-values.py` keeps equal.
+
+1.3 is the pricing page's ratio between the two Claude tokenizers applied to a count from a third tokenizer, so it is a planning estimate, not a measurement of your file. As a cross-check, Anthropic's [models overview](https://platform.claude.com/docs/en/about-claude/models/overview) puts 1M tokens at roughly 2.5M Unicode characters on the current tokenizer, about 2.5 characters per token. By that rule this repository's `CLAUDE.md` (5,288 characters) is 2,115 tokens, against 1,878 from 1,445 x 1.3 (both computed 2026-11-03), so on text-heavy files the character rule gives the larger figure. On Haiku 5.5 the gap matters most near its 100K price threshold. Opus 5.5 shares the 4.7+ tokenizer, so token counts need no re-baselining when moving from Opus 4.7, 4.8, or 5.

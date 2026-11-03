@@ -1,0 +1,14 @@
+{
+  "id": "structured-json",
+  "title": "Answer with only a JSON object",
+  "category": "structured",
+  "expect_gain": true,
+  "graders": [
+    {
+      "type": "json_keys",
+      "require": {"name": "string", "version": "string", "breaking": "boolean", "released": "string"},
+      "equals": {"name": "fastgate", "version": "2.4.0", "breaking": true, "released": "2026-03-03"},
+      "label": "the whole reply parses as the requested object with the right values"
+    }
+  ]
+}

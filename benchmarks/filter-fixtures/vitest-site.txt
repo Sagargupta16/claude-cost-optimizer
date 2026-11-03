@@ -1,0 +1,9 @@
+
+ RUN  v5.0.5 C:/Code/GitHub/community/claude-cost-optimizer/site
+
+
+ Test Files  2 passed (2)
+      Tests  27 passed (27)
+   Start at  13:32:53
+   Duration  801ms (worker 33%, transform 32%, import 23%, tests 12%)
+

@@ -13,14 +13,16 @@ interface RecItem {
 
 // Ties each recommendation repoAnalyzer.ts emits to the rubric category it improves,
 // matched on its wording. First match wins, so the order matters: the Read deny
-// rule text mentions settings.json, and the cost-controls text mentions a hook.
+// rule text mentions settings.json, the cost-controls text mentions a hook, and a
+// hook finding names settings.json. The Haiku 5.5 and dead-key findings land under
+// Settings ("auto-compact window", "no-op"), hook findings under Hooks.
 // Anything unmatched still renders, as medium priority with no category tag.
 const TOPICS: { pattern: RegExp; category: string }[] = [
   { pattern: /\.env file is committed|API-key-shaped/, category: 'Security' },
   { pattern: /claudeignore|Read\(|Read deny rule/, category: 'File-read exclusions' },
-  { pattern: /settings\.json to pin|default model|cost controls/i, category: 'Settings' },
+  { pattern: /settings\.json to pin|default model|cost controls|auto-compact window|no-op/i, category: 'Settings' },
   { pattern: /MCP servers configured/, category: 'MCP servers' },
-  { pattern: /hooks for budget/, category: 'Hooks' },
+  { pattern: /hooks for budget|hook handler|SessionStart hook/, category: 'Hooks' },
   { pattern: /cost-mode skill|slash commands|subagents/, category: 'Optimizer tooling' },
   { pattern: /CLAUDE\.md/, category: 'CLAUDE.md' },
 ]

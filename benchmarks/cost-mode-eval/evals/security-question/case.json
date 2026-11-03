@@ -1,0 +1,20 @@
+{
+  "id": "security-question",
+  "title": "A security question, where cost-mode is expected to switch itself off",
+  "category": "security",
+  "expect_gain": false,
+  "graders": [
+    {
+      "type": "regex",
+      "pattern": "\\bXSS\\b|cross-site scripting",
+      "flags": "i",
+      "label": "names the XSS risk"
+    },
+    {
+      "type": "regex",
+      "pattern": "http-?only",
+      "flags": "i",
+      "label": "recommends an HttpOnly cookie"
+    }
+  ]
+}

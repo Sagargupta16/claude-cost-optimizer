@@ -1,0 +1,21 @@
+▶ tools/list
+  ✔ exposes the three cost tools (6.38ms)
+✔ tools/list (439.6333ms)
+▶ session_estimate
+  ✔ bills a 30-turn Opus 5.5 session the way Claude Code caches it (5.2048ms)
+  ✔ rejects an unknown model with the list of valid ids (1.9205ms)
+✔ session_estimate (7.6783ms)
+▶ compare_models
+  ✔ prices one 100,001-token Haiku 5.5 request at the high tier (2.0587ms)
+✔ compare_models (2.5277ms)
+▶ estimate_cost
+  ✔ warns when the text is below the model's minimum cacheable prompt (1.6869ms)
+✔ estimate_cost (2.1222ms)
+ℹ tests 5
+ℹ suites 4
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 5293.4694

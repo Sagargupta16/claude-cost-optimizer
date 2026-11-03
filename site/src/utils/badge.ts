@@ -88,7 +88,7 @@ function scoreFileReadExclusions(
   if (hasIgnoreFile) notes.push(IGNORE_FILE_FINDING)
   if (rules === 0) {
     notes.push(
-      "Add Read(...) rules to permissions.deny in .claude/settings.json, e.g. Read(./node_modules/**), Read(./dist/**), Read(*.min.js), Read(./package-lock.json). No published measurement exists for what they save; the effect depends on how often Claude would otherwise open those files.",
+      "Add Read(...) rules to permissions.deny in .claude/settings.json, e.g. Read(./.env), Read(node_modules/**), Read(*.min.js), Read(./package-lock.json). A Read deny also blocks Edit and Write on that path, so deny a build folder such as dist/ only when it is gitignored and nothing under it is committed. No published measurement exists for what they save; the effect depends on how often Claude would otherwise open those files.",
     )
   } else if (!lockFilesCovered) {
     notes.push('Add a Read deny rule for each lock file at the repo root, e.g. Read(./package-lock.json).')
@@ -110,7 +110,7 @@ function scoreSettings(hasModel: boolean, hasCostControls: boolean): CategorySco
     recommendation = 'Configure a default model in .claude/settings.json to avoid accidentally using expensive models.'
   } else if (!hasCostControls) {
     recommendation =
-      'Add a cost control Claude Code actually reads: "effortLevel": "medium", "maxEffortLevel": "high", "fastMode": false, "fastModePerSessionOptIn": true, "autoCompactEnabled": true, or "enforceAvailableModels" with "availableModels". There is no spend-cap setting, so maxMonthlyCost and budgetCap are silently ignored.'
+      'Add a cost control Claude Code actually reads: "effortLevel": "medium", "maxEffortLevel": "high", "fastMode": false, "fastModePerSessionOptIn": true, "autoCompactEnabled": true, "autoCompactWindow" under 1000000, "enforceAvailableModels" with "availableModels", or in "env": MAX_MCP_OUTPUT_TOKENS under 25000, or CLAUDE_CODE_SUBAGENT_MODEL with CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1. There is no spend-cap setting, so maxMonthlyCost and budgetCap are silently ignored.'
   }
 
   return { name: 'Settings', score, maxScore: 25, recommendation }

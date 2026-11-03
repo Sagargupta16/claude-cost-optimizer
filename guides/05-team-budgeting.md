@@ -13,6 +13,8 @@ Individual optimization matters, but team-level cost management is where the rea
 - [Setting Per-Developer Monthly Budgets](#setting-per-developer-monthly-budgets)
 - [Monthly Cost Estimation Formula](#monthly-cost-estimation-formula)
 - [Tracking Usage Across Team Members](#tracking-usage-across-team-members)
+  - [OpenTelemetry Recipe](#opentelemetry-recipe)
+  - [Reconcile the Estimate Against the Bill](#reconcile-the-estimate-against-the-bill)
 - [Claude Code vs Claude API vs Manual Coding](#claude-code-vs-claude-api-vs-manual-coding)
 - [ROI Calculation Template](#roi-calculation-template)
 - [Cost Allocation by Project and Task Type](#cost-allocation-by-project-and-task-type)
@@ -89,6 +91,18 @@ These are the settings that turn the tiers above into limits Claude Code or Anth
 - **Effort caps**: the `maxEffortLevel` managed setting (v2.1.267) caps effort on any plan and any provider, Bedrock, Google Cloud and Foundry included, and higher levels run at the cap; on Enterprise, admins can also cap effort per model for each custom role, and the lower of the two caps applies ([model config](https://code.claude.com/docs/en/model-config#organization-effort-limits), [settings reference](https://code.claude.com/docs/en/settings-reference#maxeffortlevel)). Effort is the main lever on Opus 5.5's always-on thinking: on SWE-bench Pro its `xhigh` cost 2.5x `high` ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)), so a cap at `high` keeps `xhigh` and `max` off the bill.
 - **Model allowlists**: `availableModels` with `enforceAvailableModels` on any provider; on Enterprise, organization model restrictions per custom role, which reach Anthropic API and LLM gateway sessions only ([model config](https://code.claude.com/docs/en/model-config)).
 - **Fast mode**: `fastModePerSessionOptIn: true`, deployed through server-managed settings on Team or Enterprise, stops a saved `/fast` from turning fast mode on in every later session, and refuses `/fast on` outside interactive terminal sessions ([settings reference](https://code.claude.com/docs/en/settings-reference#fastmodepersessionoptin)).
+- **Per-session dollar caps** (this repo, opt-in): Claude Code's only dollar cap, `--max-budget-usd`, works in print mode only, so an interactive session has none. [hooks/budget-tracker.sh](../hooks/budget-tracker.sh) adds one as a PreToolUse hook that prices the session's own transcript, subagents included, with claude-rate's rate table:
+
+  | Variable | What it sets |
+  |----------|--------------|
+  | `BUDGET_SESSION_USD_WARN` | A warning once the session's estimate passes it |
+  | `BUDGET_SESSION_USD` | A cap on one session: past it, Claude Code asks you before the next tool call |
+  | `BUDGET_DAY_USD` | A cap on today's spend (local calendar day) across every session the hook priced on this machine |
+  | `BUDGET_TURN_USD` | A cap on one prompt and the work it starts |
+  | `BUDGET_HARD_DENY=1` | Denies every tool call once a cap is 120% spent; from 100% to 120% the hook still asks |
+  | `CLAUDE_RATE_PY` | Where the hook finds claude-rate's `rate.py`, when it is not in the usual place |
+
+  Three limits to plan around. The figure is a list-price estimate, not your bill, and on Pro, Max or Ultra it is API-equivalent value, not money spent. The transcript is written asynchronously and can lag the conversation, so the cap can trip a request late; leave headroom. In a `-p` run no one can answer the prompt, so Claude Code denies an `ask` there (both from the [hooks reference](https://code.claude.com/docs/en/hooks#pretooluse-decision-control), read 2026-11-03). To keep the [120% rule](#budget-enforcement-philosophy) above, warn at the budget and put any hard deny at 120% of it. [hooks/README.md](../hooks/README.md) has the wiring and [hooks/settings-example.json](../hooks/settings-example.json) the entry to merge; the dollar caps stay off until you set one of these variables.
 
 ---
 
@@ -192,25 +206,24 @@ For historical and team-level data, where you look depends on how the team signs
 - **Usage and Cost Analytics API** (2026-10-29, beta header `analytics-usage-cost-2026-08-24`): `/v1/organizations/analytics/usage` and `/v1/organizations/analytics/cost` report token usage and cost for Claude Console and Claude Enterprise organizations, filtered and grouped by model, workspace, API key and the user or service account behind each request. The older Usage and Cost API, and the usage and cost report endpoints of the Enterprise Analytics API, are now legacy but still supported.
 - **OpenTelemetry export for the API** (2026-10-14, beta): traces Messages API requests and Claude Managed Agents sessions into your observability platform once you add a destination in the Claude Console, so the team's API automation lands on the same dashboards as Claude Code.
 
-### Method 2: Usage Analyzer Tool
+### Method 2: claude-rate on Local Transcripts
 
-This repo includes a [Usage Analyzer](../tools/usage-analyzer/README.md) that parses Claude Code's local usage data:
+[claude-rate](../tools/claude-rate/README.md) prices each developer's own Claude Code transcripts at list price, per request, the way Anthropic bills cache reads and writes:
 
 ```bash
-# Individual developer report: every session file under the folder
-python tools/usage-analyzer/analyze.py ~/.claude/projects/
+# The last 30 days on this machine: list-price spend per model, cache hit rate
+# (from a clone without installing: python tools/claude-rate/rate.py --usage 30)
+claude-rate --usage 30
 
-# Example output (illustrative numbers):
-#   Sessions analyzed:  84
-#   Total turns:        1,960
-#   Total tokens:       3,340,000
-#     Input tokens:     2,450,000
-#     Output tokens:    890,000
-#   Estimated cost:     $52.30
-#   Top 5 Sessions (by cost), then cost hotspots and recommendations
+# Where it went (claude-rate 0.4.0 or later); any of project, branch, session,
+# day, week, version, skill, mcp, plugin, agent
+claude-rate --usage 30 --by project,session,day
+
+# The same as JSON for a script or a team sheet
+claude-rate --usage 30 --json
 ```
 
-The analyzer has no date filter: it totals every session file it finds. Claude Code deletes session files older than `cleanupPeriodDays` (30 days by default) at startup ([costs page](https://code.claude.com/docs/en/costs), read 2026-11-01), so on default settings the total covers roughly the last 30 days.
+`--usage DAYS` windows by each request's own timestamp, so a transcript touched today does not drag older requests into the window. Claude Code deletes session files older than `cleanupPeriodDays` (30 days by default) at startup ([costs page](https://code.claude.com/docs/en/costs), read 2026-11-01), so no window can reach further back than that. Read the `skill`, `mcp`, `plugin` and `agent` views as "requests Claude Code tagged while that skill, server, plugin or agent was active": a tag covers the whole request, cached prefix included, not the part that one component added. The dollars are list price; on a plan they are API-equivalent value, and the [reconcile section](#reconcile-the-estimate-against-the-bill) below shows how to check them against a bill.
 
 ### Method 3: Team Dashboard
 
@@ -229,6 +242,79 @@ Eve (Lead)      | $22.10    | $88.50        | $130   | 68%
 
 Team Total      | $76.30    | $276.00       | $440   | 63%
 ```
+
+### OpenTelemetry Recipe
+
+To get every developer's token and cost metrics into your own collector, put the exporter settings in managed settings, for example `managed-settings.json` in the system directory (`/Library/Application Support/ClaudeCode/` on macOS, `/etc/claude-code/` on Linux and WSL, `C:\Program Files\ClaudeCode\` on Windows). Everything in this subsection is from Claude Code's [monitoring page](https://code.claude.com/docs/en/monitoring-usage) and [managed settings page](https://code.claude.com/docs/en/managed-settings) (read 2026-11-03); this repo hosts and collects nothing.
+
+```json
+{
+  "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "OTEL_METRICS_EXPORTER": "otlp",
+    "OTEL_LOGS_EXPORTER": "otlp",
+    "OTEL_EXPORTER_OTLP_PROTOCOL": "grpc",
+    "OTEL_EXPORTER_OTLP_ENDPOINT": "http://collector.example.com:4317"
+  }
+}
+```
+
+The traps the page documents:
+
+- **No default protocol.** Set `OTEL_EXPORTER_OTLP_PROTOCOL` (`grpc`, `http/json` or `http/protobuf`), or the per-signal protocol, for every `otlp` exporter you turn on.
+- **A repository cannot turn telemetry on.** Since v2.1.282 Claude Code drops the exporter variables (`CLAUDE_CODE_ENABLE_TELEMETRY`, the exporter selectors, the `OTEL_EXPORTER_OTLP_*` endpoints, headers and protocols, the content-logging switches) from a project's `.claude/settings.json` and `.claude/settings.local.json`, except values that turn something off. Set them in managed settings, the shell, or each developer's `~/.claude/settings.json`.
+- **Managed credentials lock the destination.** Setting `OTEL_EXPORTER_OTLP_HEADERS` (or a client key or certificate) in managed settings makes Claude Code remove every developer-set endpoint variable at startup, so the credentials reach only your collector; setting `OTEL_EXPORTER_OTLP_ENDPOINT` removes developer-set per-signal endpoints. Exporter selectors are not locked this way: set them in managed settings too if a developer must not switch a signal off.
+- **Content logging is off by default; keep it off.** Prompts, assistant text, tool input and raw API bodies are logged only when you turn on `OTEL_LOG_USER_PROMPTS`, `OTEL_LOG_ASSISTANT_RESPONSES`, `OTEL_LOG_TOOL_DETAILS` or `OTEL_LOG_RAW_API_BODIES`. The trade-off: without `OTEL_LOG_TOOL_DETAILS=1`, the agent, skill, plugin and MCP names on the cost metric show as `"custom"` or `"third-party"` for anything user-defined or third-party, and with it, Bash commands and tool input are logged too.
+- **Cardinality.** `OTEL_METRICS_INCLUDE_SESSION_ID` and `OTEL_METRICS_INCLUDE_ACCOUNT_UUID` default to `true`. Setting `OTEL_METRICS_INCLUDE_SESSION_ID=false` cuts metric cardinality and storage, and loses the per-session breakdown.
+- **Timing and subprocesses.** Metrics export every 60,000 ms by default (`OTEL_METRIC_EXPORT_INTERVAL`), logs every 5,000 ms. Claude Code does not pass `OTEL_*` variables to the Bash tool, hooks or MCP servers it starts.
+- **Check it arrives.** Look for the `claude_code.session.count` metric on your backend. If nothing comes, start Claude Code with `claude --debug-file <path>` and read the `[3P telemetry]` errors.
+
+Which signal answers which cost question:
+
+| Question | Signal | Split by |
+|----------|--------|----------|
+| Spend per developer and model | `claude_code.cost.usage` (USD), incremented after each API request | `model` plus the standard attributes, such as the account |
+| Main conversation vs subagents | `claude_code.cost.usage`, `claude_code.token.usage` | `query_source`: `main`, `subagent` or `auxiliary` |
+| Which skill, plugin, subagent type or MCP server | the same two metrics | `skill.name`, `plugin.name`, `agent.name`, `mcp_server.name`, `mcp_tool.name` (redacted as above) |
+| Fast mode and effort | the same two metrics | `speed`, `effort` |
+| Tokens by type | `claude_code.token.usage` | `type`: `input` (uncached only), `output`, `cacheRead`, `cacheCreation` (5-minute and 1-hour writes together) |
+| 5-minute vs 1-hour cache writes, cost per request | the `claude_code.api_request` event | `cache_creation_5m_tokens`, `cache_creation_1h_tokens` ([v2.1.300+](#method-1-claude-codes-built-in-usage)), `cost_usd` |
+
+The fleet cache-hit ratio, defined the way claude-rate defines it: sum `claude_code.token.usage` by `type`, then cacheRead / (input + cacheRead + cacheCreation). Because `input` excludes cache reads and writes, that denominator is every prompt token. The cost metric is an approximation at list price unless the `modelPricing` managed setting is in effect (see Method 1); the next subsection checks it against the bill. Metric names as stored depend on your exporter and backend (a Prometheus-only exporter drops the units), so read them off your own collector before writing queries.
+
+### Reconcile the Estimate Against the Bill
+
+claude-rate, `/usage`, the status line and OpenTelemetry all estimate from token counts. To check an estimate against what Anthropic charges a Claude Console organization:
+
+1. On each machine, run `claude-rate --usage 7 --json` and read `.usage.facts.list_price_dollars` (per model: `.usage.facts.by_model`). The window is the last 7 x 24 hours up to now, by each request's UTC timestamp.
+2. Pull the same days from the Usage and Cost Analytics API cost endpoint with an Admin API key, grouped by model ([Usage and Cost Analytics API](https://platform.claude.com/docs/en/manage-claude/usage-cost-analytics-api), read 2026-11-03):
+
+   ```bash
+   curl --globoff "https://api.anthropic.com/v1/organizations/analytics/cost?\
+   starting_at=2026-10-27T00:00:00Z&\
+   ending_at=2026-11-03T00:00:00Z&\
+   group_by[]=model" \
+     -H "anthropic-version: 2023-06-01" \
+     -H "anthropic-beta: analytics-usage-cost-2026-08-24" \
+     -H "x-api-key: $ADMIN_API_KEY"
+   ```
+
+3. Compare claude-rate's figure with each row's `cost.list_amount` (cost at list prices), not `cost.amount` (after discounts, before credits). Both are decimal strings in cents with six decimals: `"41280.000000"` is $412.80.
+
+Where the two will differ, and why:
+
+| Gap | Why | What to do |
+|-----|-----|------------|
+| Window edges | claude-rate's window ends now; the API rounds the range to UTC hour or bucket boundaries, and its data typically lands within 4 hours (up to 24) and can be revised until about 7 days after the month ends | Compare whole days at least a day old, and expect the newest day to differ |
+| Other machines and other API work | claude-rate reads one machine's transcripts; the API covers every request in the organization | Sum claude-rate across the team's machines, and filter the API by workspace, API key or actor (keys Claude Code creates at sign-in live in the Claude Code workspace) |
+| Discounts and contracted rates | claude-rate prices at list | Compare with `list_amount`; set `modelPricing` so `/usage`, the status line and OpenTelemetry report your rates |
+| Priority Tier | Requests under a commitment add zero token cost to `amount` and `list_amount`; the commitment fee is billed separately | Expect claude-rate to be higher by those requests |
+| Web search, code execution and other non-token rows | The API reports them as separate `cost_type` rows; claude-rate prices tokens only | Add `group_by[]=cost_type` and compare the `tokens` rows |
+| Expired transcripts | Claude Code deletes session files older than `cleanupPeriodDays` (30 by default) | Keep the window inside it |
+| Plans | Pro, Max, Ultra and plan seats have no per-token bill; the Team and Enterprise spend report covers usage-credit spend only | Treat claude-rate's figure as API-equivalent value |
+| Bedrock, Google Cloud (Google managed), Microsoft Foundry | Billed in your cloud account; Anthropic's analytics do not cover it ([costs page](https://code.claude.com/docs/en/costs), read 2026-11-03) | Compare with your cloud billing console, or with OpenTelemetry |
+
+One request spans at most 31 days, and `starting_at` must be on or after 2026-01-01 and within the last 365 days, so split a longer reconciliation into several calls.
 
 ### Key Metrics to Track
 
@@ -434,10 +520,11 @@ Use project-level `.claude/` configurations to naturally separate costs:
         └── settings.json
 ```
 
-Then use the Usage Analyzer to generate per-project reports. Claude Code keeps each project's sessions in its own folder under `~/.claude/projects/`, so point the analyzer at that folder:
+Then report per project. Claude Code keeps each project's sessions in its own folder under `~/.claude/projects/`, and claude-rate's `--by project` view splits the spend the same way (claude-rate 0.4.0 or later):
 
 ```bash
-python tools/usage-analyzer/analyze.py ~/.claude/projects/<project-folder>/
+# List-price spend per project over the last 30 days, then per branch
+claude-rate --usage 30 --by project,branch
 ```
 
 ### Cost Per Feature Estimation
@@ -610,7 +697,8 @@ For teams of 2-5, a simple spreadsheet and weekly check-in is sufficient:
 ```
 Weekly Budget Check (5 minutes per developer):
 1. Read the week's spend: Console usage page (API), org spend report
-   (Team/Enterprise usage credits), or /usage for plan usage bars
+   (Team/Enterprise usage credits), /usage for plan usage bars, or
+   claude-rate --usage 7 for one machine's week at list price
 2. Check against weekly budget (monthly budget / 4.3)
 3. If over 80%: review remaining tasks for the week
 4. If over 100%: discuss with team lead
@@ -623,15 +711,15 @@ Set up automated notifications when developers approach budget limits:
 ```bash
 #!/bin/bash
 # Example: Simple budget alert script
-# Run daily via cron or CI
+# Run daily via cron or CI on each developer machine; needs claude-rate and jq
 
-BUDGET_MONTHLY=80  # dollars
+BUDGET_MONTHLY=80  # dollars, list price
 ALERT_THRESHOLD=0.8 # 80%
 
-# Totals every session file still on disk: roughly the last 30 days at the
-# default cleanupPeriodDays, not month-to-date
-current_spend=$(python tools/usage-analyzer/analyze.py \
-  ~/.claude/projects/ --json | jq '.summary.total_cost')
+# A rolling 30 days of this machine's transcripts at list price, compared with a
+# monthly budget: 30 days against a month. For a weekly budget, use --usage 7
+# against BUDGET_MONTHLY / 4.3 instead; never a 7-day figure against a month.
+current_spend=$(claude-rate --usage 30 --json | jq '.usage.facts.list_price_dollars')
 
 budget_used=$(echo "$current_spend / $BUDGET_MONTHLY" | bc -l)
 
@@ -641,6 +729,17 @@ if (( $(echo "$budget_used > $ALERT_THRESHOLD" | bc -l) )); then
   # Send Slack notification, email, etc.
 fi
 ```
+
+A rolling 30 days is not the calendar month. For month-to-date pace, claude-rate 0.4.0 or later prints the month so far under every `--usage` report, plus a month-end projection once the `--usage` window and the transcripts on disk both reach back to the 1st and the month has spend on 3 or more days, and `--budget` adds the date that projection crosses your budget:
+
+```bash
+# Month-to-date list-price spend, projected month end, and when it crosses $80
+claude-rate --usage --budget 80
+# The same as JSON, under .usage.facts.pace.budget
+claude-rate --usage --budget 80 --json
+```
+
+The projection is linear from your own days so far, so read it as a pace, not a forecast; the report prints the formula it used.
 
 ### Tier 3: Dashboard and Governance (Large Teams)
 

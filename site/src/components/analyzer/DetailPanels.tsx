@@ -71,8 +71,21 @@ function IgnoreFileMigration({ rules }: Readonly<{ rules: string[] }>) {
   )
 }
 
+/** Read deny rules detected for the repo, with a copy-as-snippet button. */
+function DetectedRules({ rules, intro }: Readonly<{ rules: string[]; intro: string }>) {
+  const snippet = JSON.stringify({ permissions: { deny: rules } }, null, 2)
+  return (
+    <>
+      <p className={styles.notFound}>{intro}</p>
+      <EntryChips items={rules} limit={10} />
+      <CopyButton text={snippet} label="Copy as settings.json snippet" doneLabel="Copied" />
+    </>
+  )
+}
+
 export function FileReadPanel({ exclusions }: Readonly<{ exclusions: Exclusions }>) {
   const ruleCount = exclusions.readDenyRules.length
+  const showSuggested = ruleCount === 0 && !exclusions.ignoreFileFound && exclusions.suggestedRules.length > 0
   return (
     <Panel title="File-read exclusions">
       <div className={styles.statList}>
@@ -88,6 +101,15 @@ export function FileReadPanel({ exclusions }: Readonly<{ exclusions: Exclusions 
           health={okOrWarn(exclusions.lockFilesUncovered.length === 0)}
         />
         {exclusions.ignoreFileFound && <IgnoreFileMigration rules={exclusions.ignoreFileRules} />}
+        {showSuggested && (
+          <DetectedRules
+            rules={exclusions.suggestedRules}
+            intro="Detected for this repo. A folder is listed only when .gitignore names it and nothing under it is committed, because a Read deny also blocks Edit and Write:"
+          />
+        )}
+        {ruleCount > 0 && exclusions.missingRules.length > 0 && (
+          <DetectedRules rules={exclusions.missingRules} intro="Detected for this repo, not covered by your rules yet:" />
+        )}
       </div>
     </Panel>
   )

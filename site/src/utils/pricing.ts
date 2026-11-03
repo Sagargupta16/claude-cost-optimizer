@@ -76,17 +76,28 @@ export interface ModelPricing {
   }
 }
 
-/** The input, output, cache-read and 5-minute cache-write rates a request of `promptTokens` pays. */
+/** Prompt-cache lifetime: '5m' writes at 1.25x input, '1h' at 2x. */
+export type CacheTtl = '5m' | '1h'
+
+/** How long each TTL keeps an unread prefix alive. A gap longer than this re-writes the prompt. */
+export const CACHE_TTL_MINUTES: Record<CacheTtl, number> = { '5m': 5, '1h': 60 }
+
+/**
+ * The input, output, cache-read and cache-write rates a request of `promptTokens` pays. Writes
+ * use the `ttl` cache: the 5-minute rate by default, the 1-hour rate for '1h' (Haiku 5.5 over its
+ * 100K line uses the long-prompt tier's own 1-hour rate).
+ */
 export function ratesForPrompt(
   model: ModelPricing,
   promptTokens: number,
-): { inputPer1M: number; outputPer1M: number; cacheHitPer1M: number; cacheWrite5mPer1M: number } {
+  ttl: CacheTtl = '5m',
+): { inputPer1M: number; outputPer1M: number; cacheHitPer1M: number; cacheWritePer1M: number } {
   const tier = model.longPrompt && promptTokens > model.longPrompt.threshold ? model.longPrompt : model
   return {
     inputPer1M: tier.inputPer1M,
     outputPer1M: tier.outputPer1M,
     cacheHitPer1M: tier.cacheHitPer1M,
-    cacheWrite5mPer1M: tier.cacheWrite5mPer1M,
+    cacheWritePer1M: ttl === '1h' ? tier.cacheWrite1hPer1M : tier.cacheWrite5mPer1M,
   }
 }
 
@@ -94,7 +105,8 @@ export function ratesForPrompt(
  * Input cost of one Claude Code turn, billed the way Claude Code caches a conversation: "the
  * prefix is the entire previous request and only the latest exchange is new"
  * (code.claude.com/docs/en/prompt-caching). The previous request is a cache read; the new part is
- * a 5-minute cache write (1.25x input). The first turn (previousPrompt 0) writes everything.
+ * a cache write on the `ttl` cache (5-minute: 1.25x input, the default; 1-hour: 2x). The first
+ * turn (previousPrompt 0) writes everything, and so does a turn after a gap longer than the TTL.
  * A prompt under the model's minimum cacheable length is not cached at all and pays full input,
  * reported as writeDollars (the new-input share).
  */
@@ -102,15 +114,16 @@ export function turnInputCost(
   model: ModelPricing,
   promptTokens: number,
   previousPrompt: number,
+  ttl: CacheTtl = '5m',
 ): { readDollars: number; writeDollars: number } {
-  const rates = ratesForPrompt(model, promptTokens)
+  const rates = ratesForPrompt(model, promptTokens, ttl)
   if (promptTokens < model.minCacheTokens) {
     return { readDollars: 0, writeDollars: (promptTokens / 1_000_000) * rates.inputPer1M }
   }
   const cacheRead = previousPrompt >= model.minCacheTokens ? Math.min(previousPrompt, promptTokens) : 0
   return {
     readDollars: (cacheRead / 1_000_000) * rates.cacheHitPer1M,
-    writeDollars: ((promptTokens - cacheRead) / 1_000_000) * rates.cacheWrite5mPer1M,
+    writeDollars: ((promptTokens - cacheRead) / 1_000_000) * rates.cacheWritePer1M,
   }
 }
 
@@ -559,15 +572,24 @@ export const TOKEN_ESTIMATES = {
   // Measured on this repo's 15 CLAUDE.md files (the templates plus the root file): 20,161 cl100k
   // tokens over 2,048 lines, 9.8 per line counting blank lines. The 4.7+ tokenizer makes about 30% more.
   tokensPerClaudeMdLine: 10,
+  // Modelling assumption for the built-in prompt and tools (everything except CLAUDE.md lines and
+  // MCP servers). The calculator's "Base prompt tokens" field starts here and takes your own figure.
   systemPromptTokens: 3500,
-  // Worst case: full tool schemas loaded up front, which only happens when MCP
-  // tool search is OFF (ENABLE_TOOL_SEARCH=false, a custom ANTHROPIC_BASE_URL).
-  // With tool search on -- the default -- a server adds only its tool names and
-  // instructions, and Anthropic publishes no per-server figure for that case.
+  // Worst case: full tool schemas loaded up front, which only happens when MCP tool search is
+  // off: ENABLE_TOOL_SEARCH=false, CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1, a HIPAA configuration,
+  // a gateway that rejects it, or a platform that does (older models on Google Cloud, Microsoft
+  // Foundry on Azure). Behind a custom ANTHROPIC_BASE_URL it is on by default since v2.1.304
+  // (guides/07-mcp-agent-costs.md). With tool search on -- the default -- a server adds only its
+  // tool names and instructions, and Anthropic publishes no per-server figure for that case.
   tokensPerMcpServer: 1500,
   tokensPerFileRead: 2000,
   outputTokensPerTurn: 500,
   historyGrowthPerTurn: 1500,
+  // The calculator's brevity what-if loads skills/cost-mode/SKILL.md (and its identical copy in
+  // plugins/cost-mode/skills/cost-mode/, both 11,406 bytes). Measured 2026-11-03 with
+  // tools/token-estimator: 2,901 cl100k tokens, x1.3 for the 4.7+ tokenizer = 3,771.
+  // Re-measure after editing SKILL.md.
+  costModeRuleTokens: 3771,
 }
 
 /** A per-1M rate for display: "$2" when whole, "$0.10" otherwise. */

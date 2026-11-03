@@ -9,10 +9,18 @@
     "Best for: solo devs on tight budgets, routine maintenance, simple tasks.",
     "Trade-off: lower quality on complex reasoning, more turns for hard problems.",
     "Read(...) deny rules keep Claude's file tools out of deps, build output and secrets (.claudeignore is not a Claude Code feature).",
+    "modelSettings sets Haiku 5.5's auto-compact window to 100,000 tokens, the lowest allowed, so compaction fires near its 100K price line (v2.1.288+). It is not a cap: whether compaction fires just under or at 100K is not documented, one request after a large tool result can still cross the line and bill 5x on the whole request, and each compaction is itself a request. The entry matches only Haiku 5.5, so where \"haiku\" resolves to Haiku 4.5 it does nothing (https://code.claude.com/docs/en/settings-reference#modelsettings, read 2026-11-03).",
+    "env: CLAUDE_CODE_MAX_TURNS caps the number of agentic turns when no limit is passed; the docs call it equivalent to --max-turns, which the CLI reference lists as print mode only (claude -p), and do not describe it as limiting interactive sessions (https://code.claude.com/docs/en/env-vars and https://code.claude.com/docs/en/cli-reference, read 2026-11-01).",
     "Copy this file to ~/.claude/settings.json or .claude/settings.json"
   ],
 
   "model": "haiku",
+
+  "modelSettings": {
+    "claude-haiku-5-5": {
+      "autoCompactWindow": 100000
+    }
+  },
 
   "permissions": {
     "allow": [
@@ -47,7 +55,6 @@
   },
 
   "env": {
-    "_comment": "CLAUDE_CODE_MAX_TURNS caps the number of agentic turns when no limit is passed; the docs call it equivalent to --max-turns, which the CLI reference lists as print mode only (claude -p), and do not describe it as limiting interactive sessions (https://code.claude.com/docs/en/env-vars and https://code.claude.com/docs/en/cli-reference, read 2026-11-01)",
     "CLAUDE_CODE_MAX_TURNS": "15"
   }
 }

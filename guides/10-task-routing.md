@@ -100,6 +100,8 @@ Focus on edge cases and error paths. Keep tests concise.
 
 Then delegate to haiku: `claude --model haiku -p "/test src/utils/parser.ts"`
 
+Or keep the main session where it is and hand Tier 1 work to a subagent that pins its own model: [templates/agents](../templates/agents/) has copy-ready subagent definitions (scout, reviewer, implementer) with the model set in their frontmatter. When subagents pay at all is in [Guide 07](07-mcp-agent-costs.md#when-subagents-cost-more).
+
 The `haiku` alias means Haiku 5.5 only on the Anthropic API (Claude Code v2.1.293+). On Claude Platform on AWS, Bedrock, Google Cloud (Google managed, formerly Vertex AI; Claude Code calls it Google Cloud's Agent Platform) and Foundry it still resolves to legacy Haiku 4.5 at $1/$5, 10x Haiku 5.5's per-token rate up to 100K prompt tokens; pin `ANTHROPIC_DEFAULT_HAIKU_MODEL` to `claude-haiku-5-5` (Bedrock: `anthropic.claude-haiku-5-5`) there ([model-config alias table](https://code.claude.com/docs/en/model-config), read 2026-11-01).
 
 ---
@@ -132,6 +134,8 @@ Signs that you need to bump up:
 - You're on your 3rd attempt at explaining what you want
 
 Don't escalate preemptively. Try the cheaper model first -- it works more often than you'd expect.
+
+**Automatic routers measure something else.** RouteLLM reports cost cuts of over 85% on MT Bench, 45% on MMLU and 35% on GSM8K against using GPT-4 alone, while keeping 95% of GPT-4's performance ([LMSYS blog, 2024-07-01](https://lmsys.org/blog/2024-07-01-routellm/), read 2026-11-03). Its controller routes on the last message only ([routellm/controller.py](https://github.com/lm-sys/RouteLLM/blob/HEAD/routellm/controller.py), read 2026-11-03), and its [paper](https://arxiv.org/abs/2406.18665) assumes short single-turn prompts when it estimates cost (Appendix D, read 2026-11-03). A Claude Code task is a long multi-turn tool session, so those figures do not carry over to it, and a mid-session switch also re-writes the conversation on the new model (see [How to Stay in Tier 1](#how-to-stay-in-tier-1)).
 
 ---
 
@@ -184,7 +188,8 @@ This hook logs a cost estimate for each tool call, helping you understand where 
 
 ```bash
 #!/bin/bash
-# hooks/cost-logger.sh
+# Simplified from hooks/cost-logger.sh, which also names the log by session id,
+# estimates Agent calls and prices by COST_LOGGER_MODEL, then ANTHROPIC_MODEL.
 # Logs estimated cost per tool call to a session file.
 # Use with PreToolUse hook to build cost awareness.
 

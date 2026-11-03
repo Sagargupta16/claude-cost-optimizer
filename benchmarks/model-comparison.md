@@ -1,6 +1,8 @@
 # Model Comparison Benchmarks
 
 > Opus 5.5 vs Sonnet 5.5 vs Haiku across five common task types (the Haiku runs are Haiku 4.5; Haiku 5.5 is not benchmarked yet). Find the best cost-to-quality ratio for each kind of work.
+>
+> **Evidence:** the token counts are labelled as measured on Opus 4.6, Sonnet 4.6 and Haiku 4.5, but no run log or raw data is kept in this repo, so they cannot be re-checked; every dollar figure is computed from them with the no-cache formula, input x rate + output x rate (for example 24,200 x $5 + 3,800 x $25 per 1M = $0.22 on Opus 4.6). Not run under [METHOD.md](METHOD.md).
 
 ## Pricing Reference
 
