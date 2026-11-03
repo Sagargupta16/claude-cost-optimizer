@@ -129,7 +129,7 @@ The per-session cost estimate uses these defaults (editable in the "Cost Estimat
 - **Tokens per CLAUDE.md line**: ~10 (measured on this repo's root CLAUDE.md and 14 CLAUDE.md templates: 20,161 cl100k tokens over 2,048 lines, 9.8 per line; the Claude 4.7+ tokenizer gives about 30% more)
 - **Caching**: the system prompt and CLAUDE.md prefix is written once at the 5-minute cache-write rate (1.25x input) and read at the model's cache-read rate on the other 39 turns, as Claude Code caches it; below the model's minimum cacheable prompt it bills at full input. Conversation history is not modeled
 - **MCP servers**: not counted. Tool search is on by default, so only tool names and server instructions enter context, and no per-server figure is published. Run `/context` to see the real number
-- **Base system prompt**: ~3,500 tokens/turn, the repo's modelling assumption rather than a published figure; Claude Code's real system prompt plus its built-in tool definitions is larger, and `/context` shows the actual number
+- **Base system prompt**: ~3,500 tokens/turn, the repo's modelling assumption rather than a published figure; Claude Code's real system prompt plus its built-in tool definitions is larger, and `/context` shows the actual number, or `claude-rate --usage` (0.4.0 or later) for your own history: its startup floor line is the prompt size of each session's first request
 - **Average output per turn**: ~500 tokens
 - **Default model**: Opus 5.5 at $4/$20 per 1M input/output tokens when no model is set
 
@@ -140,6 +140,6 @@ Adjust these if your usage patterns differ. For example, if your sessions averag
 This command complements the other tools in this repo:
 
 - **[Token Estimator](../token-estimator/)** -- estimates token counts for specific files
-- **[Usage Analyzer](../usage-analyzer/)** -- analyzes historical session data for cost patterns
+- **[claude-rate](../claude-rate/)** `--usage --by session` -- prices your historical sessions from local transcripts (it replaces the retired usage-analyzer)
 - **[/cost-check command](../../templates/commands/cost-check.md)** -- lightweight in-session cost check (run during a session)
 - **/optimize** (this command) -- comprehensive project-level configuration audit (run at the start of a project)

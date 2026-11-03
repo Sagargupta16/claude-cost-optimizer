@@ -6,6 +6,10 @@ inputs:
     description: 'Path to the project directory to audit'
     required: false
     default: '.'
+  max-context-tokens:
+    description: 'Fail the step when the always-loaded instructions estimate (chars / 4 over CLAUDE.md, .claude/CLAUDE.md, CLAUDE.local.md, .claude/rules files without paths frontmatter and the files they @import) is over this many tokens. 0 turns the check off.'
+    required: false
+    default: '0'
 
 outputs:
   grade:
@@ -17,6 +21,9 @@ outputs:
   badge-url:
     description: 'shields.io badge URL'
     value: ${{ steps.run-audit.outputs.badge_url }}
+  context-tokens:
+    description: 'Estimated tokens (chars / 4) of the always-loaded instruction files'
+    value: ${{ steps.run-audit.outputs.context_tokens }}
 
 runs:
   using: 'composite'
@@ -31,15 +38,20 @@ runs:
       shell: bash
       env:
         AUDIT_PATH: ${{ inputs.path }}
-      run: python "${{ github.action_path }}/audit.py" "$AUDIT_PATH"
+        MAX_CONTEXT_TOKENS: ${{ inputs.max-context-tokens }}
+      run: python "${{ github.action_path }}/audit.py" "$AUDIT_PATH" --max-context-tokens "${MAX_CONTEXT_TOKENS:-0}"
 
     - name: Write job summary
+      # Also after a failed max-context-tokens gate, so the grade still shows.
+      if: always()
       shell: bash
       run: |
         cat >> "$GITHUB_STEP_SUMMARY" <<EOF
         ## Claude Cost Audit
 
         **Grade: ${{ steps.run-audit.outputs.grade }}** (${{ steps.run-audit.outputs.score }}/100)
+
+        Always-loaded instructions: ~${{ steps.run-audit.outputs.context_tokens }} tokens
 
         ![Claude Cost Grade](${{ steps.run-audit.outputs.badge_url }})
         EOF

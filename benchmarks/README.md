@@ -1,6 +1,6 @@
 # Benchmarks
 
-> Estimated cost data for Claude Code development tasks, measured across real usage patterns.
+> Cost estimates for Claude Code development tasks, computed from posted prices. Each file says where its token counts come from; see [Where the Numbers Come From](#where-the-numbers-come-from).
 
 ## How to Read These Benchmarks
 
@@ -35,7 +35,7 @@ Batch API pricing is 50% off the standard rates above. The new tokenizer used by
 
 ### What "Estimated" Means
 
-These benchmarks are **estimates based on real usage patterns**, not deterministic measurements. Every Claude Code session varies depending on:
+These benchmarks are **estimates**, not deterministic measurements. Every Claude Code session varies depending on:
 
 - Exact prompt wording and follow-up turns
 - Size and complexity of the codebase being worked on
@@ -43,7 +43,7 @@ These benchmarks are **estimates based on real usage patterns**, not determinist
 - Whether prompt caching is active (cached input tokens cost 90% less; 95% on Opus 5.5 and Sonnet 5.5, 97.5% on Fable 5.1)
 - Network conditions and retries
 
-We report ranges where possible. The numbers are designed to show **relative differences** between approaches rather than exact dollar amounts you will see on your bill.
+Each figure is one number with its formula or source, never a range. The numbers are designed to show **relative differences** between approaches rather than exact dollar amounts you will see on your bill.
 
 ### Prompt Caching Effects
 
@@ -58,14 +58,28 @@ Claude Code automatically caches stable content (system prompt, CLAUDE.md, earli
 
 ## Methodology
 
-### How Benchmarks Were Collected
+### Where the Numbers Come From
+
+Each file states its evidence at the top. The task, model, context-size and leaderboard files predate [METHOD.md](METHOD.md), the rules this repo set on 2026-11-03 for measured runs, and none of the files below was run under it (Compact Flags is a deterministic character count and Delegation Break-Even a computation, not model runs); a number measured under it will say so.
+
+| File | Token counts | Dollar figures |
+|------|--------------|----------------|
+| [Task Comparison](task-comparison.md) | Unsourced: no run log or raw data is kept in this repo | Computed with the no-cache formula below |
+| [Model Comparison](model-comparison.md) | Labelled as measured on Opus 4.6, Sonnet 4.6 and Haiku 4.5; no run log or raw data is kept in this repo | Computed with the no-cache formula below |
+| [Leaderboard](leaderboard.md) | Self-reported by the submitter; no run log is kept in this repo | As submitted, not recomputed |
+| [Context Size Impact](context-size-impact.md) | Computed from this repo's calculator defaults; Benchmark 1's session totals are simulated (see its note) | Cache-aware formula below, except Benchmark 2's pre-cache file-read tables, which say so |
+| [Compact Flags](search-ladder.md) | Exact character counts from a script at a pinned commit | None |
+| [Delegation Break-Even](delegation-breakeven.md) | Illustrative inputs, stated in the file | Cache-aware formula in the file |
+
+### How the Scenarios Are Built
 
 1. **Task definition** -- Each benchmark scenario starts with a clearly described development task (e.g., "Add a React button component with tests").
 2. **Environment setup** -- A representative codebase is used (React + TypeScript for frontend tasks, Node.js for backend tasks, Python for ML tasks).
-3. **Controlled runs** -- The task is performed multiple times with different configurations (e.g., with/without CLAUDE.md optimization, with different models) to isolate the variable being measured.
-4. **Token counting** -- Input and output tokens are recorded from Claude Code's `/usage` output or the API response metadata.
-5. **Cost calculation** -- Total cost = (input_tokens / 1M * input_rate) + (output_tokens / 1M * output_rate).
-6. **Quality assessment** -- Output is reviewed for correctness, completeness, style adherence, and whether follow-up turns were needed to fix issues.
+3. **Configurations** -- Each scenario compares configurations for the same task (e.g., with/without CLAUDE.md optimization, with different models). No run log is kept for these comparisons, so they cannot be re-checked as repeated runs; the evidence table above says what each file's numbers rest on.
+4. **Cost calculation** -- By file:
+   - **No-cache** (task-comparison.md, model-comparison.md): `cost = input_tokens / 1M x input_rate + output_tokens / 1M x output_rate`. Every input token is priced as fresh input, so this is the pre-cache worst case (see [Prompt Caching Effects](#prompt-caching-effects)). Check: task-comparison.md Scenario 1, unoptimized, is 82,400 x $3 + 8,200 x $15 per 1M = $0.37 on Sonnet 4.6.
+   - **Cache-aware** (context-size-impact.md from Benchmark 3 on and its Benchmark 1 CLAUDE.md overhead table; delegation-breakeven.md): turn 1 writes the whole prompt to cache at the 5-minute write rate (1.25x input); every later turn reads the previous prompt at the model's cache-hit rate and writes only the new tokens at the write rate; output bills at the output rate. This is how Claude Code bills a session, and how claude-rate and the calculator price one.
+5. **Quality assessment** -- Output is reviewed for correctness, completeness, style adherence, and whether follow-up turns were needed to fix issues. The ratings are subjective.
 
 ### Assumptions
 
@@ -90,6 +104,21 @@ Claude Code automatically caches stable content (system prompt, CLAUDE.md, earli
 | [Task Comparison](task-comparison.md) | How much do I save by applying optimization strategies to common tasks? |
 | [Model Comparison](model-comparison.md) | Which model gives the best cost-to-quality ratio for each task type? |
 | [Context Size Impact](context-size-impact.md) | How much does CLAUDE.md size and file reading affect my costs over a session? |
+| [Compact Flags](search-ladder.md) | How many characters do git's compact flags save on one repo, and when does the inline cap decide instead? |
+| [Delegation Break-Even](delegation-breakeven.md) | When does a subagent cost less than reading on the main thread? |
+| [Method](METHOD.md) and the [cost-mode harness](cost-mode-eval/README.md) | How will a measured run be taken and published? The harness is built; nothing has been run and no result is committed |
+
+---
+
+## Measure a Change Yourself
+
+The files above compare approaches on paper. To see what one change did on your own work, compare two windows of your own transcripts with `claude-rate` (claude-rate 0.4.0 or later):
+
+1. At the end of a normal week, run `claude-rate --usage 7 --history ~/cost-history`. `--history` is opt-in: it writes a snapshot of aggregates only (no paths or project names) into that directory.
+2. Make **one** change: a trimmed CLAUDE.md, a cheaper subagent model, a different cache TTL.
+3. A week later, run the same command. It compares the new window with the newest earlier snapshot and prints the differences neutrally. It marks the pair incomparable when the window length or snapshot format differs, and partial when transcript cleanup has already deleted part of the window, the pricing date changed or a different claude-rate version wrote one of the snapshots.
+
+Read the deltas as one machine, list price, and everything else that changed that week too (different tasks, a new model version). A delta measures how the two weeks differed, not what the change caused.
 
 ---
 

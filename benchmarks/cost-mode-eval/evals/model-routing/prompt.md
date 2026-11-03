@@ -1,0 +1,1 @@
+I have two jobs. Job A: rename one variable across 40 files. Job B: design a new multi-tenant caching layer for an API. Which model should handle each (Opus 5.5, Sonnet 5.5 or Haiku 5.5), and does either job need a model at all?

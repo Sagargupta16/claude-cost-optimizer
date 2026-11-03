@@ -1,0 +1,3 @@
+# Local run output: transcripts, raw replies, scratch config. Commit a reviewed results.json to data/ instead.
+results/
+__pycache__/

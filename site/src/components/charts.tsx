@@ -1,6 +1,6 @@
 import { type PointerEvent as ReactPointerEvent, useMemo, useState } from 'react'
 import { type ModelId, MODELS, formatRate } from '../utils/pricing'
-import { type CalculatorInputs, type CostBreakdown, sessionCostForModel } from '../utils/calculator'
+import { type CalculatorInputs, type CostBreakdown, type TurnLayer, sessionCostForModel } from '../utils/calculator'
 import { useContainerWidth, useTween, useTweenRecord, useTweenSeries } from './calculator/hooks'
 import { compactTokens, niceTicks, signedUsd, tickLabel, tokenCount, usd, usdFine } from './calculator/format'
 import { PICKABLE_MODELS } from './calculator/models'
@@ -19,7 +19,7 @@ import {
   TEXT,
   WARN,
 } from './calculator/palette'
-import { splitTurns, tierCrossTurn, type TurnLayer } from './calculator/turnLayers'
+import { projectedTierCross, tierRuns, type TurnRun } from './calculator/turnLayers'
 import styles from './charts.module.css'
 
 const sum = (values: readonly number[]) => values.reduce((a, b) => a + b, 0)
@@ -34,6 +34,7 @@ const isMouse = (e: ReactPointerEvent) => e.pointerType === 'mouse'
 type Category = keyof CostBreakdown
 
 const CATEGORIES: readonly { key: Category; label: string; color: string; ink: string }[] = [
+  { key: 'basePrompt', label: 'Base prompt', color: NEUTRAL_DIM, ink: INK_LIGHT },
   { key: 'claudeMd', label: 'CLAUDE.md', color: BLUE_100, ink: INK_DARK },
   { key: 'mcp', label: 'MCP servers', color: BLUE_400, ink: INK_DARK },
   { key: 'fileReads', label: 'File reads', color: BLUE_200, ink: INK_DARK },
@@ -232,13 +233,13 @@ export function SpendBreakdownChart({
 /* Cost per turn: stacked layers across one session                    */
 /* ------------------------------------------------------------------ */
 
-type LayerKey = Exclude<keyof TurnLayer, 'promptTokens'>
+type LayerKey = 'cacheRead' | 'cacheWrite' | 'output'
 
 /** Bottom of the stack first. Cache reads go on top: they grow with history, so the climbing edge is theirs. */
 const TURN_LAYERS: readonly { key: LayerKey; label: string; color: string }[] = [
   { key: 'output', label: 'Output', color: NEUTRAL },
-  { key: 'cacheWrite', label: 'New input (cache write)', color: BLUE_400 },
-  { key: 'cacheRead', label: 'Earlier turns (cache read)', color: BLUE_600 },
+  { key: 'cacheWrite', label: 'Written to cache', color: BLUE_400 },
+  { key: 'cacheRead', label: 'Read from cache', color: BLUE_600 },
 ]
 const TOP_LAYER = TURN_LAYERS.length - 1
 /** Top of the stack first, matching what the eye meets first on the chart. */
@@ -373,17 +374,58 @@ function TotalLine({ values, plot }: Readonly<{ values: readonly number[]; plot:
   )
 }
 
-/** Where a tiered model's prompt passes its long-prompt line and every later request pays the higher rate. */
-function TierMarker({ plot, at, threshold }: Readonly<{ plot: Plot; at: number; threshold: number }>) {
-  const x = at === 0 ? plot.left : (plot.x(at - 1) + plot.x(at)) / 2
-  const flip = x > (plot.left + plot.right) / 2
+/** x of the gap before 0-based turn `at`: the plot's edge for the first turn, else halfway from the turn before. */
+const gapX = (plot: Plot, at: number) => (at <= 0 ? plot.left : (plot.x(at - 1) + plot.x(at)) / 2)
+
+/** Turns over a tiered model's long-prompt line, where each request pays the higher rate; the first run is labelled. */
+function TierMarker({
+  plot,
+  runs,
+  turns,
+  threshold,
+}: Readonly<{ plot: Plot; runs: readonly TurnRun[]; turns: number; threshold: number }>) {
+  const first = gapX(plot, runs[0].start)
+  const flip = first > (plot.left + plot.right) / 2
   return (
     <g pointerEvents="none" className={styles.tier}>
-      <rect x={x} y={plot.top} width={Math.max(plot.right - x, 0)} height={plot.bottom - plot.top} fill={WARN} opacity={0.08} />
-      <line x1={x} x2={x} y1={plot.top - 8} y2={plot.bottom} stroke={WARN} strokeWidth={1.5} strokeDasharray="4 3" />
-      <text x={flip ? x - 6 : x + 6} y={plot.top - 12} textAnchor={flip ? 'end' : 'start'} className={styles.tierLabel}>
-        {compactTokens(threshold)} prompt line, turn {at + 1}
+      {runs.map((run) => {
+        const x0 = gapX(plot, run.start)
+        const x1 = run.end >= turns - 1 ? plot.right : gapX(plot, run.end + 1)
+        return (
+          <g key={run.start}>
+            <rect x={x0} y={plot.top} width={Math.max(x1 - x0, 0)} height={plot.bottom - plot.top} fill={WARN} opacity={0.08} />
+            <line x1={x0} x2={x0} y1={plot.top - 8} y2={plot.bottom} stroke={WARN} strokeWidth={1.5} strokeDasharray="4 3" />
+          </g>
+        )
+      })}
+      <text x={flip ? first - 6 : first + 6} y={plot.top - 12} textAnchor={flip ? 'end' : 'start'} className={styles.tierLabel}>
+        {compactTokens(threshold)} prompt line, turn {runs[0].start + 1}
       </text>
+    </g>
+  )
+}
+
+/** A thin line in the gap before each turn that follows a break past the TTL (dashed) or /compact (dotted). */
+function EventMarkers({ plot, layers }: Readonly<{ plot: Plot; layers: readonly TurnLayer[] }>) {
+  return (
+    <g pointerEvents="none" className={styles.tier}>
+      {layers.map((layer, turn) => {
+        if (!layer.cold && !layer.compacted) return null
+        const x = gapX(plot, turn)
+        return (
+          <line
+            key={turn}
+            x1={x}
+            x2={x}
+            y1={plot.top}
+            y2={plot.bottom}
+            stroke={layer.cold ? WARN : TEXT}
+            strokeOpacity={layer.cold ? 0.9 : 0.6}
+            strokeWidth={1.5}
+            strokeDasharray={layer.cold ? '5 3' : '1.5 3'}
+          />
+        )
+      })}
     </g>
   )
 }
@@ -415,8 +457,10 @@ function TurnReadout({
   turn,
   turns,
   tierThreshold,
-}: Readonly<{ layer: TurnLayer; total: number; turn: number; turns: number; tierThreshold?: number }>) {
+  ttl,
+}: Readonly<{ layer: TurnLayer; total: number; turn: number; turns: number; tierThreshold?: number; ttl: string }>) {
   const overTier = tierThreshold !== undefined && layer.promptTokens > tierThreshold
+  const event = turnEventNote(layer, ttl)
   return (
     <div className={styles.readout}>
       <div className={styles.readoutHead}>
@@ -438,40 +482,74 @@ function TurnReadout({
         Prompt {tokenCount(layer.promptTokens)} tokens
         {overTier ? `, over the ${compactTokens(tierThreshold)} prompt line` : ''}
       </div>
+      {event && <div className={styles.readoutPromptWarn}>{event}</div>}
     </div>
   )
 }
 
-function tierSentence(inputs: CalculatorInputs, turns: number, cross: number | null): string {
-  const model = MODELS[inputs.model]
-  const tier = model.longPrompt
-  if (!tier || cross === null) return ''
-  const line = compactTokens(tier.threshold)
-  if (cross < turns) {
-    return ` From turn ${cross + 1} the prompt is over ${line} tokens, so ${model.name} bills the whole request at ${formatRate(tier.inputPer1M)}/${formatRate(tier.outputPer1M)} per 1M instead of ${formatRate(model.inputPer1M)}/${formatRate(model.outputPer1M)}.`
+/** What happened in the gap before this turn, for the readout. */
+function turnEventNote(layer: TurnLayer, ttl: string): string {
+  if (layer.cold && layer.compacted) {
+    return `A break past the ${ttl} TTL, then /compact: the summary request re-writes the prompt uncached`
   }
-  return ` ${model.name} stays under its ${line} prompt line for all ${turns} turns; at these settings it would cross at turn ${cross + 1}.`
+  if (layer.cold) return `After a break past the ${ttl} TTL: the whole prompt is re-written`
+  if (layer.compacted) return 'Starts with /compact: includes the summary request, and history restarts'
+  return ''
 }
 
-function turnCaption(perTurn: readonly number[], inputs: CalculatorInputs, cross: number | null): string {
+const TTL_LABEL: Record<CalculatorInputs['cacheTtl'], string> = { '5m': '5-minute', '1h': '1-hour' }
+
+function tierSentence(inputs: CalculatorInputs, turns: number, runs: readonly TurnRun[]): string {
+  const model = MODELS[inputs.model]
+  const tier = model.longPrompt
+  if (!tier) return ''
+  const line = compactTokens(tier.threshold)
+  if (runs.length > 0) {
+    return ` From turn ${runs[0].start + 1} the prompt is over ${line} tokens, so ${model.name} bills each request over it at ${formatRate(tier.inputPer1M)}/${formatRate(tier.outputPer1M)} per 1M instead of ${formatRate(model.inputPer1M)}/${formatRate(model.outputPer1M)}.`
+  }
+  const cross = projectedTierCross(inputs)
+  const projection = cross === null ? '' : `; at these settings it would cross at turn ${cross + 1}`
+  return ` ${model.name} stays under its ${line} prompt line for all ${turns} turns${projection}.`
+}
+
+/** Breaks past the TTL and /compact, as the caption's last sentences. */
+function eventSentence(inputs: CalculatorInputs, layers: readonly TurnLayer[]): string {
+  const cold = layers.filter((l) => l.cold).length
+  const compacted = layers.findIndex((l) => l.compacted)
+  const ttl = TTL_LABEL[inputs.cacheTtl]
+  let text = ''
+  if (cold === 1) text += ` One turn follows a break past the ${ttl} TTL (dashed line) and re-writes the whole prompt.`
+  if (cold > 1) text += ` ${cold} turns follow a break past the ${ttl} TTL (dashed lines) and re-write the whole prompt.`
+  if (compacted >= 0) {
+    text += ` Turn ${compacted + 1} starts with /compact (dotted line): its summary request is billed there, and history restarts from ${tokenCount(inputs.postCompactTokens)} tokens.`
+  }
+  return text
+}
+
+function turnCaption(perTurn: readonly number[], inputs: CalculatorInputs, layers: readonly TurnLayer[], runs: readonly TurnRun[]): string {
   const n = perTurn.length
-  const first = `Turn 1 writes the whole prompt to the prompt cache at 1.25x input (${usdFine(perTurn[0])}).`
-  if (n < 2) return `${first}${tierSentence(inputs, n, cross)}`
-  return `${first} Every later turn reads the previous request back at the cache rate and writes only the new exchange, so turn 2 costs ${usdFine(perTurn[1])} and the growing history it re-reads lifts turn ${n} to ${usdFine(perTurn[n - 1])}.${tierSentence(inputs, n, cross)}`
+  const model = MODELS[inputs.model]
+  const write = inputs.cacheTtl === '1h' ? model.cacheWrite1hPer1M : model.cacheWrite5mPer1M
+  const ratio = Number((write / model.inputPer1M).toFixed(2))
+  const first = `Turn 1 writes the whole prompt to the ${TTL_LABEL[inputs.cacheTtl]} prompt cache at ${ratio}x input (${usdFine(perTurn[0])}).`
+  const tail = `${tierSentence(inputs, n, runs)}${eventSentence(inputs, layers)}`
+  if (n < 2) return `${first}${tail}`
+  return `${first} Every later turn reads the previous request back at the cache rate and writes only the new exchange, so turn 2 costs ${usdFine(perTurn[1])} and the growing history it re-reads lifts turn ${n} to ${usdFine(perTurn[n - 1])}.${tail}`
 }
 
 /**
- * Cost per turn across one session, split into earlier turns read from the prompt cache, the
- * new exchange written to it, and output. Hover or drag to read any turn.
+ * Cost per turn across one session, split into what calculate() billed: the prompt read from the
+ * cache, the part written to it, and output. Hover or drag to read any turn.
  */
-export function CostPerTurnChart({ inputs, perTurn }: Readonly<{ inputs: CalculatorInputs; perTurn: number[] }>) {
+export function CostPerTurnChart({ inputs, layers }: Readonly<{ inputs: CalculatorInputs; layers: readonly TurnLayer[] }>) {
   const [ref, width] = useContainerWidth<HTMLDivElement>()
   const [hover, setHover] = useState<number | null>(null)
-  const layers = useMemo(() => splitTurns(inputs, perTurn), [inputs, perTurn])
+  const perTurn = useMemo(() => layers.map((l) => l.cacheRead + l.cacheWrite + l.output), [layers])
   const series = useMemo(() => TURN_LAYERS.map(({ key }) => layers.map((l) => l[key])), [layers])
   const shown = useTweenSeries(series)
   const ticks = useMemo(() => niceTicks(Math.max(...perTurn, 0)), [perTurn])
   const [top] = useTween([Math.max(...ticks)], false)
+  const runs = useMemo(() => tierRuns(inputs, layers), [inputs, layers])
 
   const n = perTurn.length
   if (n === 0) return null
@@ -479,7 +557,6 @@ export function CostPerTurnChart({ inputs, perTurn }: Readonly<{ inputs: Calcula
   const stacks = stackSeries(shown.map(padSingle))
   const plot = makePlot(width, top, stacks[0].length)
   const turn = Math.min(hover ?? n - 1, n - 1)
-  const cross = tierCrossTurn(inputs)
   const tier = MODELS[inputs.model].longPrompt
 
   const pick = (e: ReactPointerEvent<SVGRectElement>) => {
@@ -491,7 +568,14 @@ export function CostPerTurnChart({ inputs, perTurn }: Readonly<{ inputs: Calcula
   return (
     <section className={styles.chartBlock}>
       <h3 className={styles.chartTitle}>Cost per turn across one session</h3>
-      <TurnReadout layer={layers[turn]} total={perTurn[turn]} turn={turn} turns={n} tierThreshold={tier?.threshold} />
+      <TurnReadout
+        layer={layers[turn]}
+        total={perTurn[turn]}
+        turn={turn}
+        turns={n}
+        tierThreshold={tier?.threshold}
+        ttl={TTL_LABEL[inputs.cacheTtl]}
+      />
       <div className={`${styles.chartCanvas} ${styles.scrub}`} ref={ref}>
         {width > 0 && (
           <svg
@@ -499,12 +583,13 @@ export function CostPerTurnChart({ inputs, perTurn }: Readonly<{ inputs: Calcula
             width="100%"
             height={TURN_H}
             role="img"
-            aria-label={`Stacked area chart of cost per turn over ${n} turns: ${usdFine(perTurn[0])} at turn 1, ${usdFine(perTurn[n - 1])} at turn ${n}.`}
+            aria-label={`Stacked area chart of cost per turn over ${n} turns: ${usdFine(perTurn[0])} at turn 1, ${usdFine(perTurn[n - 1])} at turn ${n}.${eventSentence(inputs, layers)}`}
           >
             <TurnAxes plot={plot} ticks={ticks} top={top} turns={n} />
             <TurnBands stacks={stacks} plot={plot} />
             <TotalLine key={inputs.model} values={stacks[TOP_LAYER]} plot={plot} />
-            {tier && cross !== null && cross < n && <TierMarker plot={plot} at={cross} threshold={tier.threshold} />}
+            {tier && runs.length > 0 && <TierMarker plot={plot} runs={runs} turns={n} threshold={tier.threshold} />}
+            <EventMarkers plot={plot} layers={layers} />
             {hover !== null && <HoverMarker plot={plot} stacks={stacks} index={turn} />}
             <rect
               x={plot.left}
@@ -521,7 +606,7 @@ export function CostPerTurnChart({ inputs, perTurn }: Readonly<{ inputs: Calcula
           </svg>
         )}
       </div>
-      <p className={styles.chartCaption}>{turnCaption(perTurn, inputs, cross)}</p>
+      <p className={styles.chartCaption}>{turnCaption(perTurn, inputs, layers, runs)}</p>
     </section>
   )
 }

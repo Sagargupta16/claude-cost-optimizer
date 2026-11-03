@@ -1,6 +1,8 @@
 # Task Comparison Benchmarks
 
 > The same development tasks performed with and without optimization strategies. All estimates use Sonnet 4.6 unless otherwise noted.
+>
+> **Evidence:** the token counts are unsourced (no run log or raw data is kept in this repo); every dollar figure is computed from them with the no-cache formula, input x $3 + output x $15 per 1M on Sonnet 4.6, so it is a pre-cache worst case. Not run under [METHOD.md](METHOD.md).
 
 ## How to Read This
 

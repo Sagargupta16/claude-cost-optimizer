@@ -1,0 +1,102 @@
+test_more_context_never_costs_less (test_rate.EstimateCosts.test_more_context_never_costs_less) ... ok
+test_opus_5_5_session_matches_closed_form (test_rate.EstimateCosts.test_opus_5_5_session_matches_closed_form) ... ok
+test_transcript_ids_map_to_priced_models (test_rate.ModelKey.test_transcript_ids_map_to_priced_models) ... ok
+test_unknown_model_is_unpriced (test_rate.ModelKey.test_unknown_model_is_unpriced) ... ok
+test_empty_project_grades_without_crashing (test_rate.RateProject.test_empty_project_grades_without_crashing) ... ok
+test_cache_write_multipliers (test_rate.RateTable.test_cache_write_multipliers) ... ok
+test_three_cache_read_multipliers (test_rate.RateTable.test_three_cache_read_multipliers) ... ok
+test_flat_models_ignore_prompt_length (test_rate.RatesForPrompt.test_flat_models_ignore_prompt_length) ... ok
+test_haiku_5_5_high_tier_from_100_001 (test_rate.RatesForPrompt.test_haiku_5_5_high_tier_from_100_001) ... ok
+test_haiku_5_5_low_tier_up_to_100k (test_rate.RatesForPrompt.test_haiku_5_5_low_tier_up_to_100k) ... ok
+test_fast_mode_doubles_only_where_supported (test_rate.RequestCost.test_fast_mode_doubles_only_where_supported) ... ok
+test_haiku_5_5_prompt_length_counts_cache_reads (test_rate.RequestCost.test_haiku_5_5_prompt_length_counts_cache_reads) ... ok
+test_opus_5_5_every_token_class (test_rate.RequestCost.test_opus_5_5_every_token_class) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.021s
+
+OK
+▶ tools/list
+  ✔ exposes the three cost tools (3.0957ms)
+✔ tools/list (243.3256ms)
+▶ session_estimate
+  ✔ bills a 30-turn Opus 5.5 session the way Claude Code caches it (2.9453ms)
+  ✔ rejects an unknown model with the list of valid ids (1.155ms)
+✔ session_estimate (4.3229ms)
+▶ compare_models
+  ✔ prices one 100,001-token Haiku 5.5 request at the high tier (1.2834ms)
+✔ compare_models (1.4304ms)
+▶ estimate_cost
+  ✔ warns when the text is below the model's minimum cacheable prompt (0.9992ms)
+✔ estimate_cost (1.1791ms)
+ℹ tests 5
+ℹ suites 4
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 558.3592
+
+> claude-cost-optimizer-site@1.0.0 test
+> vitest run --reporter=verbose
+
+
+ RUN  v5.0.5 C:/Code/GitHub/community/claude-cost-optimizer/site
+
+ ✓ src/utils/pricing.test.ts > ratesForPrompt > bills Haiku 5.5 at the low tier up to and including 100,000 prompt tokens 2ms
+ ✓ src/utils/pricing.test.ts > ratesForPrompt > moves the whole Haiku 5.5 request to the high tier at 100,001 prompt tokens 0ms
+ ✓ src/utils/pricing.test.ts > ratesForPrompt > keeps one rate across the full window on models without a prompt-length tier 0ms
+ ✓ src/utils/pricing.test.ts > turnInputCost > writes the whole prompt to the 5-minute cache on turn 1 0ms
+ ✓ src/utils/pricing.test.ts > turnInputCost > reads the previous request from cache and writes only the new part 0ms
+ ✓ src/utils/pricing.test.ts > turnInputCost > pays full input when the prompt is under the minimum cacheable length 0ms
+ ✓ src/utils/pricing.test.ts > turnInputCost > prices a Haiku 5.5 turn that crosses 100K at the high tier, cache read included 0ms
+ ✓ src/utils/pricing.test.ts > cache multipliers > opus-5 reads cache at 0.9 off base input 0ms
+ ✓ src/utils/pricing.test.ts > cache multipliers > haiku-5-5 reads cache at 0.9 off base input 0ms
+ ✓ src/utils/pricing.test.ts > cache multipliers > opus-5-5 reads cache at 0.95 off base input 0ms
+ ✓ src/utils/pricing.test.ts > cache multipliers > sonnet-5-5 reads cache at 0.95 off base input 0ms
+ ✓ src/utils/pricing.test.ts > cache multipliers > fable-5-1 reads cache at 0.975 off base input 0ms
+ ✓ src/utils/pricing.test.ts > cache multipliers > mythos-5-1 reads cache at 0.975 off base input 0ms
+ ✓ src/utils/pricing.test.ts > cache multipliers > prices every 5-minute write at 1.25x and every 1-hour write at 2x base input 1ms
+ ✓ src/utils/calculator.test.ts > README worked example (Opus 5.5, 30 turns) > costs $0.82 a session before the cleanup (15,000-token prefix) 2ms
+ ✓ src/utils/calculator.test.ts > README worked example (Opus 5.5, 30 turns) > costs $0.72 a session after the cleanup (5,500-token prefix), a 12% saving 0ms
+ ✓ src/utils/calculator.test.ts > README worked example (Opus 5.5, 30 turns) > matches the monthly figures at 3 sessions a day for 22 days 0ms
+ ✓ src/utils/calculator.test.ts > README worked example (Opus 5.5, 30 turns) > costs $4.95 uncached, where the same cleanup saves 23% 0ms
+ ✓ src/utils/calculator.test.ts > README worked example (Opus 5.5, 30 turns) > puts output at 36% of the cached session ($0.30 of $0.8229) 0ms
+ ✓ src/utils/calculator.test.ts > calculate > prices the calculator default session at $0.7419 (CHANGELOG 1.16.0) 1ms
+ ✓ src/utils/calculator.test.ts > calculate > splits the monthly cost into categories that add back to the total 1ms
+ ✓ src/utils/calculator.test.ts > calculate > doubles every turn under Fast Mode on Opus 5.5 ($8/$40) 0ms
+ ✓ src/utils/calculator.test.ts > calculate > ignores Fast Mode on a model that does not support it 0ms
+ ✓ src/utils/calculator.test.ts > calculate > never reports an optimized cost above the current one 18ms
+ ✓ src/utils/calculator.test.ts > Haiku 5.5 prompt-length tier > warns on the first turn whose prompt passes 100,000 tokens 1ms
+ ✓ src/utils/calculator.test.ts > Haiku 5.5 prompt-length tier > bills that turn at the high tier and the one before it at the low tier 0ms
+ ✓ src/utils/calculator.test.ts > Haiku 5.5 prompt-length tier > stays silent when the session never reaches the line 1ms
+
+ Test Files  2 passed (2)
+      Tests  27 passed (27)
+   Start at  13:34:37
+   Duration  241ms (tests 37%, import 36%, transform 15%, worker 12%, environment 1%)
+
+============================= test session starts =============================
+platform win32 -- Python 3.13.15, pytest-9.0.3, pluggy-1.6.0 -- C:\Users\user\AppData\Local\Programs\Python\Python313\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Code\GitHub\community\claude-cost-optimizer\tools\claude-rate
+configfile: pyproject.toml
+plugins: typeguard-2.13.3, anyio-4.12.1, cov-7.0.0
+collecting ... collected 13 items
+
+tools\claude-rate\tests\test_rate.py::RatesForPrompt::test_flat_models_ignore_prompt_length PASSED [  7%]
+tools\claude-rate\tests\test_rate.py::RatesForPrompt::test_haiku_5_5_high_tier_from_100_001 PASSED [ 15%]
+tools\claude-rate\tests\test_rate.py::RatesForPrompt::test_haiku_5_5_low_tier_up_to_100k PASSED [ 23%]
+tools\claude-rate\tests\test_rate.py::RequestCost::test_fast_mode_doubles_only_where_supported PASSED [ 30%]
+tools\claude-rate\tests\test_rate.py::RequestCost::test_haiku_5_5_prompt_length_counts_cache_reads PASSED [ 38%]
+tools\claude-rate\tests\test_rate.py::RequestCost::test_opus_5_5_every_token_class PASSED [ 46%]
+tools\claude-rate\tests\test_rate.py::EstimateCosts::test_more_context_never_costs_less PASSED [ 53%]
+tools\claude-rate\tests\test_rate.py::EstimateCosts::test_opus_5_5_session_matches_closed_form PASSED [ 61%]
+tools\claude-rate\tests\test_rate.py::ModelKey::test_transcript_ids_map_to_priced_models PASSED [ 69%]
+tools\claude-rate\tests\test_rate.py::ModelKey::test_unknown_model_is_unpriced PASSED [ 76%]
+tools\claude-rate\tests\test_rate.py::RateTable::test_cache_write_multipliers PASSED [ 84%]
+tools\claude-rate\tests\test_rate.py::RateTable::test_three_cache_read_multipliers PASSED [ 92%]
+tools\claude-rate\tests\test_rate.py::RateProject::test_empty_project_grades_without_crashing PASSED [100%]
+
+============================= 13 passed in 0.11s ==============================

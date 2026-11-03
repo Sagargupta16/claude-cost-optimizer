@@ -13,6 +13,7 @@
   - [Cache Write vs Cache Hit](#cache-write-vs-cache-hit)
 - [What Gets Cached in Claude Code](#what-gets-cached-in-claude-code)
 - [What Breaks the Cache](#what-breaks-the-cache)
+  - [Diagnose a Miss](#diagnose-a-miss)
 - [Cache TTL and Economics](#cache-ttl-and-economics)
   - [Standard vs Extended TTL](#standard-vs-extended-ttl)
   - [How Claude Code Picks the Cache TTL](#how-claude-code-picks-the-cache-ttl)
@@ -268,6 +269,21 @@ These three look similar but cost very different amounts ([Anthropic's prompt-ca
 
 The practical rule: compact while the cache is still warm, not after you come back from a long break. The compressed context becomes a much smaller cacheable prefix going forward, which is usually a net positive for cost -- see [Guide 02](02-context-optimization.md). The turn after a compaction is not just the summary: Claude Code re-reads up to five recently read or edited files (a file over 5,000 tokens comes back as a path only), re-injects invoked skill bodies at up to 5,000 tokens each and 25,000 in total, and rebuilds the skill list (v2.1.304+) ([context window docs](https://code.claude.com/docs/en/context-window), read 2026-11-01).
 
+### Diagnose a Miss
+
+Since v2.1.260 Claude Code names the likely cause of the last cache miss in two places: the `Prompt cache (main)` line of `/usage` (for example `likely cause: tool definitions changed`), and `prompt_cache.last_miss_cause.causes` in the status line's input, an array of one or more cause names. Both summarize the main conversation of the current session; subagent requests are not counted. A request counts as a miss when it re-processed more than 5% and at least 2,000 tokens of what it could have read from cache, with no compaction or tool-result clearing to explain it; those count as expected rebuilds instead ([prompt caching docs](https://code.claude.com/docs/en/prompt-caching), [status line docs](https://code.claude.com/docs/en/statusline), read 2026-11-03).
+
+| Cause name | What changed | What to do |
+|------------|--------------|------------|
+| `tools_changed` | The set of tool definitions in the request (the status line also gives `tools_added` and `tools_removed`) | With tool search off, or under an `ENABLE_TOOL_SEARCH=auto` threshold, a server connecting, a server or plugin you disable, or a tool you deny outright changes the set. Settle servers and deny rules before the session, and leave tool search on ([Adding or Removing MCP Servers](#2-adding-or-removing-mcp-servers-only-with-tool-search-off)) |
+| `system_prompt_changed` | The system prompt layer, core instructions and tool definitions (the status line gives `system_char_delta`, the change in characters) | Keep `--system-prompt` and `--append-system-prompt` text the same for the life of a conversation; by default a resumed conversation keeps the system prompt it started with until it is compacted |
+| `ttl_expired_5m` | The gap since the last request outlasted the 5-minute TTL | Batch related turns inside the TTL, `/compact` before a long break ([Taking Long Breaks](#5-taking-long-breaks-without-compacting-first)), and on an API key run the [extended breakeven](#extended-ttl-economics) before setting `promptCacheTtl` to `1h` |
+| `likely_server_side` | Claude Code found no change on your side | Nothing in your setup to change |
+
+The cause names are examples the docs list, not a closed set. To watch them live, `claude-rate --statusline` (claude-rate 0.4.0 or later) reads the same status line input and prints the cache state with the last miss cause; [templates/settings/statusline.json](../templates/settings/statusline.json) has the settings snippet.
+
+`/usage` and the status line see one session. For a longer look back, `claude-rate --usage` (claude-rate 0.4.0 or later) walks the last 30 days of your local transcripts, main conversation and subagents alike, and lists cache breaks by likely cause with the extra list-price dollars each cost over a warm read, plus a 1-hour TTL what-if for the main conversation and for subagents separately. The what-if compares the share of 5-minute writes that were rebuilds after a 5-to-60-minute gap with the break-even share (1h write - 5m write) / (1h write - cache read): 38.5% on Opus 5.5, computed as ($8.00 - $5.00) / ($8.00 - $0.20). Its causes come from what transcripts record (a miss reason Claude Code wrote, if any, then compaction markers, model, speed, the gap between timestamps, effort and Claude Code version; anything else is "unknown"), so they are heuristics, and the gaps it measures include the time Claude spent generating a response. The dollars are list price; on a subscription they show where the allowance went, not a bill.
+
 ---
 
 ## Cache TTL and Economics
@@ -290,7 +306,9 @@ Claude Code chooses the TTL for you based on how you pay ([Anthropic's prompt-ca
 
 To choose it yourself, set the `promptCacheTtl` setting or the `CLAUDE_CODE_PROMPT_CACHE_TTL` environment variable to `5m` or `1h`. Subagents have their own knob: `subagentPromptCacheTtl` / `CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL`. Both require Claude Code v2.1.242+. On an API key, `1h` raises the write price from 1.25x to 2x input, so run the [extended breakeven math](#extended-ttl-economics) before switching. To confirm which TTL your main conversation's writes used, run `claude -p "hello" --output-format json` and read `usage.cache_creation` (`ephemeral_5m_input_tokens` vs `ephemeral_1h_input_tokens`); the OpenTelemetry `api_request` event splits cache writes the same way with `cache_creation_5m_tokens` and `cache_creation_1h_tokens` (v2.1.300) ([prompt caching docs](https://code.claude.com/docs/en/prompt-caching), [changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
 
-**Check your hit rate with `/usage`.** Since v2.1.251, `/usage` shows a `Prompt cache (main)` line with the hit share, misses, the likely cause, and whether the cache is warm or cold. It is the fastest way to confirm a habit is actually breaking the cache before you change it. Large cache misses also show in `/usage` under "What's contributing to your limits usage?" since v2.1.311 ([changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
+**Check your hit rate with `/usage`.** Since v2.1.251, `/usage` shows a `Prompt cache (main)` line with the hit share, misses, the likely cause, and whether the cache is warm or cold. It is the fastest way to confirm a habit is actually breaking the cache before you change it. Large cache misses also show in `/usage` under "What's contributing to your limits usage?" since v2.1.311 ([changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01). To act on a miss, see [Diagnose a Miss](#diagnose-a-miss).
+
+**Across a team**, Claude Code's own OpenTelemetry export (client-side, set in managed settings; starting point in [templates/settings/telemetry-team.json](../templates/settings/telemetry-team.json), budgeting in [Guide 05](05-team-budgeting.md)) reports `claude_code.token.usage` by type. The fleet's hit share is `cacheRead / (input + cacheRead + cacheCreation)`, the same ratio `/usage`, the status line's `hit_ratio` and claude-rate report, because the metric's `input` type leaves out cache reads and writes ([monitoring docs](https://code.claude.com/docs/en/monitoring-usage), read 2026-11-03).
 
 ### 5-Minute TTL in Practice
 
@@ -653,15 +671,18 @@ On a subscription's one-hour TTL, idle compaction (see [Idle Compaction](#idle-c
 ```
 Without compacting before break:
   Return to session with 80,000 tokens of expired cache
-  Cache write: 80,000 x $3.75/1M = $0.30 (Sonnet)
+  Cache write: 80,000 x $3.75/1M = $0.30 (Sonnet 4.6)
 
 With compacting before break:
   /compact reduces history to ~8,000 tokens
   Return to session with 8,000 tokens of expired cache
-  Cache write: 8,000 x $3.75/1M = $0.03 (Sonnet)
+  Cache write: 8,000 x $3.75/1M = $0.03 (Sonnet 4.6)
 
   Savings: $0.27 on the first turn back
+  On Sonnet 5.5 ($2.50/1M 5-minute write): $0.20 vs $0.02, saving $0.18
 ```
+
+To price your own breaks, set Breaks per session, Break length and Cache TTL under Session events in the [calculator](https://sagargupta.online/claude-cost-optimizer/calculator/).
 
 ---
 

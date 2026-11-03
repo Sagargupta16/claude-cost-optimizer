@@ -1,0 +1,21 @@
+{
+  "id": "explain-function",
+  "title": "Explain a function and its return value",
+  "category": "explain",
+  "expect_gain": true,
+  "graders": [
+    {"type": "tool_used", "tools": ["Read", "Grep"], "label": "opened the file"},
+    {
+      "type": "regex",
+      "pattern": "(?=.*\\b(refill|replenish|regenerat))(?=.*\\bcapacity\\b)",
+      "flags": "is",
+      "label": "mentions refill over time and the capacity cap"
+    },
+    {
+      "type": "regex",
+      "pattern": "(?=.*(wait|retry|delay|seconds))(?=.*(\\b0\\b|0\\.0|zero|allowed))",
+      "flags": "is",
+      "label": "says 0 means allowed and a positive value is a wait in seconds"
+    }
+  ]
+}

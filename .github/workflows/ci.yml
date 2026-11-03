@@ -128,7 +128,7 @@ jobs:
           python-version: '3.15'
 
       - name: Byte-compile every tool
-        run: python -m compileall -q tools/ scripts/
+        run: python -m compileall -q tools/ scripts/ hooks/ benchmarks/cost-mode-eval/
 
       - name: Lint for real errors (syntax, undefined and unused names)
         # Scoped to E9 + F rather than ruff's full default set: those two
@@ -136,10 +136,22 @@ jobs:
         # fail on pre-existing style findings unrelated to the change at hand.
         run: |
           pipx install ruff
-          ruff check --select E9,F tools/ scripts/
+          ruff check --select E9,F tools/ scripts/ hooks/ benchmarks/cost-mode-eval/
 
       - name: Unit-test the claude-rate cost math
         run: python -m unittest discover -s tools/claude-rate/tests -v
+
+      # The scripts that guard the docs and the live-pricing alarm, against a
+      # trimmed copy of the pricing page. No network: the weekly
+      # pricing-drift.yml run is the only thing that fetches the page.
+      - name: Unit-test the repo scripts
+        run: python -m unittest discover -s scripts/tests -v
+
+      # Replays the captured runner outputs in benchmarks/filter-fixtures through
+      # the output-trim hook; --strict fails on a dropped needed string, any
+      # growth, or a trimmed control.
+      - name: Check the output-trim hook against its fixtures
+        run: python scripts/eval-output-filter.py --strict
 
       # The PyPI package ships rate.py as the claude_rate module; build the
       # wheel and run its console script so a packaging break shows up here,
@@ -174,7 +186,8 @@ jobs:
         run: python scripts/check-pricing-sync.py .
 
       # The stamp check above proves the dates agree, not the numbers. This
-      # compares every per-model rate in the six code copies against rate.py.
+      # compares every per-model rate in the six code copies against rate.py,
+      # plus the tokenizer_overhead copy in token-estimator/estimate.py.
       - name: Check rate values across every code copy
         run: python scripts/check-rate-values.py .
 

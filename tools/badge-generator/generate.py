@@ -219,6 +219,104 @@ def score_file_read_exclusions(project: Path) -> dict:
     }
 
 
+# Shared rubric, added 2026-11-03 (settings, env-vars and model-config references,
+# read that day): an auto-compact window under the 1,000,000 default (top-level
+# autoCompactWindow, a modelSettings entry, or env CLAUDE_CODE_AUTO_COMPACT_WINDOW),
+# env MAX_MCP_OUTPUT_TOKENS under its 25,000 default, and env
+# CLAUDE_CODE_SUBAGENT_MODEL on haiku or sonnet only with
+# CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1 and a family other than the main model's.
+# bashOutputMaxChars does not count: the docs frame it as a way to raise the limit.
+WINDOW_RANGE = (100_000, 1_000_000)
+MCP_OUTPUT_DEFAULT = 25_000
+TOKEN_COUNT = re.compile(r"\s*([0-9]+)\s*([kKmM]?)\s*")
+TOKEN_SCALE = {"": 1, "k": 1_000, "m": 1_000_000}
+# On these providers the `haiku` alias is Haiku 4.5, not Haiku 5.5.
+PROVIDER_FLAGS = (
+    "CLAUDE_CODE_USE_BEDROCK",
+    "CLAUDE_CODE_USE_VERTEX",
+    "CLAUDE_CODE_USE_FOUNDRY",
+    "CLAUDE_CODE_USE_ANTHROPIC_AWS",
+    "CLAUDE_CODE_USE_MANTLE",
+)
+MODEL_FAMILIES = ("haiku", "sonnet", "opus", "fable", "mythos")
+DEAD_SUBAGENT_KEY_FINDING = (
+    "env CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION does nothing: it was removed in v2.1.224 and is "
+    "now a no-op (code.claude.com/docs/en/env-vars, read 2026-11-03). "
+    "CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS limits how many subagents run at once."
+)
+HAIKU_WINDOW_FINDING = (
+    "model is Haiku 5.5 with no auto-compact window. It auto-compacts at about 967K tokens by "
+    "default (code.claude.com/docs/en/model-config, read 2026-11-03), but a request whose prompt "
+    "is over 100,000 tokens pays $0.50/$2.50 per 1M on the whole request instead of $0.10/$0.50, "
+    "5x. Run /autocompact 100k in a Haiku 5.5 session, or set modelSettings "
+    '{"claude-haiku-5-5": {"autoCompactWindow": 100000}}.'
+)
+
+
+def _object(value: object) -> dict:
+    return value if isinstance(value, dict) else {}
+
+
+def _setting_tokens(value: object) -> int | None:
+    """A token count from a settings key, which takes a JSON number."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+        return None
+    return int(value)
+
+
+def _env_tokens(value: object, suffixes: bool = True) -> int | None:
+    """A token count from an env value: 200000 or "200000", plus "200k" or "1M" when `suffixes`."""
+    if not isinstance(value, str):
+        return _setting_tokens(value)
+    match = TOKEN_COUNT.fullmatch(value)
+    if match is None or (match[2] and not suffixes):
+        return None
+    return int(match[1]) * TOKEN_SCALE[match[2].lower()]
+
+
+def _model_family(model: object) -> str | None:
+    text = model.lower() if isinstance(model, str) else ""
+    return next((family for family in MODEL_FAMILIES if family in text), None)
+
+
+def _window_set(data: dict) -> bool:
+    """An auto-compact window under the 1M default: top-level, per model, or the env variable."""
+    low, high = WINDOW_RANGE
+    values = [_setting_tokens(data.get("autoCompactWindow"))]
+    values += [_setting_tokens(_object(conf).get("autoCompactWindow")) for conf in _object(data.get("modelSettings")).values()]
+    values.append(_env_tokens(_object(data.get("env")).get("CLAUDE_CODE_AUTO_COMPACT_WINDOW")))
+    return any(value is not None and low <= value < high for value in values)
+
+
+def _env_controls(data: dict) -> bool:
+    """A lower MCP output cap, or a forced subagent model cheaper than the main one."""
+    env = _object(data.get("env"))
+    mcp_cap = _env_tokens(env.get("MAX_MCP_OUTPUT_TOKENS"), suffixes=False)
+    if mcp_cap is not None and 0 < mcp_cap < MCP_OUTPUT_DEFAULT:
+        return True
+    forced = str(env.get("CLAUDE_CODE_SUBAGENT_MODEL_FORCE", "")).strip() == "1"
+    family = _model_family(env.get("CLAUDE_CODE_SUBAGENT_MODEL"))
+    return forced and family in ("haiku", "sonnet") and family != _model_family(data.get("model"))
+
+
+def settings_findings(data: dict) -> list[str]:
+    """A dead env key and the Haiku 5.5 price line; neither changes the score."""
+    env = _object(data.get("env"))
+    findings = [DEAD_SUBAGENT_KEY_FINDING] if "CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION" in env else []
+    model = data.get("model")
+    name = model.strip().lower() if isinstance(model, str) else ""
+    on_provider = any(str(env.get(f, "")).strip().lower() not in ("", "0", "false", "none") for f in PROVIDER_FLAGS)
+    on_haiku_5_5 = "haiku-5-5" in name or (name == "haiku" and not on_provider)
+    haiku_view = {
+        "autoCompactWindow": data.get("autoCompactWindow"),
+        "env": env,
+        "modelSettings": {m: c for m, c in _object(data.get("modelSettings")).items() if "haiku" in m.lower()},
+    }
+    if on_haiku_5_5 and not _window_set(haiku_view):
+        findings.append(HAIKU_WINDOW_FINDING)
+    return findings
+
+
 def has_cost_controls(data: dict) -> bool:
     """Whether settings.json configures a real spend-bounding setting.
 
@@ -255,7 +353,9 @@ def has_cost_controls(data: dict) -> bool:
         and models
     ):
         return True
-    return data.get("autoCompactEnabled") is True
+    if data.get("autoCompactEnabled") is True:
+        return True
+    return _window_set(data) or _env_controls(data)
 
 
 def score_settings(project: Path) -> dict:
@@ -304,6 +404,7 @@ def score_settings(project: Path) -> dict:
         "detail": ", ".join(parts),
         "has_model": has_model,
         "has_cost_controls": has_controls,
+        "findings": settings_findings(data),
     }
 
 

@@ -1,0 +1,90 @@
+name: Pricing drift
+
+# Weekly check that rate.py still matches the rates on Anthropic's pricing page.
+# ci.yml never fetches anything, so a network flake cannot turn a pull request
+# red; this is the only workflow that talks to the page. It is an alarm: it opens
+# or updates one issue titled "Live pricing drift", and a person then re-reads
+# the page and follows the Sync checklist in docs/pricing-data.md.
+#
+# The run ends red whenever scripts/check-live-pricing.py exits non-zero. Drift
+# and a changed page layout also open or update the issue; a failed download
+# (exit 2 with a "fetch failed" line) only fails the run, so a network problem
+# never opens an issue about prices.
+#
+# GitHub treats the cron as a hint, not a timer: a run can start late or skip a
+# slot. Run it by hand with: gh workflow run pricing-drift.yml
+
+on:
+  schedule:
+    - cron: '17 6 * * 1'
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: pricing-drift
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    name: Compare rate.py with the live pricing page
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      issues: write
+    env:
+      ISSUE_TITLE: Live pricing drift
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.15'
+
+      # The script's output goes to files and is handed on with --body-file,
+      # never interpolated into a run: line.
+      - name: Compare the rates
+        id: compare
+        run: |
+          set +e
+          python scripts/check-live-pricing.py --markdown \
+            > "$RUNNER_TEMP/report.md" 2> "$RUNNER_TEMP/stderr.txt"
+          code=$?
+          set -e
+          cat "$RUNNER_TEMP/stderr.txt" >&2
+          cat "$RUNNER_TEMP/report.md" >> "$GITHUB_STEP_SUMMARY"
+          echo "code=$code" >> "$GITHUB_OUTPUT"
+          if grep -q '^check-live-pricing: fetch failed' "$RUNNER_TEMP/stderr.txt"; then
+            echo "fetch_failed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Open or update the drift issue
+        if: steps.compare.outputs.code != '0' && steps.compare.outputs.fetch_failed != 'true'
+        # The token lives only in this step, not in the one that downloads the page.
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          printf '\nWorkflow run: %s/%s/actions/runs/%s\n' \
+            "$GITHUB_SERVER_URL" "$GITHUB_REPOSITORY" "$GITHUB_RUN_ID" \
+            >> "$RUNNER_TEMP/report.md"
+          number=$(gh issue list --state open --limit 100 \
+            --search "$ISSUE_TITLE in:title" --json number,title \
+            | jq -r --arg title "$ISSUE_TITLE" \
+              '[.[] | select(.title == $title)][0].number // empty')
+          if [ -n "$number" ]; then
+            gh issue comment "$number" --body-file "$RUNNER_TEMP/report.md"
+          else
+            gh issue create --title "$ISSUE_TITLE" --body-file "$RUNNER_TEMP/report.md"
+          fi
+
+      - name: Fail the run when the check did not pass
+        if: steps.compare.outputs.code != '0'
+        env:
+          CODE: ${{ steps.compare.outputs.code }}
+        run: |
+          echo "::error::check-live-pricing.py exited $CODE (1 drift, 2 fetch or parse failure)"
+          exit 1

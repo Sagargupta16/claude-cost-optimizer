@@ -146,12 +146,172 @@
 }
 
 .inputLabel {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
+  /* Label, input and hint share row tracks with the field beside it, so the two
+     inputs line up even when only one label wraps to a second line. */
+  display: grid;
+  grid-row: span 3;
+  grid-template-rows: subgrid;
+  row-gap: 0.3rem;
+  align-items: end;
   font-size: 0.85rem;
   color: var(--text-muted);
   min-width: 0;
+}
+
+.inputLabel > .hint {
+  align-self: start;
+}
+
+.inputWide {
+  grid-column: 1 / -1;
+}
+
+.hint {
+  font-size: 0.74rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* Session events, prompt size and what-if levers: folded groups on a phone, open on desktop. */
+
+.disclosure {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background-color: var(--bg);
+  min-width: 0;
+  transition: border-color 0.15s;
+}
+
+.disclosure:hover,
+.disclosure[open] {
+  border-color: var(--text-muted);
+}
+
+.disclosureSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.6rem;
+  min-height: 44px;
+  padding: 0.7rem 2.25rem 0.7rem 0.9rem;
+  position: relative;
+  cursor: pointer;
+  list-style: none;
+}
+
+.disclosureSummary::-webkit-details-marker {
+  display: none;
+}
+
+.disclosureSummary::after {
+  content: '';
+  position: absolute;
+  right: 1rem;
+  top: 1.05rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 2px solid var(--text-muted);
+  border-bottom: 2px solid var(--text-muted);
+  transform: rotate(45deg);
+  transition: transform 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+.disclosure[open] > .disclosureSummary::after {
+  transform: rotate(225deg);
+}
+
+.disclosureSummary:focus-visible {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
+  border-radius: var(--radius);
+}
+
+.disclosureTitle {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.disclosureState {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  overflow-wrap: anywhere;
+}
+
+.disclosureBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  padding: 0 0.9rem 0.9rem;
+  animation: unfold 260ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@keyframes unfold {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.ttlGroup {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.ttlLegend {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  padding: 0;
+  margin-bottom: 0.3rem;
+}
+
+.segmented {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.segment {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.5rem 0.6rem;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: border-color 0.15s, background-color 0.15s, transform 0.15s;
+}
+
+.segment:hover {
+  border-color: var(--text-muted);
+}
+
+.segment:active {
+  transform: scale(0.98);
+}
+
+.segment:has(.radio:checked) {
+  border-color: var(--accent-blue);
+  background-color: var(--surface-hover);
+}
+
+.segment:has(.radio:focus-visible) {
+  outline: 2px solid var(--accent-blue);
+  outline-offset: 2px;
 }
 
 .numberInput {
@@ -228,6 +388,10 @@
 
 .report > :nth-child(7) {
   animation-delay: 480ms;
+}
+
+.report > :nth-child(8) {
+  animation-delay: 560ms;
 }
 
 @keyframes rise {

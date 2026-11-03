@@ -1,0 +1,25 @@
+? Verifying lockfile against supply-chain policies (115 entries)...
+Lockfile is up to date, resolution step is skipped
+Progress: resolved 1, reused 0, downloaded 0, added 0
+Packages: +96
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Packages are hard linked from the content-addressable store to the virtual store.
+  Content-addressable store is at: C:\Users\user\AppData\Local\pnpm\store\v11
+  Virtual store is at:             node_modules/.pnpm
+Update available! 11.28.1 → 12.16.1.
+Changelog: https://pnpm.io/v/12.16.1
+To update, run: pnpm self-update
+✓ Lockfile passes supply-chain policies (115 entries in 1.1s)
+Progress: resolved 96, reused 91, downloaded 0, added 54
+Progress: resolved 96, reused 96, downloaded 0, added 91
+Progress: resolved 96, reused 96, downloaded 0, added 94
+Progress: resolved 96, reused 96, downloaded 0, added 96, done
+
+dependencies:
++ @modelcontextprotocol/sdk 1.32.1
+
+devDependencies:
++ @types/node 26.6.6
++ typescript 7.0.2
+
+Done in 4.4s using pnpm v11.28.1

@@ -61,7 +61,7 @@ If you want to help but don't know where to start, here are specific things we n
 - **Benchmark data** comparing costs between Opus, Sonnet, and Haiku for real tasks
 - **Case studies** from teams with measured before/after spend on production projects (/usage, Console, OpenTelemetry or Usage and Cost Analytics API numbers)
 - **Pricing corrections** if any numbers in the guides are outdated
-- **Tool improvements** to the token estimator, usage analyzer, or Repo Analyzer
+- **Tool improvements** to the token estimator, claude-rate (including its `--usage` reports), or Repo Analyzer
 - **Typo fixes and wording improvements** in any guide -- always welcome
 
 ## PR Guidelines

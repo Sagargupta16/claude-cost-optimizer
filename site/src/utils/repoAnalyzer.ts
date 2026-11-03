@@ -37,6 +37,10 @@ export interface AnalysisResult {
     totalTokens: number
     fileCount: number
     files: { path: string; chars: number }[]
+    /** `file:line repeats file:line` for each exact repeat after normalizing (findings only). */
+    repeatedLines: string[]
+    /** Estimated tokens (chars / 4) of the repeated lines. */
+    repeatedTokens: number
   }
   fileReadExclusions: {
     /** Read(...) entries in permissions.deny. */
@@ -47,6 +51,10 @@ export interface AnalysisResult {
     ignoreFileFound: boolean
     /** Its patterns converted to Read deny rules, for migration. */
     ignoreFileRules: string[]
+    /** Read deny rules detected for this repo (.env, gated generated paths, root lock files). */
+    suggestedRules: string[]
+    /** The suggested rules the existing ones do not cover yet. */
+    missingRules: string[]
   }
   settings: {
     found: boolean
@@ -56,6 +64,10 @@ export interface AnalysisResult {
     hasHooks: boolean
     hookCount: number
     raw: Record<string, unknown> | null
+    /** A dead env key and the Haiku 5.5 price line (findings only). */
+    findings: string[]
+    /** Hook handlers that never run, use a relative script path, run claude -p, or an unscoped SessionStart. */
+    hookFindings: string[]
   }
   tooling: {
     costModeInstalled: boolean
@@ -235,31 +247,42 @@ async function fetchDefaultBranch(
   }
 }
 
+interface TreeListing {
+  /** Blob paths only: a gitignored directory never appears here. */
+  paths: string[]
+  /** GitHub cut the listing short, so a missing path may still exist. */
+  truncated: boolean
+}
+
 /** One recursive trees call gives every path in the repo -- the backbone of deep detection. */
 async function fetchTree(
   owner: string,
   repo: string,
   branch: string,
-): Promise<string[]> {
+): Promise<TreeListing> {
+  const empty = { paths: [], truncated: false }
   const safeBranch = sanitizeBranch(branch)
-  if (!safeBranch) return []
+  if (!safeBranch) return empty
   const url = buildApiUrl(
     owner,
     repo,
     ['git', 'trees', safeBranch],
     { recursive: '1' },
   )
-  if (!url) return []
+  if (!url) return empty
   try {
     const res = await fetch(url)
-    if (!res.ok) return []
+    if (!res.ok) return empty
     const data = await res.json()
-    if (!Array.isArray(data.tree)) return []
-    return data.tree
-      .filter((e: { type: string }) => e.type === 'blob')
-      .map((e: { path: string }) => e.path)
+    if (!Array.isArray(data.tree)) return empty
+    return {
+      paths: data.tree
+        .filter((e: { type: string }) => e.type === 'blob')
+        .map((e: { path: string }) => e.path),
+      truncated: data.truncated === true,
+    }
   } catch {
-    return []
+    return empty
   }
 }
 
@@ -305,6 +328,7 @@ function ignorePatternsAsReadRules(content: string): string[] {
 
 // Claude Code does not read this file. It is fetched only to flag it and convert its patterns.
 const IGNORE_FILE = '.claudeignore'
+const GITIGNORE_FILE = '.gitignore'
 const IGNORE_FILE_FINDING =
   "`.claudeignore` is not read by Claude Code -- its permissions docs say the file has no effect. Move its patterns into permissions.deny as Read(...) rules."
 
@@ -402,6 +426,276 @@ function detectFromTree(paths: string[]): TreeDetection {
   }
 }
 
+const LISTED_REFS = 5
+
+function listed(items: string[]): string {
+  const shown = items.slice(0, LISTED_REFS).join('; ')
+  const more = items.length - LISTED_REFS
+  return more > 0 ? `${shown}; and ${more} more` : shown
+}
+
+// -- Detected Read deny rules (mirrors _detected_read_deny in tools/claude-rate/rate.py)
+//
+// A Read deny rule also blocks Edit and Write on the same path (code.claude.com/docs/en/permissions,
+// read 2026-11-03), so a folder is suggested only when it is safe to block. The CLI asks git; the
+// tree here lists blobs only, so a gitignored folder never shows in it. The site therefore names a
+// folder only when the root .gitignore has an exact line for it and no committed file sits under a
+// folder of that name. A single-segment rule such as Read(dist/**) matches that name at any depth.
+
+const ENV_DENY = ['Read(./.env)', 'Read(./.env.*)']
+const GENERATED_DIRS = [
+  'node_modules',
+  'dist',
+  'build',
+  'coverage',
+  '.next',
+  '.turbo',
+  '.venv',
+  '__pycache__',
+  '.pytest_cache',
+  'htmlcov',
+  'target',
+  'vendor',
+  '.dart_tool',
+  '.terraform',
+  '.gradle',
+]
+const GENERATED_GLOBS = ['*.min.js', '*.min.css', '*.map', '*.pb.go', '*_pb2.py', '*.g.dart']
+const LOCK_ORDER = ['package-lock.json', 'pnpm-lock.yaml', 'yarn.lock', 'poetry.lock', 'Cargo.lock', 'uv.lock']
+
+/** Shell-style match with * and ? only, the same rule as `_glob_match` in rate.py. */
+function globMatch(pattern: string, name: string): boolean {
+  const source = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.')
+  return new RegExp(`^${source}$`).test(name)
+}
+
+function ignoreLineForms(name: string): string[] {
+  return [name, `/${name}`, `${name}/`, `/${name}/`, `**/${name}`, `**/${name}/`]
+}
+
+/**
+ * Read deny rules that fit a repo: .env, generated folders .gitignore names with nothing
+ * committed under them, generated-file globs a committed file matches, and root lock files.
+ * Folders are skipped when the tree is unknown or truncated.
+ */
+export function suggestReadDenyRules(
+  treePaths: string[],
+  treeComplete: boolean,
+  gitignore: string,
+  lockFilesPresent: string[],
+): string[] {
+  const lines = new Set(normalizeNewlines(gitignore).split('\n').map((l) => l.trim()).filter(Boolean))
+  const committedDirs = new Set(treePaths.flatMap((p) => p.split('/').slice(0, -1)))
+  const dirs = treeComplete
+    ? GENERATED_DIRS.filter((d) => ignoreLineForms(d).some((f) => lines.has(f)) && !committedDirs.has(d))
+    : []
+  const names = treePaths.map((p) => p.slice(p.lastIndexOf('/') + 1))
+  const globs = GENERATED_GLOBS.filter((g) => names.some((n) => globMatch(g, n)))
+  const locks = LOCK_ORDER.filter((l) => lockFilesPresent.includes(l))
+  return [...ENV_DENY, ...dirs.map((d) => `Read(${d}/**)`), ...globs.map((g) => `Read(${g})`), ...locks.map((l) => `Read(./${l})`)]
+}
+
+/** Path segments of a Read(...) rule, without the ./, / and ** parts. */
+function ruleSegments(rule: string): string[] {
+  const inner = rule.slice(rule.indexOf('(') + 1, rule.lastIndexOf(')'))
+  return inner.split('/').filter((s) => s !== '' && s !== '.' && s !== '**')
+}
+
+/** A suggested rule is already there when an existing rule names or globs its first segment. */
+export function denyCovered(candidate: string, rules: string[]): boolean {
+  const key = ruleSegments(candidate)[0]
+  if (LOCK_FILE_NAMES.has(key)) {
+    return rules.some((r) => r.includes(key) || r.includes('*.lock') || r.includes('*lock*'))
+  }
+  return rules.some((rule) => ruleSegments(rule).some((seg) => globMatch(seg, key)))
+}
+
+// -- Repeated lines in the CLAUDE.md files (mirrors _repeated_lines in rate.py, exact repeats only)
+
+const FENCE = /^\s*(```|~~~)/
+const LIST_MARKER = /^(?:[-*+]|\d+[.)])\s+/
+const DUP_MIN_CHARS = 25
+
+/** Lines as Python's str.splitlines() gives them. */
+function splitLines(text: string): string[] {
+  if (!text) return []
+  const lines = normalizeNewlines(text).split('\n')
+  return lines[lines.length - 1] === '' ? lines.slice(0, -1) : lines
+}
+
+/** [1-based line number, line] outside frontmatter and fenced code blocks. */
+function proseLines(text: string): [number, string][] {
+  const lines = splitLines(text)
+  let start = 0
+  if (lines.length > 0 && lines[0].trim() === '---') {
+    const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---')
+    start = end === -1 ? 0 : end + 1
+  }
+  const out: [number, string][] = []
+  let fenced = false
+  lines.slice(start).forEach((line, i) => {
+    if (FENCE.test(line)) fenced = !fenced
+    else if (!fenced) out.push([start + i + 1, line])
+  })
+  return out
+}
+
+/** A line as the duplicate check compares it, or null for headings, tables and short lines. */
+export function normalizedLine(line: string): string | null {
+  let text = line.trim()
+  if (text.startsWith('#') || text.startsWith('|') || text.startsWith('<!--')) return null
+  text = text.replace(LIST_MARKER, '')
+  for (const mark of ['**', '__', '`']) text = text.split(mark).join('')
+  text = text.replace(/\s+/g, ' ').trim().toLowerCase().replace(/[.:;,!]+$/, '')
+  return text.length >= DUP_MIN_CHARS ? text : null
+}
+
+/** `later:line repeats first:line` for each exact repeat, plus the repeated lines' chars. */
+export function findRepeatedLines(files: { path: string; content: string }[]): { repeats: string[]; chars: number } {
+  const first = new Map<string, string>()
+  const repeats: string[] = []
+  let chars = 0
+  for (const { path, content } of files) {
+    for (const [number, line] of proseLines(content)) {
+      const norm = normalizedLine(line)
+      if (norm === null) continue
+      const match = first.get(norm)
+      if (match) {
+        repeats.push(`${path}:${number} repeats ${match}`)
+        chars += line.trim().length
+      } else {
+        first.set(norm, `${path}:${number}`)
+      }
+    }
+  }
+  return { repeats, chars }
+}
+
+// -- Hook hygiene (mirrors checks 1, 3, 6 and 7 of _hook_problems in rate.py) --------
+//
+// From code.claude.com/docs/en/hooks, read 2026-11-03: each handler is an object with a
+// "type" inside a matcher group's "hooks" array, and the same handler in more than one
+// settings file runs once. Findings name the file, event and index, never the command.
+
+const HOOK_SCRIPT = /^[^\s]+\.(?:sh|bash|py|js|mjs|cjs|ts|ps1|rb|pl)$/i
+const PROJECT_DIR_VAR = /^(?:\$\{CLAUDE_PROJECT_DIR\}|\$CLAUDE_PROJECT_DIR|\$env:CLAUDE_PROJECT_DIR)(?=\/|$)/
+const HOME_VAR = /^(?:\$\{HOME\}|\$HOME|\$env:USERPROFILE|~)(?=\/|$)/
+const HEADLESS_RUN = /(?<![\w-])claude(?:\.exe)?(?![\w-])[^\n|;&]*?\s(?:-p|--print)\b/
+
+export interface HookSource {
+  /** settings.json or settings.local.json */
+  file: string
+  raw: JsonObject | null
+}
+
+interface HookHandler {
+  where: string
+  event: string
+  matcher: unknown
+  handler: JsonObject
+}
+
+/** Split a shell command into words: quotes group and are dropped; | ; & < > ( ) separate. */
+export function shellWords(command: string): string[] {
+  const words: string[] = []
+  let word = ''
+  let quote = ''
+  for (const ch of command.replace(/\\/g, '/')) {
+    if (quote && ch === quote) quote = ''
+    else if (quote || (!`"'`.includes(ch) && !/\s/.test(ch) && !'|;&<>()'.includes(ch))) word += ch
+    else if (`"'`.includes(ch)) quote = ch
+    else if (word) {
+      words.push(word)
+      word = ''
+    }
+  }
+  return word ? [...words, word] : words
+}
+
+function hookWords(handler: JsonObject): string[] {
+  const command = handler.command
+  if (typeof command !== 'string') return []
+  if (Array.isArray(handler.args)) return [command, ...handler.args.map(String)].map((p) => p.replace(/\\/g, '/'))
+  return shellWords(command)
+}
+
+function isRelativeScript(word: string): boolean {
+  if (PROJECT_DIR_VAR.test(word) || HOME_VAR.test(word)) return false
+  if (word.includes('$') || word.includes('%')) return false
+  return !word.startsWith('/') && !/^[A-Za-z]:\//.test(word)
+}
+
+function hookHandlers(sources: HookSource[]): { handlers: HookHandler[]; malformed: string[] } {
+  const handlers: HookHandler[] = []
+  const malformed: string[] = []
+  const seen = new Set<string>()
+  for (const { file, raw } of sources) {
+    for (const [event, entries] of Object.entries(asObject(raw?.hooks))) {
+      const groups: unknown[] = Array.isArray(entries) ? entries : [entries]
+      groups.forEach((group, g) => {
+        const where = `${file} ${event}[${g}]`
+        const inner = asObject(group).hooks
+        if (!Array.isArray(inner)) {
+          malformed.push(where)
+          return
+        }
+        const matcher = asObject(group).matcher
+        inner.forEach((handler: unknown, h: number) => {
+          const obj = asObject(handler)
+          if (!obj.type) {
+            malformed.push(`${where}.hooks[${h}]`)
+            return
+          }
+          const key = JSON.stringify([event, matcher ?? null, obj])
+          if (seen.has(key)) return
+          seen.add(key)
+          handlers.push({ where: `${where}.hooks[${h}]`, event, matcher, handler: obj })
+        })
+      })
+    }
+  }
+  return { handlers, malformed }
+}
+
+/** Hook findings the site can see from the settings text alone. */
+export function findHookProblems(sources: HookSource[]): string[] {
+  const { handlers, malformed } = hookHandlers(sources)
+  const relative: string[] = []
+  const headless: string[] = []
+  const sessionStart: string[] = []
+  for (const { where, event, matcher, handler } of handlers) {
+    if (event === 'SessionStart' && [undefined, null, '', '*', '.*'].includes(matcher as string)) sessionStart.push(where)
+    if (handler.type !== 'command') continue
+    const words = hookWords(handler)
+    const script = words.find((w) => HOOK_SCRIPT.test(w) && !w.startsWith('-') && !w.includes('://'))
+    if (script && isRelativeScript(script)) relative.push(`${where} (${script})`)
+    const args = Array.isArray(handler.args) ? handler.args.map(String) : []
+    if (HEADLESS_RUN.test([String(handler.command ?? ''), ...args].join(' '))) headless.push(where)
+  }
+  const findings: string[] = []
+  if (malformed.length > 0) {
+    findings.push(
+      `${malformed.length} hook handler(s) never run: ${listed(malformed)}. Each handler must be an object with a "type" (such as "command") inside a matcher group's "hooks" array; a bare command string or a handler without a type does not run (hooks reference, read 2026-11-03).`,
+    )
+  }
+  if (relative.length > 0) {
+    findings.push(
+      `${relative.length} hook handler(s) use a relative script path: ${listed(relative)}. A hook runs in the session's current directory, so it fails once Claude cds into a subfolder. Start the path with "$CLAUDE_PROJECT_DIR"/ in a shell-form command, or \${CLAUDE_PROJECT_DIR}/ in args.`,
+    )
+  }
+  if (headless.length > 0) {
+    findings.push(
+      `${headless.length} hook handler(s) run claude -p (or --print): ${listed(headless)}. Each run is its own Claude Code session on your plan limits or API credits, started every time the hook fires; keep it on events that fire rarely, such as SessionEnd.`,
+    )
+  }
+  for (const where of sessionStart) {
+    findings.push(
+      `Note: SessionStart hook ${where} has no matcher, so it also runs on resume, clear, compact and fork. That is intended if it re-injects context after compacting; Claude's first response waits for SessionStart hooks to finish (hooks reference, read 2026-11-03).`,
+    )
+  }
+  return findings
+}
+
 // -- Category scoring (mirrors tools/claude-rate rubric: 7 categories, 100 pts)
 
 const CLAUDE_MD_LINE_GUIDANCE = 200
@@ -448,12 +742,113 @@ function scoreFileReadExclusions(f: AnalysisResult['fileReadExclusions']): Categ
   return { name: 'File-read exclusions', score, maxScore: 15, detail }
 }
 
+type JsonObject = Record<string, unknown>
+
+function asObject(value: unknown): JsonObject {
+  return value && typeof value === 'object' && !Array.isArray(value) ? (value as JsonObject) : {}
+}
+
+// Auto-compact windows are token counts from 100,000 to 1,000,000, and only one under
+// the 1M default bounds context growth. MCP tool results are capped at 25,000 tokens by
+// default. On these providers the `haiku` alias is Haiku 4.5, not Haiku 5.5. (Settings,
+// env-vars and model-config references, read 2026-11-03.)
+const WINDOW_MIN = 100_000
+const WINDOW_DEFAULT = 1_000_000
+const MCP_OUTPUT_DEFAULT = 25_000
+const TOKEN_COUNT = /^\s*([0-9]+)\s*([kKmM]?)\s*$/
+const TOKEN_SCALE: Record<string, number> = { '': 1, k: 1_000, m: 1_000_000 }
+const PROVIDER_FLAGS = [
+  'CLAUDE_CODE_USE_BEDROCK',
+  'CLAUDE_CODE_USE_VERTEX',
+  'CLAUDE_CODE_USE_FOUNDRY',
+  'CLAUDE_CODE_USE_ANTHROPIC_AWS',
+  'CLAUDE_CODE_USE_MANTLE',
+]
+const MODEL_FAMILIES = ['haiku', 'sonnet', 'opus', 'fable', 'mythos']
+
+/** A token count from a settings key, which takes a JSON number. */
+function settingTokens(value: unknown): number | null {
+  return typeof value === 'number' && Number.isFinite(value) ? Math.trunc(value) : null
+}
+
+/** A token count from an env value: 200000 or "200000", plus "200k" or "1M" when `suffixes`. */
+function envTokens(value: unknown, suffixes = true): number | null {
+  if (typeof value !== 'string') return settingTokens(value)
+  const match = TOKEN_COUNT.exec(value)
+  if (!match || (match[2] && !suffixes)) return null
+  return Number(match[1]) * TOKEN_SCALE[match[2].toLowerCase()]
+}
+
+function modelFamily(model: unknown): string | null {
+  const text = typeof model === 'string' ? model.toLowerCase() : ''
+  return MODEL_FAMILIES.find((family) => text.includes(family)) ?? null
+}
+
+/** An auto-compact window under the 1M default: top-level, per model, or the env variable. */
+function windowSet(s: JsonObject): boolean {
+  const values = [settingTokens(s.autoCompactWindow)]
+  for (const conf of Object.values(asObject(s.modelSettings))) {
+    values.push(settingTokens(asObject(conf).autoCompactWindow))
+  }
+  values.push(envTokens(asObject(s.env).CLAUDE_CODE_AUTO_COMPACT_WINDOW))
+  return values.some((v) => v !== null && v >= WINDOW_MIN && v < WINDOW_DEFAULT)
+}
+
+/**
+ * A lower MCP output cap, or a forced subagent model cheaper than the main one. The
+ * subagent model alone is a default that a subagent's own model field overrides, so it
+ * counts only with CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1.
+ */
+function envControls(s: JsonObject): boolean {
+  const env = asObject(s.env)
+  const mcpCap = envTokens(env.MAX_MCP_OUTPUT_TOKENS, false)
+  if (mcpCap !== null && mcpCap > 0 && mcpCap < MCP_OUTPUT_DEFAULT) return true
+  const forced = String(env.CLAUDE_CODE_SUBAGENT_MODEL_FORCE ?? '').trim() === '1'
+  const family = modelFamily(env.CLAUDE_CODE_SUBAGENT_MODEL)
+  return forced && (family === 'haiku' || family === 'sonnet') && family !== modelFamily(s.model)
+}
+
+const DEAD_SUBAGENT_KEY_FINDING =
+  'env CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION does nothing: it was removed in v2.1.224 and is now a no-op (code.claude.com/docs/en/env-vars, read 2026-11-03). CLAUDE_CODE_MAX_CONCURRENT_SUBAGENTS limits how many subagents run at once.'
+
+function haikuWindowFinding(): string {
+  const base = MODELS['haiku-5-5']
+  const tier = base.longPrompt
+  if (!tier) return ''
+  const usd = (n: number) => `$${n.toFixed(2)}`
+  return `The pinned model is Haiku 5.5 with no auto-compact window. It auto-compacts at about 967K tokens by default (code.claude.com/docs/en/model-config, read 2026-11-03), but a request whose prompt is over ${tier.threshold.toLocaleString('en-US')} tokens pays ${usd(tier.inputPer1M)}/${usd(tier.outputPer1M)} per 1M on the whole request instead of ${usd(base.inputPer1M)}/${usd(base.outputPer1M)}, ${Math.round(tier.inputPer1M / base.inputPer1M)}x. Run /autocompact 100k in a Haiku 5.5 session, or set "modelSettings": {"claude-haiku-5-5": {"autoCompactWindow": 100000}}; the docs do not say how far below a 100K window compaction starts.`
+}
+
+/**
+ * A dead env key and the Haiku 5.5 price line; neither changes the score. Mirrors
+ * `_add_settings_findings` in tools/claude-rate/rate.py.
+ */
+export function settingsFindings(s: JsonObject): string[] {
+  const env = asObject(s.env)
+  const findings = Object.keys(env).includes('CLAUDE_CODE_MAX_SUBAGENTS_PER_SESSION') ? [DEAD_SUBAGENT_KEY_FINDING] : []
+  const name = typeof s.model === 'string' ? s.model.trim().toLowerCase() : ''
+  const onProvider = PROVIDER_FLAGS.some(
+    (flag) => !['', '0', 'false', 'none'].includes(String(env[flag] ?? '').trim().toLowerCase()),
+  )
+  const onHaiku55 = name.includes('haiku-5-5') || (name === 'haiku' && !onProvider)
+  const haikuSettings = Object.fromEntries(
+    Object.entries(asObject(s.modelSettings)).filter(([model]) => model.toLowerCase().includes('haiku')),
+  )
+  if (onHaiku55 && !windowSet({ autoCompactWindow: s.autoCompactWindow, env, modelSettings: haikuSettings })) {
+    findings.push(haikuWindowFinding())
+  }
+  return findings
+}
+
 /**
  * Whether settings.json configures a real spend-bounding setting.
  *
  * Mirrors `_cost_control_signals` in tools/claude-rate/rate.py and
- * `has_cost_controls` in tools/badge-generator/generate.py. Change all three
- * together or the CLI, the badge and the web analyzer will disagree.
+ * `has_cost_controls` in tools/badge-generator/generate.py and
+ * tools/actions/claude-cost-audit/audit.py. Change all four together or the
+ * CLI, the badge, the Action and the web analyzer will disagree.
+ * bashOutputMaxChars is not counted: the settings reference documents it as a
+ * way to raise the Bash output limit.
  */
 export function computeCostControls(s: Record<string, unknown>): boolean {
   // Reasoning tokens bill at the output rate. Claude Code defaults to "medium"
@@ -478,7 +873,8 @@ export function computeCostControls(s: Record<string, unknown>): boolean {
   }
   // Bounds the context growth that drives per-turn input cost.
   if (s.autoCompactEnabled === true) return true
-  return false
+  // An auto-compact window under 1M, a lower MCP output cap, or a forced cheaper subagent model.
+  return windowSet(s) || envControls(s)
 }
 
 function scoreSettings(
@@ -592,6 +988,11 @@ function analyzeClaudeMd(fileMap: Map<string, FetchedFile>) {
   const primaryText = primary?.found ? normalizeNewlines(primary.content) : ''
   const primaryLines = countLines(primaryText)
   const totalChars = files.reduce((sum, f) => sum + f.chars, 0)
+  // Exact repeats only, within the two fetched files; the CLI also reads rules files and
+  // near-duplicates. No extra API calls.
+  const { repeats, chars: repeatedChars } = findRepeatedLines(
+    files.map(({ path }) => ({ path, content: fileMap.get(path)?.content ?? '' })),
+  )
 
   return {
     totalChars,
@@ -606,6 +1007,8 @@ function analyzeClaudeMd(fileMap: Map<string, FetchedFile>) {
       totalTokens: estimateTokens(totalChars),
       fileCount: files.length,
       files,
+      repeatedLines: repeats,
+      repeatedTokens: estimateTokens(repeatedChars),
     },
   }
 }
@@ -658,7 +1061,8 @@ export async function analyzeRepo(
   const branch = repoInfo.branch
 
   // One recursive tree call -> full file listing for deep detection.
-  const treePaths = await fetchTree(owner, repo, branch)
+  const tree = await fetchTree(owner, repo, branch)
+  const treePaths = tree.paths
   const treeSet = new Set(treePaths)
   const detection = detectFromTree(treePaths)
 
@@ -670,6 +1074,8 @@ export async function analyzeRepo(
     '.claude/settings.local.json',
     IGNORE_FILE,
     '.mcp.json',
+    // Read only for the detected Read deny rules; it does not change the score.
+    GITIGNORE_FILE,
   ]
   const files = await Promise.all(
     contentTargets.map((path) =>
@@ -686,9 +1092,11 @@ export async function analyzeRepo(
   // Settings
   const settingsFile = fileMap.get('.claude/settings.json')
   const localSettingsFile = fileMap.get('.claude/settings.local.json')
+  const projectRaw = settingsFile?.found ? parseSettings(settingsFile.content) : null
+  const localRaw = localSettingsFile?.found ? parseSettings(localSettingsFile.content) : null
   let settingsRaw: Record<string, unknown> | null = null
-  if (settingsFile?.found) settingsRaw = parseSettings(settingsFile.content)
-  else if (localSettingsFile?.found) settingsRaw = parseSettings(localSettingsFile.content)
+  if (settingsFile?.found) settingsRaw = projectRaw
+  else if (localSettingsFile?.found) settingsRaw = localRaw
 
   const hasModel = settingsRaw
     ? !!(settingsRaw.model || settingsRaw.preferredModel)
@@ -708,6 +1116,12 @@ export async function analyzeRepo(
   // are only converted so the page can show the rules to migrate to.
   const denyRules = readDenyRules(settingsRaw)
   const ignoreFile = fileMap.get(IGNORE_FILE)
+  const suggestedRules = suggestReadDenyRules(
+    treePaths,
+    treePaths.length > 0 && !tree.truncated,
+    fileMap.get(GITIGNORE_FILE)?.content ?? '',
+    detection.lockFilesPresent,
+  )
   const fileReadExclusions = {
     readDenyRules: denyRules,
     lockFilesPresent: detection.lockFilesPresent,
@@ -716,6 +1130,8 @@ export async function analyzeRepo(
     ),
     ignoreFileFound: !!ignoreFile?.found,
     ignoreFileRules: ignoreFile?.found ? ignorePatternsAsReadRules(ignoreFile.content) : [],
+    suggestedRules,
+    missingRules: denyRules.length > 0 ? suggestedRules.filter((r) => !denyCovered(r, denyRules)) : [],
   }
 
   // MCP servers: .mcp.json is the canonical location; settings.json is legacy.
@@ -734,11 +1150,17 @@ export async function analyzeRepo(
     hasHooks,
     hookCount,
     raw: settingsRaw,
+    findings: settingsRaw ? settingsFindings(settingsRaw) : [],
+    // Both files, because Claude Code merges their hooks; the score still counts settings.json only.
+    hookFindings: findHookProblems([
+      { file: 'settings.json', raw: projectRaw },
+      { file: 'settings.local.json', raw: localRaw },
+    ]),
   }
 
-  // Security: obvious key shapes in the config files we fetched.
+  // Security: obvious key shapes in the config files we fetched (.gitignore is not a config file).
   const keyLeakFiles = files
-    .filter((f) => f.found && API_KEY_PATTERN.test(f.content))
+    .filter((f) => f.found && f.path !== GITIGNORE_FILE && API_KEY_PATTERN.test(f.content))
     .map((f) => f.path)
 
   const security = {
@@ -865,6 +1287,12 @@ function contextRecommendations(r: RecommendationInput): string[] {
       `Your CLAUDE.md files total ~${r.claudeMdAll.totalTokens.toLocaleString()} tokens and load in full at the start of every session. Delete duplication and drop low-value rules; 2,000 tokens or fewer scores full marks.`,
     )
   }
+  const repeated = r.claudeMdAll.repeatedLines
+  if (repeated.length > 0) {
+    recs.push(
+      `${repeated.length} line(s) repeat an earlier line in your CLAUDE.md files (~${r.claudeMdAll.repeatedTokens.toLocaleString()} tokens in every session): ${listed(repeated)}. Keep one copy of each, in the file named after "repeats".`,
+    )
+  }
   const f = r.fileReadExclusions
   if (f.ignoreFileFound) {
     recs.push(
@@ -872,12 +1300,12 @@ function contextRecommendations(r: RecommendationInput): string[] {
     )
   } else if (f.readDenyRules.length === 0) {
     recs.push(
-      'Add Read(...) rules to permissions.deny in .claude/settings.json to keep Claude\'s file tools out of dependency, build and generated paths, e.g. Read(./node_modules/**), Read(./dist/**), Read(*.min.js). No published measurement exists for what they save; the effect depends on how often Claude would otherwise open those files.',
+      `Add Read(...) rules to permissions.deny in .claude/settings.json to keep Claude's file tools out of dependency, build and generated paths. Detected for this repo: ${f.suggestedRules.join(', ')}. A folder is listed only when .gitignore names it and nothing under it is committed, because a Read deny also blocks Edit and Write on that path. No published measurement exists for what they save; the effect depends on how often Claude would otherwise open those files.`,
     )
   }
-  if (f.readDenyRules.length > 0 && f.lockFilesUncovered.length > 0) {
-    const lockRules = f.lockFilesUncovered.map((lf) => 'Read(./' + lf + ')').join(', ')
-    recs.push(`Add a Read deny rule for each lock file at the repo root: ${lockRules}.`)
+  // Uncovered lock files are part of the detected list, so they print once, here.
+  if (f.readDenyRules.length > 0 && f.missingRules.length > 0) {
+    recs.push(`Add these Read deny rules detected for this repo: ${f.missingRules.join(', ')}.`)
   }
   return recs
 }
@@ -894,9 +1322,10 @@ function configRecommendations(r: RecommendationInput): string[] {
     }
     if (!r.settings.hasCostControls) {
       recs.push(
-        'Add cost controls Claude Code actually reads. There is no spend-cap setting, so maxMonthlyCost and budgetCap are silently ignored: use "effortLevel": "medium" (reasoning tokens bill as output), "maxEffortLevel": "high" (caps effort on every provider), "fastMode": false (declines the flat 2x) or "fastModePerSessionOptIn": true, "autoCompactEnabled": true, or "enforceAvailableModels" with "availableModels" to keep Opus- and Fable-tier models out. A real spend ceiling needs a PreToolUse hook, not a setting.',
+        'Add cost controls Claude Code actually reads. There is no spend-cap setting, so maxMonthlyCost and budgetCap are silently ignored: use "effortLevel": "medium" (reasoning tokens bill as output), "maxEffortLevel": "high" (caps effort on every provider), "fastMode": false (declines the flat 2x) or "fastModePerSessionOptIn": true, "autoCompactEnabled": true, "autoCompactWindow" under 1000000 (compacts sooner than the ~967K default), "enforceAvailableModels" with "availableModels" to keep Opus- and Fable-tier models out, or in "env": MAX_MCP_OUTPUT_TOKENS under 25000, or CLAUDE_CODE_SUBAGENT_MODEL with CLAUDE_CODE_SUBAGENT_MODEL_FORCE=1. A real spend ceiling needs a PreToolUse hook, not a setting.',
       )
     }
+    recs.push(...r.settings.findings)
   }
   if (r.mcpServerCount > 3) {
     recs.push(
@@ -908,6 +1337,7 @@ function configRecommendations(r: RecommendationInput): string[] {
       'Consider adding hooks for budget tracking. PreToolUse hooks can warn when costs are high.',
     )
   }
+  recs.push(...r.settings.hookFindings)
   return recs
 }
 

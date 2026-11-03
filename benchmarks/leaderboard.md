@@ -1,6 +1,8 @@
 # Community Benchmark Leaderboard
 
 > Real-world cost data submitted by the community. Submit your own results using the [leaderboard entry template](../.github/ISSUE_TEMPLATE/leaderboard-entry.md).
+>
+> **Evidence:** every entry is self-reported, with no run log or raw data kept in this repo; the cost column is the submitter's figure, not recomputed here (the table gives total tokens, not the input and output split it would need). Not run under [METHOD.md](METHOD.md).
 
 ## How to Read This Table
 

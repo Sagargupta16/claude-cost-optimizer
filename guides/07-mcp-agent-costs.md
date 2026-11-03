@@ -9,6 +9,8 @@
 - [MCP Server Token Overhead](#mcp-server-token-overhead)
 - [Measuring Your MCP Cost](#measuring-your-mcp-cost)
 - [Optimization Strategies](#optimization-strategies)
+- [Code Search and Retrieval Servers](#code-search-and-retrieval-servers)
+  - [Does a Retrieval Server Pay for Itself?](#does-a-retrieval-server-pay-for-itself)
 - [Subagent Cost Patterns](#subagent-cost-patterns)
 - [Agent SDK Cost Considerations](#agent-sdk-cost-considerations)
 - [Key Takeaways](#key-takeaways)
@@ -22,7 +24,8 @@ In Claude Code, **MCP tool search is on by default** ([MCP docs](https://code.cl
 Full **tool schemas** load into the prompt up front, on every turn, only when tool search is off (or for a server you mark `alwaysLoad: true`):
 
 - `ENABLE_TOOL_SEARCH=false`, `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`, or a HIPAA configuration
-- a gateway that rejects it: tool search is on by default behind a custom `ANTHROPIC_BASE_URL` since v2.1.304 (it was off before unless `ENABLE_TOOL_SEARCH` was `true` or `auto`), and since v2.1.305 Claude Code can retry a request without it after a `400` or `422` whose cause it does not recognize, so tools load up front, and it tries tool search again later (set `ENABLE_TOOL_SEARCH=false` to skip the rejected requests)
+- `ENABLE_TOOL_SEARCH=auto` or `auto:N` while the deferred tools' definitions total under the threshold (10% of the context window for `auto`; see [Tool Search](#tool-search-deferred-tools))
+- a gateway that rejects it: tool search is on by default behind a custom `ANTHROPIC_BASE_URL` since v2.1.304 (it was off before unless `ENABLE_TOOL_SEARCH` was `true`, `auto` or `auto:N`), and since v2.1.305 Claude Code can retry a request without it after a `400` or `422` whose cause it does not recognize, so tools load up front, and it tries tool search again later (set `ENABLE_TOOL_SEARCH=false` to skip the rejected requests)
 - models older than the Claude 4.5 generation on Google Cloud (Google managed, formerly Vertex AI; Claude Code calls it Google Cloud's Agent Platform), and Microsoft Foundry deployments hosted on Azure, which reject it
 
 The sizes and the worked example below are that **tool-search-off** case.
@@ -66,6 +69,17 @@ With prompt caching, the actual cost is much lower: cached schema tokens bill at
 
 Tool search is **on by default** in Claude Code: schemas load only when Claude uses a tool, not all at once. What it removes is the full-schema load described above for every tool you do not call. Anthropic has measured it on the API: with all tools loaded, a run's cost rose from $0.55 to $1.02 at 502 tools, while with tool search it stayed at $0.56 (45% less) at the same accuracy, and deferring a GitHub MCP server's toolset cut a run 20% ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), "Defer unused tool definitions", read 2026-11-01). An earlier engineering post measured the Tool Search Tool cutting about 77K tokens of definitions to about 8.7K, 85% fewer ([advanced tool use, 2025-11-24](https://www.anthropic.com/research/advanced-tool-use), read 2026-11-01). There is no Claude Code-specific figure. Leave it on unless you have a reason to turn it off; a custom `ANTHROPIC_BASE_URL` no longer turns it off by itself (see the list above).
 
+`ENABLE_TOOL_SEARCH` takes these values ([MCP docs](https://code.claude.com/docs/en/mcp), "Configure tool search", and [environment variables](https://code.claude.com/docs/en/env-vars), read 2026-11-03):
+
+| Value | What loads |
+|-------|------------|
+| unset or `true` | MCP tools are deferred and load on demand, with the exceptions in the list above |
+| `auto` | Threshold mode: tools load up front while their definitions total under 10% of the context window; at 10% or more tool search turns on, and once on it can stay on for the conversation even if the total later drops |
+| `auto:N` | Threshold mode with your own percentage, `N` from 0 to 100 (`auto:5` is 5%) |
+| `false` | Every MCP tool loads up front, no deferral |
+
+Below its threshold, `auto` puts full schemas back in every request, and with them the old cache rule: a server connecting mid-session, or one you disable in `/mcp`, then invalidates the cache ([prompt caching docs](https://code.claude.com/docs/en/prompt-caching), read 2026-11-03). To keep a few always-needed tools visible without giving up deferral for the rest, set `alwaysLoad: true` on that one server instead.
+
 Descriptions are capped too. Claude Code cuts a tool description or server instructions that load up front at 4,096 characters (raised from 2,048 in v2.1.296) and a description loaded through tool search at 16,384 characters; `CLAUDE_CODE_MAX_MCP_DESCRIPTION_LENGTH` (v2.1.280+) changes both ([MCP docs](https://code.claude.com/docs/en/mcp), read 2026-11-01). The cap bounds what one verbose server can add to every request when its tools load up front.
 
 ### MCP Tool Output
@@ -76,7 +90,9 @@ What a tool **returns** costs tokens too, deferred or not. Claude Code warns whe
 
 ## Measuring Your MCP Cost
 
-Measure rather than estimate. Inside a session, `/context` shows what is consuming context space, and on a Pro, Max, Ultra, Team or Enterprise plan `/usage` attributes recent usage to individual MCP servers as a share of the total ([costs page](https://code.claude.com/docs/en/costs), read 2026-11-01).
+Measure rather than estimate. Inside a session, `/context` shows what is consuming context space, and on a Pro, Max, Ultra, Team or Enterprise plan `/usage` attributes recent usage to individual MCP servers as a share of the total ([costs page](https://code.claude.com/docs/en/costs), read 2026-11-01). That share counts only the requests that consumed one of the server's tool results ([costs page](https://code.claude.com/docs/en/costs), read 2026-11-03).
+
+For a longer window on any provider, `claude-rate --usage --by mcp,skill,plugin,agent` (claude-rate 0.4.0 or later) groups 30 days of your local transcripts by the attribution fields Claude Code writes on each request. Read each row as "requests Claude Code tagged with X", not as what X added: the fields are undocumented, a tag covers the whole request, cached prefix included, for as long as the server or skill is active, and one request can carry several tags, so the rows overlap and do not sum to your total. A row's dollars say where tagged spend sat, not what removing X would save.
 
 If tool search is off, a rough estimate is still possible:
 
@@ -138,6 +154,50 @@ Those headers are for your own API calls. Inside Claude Code the question is too
 
 ---
 
+## Code Search and Retrieval Servers
+
+Several popular MCP servers promise cheaper code search: a symbol layer over a language server or IDE (Serena), a vector index (claude-context) and a graph index (codebase-memory-mcp). Compare them with what Claude Code already has. Its LSP tool jumps to definitions, finds references and reports type errors once you install a code intelligence plugin for your language (it stays inactive until then, and in cloud sessions) ([tools reference](https://code.claude.com/docs/en/tools-reference), read 2026-11-03), and Grep and Read cover the rest.
+
+Some of these servers cost more than tokens. claude-context needs a vector database and an embedding API, so your code chunks go to that embedding provider unless you run both locally (its FAQ describes Milvus in Docker plus Ollama) ([claude-context README](https://github.com/zilliztech/claude-context), read 2026-11-03).
+
+Each project's own figures, as it reports them. None is a Claude Code measurement of cost per task, and none converts into the `S` of the formula below: different models, tokenizers and units.
+
+| Project | What it measured | Model and size | What it reports | Read |
+|---------|------------------|----------------|-----------------|------|
+| [claude-context](https://github.com/zilliztech/claude-context/blob/HEAD/evaluation/README.md) (vector index) | Code retrieval on 30 SWE-bench Verified instances (15 to 60 minutes, exactly 2 files modified), grep-only agent vs the same agent plus the server | GPT-4o-mini, each arm run 3 times, means only | Tokens per instance 73,373 vs 44,449 (39.4% fewer), summed input plus output over every call in the agent loop; retrieval F1 on the modified files 0.40 in both arms, which is not a task pass rate | 2026-11-03 |
+| [codebase-memory-mcp](https://arxiv.org/abs/2603.27277) (graph index), the authors' preprint | 12 question categories on 31 repositories, graded by the first author against manually derived answers | Claude Opus 4.6, one backend; the paper's 14-tool version | About 1,000 vs about 10,000 tokens per question ("ten times fewer", rounded) and a graded quality score of 0.83 vs 0.92 for a file-exploration agent, not a pass rate | 2026-11-03 |
+| [Serena](https://github.com/oraios/serena/blob/HEAD/docs/04-evaluation/030_results/010_cc_on_tianshou.md) (symbol layer) | A self-assessment written by Claude Code itself: 20 tasks on one codebase (Tianshou), with the paid JetBrains backend; the free LSP backend was not evaluated | Claude Opus 4.6 at `medium` | Call counts and edit payload sizes only, no token totals and no quality score; its verdict is one call instead of a chain for cross-file renames and moves, and comparable or slightly less efficient for small single-file edits | 2026-11-03 |
+
+### Does a Retrieval Server Pay for Itself?
+
+A server costs what it loads up front on every request, and saves what it keeps out of the conversation. The first half is the formula this repo already uses for CLAUDE.md: a fixed prefix of `D` tokens costs `D x (w + (T - 1) x h)` over `T` turns, with `w` the cache write rate and `h` the cache-hit rate ([Guide 01](01-understanding-costs.md#claudemd-cost-over-a-session)). The second half:
+
+```
+saving from one use at turn t of T  =  S x (w + (T - t) x h)
+  S = net tokens kept out: what the plain read would have returned
+      minus the server's own result tokens; sum it over every use in the task
+pays for itself when  sum of savings  >=  D x (w + (T - 1) x h)  +  E
+  E = dollars outside Claude tokens: embedding calls, a hosted index
+cost per completed task  =  session cost / pass rate
+```
+
+The payback turn is the first `T` at which the savings cover the carry cost. Cost per completed task needs a pass rate you measure yourself on your own tasks: none of the three projects above publishes one.
+
+With tool search on, `D` is only the server's tool names and instructions until Claude calls one of its tools. Anthropic publishes no per-server figure for that ([MCP Server Token Overhead](#mcp-server-token-overhead)); the only bound is the 4,096-character cap on an up-front description or server instructions. Measure your own with `/context`, and `/usage` on a plan, rather than assuming a size.
+
+Worked examples, with `S` = 20,000 net tokens kept out at turn 20 of a 30-turn session (an illustrative round number, not a measurement):
+
+```
+Opus 5.5, 5-minute TTL:    20,000 x ($5.00 + 10 x $0.20) / 1M = $0.14
+Sonnet 5.5, 5-minute TTL:  20,000 x ($2.50 + 10 x $0.10) / 1M = $0.07
+Opus 5.5, 1-hour TTL:      20,000 x ($8.00 + 10 x $0.20) / 1M = $0.20
+                           (a subscription's main conversation)
+```
+
+On the 5-minute rows, that one use covers an up-front load of up to about 12,960 tokens carried over all 30 turns (computed: $0.14 / (($5.00 + 29 x $0.20) / 1M) on Opus 5.5, the same on Sonnet 5.5, whose rates are half), before `E` and before any change in pass rate. A server that lowers your pass rate can cost more per completed task even when it saves tokens.
+
+---
+
 ## Subagent Cost Patterns
 
 Subagents (`Agent` tool) run in separate contexts. Each subagent is a full Claude session with its own input/output billing.
@@ -149,6 +209,16 @@ Subagent cost = (system prompt + task prompt + tool results) x model price
 Main context savings = avoided context pollution from search results
 ```
 
+Priced the way Claude Code caches, for one read of `F` tokens with `T` main-thread requests after it (`w` = 5-minute write, `h` = cache hit, `o` = output rate of the model that bills each request):
+
+```
+Read on the main thread:  F x (w_main + T x h_main)
+Delegate:                 D x o_main + (D + S) x (w_main + T x h_main)      delegation prompt D, summary S
+                        + O x (w_sub + h_sub) + F x w_sub + S x o_sub       subagent overhead O, two requests
+```
+
+[Delegation break-even](../benchmarks/delegation-breakeven.md) works this through for a Haiku 5.5 subagent and for one that inherits Opus 5.5, including Haiku 5.5's 100K price line, with the assumptions stated. It is a computed token-cost floor, not a measurement: on those assumptions a Haiku 5.5 subagent repays its overhead on reads of a few thousand tokens, while one that inherits Opus 5.5 rarely pays on tokens alone.
+
 ### When Subagents Save Money
 
 | Pattern | Without Subagent | With Subagent | Savings |
@@ -159,12 +229,24 @@ Main context savings = avoided context pollution from search results
 
 The published subagent measurements are all outside Claude Code. In Anthropic's [cost-optimization cookbook](https://platform.claude.com/cookbook/cost-optimization-cost-optimization), moving the work into a subagent cut one agent loop's cost 78% ($1.7945 to $0.3978). In the [cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) ("Orchestrator strategy"), delegation to Sonnet 5 workers saved money in only two measured situations, routine work with a long cost tail and work larger than one context window, and adding Haiku 5.5 subagents to Opus 5.5 at `medium` on Claude Managed Agents cut cost per attempt by 32% and the pass rate by about 4 percentage points, about what a mix of `low` and `medium` effort without subagents would give at that cost (read 2026-11-01). Subagents save when they read far more than they return and run on a cheaper model; for Haiku 5.5 subagents on coding tasks, Anthropic says to compare with lower effort first.
 
+To see your own split, `claude-rate --usage` (claude-rate 0.4.0 or later) divides 30 days of local list-price spend between the main conversation and subagents, by agent type, from the transcripts on your machine. It tells you whether subagents are a large enough share of your spend for these choices to matter.
+
 ### When Subagents Cost More
 
 - **Simple, one-off queries**: The overhead of spinning up a new context (system prompt, CLAUDE.md) costs more than just doing the search in the main context
 - **Tasks requiring main context knowledge**: Subagents don't inherit conversation history, so you have to re-explain context (a fork does inherit it; see the cache note at the end of this section)
 - **Haiku subagents for complex tasks**: If the subagent fails and you retry on a better model, you've paid twice
 - **Multi-agent fan-out**: Anthropic's multi-agent research system used about 15x the tokens of a chat (a single agent about 4x), and token usage alone explained 80% of the variance in its BrowseComp results ([multi-agent research system, 2025-06-13](https://www.anthropic.com/research/multi-agent-research-system), read 2026-11-01). Claude Code's agent teams (experimental, off by default; enable with `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1`) use about 7x the tokens of a standard session when teammates run in plan mode ([costs page](https://code.claude.com/docs/en/costs), read 2026-11-01).
+- **An Opus subagent for a small read**: a subagent that inherits Opus 5.5, as the built-in Explore does under an Opus 5.5 main conversation, writes its whole starting context at the same rate the main thread would pay for the read itself, so on tokens alone it pays only for large reads followed by many main-thread turns (computed in [Delegation break-even](../benchmarks/delegation-breakeven.md))
+
+**A fit test before delegating** (adapted from [houtini-lm's delegation guide](https://github.com/houtini-ai/houtini-lm/blob/HEAD/manual/delegation.md), read 2026-11-03, which hands work to non-Claude models; its economics and figures are not Claude subagent numbers):
+
+- **Can you brief it in one message, and check the result at a glance?** Bounded, self-contained work fits: searching, summarizing a log, reading many files to answer one question.
+- **Is it bulky in tokens and shallow in reasoning?** Delegation pays when the subagent reads far more than it returns.
+- **Does it need cross-file judgement you have not put in the prompt?** Keep it on the main thread; the subagent knows only what the delegation prompt and its own reads give it.
+- **Is it faster to do than to brief?** A one-line change does not repay the subagent's starting context.
+
+Cut that starting context where you can: a custom subagent with `omitClaudeMd: true` (v2.1.271+) starts without the user, project and local CLAUDE.md files, which suits a subagent that takes everything it needs from the delegation prompt ([sub-agents docs](https://code.claude.com/docs/en/sub-agents), read 2026-11-03).
 
 ### Model Selection for Subagents
 
@@ -182,6 +264,12 @@ The `haiku` alias resolves by provider too. On the Anthropic API it means **Haik
 On Opus 5.5 subagents, adaptive thinking is **always on** -- `thinking: {type: "disabled"}` returns a 400 -- and reasoning tokens bill as **output** at $20/MTok. A fan-out of ten search subagents on Opus 5.5 pays for ten sets of reasoning tokens, so lower the effort level (default `medium`) or, better, route subagents that just grep and summarize to Haiku 5.5. On legacy Opus 5, thinking is on by default at $25/MTok and can be disabled only at effort `high` or below. Also note that `max_tokens` caps thinking plus visible text together, so a subagent with a tight `max_tokens` and high effort can burn its budget reasoning and return nothing usable.
 
 Subagents also cache on a shorter clock: on a Claude subscription the main conversation gets a one-hour cache TTL, but subagents get five minutes (tunable with `subagentPromptCacheTtl` / `CLAUDE_CODE_SUBAGENT_PROMPT_CACHE_TTL`). An ordinary subagent starts a fresh cache of its own, because its system prompt and tool set differ from the parent's. A fork (`subagent_type: "fork"`, on by default in `claude -p`, the Agent SDK, the desktop app and VS Code since v2.1.302; `CLAUDE_CODE_FORK_SUBAGENT=0` turns it off) inherits the parent's system prompt, tools and history exactly, so its first request reads the parent's cache; its requests still fall in the five-minute bucket ([prompt caching docs](https://code.claude.com/docs/en/prompt-caching), "Subagents and the cache", [changelog](https://code.claude.com/docs/en/changelog), read 2026-11-01).
+
+Three more frontmatter fields bound what one custom subagent can spend ([sub-agents docs](https://code.claude.com/docs/en/sub-agents), "Supported frontmatter fields", read 2026-11-03):
+
+- **`maxTurns`**: the most agentic turns the subagent takes before it stops. Claude Code returns its output marked as partial (v2.1.246+), and Claude can resume it to continue, so a runaway search ends at a known size instead of running on.
+- **`omitClaudeMd: true`** (v2.1.271+): the subagent starts without the user, project and local CLAUDE.md files; managed policy files still load, and so do a subdirectory's CLAUDE.md and path-scoped rules when it works with files there. Use it for subagents that take everything from the delegation prompt; Explore and Plan already skip CLAUDE.md.
+- **`experimental: {cacheTtl: 1h}`** (v2.1.248+): this subagent's own prompt cache lifetime, `5m` or `1h`, written inside the `experimental` map, not at the top level. It is read only from subagent files (the `--agents` JSON ignores `experimental`), and `1h` is ignored while a subscription is drawing on usage credits. The 1-hour write costs 2x input against 1.25x, so it pays only when enough of the subagent's turns follow a pause of 5 to 60 minutes (breakeven in [Guide 08](08-prompt-caching.md#extended-ttl-economics)).
 
 ---
 
@@ -237,3 +325,4 @@ Max, Ultra (formerly Max 20x, $200 a month) and Team plans include monthly Claud
 8. **Agent teams (experimental, off by default) use ~7x the tokens** of a standard session when teammates run in plan mode -- keep them small
 9. **With tool search on, adding or removing a server keeps the cache** in Claude Code; on your own API calls, the `inline-tools-2026-09-15` beta (or the older `mid-conversation-tool-changes-2026-07-01` for changes by reference) does the same for changed tool definitions on Opus 5.5, Opus 5, Opus 4.8, Fable and Haiku 5.5, and on the Sonnet tier mid-conversation tool changes need Sonnet 5.5 (Sonnet 5 does not support them)
 10. **Opus 5.5 always thinks** and reasoning tokens bill as output at $20/MTok -- lower the effort level, or route subagents that only search and summarize to Haiku 5.5
+11. **A code search server pays only if the tokens it keeps out beat what it loads, plus any embedding or index cost** -- the published figures for these servers are each project's own, on other models or other units, so measure `S` and your pass rate on your own tasks

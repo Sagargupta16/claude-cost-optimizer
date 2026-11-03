@@ -5,6 +5,11 @@ Token Estimator for Claude Code
 Estimates token count for a file or text input and calculates
 cost across Claude models (Fable, Opus, Sonnet, Haiku).
 
+Counts with tiktoken's cl100k_base, then scales the count per model: x1.3 for
+the models on the Claude 4.7+ tokenizer (the pricing page's "approximately 30%
+more tokens"), x1.0 for Opus 4.6, Sonnet 4.6 and Haiku 4.5. Both numbers are
+estimates, not Claude token counts.
+
 Usage:
     python estimate.py path/to/file.py
     echo "some text" | python estimate.py -
@@ -36,11 +41,17 @@ except ImportError:
 # NOTE: Haiku 5.5 is priced by prompt length. "long_prompt" holds the rates a
 # request pays when its prompt is over "threshold" tokens; calculate_cost picks
 # the tier from the size of one request, not from a multi-turn total.
+# NOTE: tokenizer_overhead mirrors tokenizer_overhead in tools/claude-rate/rate.py
+# (scripts/check-rate-values.py compares the two): 1.3 for models on the Claude
+# 4.7+ tokenizer, 1.0 for Opus 4.6, Sonnet 4.6 and Haiku 4.5. 1.3 is the pricing
+# page's "approximately 30% more tokens" applied to a cl100k count, so a scaled
+# count is an estimate; every cost below is priced on round(cl100k x overhead).
 MODEL_PRICING = {
     "fable": {
         "input": 10.00,
         "output": 50.00,
         "cache_hit": 0.25,
+        "tokenizer_overhead": 1.3,
         "name": "Fable 5.1",
         "note": (
             "Most capable widely released model (released 2026-09-01). 2.5x Opus 5.5 pricing, "
@@ -53,6 +64,7 @@ MODEL_PRICING = {
         "input": 10.00,
         "output": 50.00,
         "cache_hit": 1.00,
+        "tokenizer_overhead": 1.3,
         "name": "Fable 5 (legacy)",
         "note": (
             "Superseded by Fable 5.1 at the same $10/$50. Cache reads cost $1.00/MTok "
@@ -63,6 +75,7 @@ MODEL_PRICING = {
         "input": 4.00,
         "output": 20.00,
         "cache_hit": 0.20,
+        "tokenizer_overhead": 1.3,
         "name": "Opus 5.5",
         "note": (
             "Anthropic's recommended starting model for most workloads (released "
@@ -78,6 +91,7 @@ MODEL_PRICING = {
         "input": 5.00,
         "output": 25.00,
         "cache_hit": 0.50,
+        "tokenizer_overhead": 1.3,
         "name": "Opus 5 (legacy)",
         "note": (
             "Previous Opus-tier flagship (GA 2026-07-24), moved to legacy by the Opus "
@@ -91,6 +105,7 @@ MODEL_PRICING = {
         "input": 5.00,
         "output": 25.00,
         "cache_hit": 0.50,
+        "tokenizer_overhead": 1.3,
         "name": "Opus 4.8 (legacy)",
         "note": (
             "Same price as Opus 5. Still the server-side fallback target for Opus 5 "
@@ -101,18 +116,21 @@ MODEL_PRICING = {
         "input": 5.00,
         "output": 25.00,
         "cache_hit": 0.50,
+        "tokenizer_overhead": 1.3,
         "name": "Opus 4.7 (legacy)",
     },
     "opus_4_6": {
         "input": 5.00,
         "output": 25.00,
         "cache_hit": 0.50,
+        "tokenizer_overhead": 1.0,
         "name": "Opus 4.6 (legacy)",
     },
     "sonnet": {
         "input": 2.00,
         "output": 10.00,
         "cache_hit": 0.10,
+        "tokenizer_overhead": 1.3,
         "name": "Sonnet 5.5",
         "note": (
             "Current Sonnet-tier flagship (released 2026-09-28). Same $2/$10 and "
@@ -126,6 +144,7 @@ MODEL_PRICING = {
         "input": 2.00,
         "output": 10.00,
         "cache_hit": 0.20,
+        "tokenizer_overhead": 1.3,
         "name": "Sonnet 5 (legacy)",
         "note": (
             "Previous Sonnet-tier flagship (GA 2026-06-30), moved to legacy by the "
@@ -138,12 +157,14 @@ MODEL_PRICING = {
         "input": 3.00,
         "output": 15.00,
         "cache_hit": 0.30,
+        "tokenizer_overhead": 1.0,
         "name": "Sonnet 4.6 (legacy)",
     },
     "haiku": {
         "input": 0.10,
         "output": 0.50,
         "cache_hit": 0.01,
+        "tokenizer_overhead": 1.3,
         "name": "Haiku 5.5",
         "long_prompt": {
             "threshold": 100_000,
@@ -154,8 +175,9 @@ MODEL_PRICING = {
         "note": (
             "Current Haiku (released 2026-10-07). Priced by prompt length: $0.10/$0.50 "
             "up to 100,000 prompt tokens, $0.50/$2.50 above, on the whole request. "
-            "Counts here use cl100k; Haiku 5.5 counts ~30% more tokens than Haiku 4.5, "
-            "so treat a prompt near 100K as over the line. 1M context, 512-token cache "
+            "The tier test uses the scaled count (cl100k x 1.3, an estimate, since Haiku "
+            "5.5 counts ~30% more tokens than Haiku 4.5), so treat a prompt near 100K as "
+            "borderline. 1M context, 512-token cache "
             "floor, adaptive thinking (effort defaults to medium). Batch $0.05/$0.25 in "
             "the low tier."
         ),
@@ -164,6 +186,7 @@ MODEL_PRICING = {
         "input": 1.00,
         "output": 5.00,
         "cache_hit": 0.10,
+        "tokenizer_overhead": 1.0,
         "name": "Haiku 4.5 (legacy)",
         "note": (
             "Legacy since the Haiku 5.5 launch (not deprecated). 200K context, 4,096-token "
@@ -174,6 +197,7 @@ MODEL_PRICING = {
         "input": 8.00,
         "output": 40.00,
         "cache_hit": None,
+        "tokenizer_overhead": 1.3,
         "name": "Opus 5.5 (Fast Mode)",
         "note": (
             "Generally available since 2026-10-15 (no beta header) on the Claude API, "
@@ -186,6 +210,7 @@ MODEL_PRICING = {
         "input": 10.00,
         "output": 50.00,
         "cache_hit": None,
+        "tokenizer_overhead": 1.3,
         "name": "Opus 5 / 4.8 (Fast Mode)",
         "note": (
             "Research preview (beta header fast-mode-2026-02-01); Opus 4.8 Fast Mode is "
@@ -199,6 +224,7 @@ MODEL_PRICING = {
         "input": 10.00,
         "output": 50.00,
         "cache_hit": 0.25,
+        "tokenizer_overhead": 1.3,
         "name": "Mythos 5.1",
         "note": (
             "Fable 5.1 for organizations verified through Anthropic's verification "
@@ -239,9 +265,20 @@ def c(code: str, text: str) -> str:
 
 
 def count_tokens(text: str) -> int:
-    """Count tokens using cl100k_base encoding (closest approximation for Claude)."""
+    """Count tokens with cl100k_base: a raw count, the same for every model."""
     encoder = tiktoken.get_encoding("cl100k_base")
     return len(encoder.encode(text))
+
+
+def scaled_tokens(token_count: int, model: str) -> int:
+    """The cl100k count scaled to the tokenizer `model` uses (an estimate)."""
+    return round(token_count * MODEL_PRICING[model]["tokenizer_overhead"])
+
+
+def basis_for(model: str) -> str:
+    """How a model's token count was derived, for the JSON output."""
+    overhead = MODEL_PRICING[model]["tokenizer_overhead"]
+    return "cl100k" if overhead == 1 else f"cl100k x {overhead:g} (estimate)"
 
 
 def format_number(n: int) -> str:
@@ -338,6 +375,11 @@ def read_input(source: str) -> str:
         sys.exit(1)
 
 
+def name_width(models: dict) -> int:
+    """Width of the model column: the longest display name, 14 at least."""
+    return max([14] + [len(info["name"]) for info in models.values()])
+
+
 def print_header(source: str, token_count: int, line_count: int, char_count: int):
     """Print the summary header."""
     print()
@@ -345,10 +387,17 @@ def print_header(source: str, token_count: int, line_count: int, char_count: int
     print(c(DIM, "  " + "-" * 50))
 
     label = "stdin" if source == "-" else os.path.basename(source)
-    print(f"  Source:     {c(CYAN, label)}")
-    print(f"  Lines:      {format_number(line_count)}")
-    print(f"  Characters: {format_number(char_count)}")
-    print(f"  Tokens:     {c(BOLD, format_number(token_count))}")
+    # The 4.7+ tokenizer factor: the largest overhead any model row carries.
+    factor = max(info["tokenizer_overhead"] for info in MODEL_PRICING.values())
+    scaled = "~" + format_number(round(token_count * factor))
+    print(f"  Source:      {c(CYAN, label)}")
+    print(f"  Lines:       {format_number(line_count)}")
+    print(f"  Characters:  {format_number(char_count)}")
+    print(f"  cl100k:      {c(BOLD, format_number(token_count))}")
+    print(
+        f"  4.7+ models: {c(BOLD, scaled)} "
+        f"{c(DIM, f'(cl100k x {factor:g}, estimate)')}"
+    )
     print()
 
 
@@ -360,15 +409,18 @@ def print_cost_table(token_count: int, model_filter: str | None = None):
 
     print(c(BOLD, "  Cost Estimate (single input pass)"))
     print(c(DIM, "  " + "-" * 50))
-    print(f"  {'Model':<14} {'Input Cost':>12} {'$/1M tokens':>14}")
-    print(f"  {'':.<14} {'':.<12} {'':.<14}")
+    width = name_width(models)
+    print(f"  {'Model':<{width}} {'Tokens':>9} {'Input Cost':>12} {'$/1M tokens':>14}")
+    print(f"  {'':.<{width}} {'':.<9} {'':.<12} {'':.<14}")
 
     for key, info in models.items():
-        cost = calculate_cost(token_count, key, "input")
-        price_label = "${:.2f}".format(rate_for(key, "input", token_count))
+        tokens = scaled_tokens(token_count, key)
+        cost = calculate_cost(tokens, key, "input")
+        price_label = "${:.2f}".format(rate_for(key, "input", tokens))
         print(
-            f"  {info['name']:<14} {c(GREEN, format_cost(cost)):>22} "
-            f"{c(DIM, price_label):>23}"
+            f"  {info['name']:<{width}} {format_number(tokens):>9} "
+            f"{c(GREEN, f'{format_cost(cost):>12}')} "
+            f"{c(DIM, f'{price_label:>14}')}"
         )
     print()
 
@@ -379,23 +431,20 @@ def print_per_turn_table(token_count: int, turns: int, model_filter: str | None 
         {model_filter: MODEL_PRICING[model_filter]} if model_filter else MODEL_PRICING
     )
 
-    total_tokens = token_count * turns
-
     print(c(BOLD, f"  Per-Turn Projection ({turns} turns)"))
     print(c(DIM, "  " + "-" * 50))
-    print(f"  Tokens per turn:  {format_number(token_count)}")
-    print(f"  Total tokens:     {c(BOLD, format_number(total_tokens))}")
-    print()
-    print(f"  {'Model':<14} {'Total Cost':>12} {'Per Turn':>12}")
-    print(f"  {'':.<14} {'':.<12} {'':.<12}")
+    width = name_width(models)
+    print(f"  {'Model':<{width}} {'Tokens/turn':>12} {'Total Cost':>12} {'Per Turn':>12}")
+    print(f"  {'':.<{width}} {'':.<12} {'':.<12} {'':.<12}")
 
     for key, info in models.items():
-        total_cost = calculate_cost(total_tokens, key, "input", prompt_tokens=token_count)
-        per_turn_cost = calculate_cost(token_count, key, "input")
+        tokens = scaled_tokens(token_count, key)
+        total_cost = calculate_cost(tokens * turns, key, "input", prompt_tokens=tokens)
+        per_turn_cost = calculate_cost(tokens, key, "input")
         print(
-            f"  {info['name']:<14} "
-            f"{c(YELLOW, format_cost(total_cost)):>22} "
-            f"{c(DIM, format_cost(per_turn_cost)):>21}"
+            f"  {info['name']:<{width}} {format_number(tokens):>12} "
+            f"{c(YELLOW, f'{format_cost(total_cost):>12}')} "
+            f"{c(DIM, f'{format_cost(per_turn_cost):>12}')}"
         )
 
     print()
@@ -472,6 +521,7 @@ def main():
         result = {
             "source": args.source,
             "tokens": token_count,
+            "tokens_basis": "cl100k",
             "lines": line_count,
             "characters": char_count,
             "costs": {},
@@ -480,15 +530,18 @@ def main():
             {args.model: MODEL_PRICING[args.model]} if args.model else MODEL_PRICING
         )
         for key, info in models.items():
+            tokens = scaled_tokens(token_count, key)
             entry = {
                 "model": info["name"],
-                "input_cost": calculate_cost(token_count, key, "input"),
+                "tokens": tokens,
+                "basis": basis_for(key),
+                "input_cost": calculate_cost(tokens, key, "input"),
             }
             if args.per_turn:
-                entry["per_turn_tokens"] = token_count
-                entry["total_tokens"] = token_count * args.per_turn
+                entry["per_turn_tokens"] = tokens
+                entry["total_tokens"] = tokens * args.per_turn
                 entry["total_cost"] = calculate_cost(
-                    token_count * args.per_turn, key, "input", prompt_tokens=token_count
+                    tokens * args.per_turn, key, "input", prompt_tokens=tokens
                 )
                 entry["turns"] = args.per_turn
             result["costs"][key] = entry

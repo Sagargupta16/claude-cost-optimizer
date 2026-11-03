@@ -1,0 +1,51 @@
+{
+  "note": "Output captured 2026-11-03 from this repo's own runs, each exiting 0 (only exit-0 runs reach a PostToolUse hook). The username in file paths (pytest header, pnpm store line) was replaced with 'user'. 'needed' lists the strings Claude needs from a green run (counts and the pass line); scripts/eval-output-filter.py checks each exists in the raw fixture and reports any the trimmed output lost. 'stream' says which stream the runner wrote to. The two test-gates-chain files are several of the runs above executed one after another in one script, as a single chained command would print them; each is long enough to be trimmed.",
+  "fixtures": {
+    "unittest-claude-rate.txt": {
+      "command": "python -m unittest discover -s tools/claude-rate/tests -v",
+      "stream": "stderr",
+      "needed": ["Ran 13 tests in", "\nOK"]
+    },
+    "node-test-mcp-cost-server.txt": {
+      "command": "cd tools/mcp-cost-server && node --test",
+      "needed": ["ℹ pass 5", "ℹ fail 0"]
+    },
+    "vitest-site.txt": {
+      "command": "npm --prefix site run test",
+      "needed": ["Test Files  2 passed (2)", "Tests  27 passed (27)"]
+    },
+    "vitest-site-verbose.txt": {
+      "command": "npm --prefix site run test -- --reporter=verbose",
+      "needed": ["Test Files  2 passed (2)", "Tests  27 passed (27)"]
+    },
+    "vitest-site-verbose-color.txt": {
+      "command": "FORCE_COLOR=1 npm --prefix site run test -- --reporter=verbose",
+      "needed": ["Test Files  2 passed (2)", "Tests  27 passed (27)"]
+    },
+    "pytest-claude-rate-v.txt": {
+      "command": "python -m pytest -v tools/claude-rate/tests",
+      "needed": ["collected 13 items", "13 passed in"]
+    },
+    "pnpm-install-mcp-cost-server.txt": {
+      "command": "pnpm --dir tools/mcp-cost-server install --frozen-lockfile --ignore-scripts",
+      "needed": ["Packages: +96", "+ @modelcontextprotocol/sdk 1.32.1", "Done in"]
+    },
+    "test-gates-chain.txt": {
+      "command": "python -m unittest discover -s tools/claude-rate/tests -v && node --test tools/mcp-cost-server/test/ && npm --prefix site run test -- --reporter=verbose && python -m pytest -v tools/claude-rate/tests",
+      "needed": ["Ran 13 tests in", "ℹ pass 5", "ℹ fail 0", "Test Files  2 passed (2)", "Tests  27 passed (27)", "13 passed in"]
+    },
+    "test-gates-chain-b.txt": {
+      "command": "python -m unittest discover -s tools/claude-rate/tests -v && node --test tools/mcp-cost-server/test/ && python -m pytest -v tools/claude-rate/tests --durations=0 && python -m pytest -v tools/claude-rate/tests && python -m unittest discover -s tools/claude-rate/tests -v",
+      "needed": ["Ran 13 tests in 0.015s", "ℹ pass 5", "ℹ fail 0", "13 passed in 0.06s", "13 passed in 0.07s", "Ran 13 tests in 0.014s"]
+    }
+  },
+  "controls": [
+    { "fixture": "test-gates-chain.txt", "command": "cat tools/claude-rate/rate.py" },
+    { "fixture": "test-gates-chain.txt", "command": "git diff main" },
+    { "fixture": "test-gates-chain.txt", "command": "grep -rn passed site/src" },
+    { "fixture": "test-gates-chain.txt", "command": "python -m pytest -v tools/claude-rate/tests | tail -80" },
+    { "fixture": "test-gates-chain.txt", "command": "cd tools && cat claude-rate/README.md && pytest -v" },
+    { "fixture": "test-gates-chain.txt", "command": "python tools/claude-rate/rate.py . --usage" },
+    { "fixture": "test-gates-chain.txt", "command": "./deploy.sh && npm test" }
+  ]
+}

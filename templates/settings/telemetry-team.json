@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+
+  "_comment": [
+    "TEAM TELEMETRY - Claude Code's own OpenTelemetry export, for a fleet. Managed settings only.",
+    "Install it as managed-settings.json, or as a drop-in such as managed-settings.d/10-telemetry.json, in the system directory: /Library/Application Support/ClaudeCode/ on macOS, /etc/claude-code/ on Linux and WSL, C:\\Program Files\\ClaudeCode\\ on Windows (https://code.claude.com/docs/en/managed-settings, read 2026-11-03).",
+    "Do not copy it into a repository's .claude/settings.json or .claude/settings.local.json: Claude Code ignores the OpenTelemetry exporter variables there, so a repository cannot turn telemetry on or choose where it goes (https://code.claude.com/docs/en/monitoring-usage, read 2026-11-03).",
+    "Replace the endpoint with your collector. OTEL_EXPORTER_OTLP_PROTOCOL has no default, so keep it set (grpc, http/json or http/protobuf). Metrics export every 60,000 ms unless OTEL_METRIC_EXPORT_INTERVAL says otherwise.",
+    "Add your collector's credentials as OTEL_EXPORTER_OTLP_HEADERS yourself; this template carries none. Set in managed settings, it also removes every developer-set endpoint variable at startup, so no developer can send the data elsewhere.",
+    "OTEL_METRICS_INCLUDE_SESSION_ID defaults to true, which makes every session its own metric series. This template sets it to false to cut cardinality (fewer series, less storage) for per-user and per-model cost dashboards; delete the line if you need per-session breakdowns.",
+    "Prompt and response text stays out: OTEL_LOG_USER_PROMPTS and OTEL_LOG_RAW_API_BODIES are off by default. Leave them unset.",
+    "Cost metrics (claude_code.cost.usage) are client-side estimates at list price unless the modelPricing managed setting holds your contracted rates; for billing, use your provider's console or the Usage and Cost Analytics API. See guides/05-team-budgeting.md."
+  ],
+
+  "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "OTEL_METRICS_EXPORTER": "otlp",
+    "OTEL_LOGS_EXPORTER": "otlp",
+    "OTEL_EXPORTER_OTLP_PROTOCOL": "grpc",
+    "OTEL_EXPORTER_OTLP_ENDPOINT": "http://collector.example.com:4317",
+    "OTEL_METRICS_INCLUDE_SESSION_ID": "false"
+  }
+}

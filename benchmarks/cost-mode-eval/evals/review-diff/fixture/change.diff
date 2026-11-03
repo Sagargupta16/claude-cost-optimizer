@@ -1,0 +1,21 @@
+diff --git a/stats.py b/stats.py
+new file mode 100644
+--- /dev/null
++++ b/stats.py
+@@ -0,0 +1,18 @@
++"""Small statistics helpers for the report page."""
++
++
++def average(values):
++    return sum(values) / len(values)
++
++
++def collect(item, bucket=[]):
++    bucket.append(item)
++    return bucket
++
++
++def percent(part, total):
++    if total == 0:
++        return 0.0
++    return round(100 * part / total, 1)

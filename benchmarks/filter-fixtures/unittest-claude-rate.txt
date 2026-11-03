@@ -1,0 +1,18 @@
+test_more_context_never_costs_less (test_rate.EstimateCosts.test_more_context_never_costs_less) ... ok
+test_opus_5_5_session_matches_closed_form (test_rate.EstimateCosts.test_opus_5_5_session_matches_closed_form) ... ok
+test_transcript_ids_map_to_priced_models (test_rate.ModelKey.test_transcript_ids_map_to_priced_models) ... ok
+test_unknown_model_is_unpriced (test_rate.ModelKey.test_unknown_model_is_unpriced) ... ok
+test_empty_project_grades_without_crashing (test_rate.RateProject.test_empty_project_grades_without_crashing) ... ok
+test_cache_write_multipliers (test_rate.RateTable.test_cache_write_multipliers) ... ok
+test_three_cache_read_multipliers (test_rate.RateTable.test_three_cache_read_multipliers) ... ok
+test_flat_models_ignore_prompt_length (test_rate.RatesForPrompt.test_flat_models_ignore_prompt_length) ... ok
+test_haiku_5_5_high_tier_from_100_001 (test_rate.RatesForPrompt.test_haiku_5_5_high_tier_from_100_001) ... ok
+test_haiku_5_5_low_tier_up_to_100k (test_rate.RatesForPrompt.test_haiku_5_5_low_tier_up_to_100k) ... ok
+test_fast_mode_doubles_only_where_supported (test_rate.RequestCost.test_fast_mode_doubles_only_where_supported) ... ok
+test_haiku_5_5_prompt_length_counts_cache_reads (test_rate.RequestCost.test_haiku_5_5_prompt_length_counts_cache_reads) ... ok
+test_opus_5_5_every_token_class (test_rate.RequestCost.test_opus_5_5_every_token_class) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.023s
+
+OK

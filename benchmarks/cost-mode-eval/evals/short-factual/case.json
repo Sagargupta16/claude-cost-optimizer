@@ -1,0 +1,9 @@
+{
+  "id": "short-factual",
+  "title": "One short factual answer",
+  "category": "factual",
+  "expect_gain": true,
+  "graders": [
+    {"type": "regex", "pattern": "\\b429\\b", "label": "answers 429"}
+  ]
+}

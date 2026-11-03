@@ -1,0 +1,21 @@
+{
+  "id": "review-diff",
+  "title": "Review a small diff with two seeded bugs",
+  "category": "review",
+  "expect_gain": true,
+  "graders": [
+    {"type": "tool_used", "tools": ["Read", "Grep"], "label": "opened the diff"},
+    {
+      "type": "regex",
+      "pattern": "ZeroDivision|division by zero|divide by zero|empty (list|input|sequence|iterable)|len\\(values\\)\\s*(is|==)\\s*0",
+      "flags": "i",
+      "label": "finds the divide-by-zero on an empty list"
+    },
+    {
+      "type": "regex",
+      "pattern": "mutable default|default argument|shared (list|between|across)|bucket\\s*=\\s*\\[\\]",
+      "flags": "i",
+      "label": "finds the mutable default argument"
+    }
+  ]
+}

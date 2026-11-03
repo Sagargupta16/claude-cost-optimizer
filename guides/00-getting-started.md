@@ -115,7 +115,7 @@ Every turn, Claude resends the entire conversation history. Claude Code bills th
 
 Best practice:
 - **Start a new session** when switching tasks
-- **Use subagents** for isolated searches (`/agent` or let Claude spawn them)
+- **Use subagents** for isolated searches (`/agent` or let Claude spawn them); [templates/agents/](../templates/agents/) has cost-pinned definitions to copy into `.claude/agents/`
 - **Compact** long sessions with `/compact` to summarize history. While the prompt cache is warm the summary request reads from cache, so it costs a fraction of the context size; after a break longer than the cache TTL it reprocesses the full history uncached
 - **Clear** with `/clear` when the old context is no longer needed -- it costs nothing
 
@@ -144,7 +144,7 @@ macOS, Linux, Git Bash, or Windows cmd (on Windows, `python` instead of `python3
 curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python3 - .
 ```
 
-It needs only Python 3.10+; nothing is installed. Add `--user --usage --fix` to also grade `~/.claude` and your recent usage and print the fixes.
+It needs only Python 3.10+; nothing is installed. Add `--user --usage --fix` to also grade `~/.claude` and your recent usage and print the fixes, and `--usage --by session,day` (claude-rate 0.4.0 or later) to see which sessions and days the spend went to.
 
 Or use the legacy CLI:
 
