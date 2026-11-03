@@ -50,11 +50,14 @@ RATE_PY="${CLAUDE_RATE_PY:-$HOOK_DIR/../tools/claude-rate/rate.py}"
 # Not exec: whatever runs (or fails to start), this script exits 0, so the switch
 # or the resume goes ahead unchanged when nothing is printed.
 if [[ -f "$RATE_PY" ]]; then
-    if command -v python3 >/dev/null 2>&1; then
-        python3 "$RATE_PY" --hook cache-guard 2>/dev/null
-    elif command -v python >/dev/null 2>&1; then
-        python "$RATE_PY" --hook cache-guard 2>/dev/null
-    fi
+    # The first interpreter that really is Python 3.10 or newer: the Windows Store
+    # python3 stub exits non-zero, so it is skipped instead of silently running nothing.
+    for PY in python3 python py; do
+        if command -v "$PY" >/dev/null 2>&1 && "$PY" -c 'import sys; sys.exit(sys.version_info < (3, 10))' >/dev/null 2>&1; then
+            "$PY" "$RATE_PY" --hook cache-guard 2>/dev/null
+            break
+        fi
+    done
 elif command -v claude-rate >/dev/null 2>&1; then
     claude-rate --hook cache-guard 2>/dev/null
 fi

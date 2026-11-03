@@ -189,9 +189,12 @@ except Exception:  # a summary hook never breaks the session
     pass
 PY
 
-if command -v python3 >/dev/null 2>&1; then
-    python3 -c "$SUMMARY_PY" "$HOOK_DIR" 2>/dev/null
-elif command -v python >/dev/null 2>&1; then
-    python -c "$SUMMARY_PY" "$HOOK_DIR" 2>/dev/null
-fi
+# The first interpreter that really is Python 3.10 or newer: the Windows Store
+# python3 stub exits non-zero, so it is skipped instead of silently running nothing.
+for PY in python3 python py; do
+    if command -v "$PY" >/dev/null 2>&1 && "$PY" -c 'import sys; sys.exit(sys.version_info < (3, 10))' >/dev/null 2>&1; then
+        "$PY" -c "$SUMMARY_PY" "$HOOK_DIR" 2>/dev/null
+        break
+    fi
+done
 exit 0
