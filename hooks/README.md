@@ -348,7 +348,7 @@ Every script here always exits 0. budget-tracker.sh never blocks through the exi
 
 **Hooks not running**: Verify the path in settings.json is absolute and correct. Check that the scripts are executable (`chmod +x`).
 
-**Python not found**: The scripts run `python3`, or `python` when there is no `python3`; output-trim.sh also tries `py` and takes the first one that is Python 3.10 or later. Without one they print nothing and exit 0. On Windows, a `python3` that is only the Microsoft Store stub (in `WindowsApps`) does the same: install Python, or turn the stub off under App execution aliases.
+**Python not found**: The scripts try `python3`, `python` and `py` in that order and run the first that is Python 3.10 or later, so a `python3` that is only the Microsoft Store stub (in `WindowsApps`) is skipped. With no such interpreter they print nothing and exit 0: install Python 3.10 or later.
 
 **Dollar cap never fires**: a cap with no claude-rate found warns once per session ("claude-rate was not found"). Set `CLAUDE_RATE_PY` to the full path of `tools/claude-rate/rate.py`, or install claude-rate 0.4.0 or later.
 
