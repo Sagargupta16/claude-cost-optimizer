@@ -108,7 +108,9 @@ The `haiku` alias means Haiku 5.5 only on the Anthropic API (Claude Code v2.1.29
 
 ## Tier 2: Full Power for Complex Work
 
-Tasks that require deep reasoning, multi-file awareness, or architectural understanding. This is where Opus 5.5 earns its cost. Anthropic's models overview now says to "start with Claude Opus 5.5 for most workloads", and at $4/$20 it is 20% cheaper per token than the Opus 5 it replaced. Fable 5.1 ($10/$50, 2.5x Opus 5.5) is for the most demanding reasoning and long-horizon work. On long-horizon coding, check before escalating: on SWE-bench Pro, Opus 5.5 at its default `medium` effort matched Fable 5.1 at its default (92.8% vs 92.3%, inside noise) for about a fifth of the cost per solved task ($0.22 vs $1.19), and Opus 5.5 at `low` solved 87.4% for $0.12 ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence)).
+Tasks that require deep reasoning, multi-file awareness, or architectural understanding. This is where Opus 5.5 earns its cost. Anthropic's models overview now says to "start with Claude Opus 5.5 for most workloads", and at $4/$20 it is 20% cheaper per token than the Opus 5 it replaced. Fable 5.2 ($8/$40, 2x Opus 5.5; legacy Fable 5.1 is $10/$50, 2.5x) is the most capable widely released model, for demanding reasoning and long-horizon agentic work, and Anthropic still says to start with Opus 5.5 and move to Fable 5.2 when evals on Opus at higher effort fall short ([models overview](https://platform.claude.com/docs/en/about-claude/models/overview), read 2026-11-10). On long-horizon coding, check before escalating: on SWE-bench Pro, Opus 5.5 at its default `medium` effort matched Fable 5.1 at its default (92.8% vs 92.3%, inside noise) for about a fifth of the cost per solved task ($0.22 vs $1.19), and Opus 5.5 at `low` solved 87.4% for $0.12 ([cost-optimization guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence); measured on Fable 5.1, not Fable 5.2).
+
+When a task does go to Fable 5.2, two of its habits cost money. It delegates readily to subagents when a prompt invites it, and Anthropic says "subagents can account for a large part of what a session costs", so invite delegation only for work that passes the fit test in [Guide 07](07-mcp-agent-costs.md#when-subagents-cost-more). And at `high` effort or above it thinks before almost every reply, so lower effort for the easy turns; Claude Code starts it at `medium` ([what's new in Fable 5.2](https://platform.claude.com/docs/en/models/fable-5-2/whats-new-fable-5-2), [model config](https://code.claude.com/docs/en/model-config), read 2026-11-10).
 
 ### Tier 2 Tasks
 
@@ -299,7 +301,7 @@ TIER 2 -- Opus 5.5 $4/$20
 ├── Framework migration
 └── System design
 
-TIER 2+ -- Fable 5.1 $10/$50 (2.5x Opus 5.5, use sparingly)
+TIER 2+ -- Fable 5.2 $8/$40 (2x Opus 5.5, use sparingly)
 ├── Reasoning problems Opus 5.5 fails on
 └── Longest autonomous agentic runs (hours-scale)
 ```

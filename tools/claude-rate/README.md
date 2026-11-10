@@ -334,7 +334,7 @@ Against a synthetic project: a 250-line `CLAUDE.md` with two stale path referenc
 ```
 claude-rate -- Claude / AI setup audit
 ============================================================
-Verified against Anthropic pricing as of: 2026-11-01
+Verified against Anthropic pricing as of: 2026-11-10
 
   CLAUDE.md                [##########----------]  10/20  250 lines primary (over the 200-line guidance); ~5,232 tokens total across 1 file(s)
     ! 250 lines -- over Anthropic's 200-line guidance for CLAUDE.md. Longer files consume more context and reduce adherence. Move workflow-specific instructions into skills or path-scoped .claude/rules/ so they load on demand.
@@ -356,6 +356,7 @@ Verified against Anthropic pricing as of: 2026-11-01
 Total: 65/100  (C)
 
 Estimated monthly cost (30 turns/session, 3 sessions/day, 22 days; each turn reads the last one from cache)
+  Fable 5.2      $ 1.72/session  ->  $ 113.80/month
   Fable 5.1      $ 2.16/session  ->  $ 142.25/month
   Fable 5        $ 3.05/session  ->  $ 201.47/month
   Opus 5.5       $ 0.98/session  ->  $  64.80/month
@@ -369,7 +370,6 @@ Estimated monthly cost (30 turns/session, 3 sessions/day, 22 days; each turn rea
   Sonnet 4.6     $ 0.70/session  ->  $  46.49/month
   Haiku 5.5      $ 0.03/session  ->  $   2.01/month
   Haiku 4.5      $ 0.23/session  ->  $  15.50/month
-  Haiku 3.5      $ 0.19/session  ->  $  12.40/month
 
 Badge URL:  https://img.shields.io/badge/Claude%20Cost%20Grade-C-yellow
 Markdown:  ![Claude Cost Grade](https://img.shields.io/badge/Claude%20Cost%20Grade-C-yellow)
@@ -421,7 +421,7 @@ With `--fix`, the File-read exclusions entries print the `.claudeignore` pattern
 
 ## Flags
 
-From `claude-rate --help` (claude-rate 0.4.0):
+From `claude-rate --help` (claude-rate 0.4.1):
 
 ```
 positional arguments:
@@ -543,9 +543,10 @@ The [web analyzer](https://sagargupta.online/claude-cost-optimizer/analyzer/) is
 
 ## Pricing data
 
-All cost estimates use Anthropic's published rates **verified 2026-11-01**:
+All cost estimates use Anthropic's published rates **verified 2026-11-10**:
 
-- Fable 5.1: $10/$50 per 1M tokens (1M context, most capable model); Fable 5: $10/$50 (legacy)
+- Fable 5.2: $8/$40 per 1M tokens (1M context, released 2026-11-09) -- the most capable widely released model, 2x Opus 5.5 and 20% below Fable 5.1 on every rate ([pricing page](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-11-10)
+- Fable 5.1 and Fable 5: $10/$50 per 1M tokens (1M context, both legacy)
 - Opus 5.5: $4/$20 per 1M tokens (1M context, released 2026-09-22) -- Anthropic's recommended starting model for most workloads, and 20% below Opus 5
 - Opus 5 / 4.8 / 4.7 / 4.6: $5/$25 per 1M tokens (1M context, all legacy)
 - Sonnet 5.5: $2/$10 per 1M tokens (1M context, released 2026-09-28) -- the current Sonnet flagship, same rate and tokenizer as Sonnet 5, but its cache read is $0.10 (cut on 2026-10-07), half Sonnet 5's $0.20
@@ -553,9 +554,9 @@ All cost estimates use Anthropic's published rates **verified 2026-11-01**:
 - Sonnet 4.6: $3/$15 per 1M tokens (1M context, legacy)
 - Haiku 5.5 (`haiku-5-5`): $0.10/$0.50 per 1M tokens up to 100K prompt tokens, $0.50/$2.50 above (1M context, released 2026-10-07) -- the current Haiku and the first model priced by prompt length
 - Haiku 4.5 (`haiku-4-5`): $1/$5 per 1M tokens (200K context, legacy)
-- Opus 4.1: $15/$75 per 1M tokens (200K context; retired on the Claude API on 2026-08-05, still served on Bedrock and Google Cloud) and Haiku 3.5: $0.80/$4 (200K context; retired on the Claude API on 2026-02-19, still served on Google Cloud (Google managed) only), so transcripts and bills that still use them are priced ([pricing page](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-11-03)
-- Model ids are matched whole (claude-rate 0.4.0 or later): a plain, Bedrock (`anthropic.claude-...`) or dated id maps to its row, and an id the table does not carry, such as a point release newer than this file, is counted but not priced and listed by id. Mythos 5.1 and Mythos 5 are priced as Fable 5.1 and Fable 5, Opus 4.5 as Opus 4.6, Opus 4 as Opus 4.1, and Sonnet 4.5 and Sonnet 4 as Sonnet 4.6, the rows with the same rates
-- Cache hit: three multipliers -- 0.1x base input on most models (Haiku 5.5: $0.01/1M, or $0.05 over 100K), 0.05x on Opus 5.5 ($0.20/1M) and Sonnet 5.5 ($0.10/1M), 0.025x on Fable 5.1 ($0.25/1M); 5m write: 1.25x; 1h write: 2x
+- Opus 4.1: $15/$75 per 1M tokens (200K context; retired on the Claude API on 2026-08-05, still served on Bedrock and Google Cloud), so transcripts and bills that still use it are priced ([pricing page](https://platform.claude.com/docs/en/about-claude/pricing), read 2026-11-03)
+- Model ids are matched whole (claude-rate 0.4.0 or later): a plain, Bedrock (`anthropic.claude-...`) or dated id maps to its row, and an id the table does not carry, such as a point release newer than this file, is counted but not priced and listed by id. Mythos 5.2, Mythos 5.1 and Mythos 5 are priced as Fable 5.2, Fable 5.1 and Fable 5, Opus 4.5 as Opus 4.6, Opus 4 as Opus 4.1, and Sonnet 4.5 and Sonnet 4 as Sonnet 4.6, the rows with the same rates
+- Cache hit: three multipliers -- 0.1x base input on most models (Haiku 5.5: $0.01/1M, or $0.05 over 100K), 0.05x on Opus 5.5 ($0.20/1M) and Sonnet 5.5 ($0.10/1M), 0.025x on Fable 5.2 ($0.20/1M) and Fable 5.1 ($0.25/1M); 5m write: 1.25x; 1h write: 2x
 - Every model on the Claude 4.7+ tokenizer (Opus 4.7 and later, Fable, Sonnet 5 and 5.5, Haiku 5.5) includes a +30% tokenizer overhead: Anthropic's [pricing page](https://platform.claude.com/docs/en/about-claude/pricing) puts it at approximately 30% more tokens for the same text. Opus 4.6, Sonnet 4.6 and Haiku 4.5 use the previous tokenizer
 - Each turn is billed the way Claude Code caches a conversation ([prompt caching docs](https://code.claude.com/docs/en/prompt-caching)): turn 1 writes the whole prompt at the 5-minute write rate (1.25x input), and every later turn reads the previous request from cache and writes only the new ~1,500-token exchange
 - Haiku 5.5 is priced turn by turn, the way Anthropic bills each request on its own: a turn whose estimated prompt (after the tokenizer overhead) is over 100,000 tokens is priced at $0.50/$2.50 for input, cache and output alike. The example above stays under 100K on every turn
@@ -594,7 +595,7 @@ Haiku 5.5 is 10x cheaper per token than Haiku 4.5 up to 100K prompt tokens and 2
 
 ### Fast Mode
 
-`speed: "fast"` is **Opus 5.5, Opus 5 and Opus 4.8 only**, at a flat **2x** of each model's base: $8/$40 on Opus 5.5, $10/$50 on the other two. Opus 5.5 has it generally available (out of research preview since 2026-10-15) with no beta header, on the Claude API, Claude Models on Google Cloud (Anthropic managed) and Microsoft Foundry. Opus 5 and Opus 4.8 are a research preview on the Claude API only and need the `fast-mode-2026-02-01` beta header; Opus 4.8's fast mode is deprecated (2026-10-30) and removed on 2026-11-30, after which `speed: "fast"` on `claude-opus-4-8` returns an error with no fallback. The older 6x tier no longer exists. Opus 4.7 returns an error on `speed: "fast"` with no fallback, and Opus 4.6 accepts the field but silently runs at standard speed and standard rates (`usage.speed` comes back `"standard"`). Managed Agents support it on the Claude API only. It cannot combine with Batch or Priority Tier, and fast and standard speed keep separate prompt caches, so switching speeds invalidates the cache. In Claude Code, subscription users pay for fast mode with usage credits only ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode) and [Claude Code fast mode](https://code.claude.com/docs/en/fast-mode), read 2026-11-01).
+`speed: "fast"` is **Fable 5.2, Mythos 5.2, Opus 5.5, Opus 5 and Opus 4.8 only**, at a flat **2x** of each model's base: $16/$80 on Fable 5.2 and Mythos 5.2, $8/$40 on Opus 5.5, $10/$50 on Opus 5 and Opus 4.8. Fable 5.2 has it with no beta header on the Claude API, both Claude Models on Google Cloud offerings (Google sets the price on the Google-managed one) and Microsoft Foundry hosted on Anthropic, where it is a separate model, `claude-fable-5-2-fast`; in Claude Code, `/fast` on Fable 5.2 needs v2.1.321 or later. Cache multipliers stack on the fast rate, so Fable 5.2 fast reads cache at $0.40 and writes at $20 (5m) or $32 (1h) (computed: 0.025x, 1.25x and 2x of $16). Opus 5.5 has it generally available (out of research preview since 2026-10-15) with no beta header, on the Claude API, Claude Models on Google Cloud (Anthropic managed) and Microsoft Foundry. Opus 5 and Opus 4.8 are a research preview on the Claude API only and need the `fast-mode-2026-02-01` beta header; Opus 4.8's fast mode is deprecated (2026-10-30) and removed on 2026-11-30, after which `speed: "fast"` on `claude-opus-4-8` returns an error with no fallback. The older 6x tier no longer exists. Opus 4.7 returns an error on `speed: "fast"` with no fallback, and Opus 4.6 accepts the field but silently runs at standard speed and standard rates (`usage.speed` comes back `"standard"`). Managed Agents support it on the Claude API only. It cannot combine with Batch or Priority Tier, and fast and standard speed keep separate prompt caches, so switching speeds invalidates the cache. In Claude Code, subscription users pay for fast mode with usage credits only ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode) and [Claude Code fast mode](https://code.claude.com/docs/en/fast-mode), read 2026-11-10).
 
 Sources:
 - [platform.claude.com/docs/en/about-claude/pricing](https://platform.claude.com/docs/en/about-claude/pricing)

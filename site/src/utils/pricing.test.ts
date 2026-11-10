@@ -79,12 +79,14 @@ describe('turnInputCost', () => {
 
 describe('cache multipliers', () => {
   // The three multipliers the docs keep repeating: 0.1x by default, 0.05x on Opus 5.5
-  // and Sonnet 5.5, 0.025x on Fable 5.1 and Mythos 5.1.
+  // and Sonnet 5.5, 0.025x on Fable 5.2, Mythos 5.2, Fable 5.1 and Mythos 5.1.
   it.each([
     ['opus-5', 0.9],
     ['haiku-5-5', 0.9],
     ['opus-5-5', 0.95],
     ['sonnet-5-5', 0.95],
+    ['fable-5-2', 0.975],
+    ['mythos-5-2', 0.975],
     ['fable-5-1', 0.975],
     ['mythos-5-1', 0.975],
   ] as const)('%s reads cache at %s off base input', (id, share) => {

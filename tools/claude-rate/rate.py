@@ -22,7 +22,7 @@ Usage:
 
 No external dependencies. Pure Python 3.10+ stdlib.
 
-Pricing data verified 2026-11-01 against:
+Pricing data verified 2026-11-10 against:
     https://platform.claude.com/docs/en/about-claude/pricing
     https://platform.claude.com/docs/en/models/overview
     https://platform.claude.com/docs/en/models/haiku-5-5/overview
@@ -45,21 +45,35 @@ from typing import Any
 
 # -- Pricing data (mirrors site/src/utils/pricing.ts) ------------------------
 
-# Models priced as of 2026-11-01. Prices are USD per 1M tokens.
+# Models priced as of 2026-11-10. Prices are USD per 1M tokens.
 # `fast_mode` marks the models that honor `speed: "fast"` (a flat 2x of the
-# model's own base on both input and output). Since Opus 5.5's release on
-# 2026-09-22 that is Opus 5.5, Opus 5 and Opus 4.8 only: Opus 4.7 errors on
-# `speed: "fast"`, and Opus 4.6 silently downgrades to standard speed at
-# standard rates. The old 6x tier no longer exists. Opus 4.8 Fast Mode is
-# deprecated and removed on 2026-11-30 (Anthropic release notes, 2026-10-30).
+# model's own base on both input and output). Since Fable 5.2's release on
+# 2026-11-09 that is Fable 5.2 (and Mythos 5.2), Opus 5.5, Opus 5 and Opus 4.8:
+# Opus 4.7 errors on `speed: "fast"`, and Opus 4.6 silently downgrades to
+# standard speed at standard rates. The old 6x tier no longer exists. Opus 4.8
+# Fast Mode is deprecated and removed on 2026-11-30 (Anthropic release notes,
+# 2026-10-30).
 # `cache_hit` has three multipliers: 0.1x input on most models, 0.05x on
 # Opus 5.5 ($0.20/MTok) and Sonnet 5.5 ($0.10/MTok since 2026-10-07), and 0.025x
-# on Fable 5.1 / Mythos 5.1 ($0.25/MTok) -- read the field, never recompute it as
-# input * 0.1.
+# on Fable 5.2 / Mythos 5.2 ($0.20/MTok) and Fable 5.1 / Mythos 5.1 ($0.25/MTok)
+# -- read the field, never recompute it as input * 0.1.
 # `long_prompt` (Haiku 5.5 only) is a second price tier: a request whose prompt,
 # cache reads and writes included, is over `threshold` tokens pays those rates on
 # the whole request.
 MODELS: dict[str, dict[str, Any]] = {
+    # $8/$40 -- 20% below Fable 5.1 on every rate, and 2x Opus 5.5 (Fable 5.1 was 2.5x).
+    "fable-5-2": {
+        "name": "Fable 5.2",
+        "input": 8.00,
+        "output": 40.00,
+        "cache_hit": 0.20,
+        "cache_5m_write": 10.00,
+        "cache_1h_write": 16.00,
+        "context_window": 1_000_000,
+        "tokenizer_overhead": 1.3,
+        "fast_mode": True,
+        "lifecycle": "active",
+    },
     "fable-5-1": {
         "name": "Fable 5.1",
         "input": 10.00,
@@ -70,7 +84,7 @@ MODELS: dict[str, dict[str, Any]] = {
         "context_window": 1_000_000,
         "tokenizer_overhead": 1.3,
         "fast_mode": False,
-        "lifecycle": "active",
+        "lifecycle": "legacy",
     },
     "fable-5": {
         "name": "Fable 5",
@@ -229,23 +243,6 @@ MODELS: dict[str, dict[str, Any]] = {
         "cache_hit": 0.10,
         "cache_5m_write": 1.25,
         "cache_1h_write": 2.00,
-        "context_window": 200_000,
-        "tokenizer_overhead": 1.0,
-        "fast_mode": False,
-        "lifecycle": "legacy",
-    },
-    # Retired on the Claude API 2026-02-19; only Google Cloud (Google managed) still
-    # serves it. Rates: the pricing page, read 2026-11-03. Its ids put the version
-    # first (claude-3-5-haiku-20241022). The pricing page gives no context window for
-    # it; 200K is the figure Anthropic published at launch (unverified in this run),
-    # used only for the skill listing cap.
-    "haiku-3-5": {
-        "name": "Haiku 3.5",
-        "input": 0.80,
-        "output": 4.00,
-        "cache_hit": 0.08,
-        "cache_5m_write": 1.00,
-        "cache_1h_write": 1.60,
         "context_window": 200_000,
         "tokenizer_overhead": 1.0,
         "fast_mode": False,
@@ -2085,6 +2082,7 @@ _SKILL_LISTING_CAP = 1_536
 _USAGE_DAYS_DEFAULT = 30
 # Same model prices under another snapshot name: these rows reuse that pricing.
 _PRICE_ALIASES = {
+    "mythos-5-2": "fable-5-2",
     "mythos-5-1": "fable-5-1",
     "mythos-5": "fable-5",
     "opus-4-5": "opus-4-6",
@@ -3004,7 +3002,7 @@ def _usage_facts(totals: _UsageTotals, days: int) -> dict[str, Any]:
 
 
 # Current model for each legacy family, for the migration suggestion.
-_SUCCESSORS = {"opus": "opus-5-5", "sonnet": "sonnet-5-5", "haiku": "haiku-5-5", "fable": "fable-5-1"}
+_SUCCESSORS = {"opus": "opus-5-5", "sonnet": "sonnet-5-5", "haiku": "haiku-5-5", "fable": "fable-5-2"}
 
 
 def _legacy_fixes(facts: dict[str, Any]) -> list[str]:
@@ -3117,7 +3115,7 @@ _TOP_BREAK_SESSIONS = 3
 # An effort change keeps the cache on these models, except on Bedrock, Google Cloud's
 # Agent Platform, a Claude apps gateway or a HIPAA setup (guides/08-prompt-caching.md).
 # Transcripts do not name the provider; an id with a provider marker counts as one.
-_EFFORT_KEEPS_CACHE = ("opus-5-5", "sonnet-5-5", "haiku-5-5", "fable-5-1")
+_EFFORT_KEEPS_CACHE = ("opus-5-5", "sonnet-5-5", "haiku-5-5", "fable-5-2", "fable-5-1")
 _PROVIDER_ID_MARKERS = ("anthropic.", "@", "arn:")
 _LIMIT_ERRORS = ("rate_limit", "billing_error")
 # Wording of Claude Code's limit messages (code.claude.com/docs/en/costs, read 2026-11-03).
@@ -6779,7 +6777,7 @@ def rate(project: Path) -> RateResult:
 # -- Output formatters -------------------------------------------------------
 
 _BAR_WIDTH = 20
-_PRICING_VERIFIED_DATE = "2026-11-01"
+_PRICING_VERIFIED_DATE = "2026-11-10"
 
 
 def _ratio_color(ratio: float) -> str:
@@ -7013,7 +7011,7 @@ def _build_parser() -> argparse.ArgumentParser:
         "SessionStart resume or fork, from the payload on stdin",
     )
 
-    parser.add_argument("--version", action="version", version="claude-rate 0.4.0")
+    parser.add_argument("--version", action="version", version="claude-rate 0.4.1")
     return parser
 
 

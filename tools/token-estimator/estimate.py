@@ -31,12 +31,12 @@ except ImportError:
     sys.exit(1)
 
 
-# Claude model pricing per 1M tokens (verified 2026-11-01; Haiku 5.5 released 2026-10-07)
-# NOTE: 1M context on Fable 5.1/Fable 5/Opus 5.5/Opus 5/Opus 4.8/4.7/4.6/Sonnet 5.5/Sonnet 5/Sonnet 4.6
+# Claude model pricing per 1M tokens (verified 2026-11-10; Fable 5.2 released 2026-11-09)
+# NOTE: 1M context on Fable 5.2/Fable 5.1/Fable 5/Opus 5.5/Opus 5/Opus 4.8/4.7/4.6/Sonnet 5.5/Sonnet 5/Sonnet 4.6
 # is billed at standard rates (no long-context premium). The old "2x over 200K" pricing
 # only applied to Opus 4.1 and older.
-# NOTE: cache_hit has three multipliers: 0.1x input by default, 0.025x on Fable 5.1 /
-# Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok) and Sonnet 5.5
+# NOTE: cache_hit has three multipliers: 0.1x input by default, 0.025x on Fable 5.2 /
+# Mythos 5.2 ($0.20/MTok) and Fable 5.1 / Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok) and Sonnet 5.5
 # ($0.10/MTok since 2026-10-07). Never derive a cache rate as input * 0.1.
 # NOTE: Haiku 5.5 is priced by prompt length. "long_prompt" holds the rates a
 # request pays when its prompt is over "threshold" tokens; calculate_cost picks
@@ -48,16 +48,29 @@ except ImportError:
 # count is an estimate; every cost below is priced on round(cl100k x overhead).
 MODEL_PRICING = {
     "fable": {
+        "input": 8.00,
+        "output": 40.00,
+        "cache_hit": 0.20,
+        "tokenizer_overhead": 1.3,
+        "name": "Fable 5.2",
+        "note": (
+            "Most capable widely released model (released 2026-11-09). 2x Opus 5.5 pricing "
+            "(Fable 5.1 was 2.5x), 20% below Fable 5.1, and cache reads are $0.20/MTok -- "
+            "0.025x base input, the same rate as Opus 5.5. Always-on adaptive thinking; Fast "
+            "Mode at 2x ($16/$80, see fast_mode_fable); no Priority Tier; Batch $4/$20. "
+            "Forced tool_choice returns 400."
+        ),
+    },
+    "fable_5_1": {
         "input": 10.00,
         "output": 50.00,
         "cache_hit": 0.25,
         "tokenizer_overhead": 1.3,
-        "name": "Fable 5.1",
+        "name": "Fable 5.1 (legacy)",
         "note": (
-            "Most capable widely released model (released 2026-09-01). 2.5x Opus 5.5 pricing, "
-            "but cache reads are $0.25/MTok -- 0.025x base input, the deepest cache "
-            "discount in the lineup and a quarter of Fable 5. Always-on adaptive thinking; no Fast "
-            "Mode; no Priority Tier; Batch $5/$25. Forced tool_choice returns 400."
+            "Superseded by Fable 5.2, which is 20% cheaper on every rate. Still available "
+            "by id (claude-fable-5-1); not deprecated. Cache reads $0.25/MTok (0.025x). "
+            "No Fast Mode; Batch $5/$25."
         ),
     },
     "fable_5": {
@@ -67,8 +80,9 @@ MODEL_PRICING = {
         "tokenizer_overhead": 1.3,
         "name": "Fable 5 (legacy)",
         "note": (
-            "Superseded by Fable 5.1 at the same $10/$50. Cache reads cost $1.00/MTok "
-            "here versus $0.25 on Fable 5.1, so migrating is strictly cheaper when cached."
+            "Superseded by Fable 5.1 and Fable 5.2. Cache reads cost $1.00/MTok "
+            "here versus $0.25 on Fable 5.1 and $0.20 on Fable 5.2, so migrating is strictly "
+            "cheaper when cached."
         ),
     },
     "opus": {
@@ -206,6 +220,19 @@ MODEL_PRICING = {
             "(fast_mode_opus_5)."
         ),
     },
+    "fast_mode_fable": {
+        "input": 16.00,
+        "output": 80.00,
+        "cache_hit": None,
+        "tokenizer_overhead": 1.3,
+        "name": "Fable 5.2 (Fast Mode)",
+        "note": (
+            "No beta header (speed: \"fast\"). Flat 2x Fable 5.2's own base rate ($16/$80); "
+            "Mythos 5.2 Fast Mode has the same rate. Claude API, Google Cloud and Foundry "
+            "(as claude-fable-5-2-fast). Not available with Batch API or Priority Tier. "
+            "Up to 2.5x output tokens/sec."
+        ),
+    },
     "fast_mode_opus_5": {
         "input": 10.00,
         "output": 50.00,
@@ -221,17 +248,29 @@ MODEL_PRICING = {
         ),
     },
     "mythos": {
+        "input": 8.00,
+        "output": 40.00,
+        "cache_hit": 0.20,
+        "tokenizer_overhead": 1.3,
+        "name": "Mythos 5.2",
+        "note": (
+            "Fable 5.2 for organizations verified through Anthropic's verification "
+            "programs (e.g. the Cyber Verification Program): same specs and pricing, including the "
+            "$0.20/MTok (0.025x) cache read and Fast Mode at $16/$80. It runs access-program "
+            "safeguards, so refusals can occur. Listed for reference only. "
+            "(Mythos 5.1 is the legacy $10/$50 row, mythos_5_1; Mythos 5 reads at $1.00; "
+            "Mythos Preview is deprecated.)"
+        ),
+    },
+    "mythos_5_1": {
         "input": 10.00,
         "output": 50.00,
         "cache_hit": 0.25,
         "tokenizer_overhead": 1.3,
-        "name": "Mythos 5.1",
+        "name": "Mythos 5.1 (legacy)",
         "note": (
-            "Fable 5.1 for organizations verified through Anthropic's verification "
-            "programs (e.g. the Cyber Verification Program): same specs and pricing, including the "
-            "$0.25/MTok (0.025x) cache read. Unlike Mythos 5 it runs access-program "
-            "safeguards, so refusals can occur. Listed for reference only. "
-            "(Mythos 5 reads at $1.00; Mythos Preview is deprecated.)"
+            "Fable 5.1 for verified organizations: same specs and pricing, including the "
+            "$0.25/MTok (0.025x) cache read. Superseded by Mythos 5.2. Listed for reference only."
         ),
     },
 }
@@ -488,11 +527,13 @@ def main():
             "Show cost for a specific model only (default: show all). "
             "'opus' is Opus 5.5, the recommended default Opus. Use 'opus_5', "
             "'opus_4_8', 'opus_4_7', or 'opus_4_6' for legacy Opus pricing. "
+            "'fable' is Fable 5.2; 'fable_5_1' is legacy Fable 5.1 ($10/$50). "
             "'sonnet' is Sonnet 5.5; 'sonnet_5' is legacy Sonnet 5 at the same rate. "
             "'haiku' is Haiku 5.5 (tiered at 100K prompt tokens); 'haiku_4_5' is legacy "
             "Haiku 4.5. Use "
-            "'fast_mode' for Opus 5.5 Fast Mode ($8/$40) or 'fast_mode_opus_5' for "
-            "Opus 5 / 4.8 Fast Mode ($10/$50); both are 2x their own base rate (the "
+            "'fast_mode' for Opus 5.5 Fast Mode ($8/$40), 'fast_mode_fable' for "
+            "Fable 5.2 Fast Mode ($16/$80) or 'fast_mode_opus_5' for "
+            "Opus 5 / 4.8 Fast Mode ($10/$50); all are 2x their own base rate (the "
             "old 6x tier no longer exists)."
         ),
     )

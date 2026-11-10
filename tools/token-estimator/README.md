@@ -94,20 +94,22 @@ python tools/token-estimator/estimate.py CLAUDE.md --per-turn 50 --json
 |------|-------------|---------|
 | `source` | File path to analyze, or `-` for stdin | `estimate.py CLAUDE.md` |
 | `--per-turn N` | Project cost over N conversation turns | `--per-turn 50` |
-| `--model MODEL` | Show cost for one model: `fable` (Fable 5.1), `fable_5`, `opus` (Opus 5.5), `opus_5`, `opus_4_8`, `opus_4_7`, `opus_4_6`, `sonnet` (Sonnet 5.5), `sonnet_5`, `sonnet_4_6`, `haiku` (Haiku 5.5), `haiku_4_5` (legacy Haiku 4.5), `fast_mode` (Opus 5.5 Fast), `fast_mode_opus_5` (Opus 5 / 4.8 Fast), `mythos` (Mythos 5.1) | `--model haiku` |
+| `--model MODEL` | Show cost for one model: `fable` (Fable 5.2), `fable_5_1` (legacy Fable 5.1), `fable_5`, `opus` (Opus 5.5), `opus_5`, `opus_4_8`, `opus_4_7`, `opus_4_6`, `sonnet` (Sonnet 5.5), `sonnet_5`, `sonnet_4_6`, `haiku` (Haiku 5.5), `haiku_4_5` (legacy Haiku 4.5), `fast_mode` (Opus 5.5 Fast), `fast_mode_fable` (Fable 5.2 Fast), `fast_mode_opus_5` (Opus 5 / 4.8 Fast), `mythos` (Mythos 5.2), `mythos_5_1` (legacy Mythos 5.1) | `--model haiku` |
 | `--json` | Output results as JSON | `--json` |
 
 File reads are contained to the current directory tree or your home directory; paths outside both are refused.
 
 ## Pricing
 
-The estimator uses current Claude API pricing (as of 2026-11-01):
+The estimator uses current Claude API pricing (as of 2026-11-10):
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
 |-------|:---------------------:|:----------------------:|:-------------------------:|
-| Fable 5.1 (alias: `fable`) | $10.00 | $50.00 | **$0.25** |
+| Fable 5.2 (alias: `fable`) | $8.00 | $40.00 | **$0.20** |
+| Fable 5.1 (alias: `fable_5_1`, legacy) | $10.00 | $50.00 | $0.25 |
 | Fable 5 (alias: `fable_5`) | $10.00 | $50.00 | $1.00 |
-| Mythos 5.1 (alias: `mythos`, verified organizations only) | $10.00 | $50.00 | **$0.25** |
+| Mythos 5.2 (alias: `mythos`, verified organizations only) | $8.00 | $40.00 | **$0.20** |
+| Mythos 5.1 (alias: `mythos_5_1`, legacy, verified organizations only) | $10.00 | $50.00 | $0.25 |
 | Opus 5.5 (alias: `opus`) | $4.00 | $20.00 | **$0.20** |
 | Opus 5 (alias: `opus_5`, legacy) | $5.00 | $25.00 | $0.50 |
 | Opus 4.8 (alias: `opus_4_8`, legacy) | $5.00 | $25.00 | $0.50 |
@@ -120,13 +122,14 @@ The estimator uses current Claude API pricing (as of 2026-11-01):
 | Haiku 5.5 (alias: `haiku`), prompt > 100K tokens | $0.50 | $2.50 | $0.05 |
 | Haiku 4.5 (alias: `haiku_4_5`, legacy) | $1.00 | $5.00 | $0.10 |
 | Opus 5.5 Fast Mode (alias: `fast_mode`) | $8.00 | $40.00 | n/a |
+| Fable 5.2 Fast Mode (alias: `fast_mode_fable`) | $16.00 | $80.00 | n/a |
 | Opus 5 / 4.8 Fast Mode (alias: `fast_mode_opus_5`) | $10.00 | $50.00 | n/a |
 
-Cache hits have three multipliers: 0.1x base input by default, 0.025x on Fable 5.1 and Mythos 5.1, and 0.05x on Opus 5.5 and Sonnet 5.5 (95% off).
+Cache hits have three multipliers: 0.1x base input by default, 0.025x on Fable 5.2, Mythos 5.2, Fable 5.1 and Mythos 5.1, and 0.05x on Opus 5.5 and Sonnet 5.5 (95% off).
 
-Batch API pricing is 50% off the standard rates above (Opus 5.5 batch: $2/$10; legacy Opus 5 batch: $2.50/$12.50; Fable 5 batch: $5/$25; Haiku 5.5 batch: $0.05/$0.25 up to 100K prompt tokens, $0.25/$1.25 above).
+Batch API pricing is 50% off the standard rates above (Opus 5.5 batch: $2/$10; legacy Opus 5 batch: $2.50/$12.50; Fable 5.2 batch: $4/$20; Fable 5 batch: $5/$25; Haiku 5.5 batch: $0.05/$0.25 up to 100K prompt tokens, $0.25/$1.25 above).
 
-Fast Mode is Opus 5.5, Opus 5 and Opus 4.8 only. Opus 5.5 has it generally available since 2026-10-15 with no beta header; Opus 5 and Opus 4.8 are a research preview that needs the `fast-mode-2026-02-01` beta header, and Opus 4.8's fast mode is deprecated and removed on 2026-11-30 ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01). The Cache Hit column is n/a because this tool does not price cache reads at fast mode rates; Anthropic stacks the caching multipliers on top of fast mode pricing.
+Fast Mode is Fable 5.2, Mythos 5.2, Opus 5.5, Opus 5 and Opus 4.8 only. Fable 5.2 (released 2026-11-09) and Opus 5.5 (since 2026-10-15) have it generally available with no beta header, at a flat 2x their own base rate (Fable 5.2: $16/$80); Opus 5 and Opus 4.8 are a research preview that needs the `fast-mode-2026-02-01` beta header, and Opus 4.8's fast mode is deprecated and removed on 2026-11-30 ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-10). The Cache Hit column is n/a because this tool does not price cache reads at fast mode rates; Anthropic stacks the caching multipliers on top of fast mode pricing.
 
 Sonnet 5 is $2/$10 permanently -- the launch rate was labelled introductory through 2026-08-31, but Anthropic made it standard and cancelled the increase to $3/$15. Sonnet 5.5 (released 2026-09-28) launched at the same $2/$10 and moved Sonnet 5 to legacy.
 
@@ -147,6 +150,6 @@ Sonnet 5 is $2/$10 permanently -- the launch rate was labelled introductory thro
 
 ## Accuracy Note
 
-This tool counts with OpenAI's `cl100k_base` tokenizer, which is not Claude's, so every count is an estimate. Anthropic's [pricing page](https://platform.claude.com/docs/en/about-claude/pricing) says Claude 4.7 and later models use a newer tokenizer that produces approximately 30% more tokens for the same text, that the exact increase depends on the content, and that Claude Sonnet 4.6 and earlier models use the previous tokenizer ([token counting](https://platform.claude.com/docs/en/build-with-claude/token-counting) lists the Fable and Mythos models). So the cost tables price Fable 5.1, Fable 5, Mythos 5.1, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Sonnet 5.5, Sonnet 5, Haiku 5.5 and both Fast Mode rows on `round(cl100k x 1.3)`, and Opus 4.6, Sonnet 4.6 and Haiku 4.5 on the raw cl100k count. The factor is each model's `tokenizer_overhead`, a copy of the one in `claude-rate` that `scripts/check-rate-values.py` keeps equal.
+This tool counts with OpenAI's `cl100k_base` tokenizer, which is not Claude's, so every count is an estimate. Anthropic's [pricing page](https://platform.claude.com/docs/en/about-claude/pricing) says Claude 4.7 and later models use a newer tokenizer that produces approximately 30% more tokens for the same text, that the exact increase depends on the content, and that Claude Sonnet 4.6 and earlier models use the previous tokenizer ([token counting](https://platform.claude.com/docs/en/build-with-claude/token-counting) lists the Fable and Mythos models). So the cost tables price Fable 5.2, Fable 5.1, Fable 5, Mythos 5.2, Mythos 5.1, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Sonnet 5.5, Sonnet 5, Haiku 5.5 and both Fast Mode rows on `round(cl100k x 1.3)`, and Opus 4.6, Sonnet 4.6 and Haiku 4.5 on the raw cl100k count. The factor is each model's `tokenizer_overhead`, a copy of the one in `claude-rate` that `scripts/check-rate-values.py` keeps equal.
 
 1.3 is the pricing page's ratio between the two Claude tokenizers applied to a count from a third tokenizer, so it is a planning estimate, not a measurement of your file. As a cross-check, Anthropic's [models overview](https://platform.claude.com/docs/en/about-claude/models/overview) puts 1M tokens at roughly 2.5M Unicode characters on the current tokenizer, about 2.5 characters per token. By that rule this repository's `CLAUDE.md` (5,288 characters) is 2,115 tokens, against 1,878 from 1,445 x 1.3 (both computed 2026-11-03), so on text-heavy files the character rule gives the larger figure. On Haiku 5.5 the gap matters most near its 100K price threshold. Opus 5.5 shares the 4.7+ tokenizer, so token counts need no re-baselining when moving from Opus 4.7, 4.8, or 5.

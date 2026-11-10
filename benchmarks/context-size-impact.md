@@ -17,7 +17,7 @@ The first two items are **fixed overhead per turn**. The third **grows linearly*
 - A 300-line CLAUDE.md in the same session is loaded 30 times.
 - The difference compounds with every turn.
 
-> **Note on prompt caching**: Claude Code caches the whole unchanged prefix (system prompt, CLAUDE.md, earlier conversation turns) between turns. Cached tokens cost 90% less (95% on Opus 5.5 and Sonnet 5.5, 97.5% on Fable 5.1) ([prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)). The token counts below are pre-cache (raw) values; after turn 1 every unchanged token, CLAUDE.md and history alike, bills at the cache-read rate ([Claude Code prompt caching](https://code.claude.com/docs/en/prompt-caching)), so the relative differences between sizes hold at that lower rate.
+> **Note on prompt caching**: Claude Code caches the whole unchanged prefix (system prompt, CLAUDE.md, earlier conversation turns) between turns. Cached tokens cost 90% less (95% on Opus 5.5 and Sonnet 5.5, 97.5% on Fable 5.2 and Fable 5.1) ([prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)). The token counts below are pre-cache (raw) values; after turn 1 every unchanged token, CLAUDE.md and history alike, bills at the cache-read rate ([Claude Code prompt caching](https://code.claude.com/docs/en/prompt-caching)), so the relative differences between sizes hold at that lower rate.
 
 ---
 
@@ -305,4 +305,4 @@ With Haiku 5.5 instead of Haiku 4.5 for those 3 tasks, the Max Savings day costs
 
 5. **Tokens grow quadratically; with caching, cost grows close to linearly.** A 20-turn session sends 2.9x the tokens of a 10-turn session (475,000 vs 162,500) but costs 2.1x as much on Sonnet 4.6 ($0.42 vs $0.20, computed), because the re-sent history bills at the cache-read rate.
 
-6. **Prompt caching helps but does not eliminate the problem.** Caching bills the whole unchanged prefix (system prompt, CLAUDE.md and the conversation so far) at 0.1x input (0.05x on Opus 5.5 and Sonnet 5.5, 0.025x on Fable 5.1). What still grows is the size of that prefix, so a long session pays a cache read of the full history on every turn ([costs page](https://code.claude.com/docs/en/costs): "a one-line question in a session that has been open all day still draws usage for the whole conversation").
+6. **Prompt caching helps but does not eliminate the problem.** Caching bills the whole unchanged prefix (system prompt, CLAUDE.md and the conversation so far) at 0.1x input (0.05x on Opus 5.5 and Sonnet 5.5, 0.025x on Fable 5.2 and Fable 5.1). What still grows is the size of that prefix, so a long session pays a cache read of the full history on every turn ([costs page](https://code.claude.com/docs/en/costs): "a one-line question in a session that has been open all day still draws usage for the whole conversation").

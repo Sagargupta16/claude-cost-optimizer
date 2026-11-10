@@ -13,7 +13,7 @@ assignees: ''
 - **Codebase size**: <!-- e.g., ~45K lines across 320 files -->
 - **Team size**: <!-- e.g., 3 developers using Claude Code -->
 - **Claude Code plan**: <!-- e.g., Max ($100/mo), Ultra ($200/mo, formerly Max 20x), Team Premium seat, or API key -->
-- **Primary model used**: <!-- e.g., Opus 5.5, Sonnet 5.5, Haiku 5.5, Fable 5.1, or legacy Opus 5, Opus 4.8, Sonnet 5, Sonnet 4.6, Haiku 4.5 -->
+- **Primary model used**: <!-- e.g., Opus 5.5, Sonnet 5.5, Haiku 5.5, Fable 5.2, or legacy Fable 5.1, Opus 5, Opus 4.8, Sonnet 5, Sonnet 4.6, Haiku 4.5 -->
 
 ## Before Optimization
 

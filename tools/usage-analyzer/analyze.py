@@ -16,26 +16,27 @@ scripts/check-rate-values.py checks it against the other copies of the rates.
 
 import sys
 
-# Claude model pricing per 1M tokens (verified 2026-11-01; Haiku 5.5 released 2026-10-07)
-# "fable" = Fable 5.1 (most capable, 2.5x Opus 5.5); "opus" = Opus 5.5, the
+# Claude model pricing per 1M tokens (verified 2026-11-10; Fable 5.2 released 2026-11-09)
+# "fable" = Fable 5.2 (most capable, 2x Opus 5.5); "fable-5.1" = legacy Fable 5.1 at
+# $10/$50; "opus" = Opus 5.5, the
 # recommended default Opus at $4/$20 (20% below Opus 5); "opus-5" and
 # "opus-4.8"/"opus-4.7"/"opus-4.6" = legacy at $5/$25. Opus 5.5 runs adaptive
 # thinking ALWAYS ON (it cannot be disabled; effort defaults to medium), and Opus 5
 # runs it ON by default; either way reasoning tokens bill at the normal output rate.
 # "sonnet" = Sonnet 5.5 at $2/$10; "sonnet-5" = legacy Sonnet 5 at the same rate.
-# The 4.7+ tokenizer (also used by Opus 4.8, Opus 5, Opus 5.5, Fable 5, Fable 5.1, Sonnet 5.5,
+# The 4.7+ tokenizer (also used by Opus 4.8, Opus 5, Opus 5.5, Fable 5, Fable 5.1, Fable 5.2, Sonnet 5.5,
 # Sonnet 5 and Haiku 5.5; not Sonnet 4.6) produces about 30% more tokens for the same
 # source text (https://platform.claude.com/docs/en/about-claude/pricing).
-# cache_hit has three multipliers: 0.1x input by default, 0.025x on Fable 5.1 /
-# Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok) and Sonnet 5.5
+# cache_hit has three multipliers: 0.1x input by default, 0.025x on Fable 5.2 /
+# Mythos 5.2 ($0.20/MTok) and Fable 5.1 / Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok) and Sonnet 5.5
 # ($0.10/MTok since 2026-10-07). Read the rate from this table; never compute
 # input * 0.1.
 # "haiku" = Haiku 5.5, priced by prompt length: "long_prompt" holds the rates for a
 # request whose prompt (input plus cache reads and writes) is over "threshold".
-# "haiku-4.5" = legacy Haiku 4.5; "haiku-3.5" = Haiku 3.5, retired except on
-# Google Cloud.
+# "haiku-4.5" = legacy Haiku 4.5.
 # Pricing keys, as scripts/check-rate-values.py maps them to the canonical rows.
 FABLE = "fable"
+FABLE_5_1 = "fable-5.1"
 FABLE_5 = "fable-5"
 OPUS = "opus"
 OPUS_5 = "opus-5"
@@ -52,10 +53,10 @@ SONNET_4_6 = "sonnet-4.6"
 SONNET_4_5 = "sonnet-4.5"
 HAIKU = "haiku"
 HAIKU_4_5 = "haiku-4.5"
-HAIKU_3_5 = "haiku-3.5"
 
 MODEL_PRICING = {
-    FABLE: {"input": 10.00, "output": 50.00, "cache_hit": 0.25},
+    FABLE: {"input": 8.00, "output": 40.00, "cache_hit": 0.20},
+    FABLE_5_1: {"input": 10.00, "output": 50.00, "cache_hit": 0.25},
     FABLE_5: {"input": 10.00, "output": 50.00, "cache_hit": 1.00},
     OPUS: {"input": 4.00, "output": 20.00, "cache_hit": 0.20},
     OPUS_5: {"input": 5.00, "output": 25.00, "cache_hit": 0.50},
@@ -75,7 +76,6 @@ MODEL_PRICING = {
         "long_prompt": {"threshold": 100_000, "input": 0.50, "output": 2.50, "cache_hit": 0.05},
     },
     HAIKU_4_5: {"input": 1.00, "output": 5.00, "cache_hit": 0.10},
-    HAIKU_3_5: {"input": 0.80, "output": 4.00, "cache_hit": 0.08},
 }
 
 POINTER = """\

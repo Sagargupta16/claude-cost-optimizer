@@ -56,7 +56,7 @@ When spawning subagents or the user asks for a task, suggest the cheapest model 
 | Still on Sonnet 4.6 / 4.5 ($3/$15) | "Sonnet 5.5 is a third cheaper and caches from 512 tokens: `/model claude-sonnet-5-5`" | `medium` |
 | Architecture, complex refactors | Opus 5.5 (no suggestion needed, already justified) | `medium`, `high` where edge cases are likely |
 | Security audits | Opus 5.5 (no suggestion needed) | `max`; it can overthink, so test it on a sample first |
-| Routine work while on Fable 5.1 ($10/$50, 2.5x Opus 5.5) | "Opus 5.5 covers this at 40% of the rate: `/model`, pick Opus 5.5". Keep Fable 5.1 for the hardest long-horizon work | `medium` |
+| Routine work while on Fable 5.2 ($8/$40, 2x Opus 5.5) | "Opus 5.5 covers this at half the rate: `/model`, pick Opus 5.5". Keep Fable 5.2 for the hardest long-horizon work | `medium` |
 | Still on legacy Opus 5 or 4.x ($5/$25) | "Opus 5.5 is 20% cheaper per token: `/model`, pick Opus 5.5" | `medium` (Opus 5 defaulted to `high`) |
 
 Only suggest model or effort changes when it would save meaningful cost, and at a task boundary. Don't suggest on every turn. The effort column follows Anthropic's per-level table (Claude Code model config docs); `medium` is the default on Opus 5.5, Sonnet 5.5 and Haiku 5.5.
@@ -72,7 +72,7 @@ After a model migration, suggest auditing the old prompts: prompts written for a
 ## Session Awareness
 
 The prompt cache is what makes long sessions cheap. Protect it:
-- Session start: pick model and effort once. Switching model mid-task rebuilds the cache (each model has its own); effort changes keep it only on Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 with an API key or subscription (not on Bedrock, Google Cloud's Agent Platform or a gateway)
+- Session start: pick model and effort once. Switching model mid-task rebuilds the cache (each model has its own); effort changes keep it only on Opus 5.5, Sonnet 5.5, Haiku 5.5, Fable 5.2 and 5.1 with an API key or subscription (not on Bedrock, Google Cloud's Agent Platform or a gateway)
 - Between unrelated tasks: suggest `/clear` (costs nothing). With state to keep, first write a 40-line handoff file while the cache is still warm
 - After 20+ turns or at a natural break: suggest `/compact`. Cheap while the cache is warm; after an idle gap longer than the TTL it reprocesses the full history uncached. TTL is 1 hour for the main conversation on a subscription within plan usage; 5 minutes for subagents, and for everything on an API key, a cloud provider or usage credits
 - Stepping away: with the 1-hour TTL, Claude Code compacts a 200K+ token conversation after about 54 idle minutes, before the cache expires (idle compaction, v2.1.299). Resuming an old conversation re-reads it uncached, and Pro and Max plans warn when that would use a noticeable share of the 5-hour limit (v2.1.304): for a stale task, suggest a fresh session.

@@ -62,11 +62,6 @@ case "$MODEL" in
     RATE_INPUT=1
     RATE_OUTPUT=5
     ;;
-  *3-5-haiku*|*haiku-3-5*|*haiku-3.5*)
-    # Haiku 3.5, retired except on Google Cloud.
-    RATE_INPUT=0.80
-    RATE_OUTPUT=4
-    ;;
   *haiku*)
     # Haiku 5.5 is $0.10/$0.50 up to 100,000 prompt tokens ($0.50/$2.50 above).
     # A per-call estimate here is far below that line, so the low tier applies.
@@ -83,7 +78,14 @@ case "$MODEL" in
     RATE_INPUT=2
     RATE_OUTPUT=10
     ;;
+  fable|mythos|fable\[*\]|mythos\[*\]|*fable-5-2*|*fable-5.2*|*mythos-5-2*|*mythos-5.2*)
+    # Fable 5.2 and Mythos 5.2 are $8/$40; the bare alias resolves to Fable 5.2.
+    # Must match before the legacy branch below.
+    RATE_INPUT=8
+    RATE_OUTPUT=40
+    ;;
   *fable*|*mythos*)
+    # Legacy Fable 5.1 / Fable 5 / Mythos 5.1 / Mythos 5 keep $10/$50.
     RATE_INPUT=10
     RATE_OUTPUT=50
     ;;

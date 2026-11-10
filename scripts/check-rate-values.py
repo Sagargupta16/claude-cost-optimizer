@@ -12,8 +12,8 @@ rate -- $0.02 for $0.20 -- passed CI. This script compares the values.
 Canonical sources:
 
   - Rates: MODELS in tools/claude-rate/rate.py (the same file that holds the
-    canonical verified date). Mythos 5.1 and Mythos 5 reuse Fable 5.1 and
-    Fable 5 pricing, as rate.py's _PRICE_ALIASES says.
+    canonical verified date). Mythos 5.2, Mythos 5.1 and Mythos 5 reuse
+    Fable 5.2, Fable 5.1 and Fable 5 pricing, as rate.py's _PRICE_ALIASES says.
   - Minimum cacheable prompt: MODELS in site/src/utils/pricing.ts, the only
     complete copy of that field; the MCP server's copy must agree with it.
   - Models rate.py does not carry (Opus 4.5, Sonnet 4.5, Mythos Preview):
@@ -59,10 +59,11 @@ ANALYZE_PY = Path("tools/usage-analyzer/analyze.py")
 COST_LOGGER = Path("hooks/cost-logger.sh")
 
 # Same price under another name (rate.py _PRICE_ALIASES).
-PRICE_ALIASES = {"mythos-5-1": "fable-5-1", "mythos-5": "fable-5"}
+PRICE_ALIASES = {"mythos-5-2": "fable-5-2", "mythos-5-1": "fable-5-1", "mythos-5": "fable-5"}
 
 # Local key -> canonical key, per file. "@fast" marks a Fast Mode row (2x base).
 PRICING_TS_NAMES = {
+    "Fable 5.2": "fable-5-2",
     "Fable 5.1": "fable-5-1",
     "Fable 5": "fable-5",
     "Opus 5.5": "opus-5-5",
@@ -77,6 +78,7 @@ PRICING_TS_NAMES = {
     "Sonnet 4.5": "sonnet-4-5",
     "Haiku 5.5": "haiku-5-5",
     "Haiku 4.5": "haiku-4-5",
+    "Mythos 5.2": "mythos-5-2",
     "Mythos 5.1": "mythos-5-1",
     "Mythos 5": "mythos-5",
     "Mythos Preview": "mythos-preview",
@@ -84,7 +86,8 @@ PRICING_TS_NAMES = {
 # The MCP server and the VS Code extension share one key scheme: bare family
 # names are the current flagship.
 ALIAS_KEYS = {
-    "fable": "fable-5-1",
+    "fable": "fable-5-2",
+    "fable-5.1": "fable-5-1",
     "fable-5": "fable-5",
     "opus": "opus-5-5",
     "opus-5": "opus-5",
@@ -98,7 +101,8 @@ ALIAS_KEYS = {
     "haiku-4.5": "haiku-4-5",
 }
 ESTIMATE_KEYS = {
-    "fable": "fable-5-1",
+    "fable": "fable-5-2",
+    "fable_5_1": "fable-5-1",
     "fable_5": "fable-5",
     "opus": "opus-5-5",
     "opus_5": "opus-5",
@@ -110,8 +114,10 @@ ESTIMATE_KEYS = {
     "sonnet_4_6": "sonnet-4-6",
     "haiku": "haiku-5-5",
     "haiku_4_5": "haiku-4-5",
-    "mythos": "mythos-5-1",
+    "mythos": "mythos-5-2",
+    "mythos_5_1": "mythos-5-1",
     "fast_mode": "opus-5-5@fast",
+    "fast_mode_fable": "fable-5-2@fast",
     "fast_mode_opus_5": "opus-5@fast",
 }
 ANALYZE_KEYS = {
@@ -119,7 +125,6 @@ ANALYZE_KEYS = {
     "opus-4.5": "opus-4-5",
     "opus-4.1": "opus-4-1",
     "sonnet-4.5": "sonnet-4-5",
-    "haiku-3.5": "haiku-3-5",
 }
 # Model ids fed through the hook's `case "$MODEL"` patterns, and the model whose
 # rates each must land on.
@@ -135,7 +140,8 @@ HOOK_PROBES = {
     "claude-sonnet-4-5-20250929": "sonnet-4-5",
     "claude-haiku-5-5": "haiku-5-5",
     "claude-haiku-4-5-20251001": "haiku-4-5",
-    "claude-3-5-haiku-20241022": "haiku-3-5",
+    "claude-fable-5-2": "fable-5-2",
+    "claude-mythos-5-2": "mythos-5-2",
     "claude-fable-5-1": "fable-5-1",
     "claude-mythos-5-1": "mythos-5-1",
 }

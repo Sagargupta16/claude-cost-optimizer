@@ -35,13 +35,13 @@ There are six API platforms for Claude models, plus the Claude subscription plan
 | **Claude Platform on AWS** | Anthropic-operated Claude API, reached through AWS | AWS-native teams that want Anthropic-operated infra + same-day feature parity | Pay-per-token, billed in **Claude Consumption Units (CCU)** at $0.01/CCU through AWS Marketplace |
 | **Amazon Bedrock** (Mantle + legacy) | AWS-operated service | AWS-native teams, data residency, AWS security boundary | Pay-per-token (AWS billing) |
 | **Google Cloud (Google managed)** | Google-operated, part of Google Cloud's Agent Platform | GCP-native teams, data residency (multi-region and regional endpoints) | Pay-per-token, invoiced by Google Cloud as Agent Platform usage |
-| **Google Cloud (Anthropic managed)** (new 2026-10-22) | Anthropic-operated Claude API, reached through a Google Cloud project with Google Cloud IAM | GCP-native teams that want Claude API features (Batch, Files, Managed Agents, Fast Mode on Opus 5.5) | Pay-per-token, billed in CCU at $0.01/CCU through Google Cloud Marketplace |
+| **Google Cloud (Anthropic managed)** (new 2026-10-22) | Anthropic-operated Claude API, reached through a Google Cloud project with Google Cloud IAM | GCP-native teams that want Claude API features (Batch, Files, Managed Agents, Fast Mode on Opus 5.5 and Fable 5.2) | Pay-per-token, billed in CCU at $0.01/CCU through Google Cloud Marketplace |
 | **Microsoft Foundry** | Anthropic-operated, hosted on Azure or on Anthropic infrastructure | Azure-native teams | Pay-per-token, billed in CCU at $0.01/CCU through the Azure Marketplace |
 | **Claude subscription** (Pro, Max, Ultra, Team, Enterprise) | Claude apps + Claude Code (terminal, IDE, desktop, web) | Interactive development | Monthly subscription; annual billing on Pro, Team and Enterprise only |
 
 Sources, read 2026-11-01: [pricing page](https://platform.claude.com/docs/en/about-claude/pricing#cloud-platform-pricing) (CCU billing on Claude Platform on AWS and Microsoft Foundry), [Claude Models on Google Cloud](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/overview) (how the two Google Cloud offerings differ), [Claude Models on Google Cloud (Anthropic managed)](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/anthropic-managed#billing) (CCU billing), [claude.com/pricing](https://claude.com/pricing) (plans).
 
-The current models (Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5) are on all six API platforms with the same intelligence ([models overview](https://platform.claude.com/docs/en/models/overview), read 2026-11-01). The differences are in pricing, infrastructure, compliance features, and billing integration. The four Anthropic-operated platforms serve the Claude API itself, so they get most features the same day; Bedrock and Google Cloud are partner-operated and do not offer the Message Batches API, Files API, code execution, web fetch, the advisor tool, Agent Skills, the MCP connector or Managed Agents ([Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock#features-not-supported) and [Google Cloud](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed#features-not-supported) feature lists, read 2026-11-01). Microsoft Foundry has no Message Batches API or Managed Agents ([Foundry](https://platform.claude.com/docs/en/build-with-claude/claude-in-microsoft-foundry#claude-features-not-supported-for-claude-in-microsoft-foundry), read 2026-11-01). Fast Mode runs on the Claude API and, for Opus 5.5 only, on Google Cloud (Anthropic managed) and Foundry deployments hosted on Azure ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01).
+The current models (Fable 5.2, Opus 5.5, Sonnet 5.5, Haiku 5.5) are on all six API platforms with the same intelligence ([models overview](https://platform.claude.com/docs/en/about-claude/models/overview), read 2026-11-10). The differences are in pricing, infrastructure, compliance features, and billing integration. The four Anthropic-operated platforms serve the Claude API itself, so they get most features the same day; Bedrock and Google Cloud are partner-operated and do not offer the Message Batches API, Files API, code execution, web fetch, the advisor tool, Agent Skills, the MCP connector or Managed Agents ([Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock#features-not-supported) and [Google Cloud](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed#features-not-supported) feature lists, read 2026-11-01). Microsoft Foundry has no Message Batches API or Managed Agents ([Foundry](https://platform.claude.com/docs/en/build-with-claude/claude-in-microsoft-foundry#claude-features-not-supported-for-claude-in-microsoft-foundry), read 2026-11-01). Fast Mode runs on the Claude API; for Opus 5.5 also on Google Cloud (Anthropic managed) and Foundry deployments hosted on Azure; and for Fable 5.2 also on both Google Cloud offerings (Google sets the price on the Google-managed one) and on Foundry hosted on Anthropic, as the separate model `claude-fable-5-2-fast` ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-10).
 
 ---
 
@@ -49,13 +49,15 @@ The current models (Fable 5.1, Opus 5.5, Sonnet 5.5, Haiku 5.5) are on all six A
 
 The Anthropic API is the baseline. All other platforms price relative to it.
 
-### Standard Pricing (per 1M tokens, verified 2026-11-01)
+### Standard Pricing (per 1M tokens, verified 2026-11-10)
 
 | Model | Input | Output | Cache Hit | 5m Cache Write | 1h Cache Write | Context | Max Output |
 |-------|:-----:|:------:|:---------:|:--------------:|:--------------:|:-------:|:----------:|
-| **Fable 5.1** (most capable) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 1M | 128K |
+| **Fable 5.2** (most capable) | $8.00 | $40.00 | **$0.20** | $10.00 | $16.00 | 1M | 128K |
+| **Fable 5.1** (legacy) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 1M | 128K |
 | **Fable 5** (legacy) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
-| **Mythos 5.1** (verification required) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 1M | 128K |
+| **Mythos 5.2** (verification required) | $8.00 | $40.00 | **$0.20** | $10.00 | $16.00 | 1M | 128K |
+| **Mythos 5.1** (verification required, legacy) | $10.00 | $50.00 | **$0.25** | $12.50 | $20.00 | 1M | 128K |
 | **Mythos 5** (verification required, legacy) | $10.00 | $50.00 | $1.00 | $12.50 | $20.00 | 1M | 128K |
 | **Opus 5.5** (recommended default Opus) | $4.00 | $20.00 | **$0.20** | $5.00 | $8.00 | 1M | 128K |
 | **Opus 5** (legacy) | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
@@ -64,6 +66,7 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 | **Opus 4.6** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 1M | 128K |
 | **Opus 4.5** | $5.00 | $25.00 | $0.50 | $6.25 | $10.00 | 200K | 64K |
 | Opus 4.1 (retired 2026-08-05, still on Bedrock + Google Cloud) | $15.00 | $75.00 | $1.50 | $18.75 | $30.00 | 200K | 32K |
+| **Fable 5.2 / Mythos 5.2 Fast Mode** (no beta header) | $16.00 (2x) | $80.00 (2x) | -- | -- | -- | 1M (included) | 128K |
 | **Opus 5.5 Fast Mode** (available, no beta header) | $8.00 (2x) | $40.00 (2x) | -- | -- | -- | 1M (included) | 128K |
 | **Opus 5 Fast Mode** (research preview, beta header) | $10.00 (2x) | $50.00 (2x) | -- | -- | -- | 1M (included) | 128K |
 | **Opus 4.8 Fast Mode** (research preview; deprecated, removal 2026-11-30) | $10.00 (2x) | $50.00 (2x) | -- | -- | -- | 1M (included) | 128K |
@@ -76,7 +79,7 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 | **Haiku 4.5** (legacy) | $1.00 | $5.00 | $0.10 | $1.25 | $2.00 | 200K | 64K |
 | **Mythos Preview** (deprecated, no retirement date) | $25.00 | $125.00 | $2.50 | $31.25 | $50.00 | 1M | -- |
 
-> **Opus 5.5** (`claude-opus-5-5`, released 2026-09-22): the recommended default. Anthropic's models-overview page now says "start with Claude Opus 5.5 for most workloads"; Fable 5.1 is for demanding reasoning and long-horizon work. **$4/$20, 20% below Opus 5's $5/$25**, with cache hits at $0.20 (**0.05x** base input, 95% off), 5m / 1h cache writes at $5 / $8, Batch $2/$10, and Fast Mode at $8/$40 (out of research preview since 2026-10-15 with no beta header, on the Claude API, Google Cloud (Anthropic managed) and Microsoft Foundry hosted on Azure; [fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01). 1M context (default and max), 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), min cacheable prompt 512, knowledge cutoff Jun 2026, same tokenizer as Opus 4.7+. Available on all six platforms: `claude-opus-5-5` on the Claude API, both Google Cloud offerings, Microsoft Foundry and Claude Platform on AWS; `anthropic.claude-opus-5-5` on Bedrock ([Opus 5.5 overview](https://platform.claude.com/docs/en/models/opus-5-5/overview), read 2026-11-01). Earliest retirement is not sooner than 2027-09-22.
+> **Opus 5.5** (`claude-opus-5-5`, released 2026-09-22): the recommended default. Anthropic's models-overview page now says "start with Claude Opus 5.5 for most workloads"; Fable 5.2 is for demanding reasoning and long-horizon agentic work, once evals on Opus 5.5 at higher effort fall short. **$4/$20, 20% below Opus 5's $5/$25**, with cache hits at $0.20 (**0.05x** base input, 95% off), 5m / 1h cache writes at $5 / $8, Batch $2/$10, and Fast Mode at $8/$40 (out of research preview since 2026-10-15 with no beta header, on the Claude API, Google Cloud (Anthropic managed) and Microsoft Foundry hosted on Azure; [fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01). 1M context (default and max), 128K max output (300K on Batch via the `output-300k-2026-03-24` beta), min cacheable prompt 512, knowledge cutoff Jun 2026, same tokenizer as Opus 4.7+. Available on all six platforms: `claude-opus-5-5` on the Claude API, both Google Cloud offerings, Microsoft Foundry and Claude Platform on AWS; `anthropic.claude-opus-5-5` on Bedrock ([Opus 5.5 overview](https://platform.claude.com/docs/en/models/opus-5-5/overview), read 2026-11-01). Earliest retirement is not sooner than 2027-09-22.
 >
 > **Cost-relevant Opus 5.5 changes versus Opus 5**:
 > - **Adaptive thinking is always on.** `thinking: {type: "disabled"}` and `thinking: {type: "enabled", budget_tokens}` both return 400; effort is the only control. Code that disabled thinking on Opus 5 now pays for thinking tokens (billed as output) it did not pay for before.
@@ -128,15 +131,17 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 >
 > **Opus 4.8 is now legacy**: the models-overview page has moved `claude-opus-4-8` into the Legacy accordion. Its retirement date is unchanged at not sooner than 2027-05-28, and the deprecations page still lists it as Active, so it is not deprecated and is not going away soon -- treat it as previous-generation and migrate new work to Opus 5.5. It keeps Priority Tier, which Opus 5.5 does not offer. Its Fast Mode is not staying: deprecated on 2026-10-30 and removed on 2026-11-30, after which `speed: "fast"` on `claude-opus-4-8` returns an error with no fallback ([release notes](https://platform.claude.com/docs/en/release-notes/overview), read 2026-11-01).
 
+> **Fable 5.2** (`claude-fable-5-2`, released 2026-11-09): the most capable widely released model, at **$8/$40, 20% below Fable 5.1's $10/$50 on every rate** and exactly 2x Opus 5.5 on input, output and cache writes (Fable 5.1 was 2.5x). Cache hits cost $0.20 (**0.025x**, the same $0.20 as Opus 5.5), 5m / 1h cache writes $10 / $16, Batch $4/$20, Fast Mode $16/$80 with no beta header. 1M context (default and max), 128K max output, min cacheable prompt 512, same tokenizer as Opus 4.7+, 30-day data retention required. Available on all six platforms: `claude-fable-5-2` on the Claude API, both Google Cloud offerings, Microsoft Foundry and Claude Platform on AWS; `anthropic.claude-fable-5-2` on Bedrock. Earliest retirement not sooner than 2027-11-09. Breaking changes versus Fable 5.1 (append-only history on every account, thinking blocks readable only by Fable 5.2 and Mythos 5.2, `computer_20251124` rejected outside Bedrock, advisor pairing) are in [Guide 03](03-model-selection.md#migrating-to-fable-52). **Mythos 5.2** (`claude-mythos-5-2`) has the same capabilities and prices, for verified organizations only, on the Claude API, Bedrock (`anthropic.claude-mythos-5-2`), both Google Cloud offerings and Microsoft Foundry, not Claude Platform on AWS. Fable 5.1 and Mythos 5.1 are now legacy: still available, not deprecated, prices unchanged ([what's new in Fable 5.2](https://platform.claude.com/docs/en/models/fable-5-2/whats-new-fable-5-2), [pricing page](https://platform.claude.com/docs/en/about-claude/pricing), [model deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations), read 2026-11-10).
+>
 > **Fable 5 / Mythos 5** (GA 2026-06-09): the Mythos-class tier above Opus, both at $10/$50 (2x Opus 5). **Fable 5** went GA on the Claude API, Claude Platform on AWS, Bedrock, Google Cloud and Microsoft Foundry and includes safety classifiers that can refuse a request (`stop_reason: "refusal"`, HTTP 200; pre-output refusals are unbilled; the beta `fallbacks` parameter retries another model server-side and fallback credit refunds the cache-switch cost). **Mythos 5** is the same model without the classifiers. It launched for approved [Project Glasswing](https://www.anthropic.com/glasswing) customers; like Mythos 5.1 it now requires verification through Anthropic's verification programs, such as the [Cyber Verification Program](https://www.anthropic.com/news/cyber-verification-program), which on 2026-10-06 was expanded into Defense, Red Team and Specialized Access tiers, with Glasswing members moving to Specialized Access (read 2026-11-01). Both require 30-day data retention (no zero-data-retention option), have always-on adaptive thinking, and support the Batch API but not Fast Mode.
 >
-> **Mythos 5.1** is now "Verification required": available to organizations verified through Anthropic's verification programs, such as the Cyber Verification Program, and no longer described as Glasswing-only. Same specs and pricing as Fable 5.1. IDs: `claude-mythos-5-1` (Bedrock: `anthropic.claude-mythos-5-1`), offered on the Claude API, Bedrock, Google Cloud and Microsoft Foundry -- not Claude Platform on AWS.
+> **Mythos 5.1** (legacy since the Mythos 5.2 launch) is "Verification required": available to organizations verified through Anthropic's verification programs, such as the Cyber Verification Program, and no longer described as Glasswing-only. Same specs and pricing as Fable 5.1. IDs: `claude-mythos-5-1` (Bedrock: `anthropic.claude-mythos-5-1`), offered on the Claude API, Bedrock, Google Cloud and Microsoft Foundry -- not Claude Platform on AWS.
 >
 > **Mythos Preview** was superseded by Mythos 5 and is **deprecated** -- still functional, no longer recommended, and Anthropic publishes no retirement date for it. It is the invite-only defensive-cybersecurity research preview for Glasswing partners (11 founding members plus 40+ critical-infrastructure organizations).
 
 > **Sonnet 5 pricing is settled**: $2/$10 per MTok is now the standard rate. The launch pricing was labelled introductory through 2026-08-31, but Anthropic made it permanent and cancelled the increase to $3/$15, so budget $2/$10 indefinitely.
 
-> **1M context at standard rates**: Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 charge the standard per-token rate across the full 1M window -- no long-context premium. Opus 4.5, Sonnet 4.5, Opus 4.1, and Haiku 4.5 are 200K-context only. (Microsoft Foundry used to cap Opus 4.8 at 200K; its context table now lists Opus 4.8 at 1M, [Foundry](https://platform.claude.com/docs/en/build-with-claude/claude-in-microsoft-foundry#context-window), read 2026-11-01.) **Haiku 5.5 is the exception**: it has a 1M window but is the one model from Claude 4.6 on priced by prompt length -- $0.10/$0.50 up to 100,000 prompt tokens, $0.50/$2.50 for the whole request above that.
+> **1M context at standard rates**: Fable 5.2, Mythos 5.2, Fable 5.1, Mythos 5.1, Fable 5, Mythos 5, Opus 5.5, Opus 5, Opus 4.8, Opus 4.7, Opus 4.6, Sonnet 5.5, Sonnet 5, and Sonnet 4.6 charge the standard per-token rate across the full 1M window -- no long-context premium. Opus 4.5, Sonnet 4.5, Opus 4.1, and Haiku 4.5 are 200K-context only. (Microsoft Foundry used to cap Opus 4.8 at 200K; its context table now lists Opus 4.8 at 1M, [Foundry](https://platform.claude.com/docs/en/build-with-claude/claude-in-microsoft-foundry#context-window), read 2026-11-01.) **Haiku 5.5 is the exception**: it has a 1M window but is the one model from Claude 4.6 on priced by prompt length -- $0.10/$0.50 up to 100,000 prompt tokens, $0.50/$2.50 for the whole request above that.
 >
 > **Opus 4.7+ tokenizer**: The tokenizer introduced with Opus 4.7 (and used by Opus 4.8, Opus 5 and Opus 5.5) produces **about 30% more tokens** for the same text ([Anthropic's pricing page](https://platform.claude.com/docs/en/about-claude/pricing); the [Opus 4.7 launch post](https://www.anthropic.com/news/claude-opus-4-7) put it at roughly 1.0-1.35x by content type). The posted rate does not change with it, but effective cost rises proportionally. Budget accordingly. Haiku 5.5 uses the newer Claude 4.7+ tokenizer too: the same text is about 30% more tokens than on Haiku 4.5.
 >
@@ -144,7 +149,7 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 >
 > | Model | Minimum cacheable prompt |
 > |-------|:------------------------:|
-> | Fable 5.1, Mythos 5.1, Opus 5.5, Opus 5, Sonnet 5.5, Haiku 5.5, Fable 5, Mythos 5 | 512 |
+> | Fable 5.2, Mythos 5.2, Fable 5.1, Mythos 5.1, Opus 5.5, Opus 5, Sonnet 5.5, Haiku 5.5, Fable 5, Mythos 5 | 512 |
 > | Opus 4.8, Opus 4.1, Sonnet 5, Sonnet 4.6, Sonnet 4.5 | 1,024 |
 > | Opus 4.7, Mythos Preview | 2,048 |
 > | Opus 4.6, Opus 4.5, Haiku 4.5 (legacy) | 4,096 |
@@ -157,10 +162,10 @@ The Anthropic API is the baseline. All other platforms price relative to it.
 |----------|--------|---------|
 | **Batch API** | 50% discount on input AND output | Non-real-time, async results. Stacks with prompt caching. NOT compatible with Fast Mode or Priority Tier. |
 | **Data residency** (`inference_geo: "us"`) | 1.1x multiplier on every category | Applies to Opus 4.6, Sonnet 4.6, and all later models (including Opus 5.5, Opus 5, Sonnet 5.5, Sonnet 5 and Haiku 5.5) on the Claude API (1P), Claude Platform on AWS and Google Cloud (Anthropic managed); on Microsoft Foundry, US Data Zone Standard deployments pay the same 1.1x ([pricing page](https://platform.claude.com/docs/en/about-claude/pricing#data-residency-pricing), read 2026-11-01). Earlier models error if the parameter is set. |
-| **Fast Mode** | 2x each model's base ($8 / $40 on Opus 5.5, $10 / $50 on Opus 5 and 4.8) | **Opus 5.5, Opus 5 and Opus 4.8 only**, all at 2x, `speed: "fast"`. **Opus 5.5**: available (out of research preview since 2026-10-15), no beta header, on the Claude API, Google Cloud (Anthropic managed) and Microsoft Foundry hosted on Azure, with a default fast-mode rate limit in the Start, Build and Scale tiers, so no access request. **Opus 5 and Opus 4.8**: research preview, Claude API only, header `anthropic-beta: fast-mode-2026-02-01`. **Opus 4.8 Fast Mode is deprecated (2026-10-30) and removed on 2026-11-30**; after that `speed: "fast"` on it returns an error. Up to 2.5x output tokens/sec (throughput, not time-to-first-token). Opus 4.7 with `speed: "fast"` **returns an error**; Opus 4.6 silently runs at standard speed and standard rates on the Claude API (`usage.speed` returns `"standard"`) and returns a 400 on Google Cloud (Anthropic managed). The old 6x tier no longer exists. Managed Agents: Claude API only. Not on Bedrock, Google Cloud, Claude Platform on AWS, the Batch API, or Priority Tier. Fast and standard speeds do not share cached prefixes, so each switch, including a fallback to standard after a fast-mode 429, reads the prefix uncached again. Dedicated rate limits surface in `anthropic-fast-*` response headers. ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01) |
+| **Fast Mode** | 2x each model's base ($16 / $80 on Fable 5.2 and Mythos 5.2, $8 / $40 on Opus 5.5, $10 / $50 on Opus 5 and 4.8) | **Fable 5.2, Mythos 5.2, Opus 5.5, Opus 5 and Opus 4.8 only**, all at 2x, `speed: "fast"`. **Fable 5.2**: no beta header, on the Claude API, both Google Cloud offerings (Google sets the price on the Google-managed one) and Microsoft Foundry hosted on Anthropic, where it is the separate model `claude-fable-5-2-fast` (read 2026-11-10). **Opus 5.5**: available (out of research preview since 2026-10-15), no beta header, on the Claude API, Google Cloud (Anthropic managed) and Microsoft Foundry hosted on Azure, with a default fast-mode rate limit in the Start, Build and Scale tiers, so no access request. **Opus 5 and Opus 4.8**: research preview, Claude API only, header `anthropic-beta: fast-mode-2026-02-01`. **Opus 4.8 Fast Mode is deprecated (2026-10-30) and removed on 2026-11-30**; after that `speed: "fast"` on it returns an error. Up to 2.5x output tokens/sec (throughput, not time-to-first-token). Opus 4.7 with `speed: "fast"` **returns an error**; Opus 4.6 silently runs at standard speed and standard rates on the Claude API (`usage.speed` returns `"standard"`) and returns a 400 on Google Cloud (Anthropic managed). The old 6x tier no longer exists. Managed Agents: Claude API only. Not on Bedrock, Claude Platform on AWS, the Batch API, or Priority Tier, and not on Google Cloud (Google managed) for the Opus models. Fast and standard speeds do not share cached prefixes, so each switch, including a fallback to standard after a fast-mode 429, reads the prefix uncached again. Dedicated rate limits surface in `anthropic-fast-*` response headers. ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01) |
 | **Cache write (5-min TTL)** | 1.25x base input price | Content cached for 5 minutes. Pays off after 1 reuse. |
 | **Cache write (1-hour TTL)** | 2x base input price | Content cached for 1 hour. Pays off after 2 reuses. |
-| **Cache hit / refresh** | 0.1x base input price on most models; **0.05x on Opus 5.5 and Sonnet 5.5**; **0.025x on Fable 5.1 and Mythos 5.1** | 90% off vs uncached input on most models, 95% on Opus 5.5 and Sonnet 5.5, 97.5% on Fable 5.1 / Mythos 5.1. On Haiku 5.5 it is 0.1x of the request's own tier ($0.01 at <= 100K prompt tokens, $0.05 above). Read the per-model rate; never derive it as input x 0.1. |
+| **Cache hit / refresh** | 0.1x base input price on most models; **0.05x on Opus 5.5 and Sonnet 5.5**; **0.025x on Fable 5.2, Mythos 5.2, Fable 5.1 and Mythos 5.1** | 90% off vs uncached input on most models, 95% on Opus 5.5 and Sonnet 5.5, 97.5% on Fable 5.2 / Mythos 5.2 and Fable 5.1 / Mythos 5.1. On Haiku 5.5 it is 0.1x of the request's own tier ($0.01 at <= 100K prompt tokens, $0.05 above). Read the per-model rate; never derive it as input x 0.1. |
 
 ### Batch API Pricing
 
@@ -168,7 +173,8 @@ The Batch API is the single biggest discount available. For any workload that do
 
 | Model | Batch Input | Batch Output | Savings vs Standard |
 |-------|:-----------:|:------------:|:-------------------:|
-| **Fable 5.1** | $5.00 | $25.00 | 50% |
+| **Fable 5.2** | $4.00 | $20.00 | 50% |
+| **Fable 5.1** (legacy) | $5.00 | $25.00 | 50% |
 | **Fable 5** | $5.00 | $25.00 | 50% |
 | **Mythos 5** | $5.00 | $25.00 | 50% |
 | **Opus 5.5** | $2.00 | $10.00 | 50% |
@@ -216,7 +222,7 @@ From the [release notes](https://platform.claude.com/docs/en/release-notes/overv
 
 ## AWS Bedrock Pricing
 
-AWS Bedrock provides Claude access through two endpoint types with different pricing. **Fable 5.1 (the most capable widely released model) and Opus 5.5 (the recommended default Opus) are both available on Bedrock** as `anthropic.claude-fable-5-1` and `anthropic.claude-opus-5-5`, as are Sonnet 5.5 (`anthropic.claude-sonnet-5-5`) and Haiku 5.5 (`anthropic.claude-haiku-5-5`), alongside Fable 5, Opus 5 (`anthropic.claude-opus-5`), Opus 4.8, Opus 4.7 and Sonnet 5. Bedrock has two integration paths: the Claude in Amazon Bedrock (Mantle) Messages-API endpoint, and the legacy InvokeModel/Converse API. AWS sets access per model: Fable 5.1, Fable 5, Opus 4.8, Opus 4.7, Sonnet 5 and Haiku 4.5 are open to every Bedrock customer, Mythos 5.1 and Mythos 5 need verification, and Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5 follow the criteria in the Bedrock console's model access page ([Claude in Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock#access), read 2026-11-01).
+AWS Bedrock provides Claude access through two endpoint types with different pricing. **Fable 5.2 (the most capable widely released model) and Opus 5.5 (the recommended default Opus) are both available on Bedrock** as `anthropic.claude-fable-5-2` and `anthropic.claude-opus-5-5` ([what's new in Fable 5.2](https://platform.claude.com/docs/en/models/fable-5-2/whats-new-fable-5-2), read 2026-11-10), as are Sonnet 5.5 (`anthropic.claude-sonnet-5-5`) and Haiku 5.5 (`anthropic.claude-haiku-5-5`), alongside Fable 5.1 (`anthropic.claude-fable-5-1`, legacy), Fable 5, Opus 5 (`anthropic.claude-opus-5`), Opus 4.8, Opus 4.7 and Sonnet 5. Bedrock has two integration paths: the Claude in Amazon Bedrock (Mantle) Messages-API endpoint, and the legacy InvokeModel/Converse API. AWS sets access per model: Fable 5.1, Fable 5, Opus 4.8, Opus 4.7, Sonnet 5 and Haiku 4.5 are open to every Bedrock customer, Mythos 5.1 and Mythos 5 need verification, and Opus 5.5, Opus 5, Sonnet 5.5 and Haiku 5.5 follow the criteria in the Bedrock console's model access page ([Claude in Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock#access), read 2026-11-01).
 
 ### Global Endpoints
 
@@ -224,7 +230,8 @@ Global endpoints match Anthropic API pricing exactly:
 
 | Model | Input | Output | Cache Hit |
 |-------|:-----:|:------:|:---------:|
-| **Fable 5.1** (open access, GA) | $10.00 | $50.00 | **$0.25** |
+| **Fable 5.2** (most capable) | $8.00 | $40.00 | **$0.20** |
+| **Fable 5.1** (legacy; open access, GA) | $10.00 | $50.00 | **$0.25** |
 | **Fable 5** (legacy) | $10.00 | $50.00 | $1.00 |
 | **Opus 5.5** (GA) | $4.00 | $20.00 | **$0.20** |
 | **Opus 5** (legacy, GA) | $5.00 | $25.00 | $0.50 |
@@ -242,11 +249,12 @@ Global endpoints match Anthropic API pricing exactly:
 
 ### Regional Endpoints (us/eu/jp/apac/au inference profiles)
 
-Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models** (Opus 5, Opus 5.5, Sonnet 5.5 and Haiku 5.5 included). Earlier models retain their existing pricing. Source: Anthropic's Bedrock page says "Regional endpoints carry a 10% pricing premium over global endpoints" and that global endpoints carry "No pricing premium" ([Claude in Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock#regions), read 2026-11-01); the [pricing page](https://platform.claude.com/docs/en/about-claude/pricing#cloud-platform-pricing) puts it the same way for "Claude 4.5 models and beyond". For Fable 5.1 the regional endpoint is `us-east-1` only (same page).
+Regional endpoints carry a **10% premium** over global pricing. Scope: **Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models** (Opus 5, Opus 5.5, Sonnet 5.5 and Haiku 5.5 included). Earlier models retain their existing pricing. Source: Anthropic's Bedrock page says "Regional endpoints carry a 10% pricing premium over global endpoints" and that global endpoints carry "No pricing premium" ([Claude in Amazon Bedrock](https://platform.claude.com/docs/en/build-with-claude/claude-in-amazon-bedrock#regions), read 2026-11-01); the [pricing page](https://platform.claude.com/docs/en/about-claude/pricing#cloud-platform-pricing) puts it the same way for "Claude 4.5 models and beyond". For Fable 5.1 the regional endpoint is `us-east-1` only (same page). The Fable 5.2 row is computed ($8 x 1.1 = $8.80, $40 x 1.1 = $44); this pass did not check which regions serve it.
 
 | Model | Regional Input | Regional Output | Premium |
 |-------|:--------------:|:---------------:|:-------:|
-| **Fable 5.1** | $11.00 | $55.00 | +10% |
+| **Fable 5.2** | $8.80 | $44.00 | +10% |
+| **Fable 5.1** (legacy) | $11.00 | $55.00 | +10% |
 | **Fable 5** | $11.00 | $55.00 | +10% |
 | **Opus 5.5** | $4.40 | $22.00 | +10% |
 | **Opus 5** (legacy) | $5.50 | $27.50 | +10% |
@@ -277,6 +285,7 @@ The new **Claude in Amazon Bedrock (Mantle)** endpoint at `https://bedrock-mantl
 
 | Model | Mantle Model ID | Legacy Bedrock ID (InvokeModel/Converse) |
 |-------|-----------------|------------------------------------------|
+| Fable 5.2 | `anthropic.claude-fable-5-2` | Check the Bedrock console for inference profiles |
 | Fable 5 | `anthropic.claude-fable-5` | `global.anthropic.claude-fable-5` (global inference profile; no `us.` CRIS profile exists) |
 | Opus 5.5 | `anthropic.claude-opus-5-5` | Not listed on Anthropic's Opus 5.5 page; check the Bedrock console for inference profiles |
 | Opus 5 (legacy) | `anthropic.claude-opus-5` | `us.anthropic.claude-opus-5` (cross-region inference profile) |
@@ -405,11 +414,11 @@ Both regional endpoints (single GCP region) and multi-region endpoints (dynamic 
 - **Provisioned throughput**: Needs a regional endpoint, so it covers only the models regional endpoints serve (Sonnet 4.6 and earlier)
 - **Endpoint types**: Global (no premium), multi-region (+10%), regional (+10%)
 - **Billing**: Google Cloud invoices it as Agent Platform usage, consolidated with other GCP services; Google sets the per-model prices on its [Generative AI pricing](https://cloud.google.com/vertex-ai/generative-ai/pricing#claude-models) page
-- **Lifecycle**: Google sets its own retirement dates, which can differ from the Claude API schedule (Opus 4, Sonnet 4 and Haiku 3.5, retired on the Claude API, are still listed here)
-- **Not supported**: the Message Batches API, Files API, code execution, web fetch, the advisor tool, Agent Skills, the MCP connector, Managed Agents, server-side fallback and Fast Mode; request payloads are capped at 30 MB (the first-party Claude API now takes 128 MB)
+- **Lifecycle**: Google sets its own retirement dates, which can differ from the Claude API schedule (Opus 4 and Sonnet 4, retired on the Claude API, are still listed here)
+- **Not supported**: the Message Batches API, Files API, code execution, web fetch, the advisor tool, Agent Skills, the MCP connector, Managed Agents, server-side fallback and Fast Mode on the Opus models (Fable 5.2 Fast Mode is offered here, at a price Google sets); request payloads are capped at 30 MB (the first-party Claude API now takes 128 MB)
 - **Committed use**: GCP committed use discounts, per earlier editions of this guide; not re-checked on Google's pages on 2026-11-01
 
-Source for the first five bullets: [Claude Models on Google Cloud (Google managed)](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed), read 2026-11-01; the missing Fast Mode is from the [fast mode page](https://platform.claude.com/docs/en/build-with-claude/fast-mode) and the 128 MB limit from the [release notes](https://platform.claude.com/docs/en/release-notes/overview) (2026-10-28), both read 2026-11-01.
+Source for the first five bullets: [Claude Models on Google Cloud (Google managed)](https://platform.claude.com/docs/en/build-with-claude/claude-models-on-google-cloud/google-managed), read 2026-11-01; the Fast Mode status is from the [fast mode page](https://platform.claude.com/docs/en/build-with-claude/fast-mode) (read 2026-11-10) and the 128 MB limit from the [release notes](https://platform.claude.com/docs/en/release-notes/overview) (2026-10-28, read 2026-11-01).
 
 ---
 
@@ -423,14 +432,14 @@ Source for the first five bullets: [Claude Models on Google Cloud (Google manage
 | **Per-token rates** | No separate rate card is published. The pricing page applies its Fast Mode and data-residency prices to this offering and keeps it out of the partner-cloud regional pricing, so this guide uses Claude API rates for it |
 | **Location** | `global` only; there is no regional or multi-region premium |
 | **Data residency** | `inference_geo: "us"` per request: **1.1x** on every token category, as on the Claude API ([pricing page](https://platform.claude.com/docs/en/about-claude/pricing#data-residency-pricing), read 2026-11-01) |
-| **Fast Mode** | Opus 5.5 only, at $8/$40 |
+| **Fast Mode** | Fable 5.2 at $16/$80 and Opus 5.5 at $8/$40 ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-10) |
 | **Spend commitments** | Usage counts toward a Google Cloud spend commitment the way other Marketplace purchases do |
 | **Rate limits** | Managed by Anthropic, not Google Cloud |
 | **Cost visibility** | Usage and Cost pages in the Claude Console (opened from the Google Cloud console), or the Usage and Cost Analytics API |
 
-**Works as on the Claude API**: the Message Batches API, Files API, Agent Skills, web search, web fetch, code execution, the memory and advisor tools, the MCP connector, prompt caching, server-side fallback, token counting, the Models API and Claude Managed Agents. **Not supported**: API keys, MCP tunnels, memory stores on self-hosted environments, and the pre-built self-hosted sandbox workers. Model IDs are the Claude API IDs (`claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-fable-5-1`), including the dated IDs for models older than Claude 4.6.
+**Works as on the Claude API**: the Message Batches API, Files API, Agent Skills, web search, web fetch, code execution, the memory and advisor tools, the MCP connector, prompt caching, server-side fallback, token counting, the Models API and Claude Managed Agents. **Not supported**: API keys, MCP tunnels, memory stores on self-hosted environments, and the pre-built self-hosted sandbox workers. Model IDs are the Claude API IDs (`claude-opus-5-5`, `claude-sonnet-5-5`, `claude-haiku-5-5`, `claude-fable-5-2`, `claude-fable-5-1`), including the dated IDs for models older than Claude 4.6.
 
-**Pick it over Google Cloud (Google managed)** when you want Claude API features that the Google-managed offering lacks (Batch, Files, code execution, Managed Agents, Fast Mode) on your Google Cloud bill. Pick the Google-managed one when you need multi-region or regional endpoints, provisioned throughput, or Google-operated data handling. Max, Ultra and Team monthly API credits do not apply here: they cover the Claude API in the Claude Console org linked to the plan, not cloud platforms ([API credits for subscribers](https://platform.claude.com/docs/en/about-claude/api-credits-for-subscribers), read 2026-11-01).
+**Pick it over Google Cloud (Google managed)** when you want Claude API features that the Google-managed offering lacks (Batch, Files, code execution, Managed Agents, Fast Mode on Opus 5.5) on your Google Cloud bill. Pick the Google-managed one when you need multi-region or regional endpoints, provisioned throughput, or Google-operated data handling. Max, Ultra and Team monthly API credits do not apply here: they cover the Claude API in the Claude Console org linked to the plan, not cloud platforms ([API credits for subscribers](https://platform.claude.com/docs/en/about-claude/api-credits-for-subscribers), read 2026-11-01).
 
 ---
 
@@ -461,7 +470,7 @@ Claude subscriptions bundle Claude, Claude Code and Cowork usage into predictabl
 - Mobile app access (iOS, Android)
 - CLI access (Claude Code)
 - Prompt caching (automatic): Claude Code caches the main conversation for 1 hour while you are within plan usage, and for 5 minutes for subagents and usage-credit traffic ([prompt caching](https://code.claude.com/docs/en/prompt-caching), read 2026-11-01)
-- Opus, Sonnet and Haiku models. Fable 5 and 5.1 are included for up to half of the weekly limit on Max, Ultra and Team Premium; Pro and Team Standard pay for Fable with usage credits ([Fable models on your plan](https://support.claude.com/en/articles/15424964-claude-fable-models-on-your-plan), read 2026-11-01)
+- Opus, Sonnet and Haiku models. Fable 5.2, 5.1 and 5 are included for up to half of the weekly limit on Max, Ultra and Team Premium; Pro and Team Standard pay for Fable with usage credits, apart from the Fable 5.2 launch week through 2026-11-16 ([Fable models on your plan](https://support.claude.com/en/articles/15424964-claude-fable-models-on-your-plan), [launch offers](https://support.claude.com/en/articles/17506494-claude-fable-5-2-launch-offers), read 2026-11-10)
 
 ### When You Exceed Plan Limits
 
@@ -608,7 +617,7 @@ Start here: What is your primary use case?
 |   |   |
 |   |   +-- Yes --> Google Cloud (Google managed) Global endpoints
 |   |   +-- Yes + data residency --> Google Cloud (Google managed) Multi-region or Regional endpoints
-|   |   +-- Yes + Claude API features (Batch, Files, Managed Agents, Fast Mode) --> Google Cloud (Anthropic managed)
+|   |   +-- Yes + Claude API features (Batch, Files, Managed Agents, Opus 5.5 Fast Mode) --> Google Cloud (Anthropic managed)
 |   |
 |   +-- No cloud preference --> Anthropic API (direct)
 |       |
@@ -634,7 +643,7 @@ Start here: What is your primary use case?
 | GCP-native team | Google Cloud (Google managed) Global | Same pricing, GCP billing integration |
 | GCP-native team that needs Batch, Files or Managed Agents | Google Cloud (Anthropic managed) | Claude API features on the Google Cloud bill (CCU billing through Google Cloud Marketplace) |
 | High-volume batch processing | Anthropic Batch API | 50% off everything, can't beat it |
-| Latency-critical application | Anthropic API (standard) or Fast Mode | Fast Mode is 2x cost on Opus 5.5, Opus 5 and Opus 4.8 (the only models that support it; Opus 4.8's ends 2026-11-30) but highest output throughput |
+| Latency-critical application | Anthropic API (standard) or Fast Mode | Fast Mode is 2x cost on Fable 5.2, Mythos 5.2, Opus 5.5, Opus 5 and Opus 4.8 (the only models that support it; Opus 4.8's ends 2026-11-30) but highest output throughput |
 
 ---
 
@@ -703,15 +712,17 @@ The Batch API is the single most impactful discount. Any workload that can toler
 
 ### Strategy 4: Avoid Fast Mode Unless Latency Is Critical (Save 50%)
 
-Fast Mode is 2x each model's standard rate ($8/$40 per MTok on Opus 5.5, $10/$50 on Opus 5 and 4.8) and is supported on **Opus 5.5, Opus 5 and Opus 4.8 only**: available on Opus 5.5 (Claude API, Google Cloud (Anthropic managed), Foundry hosted on Azure), research preview on Opus 5 and Opus 4.8 (Claude API only), and removed from Opus 4.8 on 2026-11-30 ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01). Use it only when response latency directly impacts revenue or user experience.
+Fast Mode is 2x each model's standard rate ($16/$80 per MTok on Fable 5.2 and Mythos 5.2, $8/$40 on Opus 5.5, $10/$50 on Opus 5 and 4.8) and is supported on **Fable 5.2, Mythos 5.2, Opus 5.5, Opus 5 and Opus 4.8 only**: available on Fable 5.2 (Claude API, both Google Cloud offerings, Foundry hosted on Anthropic as `claude-fable-5-2-fast`) and Opus 5.5 (Claude API, Google Cloud (Anthropic managed), Foundry hosted on Azure), research preview on Opus 5 and Opus 4.8 (Claude API only), and removed from Opus 4.8 on 2026-11-30 ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-10). Use it only when response latency directly impacts revenue or user experience.
 
-| Mode | Opus Input | Opus Output | 1M token session |
+| Mode | Input | Output | 1M token session |
 |------|:----------:|:-----------:|:----------------:|
+| Standard (Fable 5.2) | $8.00 | $40.00 | $48.00 |
+| Fast Mode (Fable 5.2) | $16.00 | $80.00 | $96.00 |
 | Standard (Opus 5.5) | $4.00 | $20.00 | $24.00 |
 | Fast Mode (Opus 5.5) | $8.00 | $40.00 | $48.00 |
 | Standard (Opus 5 / 4.8) | $5.00 | $25.00 | $30.00 |
 | Fast Mode (Opus 5 or Opus 4.8) | $10.00 | $50.00 | $60.00 |
-| **Difference** | | | **$24.00 more per session on Opus 5.5, $30.00 on Opus 5 / 4.8** |
+| **Difference** | | | **$48.00 more per session on Fable 5.2, $24.00 on Opus 5.5, $30.00 on Opus 5 / 4.8** |
 
 > Opus 4.7 with `speed: "fast"` returns an error rather than falling back to standard, and Opus 4.6 silently runs at standard speed and standard rates. The old 6x Fast Mode tier ($30/$150) no longer exists on any model.
 
@@ -719,7 +730,7 @@ Fast Mode is 2x each model's standard rate ($8/$40 per MTok on Opus 5.5, $10/$50
 
 ### Strategy 5: Cache Effectively (Save 90%, 95% or 97.5% on Repeated Input)
 
-Prompt caching gives you a 90% discount on input tokens that have been seen before on most models, 95% on Opus 5.5 and Sonnet 5.5 (0.05x) and 97.5% on Fable 5.1 and Mythos 5.1 (0.025x). The key is to structure your requests so that stable content (system prompts, reference documents, schemas) comes first and changes as little as possible between requests.
+Prompt caching gives you a 90% discount on input tokens that have been seen before on most models, 95% on Opus 5.5 and Sonnet 5.5 (0.05x) and 97.5% on Fable 5.2, Mythos 5.2, Fable 5.1 and Mythos 5.1 (0.025x). The key is to structure your requests so that stable content (system prompts, reference documents, schemas) comes first and changes as little as possible between requests.
 
 | Token Type | Opus Price | Relative Cost |
 |------------|:----------:|:-------------:|
@@ -819,7 +830,7 @@ Good pattern (cache holds):
 
 ### 5. Fast Mode + Cache: Stacks but Switching Invalidates
 
-Prompt-caching multipliers (1.25x 5m write, 2x 1h write, and each model's hit multiplier) DO stack on top of Fast Mode rates. So an Opus 5.5 Fast Mode cache hit is $8 × 0.05 = $0.40 / MTok of input, and an Opus 5 or Opus 4.8 one is $10 × 0.1 = $1.00 / MTok -- still cheaper than uncached Fast Mode input. **However**, Fast and Standard speeds do NOT share cached prefixes. If you toggle between speeds within a session, every switch invalidates the cache and you pay a full cache-write again, and so does a fallback from fast to standard after a fast-mode 429 ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode#retries-and-fallbacks), read 2026-11-01). Pick a speed and stick with it for the full conversation.
+Prompt-caching multipliers (1.25x 5m write, 2x 1h write, and each model's hit multiplier) DO stack on top of Fast Mode rates. So an Opus 5.5 Fast Mode cache hit is $8 × 0.05 = $0.40 / MTok of input, a Fable 5.2 one is $16 x 0.025 = $0.40, and an Opus 5 or Opus 4.8 one is $10 × 0.1 = $1.00 / MTok -- still cheaper than uncached Fast Mode input. **However**, Fast and Standard speeds do NOT share cached prefixes. If you toggle between speeds within a session, every switch invalidates the cache and you pay a full cache-write again, and so does a fallback from fast to standard after a fast-mode 429 ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode#retries-and-fallbacks), read 2026-11-01). Pick a speed and stick with it for the full conversation.
 
 ---
 
@@ -954,10 +965,10 @@ Anthropic has run one documented off-peak promotion: from 2026-03-13 to 2026-03-
 2. **Regional endpoints cost 10% more everywhere** -- only use them for data residency compliance. Scope = Sonnet 4.5+, Haiku 4.5+, Opus 4.5+, and all later models (Opus 5.5, Sonnet 5.5 and Haiku 5.5 included).
 3. **The Batch API saves 50%** -- the single biggest discount available, for any workload that can wait
 4. **1M context bills at standard rates on Opus 5.5/5/4.8/4.7/4.6 and Sonnet 5.5/5/4.6** -- no long-context premium. (Earlier "2x over 200K" applied to Opus 4.1 and older.) Haiku 5.5 is the exception: over 100K prompt tokens the whole request bills at $0.50/$2.50. Absolute cost still grows with token count, so trim aggressively anyway.
-5. **Fast Mode is 2x standard on Opus 5.5 ($8/$40, available with no beta header), Opus 5 and Opus 4.8 ($10/$50, research preview) only**, and Opus 4.8's is removed on 2026-11-30. Opus 4.7 errors on `speed: "fast"`, Opus 4.6 silently runs standard on the Claude API, and the old 6x tier is gone. Almost never worth it for development work.
+5. **Fast Mode is 2x standard on Fable 5.2 and Mythos 5.2 ($16/$80, no beta header), Opus 5.5 ($8/$40, available with no beta header), Opus 5 and Opus 4.8 ($10/$50, research preview) only**, and Opus 4.8's is removed on 2026-11-30. Opus 4.7 errors on `speed: "fast"`, Opus 4.6 silently runs standard on the Claude API, and the old 6x tier is gone. Almost never worth it for development work.
 6. **Pro plan annual saves 17%** -- $200/yr vs $240/yr monthly equivalent, no usage difference. Max ($100, formerly Max 5x) and Ultra ($200, formerly Max 20x) are monthly only.
-7. **Claude Platform on AWS** and its Google counterpart, **Google Cloud (Anthropic managed)** (launched 2026-10-22), bill CCUs at $0.01/CCU through the cloud's marketplace but match per-token rates -- pick them over Bedrock or Google Cloud (Google managed) for same-day Claude API features, Batch included. Fast Mode runs only on the Google one, for Opus 5.5.
-6. **Cache hits save 90% on most models, 95% on Opus 5.5 and Sonnet 5.5, and 97.5% on Fable 5.1 / Mythos 5.1** -- structure your prompts to maximize cache reuse
+7. **Claude Platform on AWS** and its Google counterpart, **Google Cloud (Anthropic managed)** (launched 2026-10-22), bill CCUs at $0.01/CCU through the cloud's marketplace but match per-token rates -- pick them over Bedrock or Google Cloud (Google managed) for same-day Claude API features, Batch included. Fast Mode runs only on the Google one, for Opus 5.5 and Fable 5.2.
+6. **Cache hits save 90% on most models, 95% on Opus 5.5 and Sonnet 5.5, and 97.5% on Fable 5.2 / Mythos 5.2 and Fable 5.1 / Mythos 5.1** -- structure your prompts to maximize cache reuse
 7. **Claude Code subscriptions beat API rates for interactive development** -- the math almost always works out in favor of a subscription
 8. **The cheapest token is the one you don't send** -- all the strategies in this repo (context optimization, model selection, workflow patterns) compound with platform-level savings
 9. **Opus 5.5 (released 2026-09-22) costs $4/$20, 20% below Opus 5's $5/$25** (and Opus 4.8's), with cache hits at 0.05x instead of 0.1x, on all six platforms. Thinking is always on and default effort is `medium`, so your output token count can move in either direction; forced `tool_choice`, prefill and non-default sampling params now return 400, and there is no Priority Tier. Migrate, then re-baseline cost per task.

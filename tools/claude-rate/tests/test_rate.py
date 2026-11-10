@@ -139,6 +139,9 @@ class ModelKey(unittest.TestCase):
             "anthropic.claude-sonnet-5-5": "sonnet-5-5",
             "claude-haiku-5-5": "haiku-5-5",
             "claude-mythos-5-1": "fable-5-1",  # same price as Fable 5.1
+            "claude-fable-5-2": "fable-5-2",
+            "anthropic.claude-fable-5-2": "fable-5-2",
+            "claude-mythos-5-2": "fable-5-2",  # same price as Fable 5.2
         }
         for model_id, key in cases.items():
             self.assertEqual(rate._model_key(model_id), key, model_id)
@@ -167,18 +170,20 @@ class ModelKey(unittest.TestCase):
             "anthropic.claude-opus-4-1-20250805-v1:0": "opus-4-1",
             "claude-opus-4-20250514": "opus-4-1",  # Opus 4 bills as Opus 4.1
             "claude-sonnet-4-20250514": "sonnet-4-6",  # Sonnet 4 bills as Sonnet 4.6
-            "claude-3-5-haiku-20241022": "haiku-3-5",  # the version comes first
-            "anthropic.claude-3-5-haiku-20241022-v1:0": "haiku-3-5",
-            "claude-3-5-haiku-latest": "haiku-3-5",
         }
         for model_id, key in cases.items():
             self.assertEqual(rate._model_key(model_id), key, model_id)
+
+    def test_dropped_rows_stay_unpriced(self) -> None:
+        # Haiku 3.5 left the pricing page (read 2026-11-10), so its row went.
+        for model_id in ("claude-3-5-haiku-20241022", "anthropic.claude-3-5-haiku-20241022-v1:0"):
+            self.assertIsNone(rate._model_key(model_id), model_id)
 
     def test_unknown_point_releases_stay_unpriced(self) -> None:
         # A substring match priced the first two at Opus 5 and Fable 5 rates.
         for model_id in (
             "claude-opus-5-6",
-            "claude-fable-5-2",
+            "claude-fable-5-3",
             "claude-sonnet-5-7-20270101",
             "gpt-5",
             "opus",
@@ -201,7 +206,7 @@ class RateTable(unittest.TestCase):
             )
 
     def test_three_cache_read_multipliers(self) -> None:
-        expected = {"fable-5-1": 0.025, "opus-5-5": 0.05, "sonnet-5-5": 0.05}
+        expected = {"fable-5-2": 0.025, "fable-5-1": 0.025, "opus-5-5": 0.05, "sonnet-5-5": 0.05}
         for key, model in rate.MODELS.items():
             self.assertAlmostEqual(
                 model["cache_hit"] / model["input"],
@@ -212,13 +217,13 @@ class RateTable(unittest.TestCase):
 
 
 class RetiredRows(unittest.TestCase):
-    """Models off the Claude API that Bedrock or Google Cloud still serve (pricing page, read 2026-11-03)."""
+    """Models off the Claude API that Bedrock or Google Cloud still serve, and legacy rows (pricing page, read 2026-11-10)."""
 
     def test_posted_rates(self) -> None:
         # input, 5-minute write, 1-hour write, cache read, output
         expected = {
             "opus-4-1": (15.00, 18.75, 30.00, 1.50, 75.00),
-            "haiku-3-5": (0.80, 1.00, 1.60, 0.08, 4.00),
+            "fable-5-1": (10.00, 12.50, 20.00, 0.25, 50.00),
         }
         fields = ("input", "cache_5m_write", "cache_1h_write", "cache_hit", "output")
         for key, rates in expected.items():
@@ -230,13 +235,13 @@ class RetiredRows(unittest.TestCase):
         facts = {
             "by_model": [
                 {"key": "opus-4-1", "share": 0.6, "requests": 120},
-                {"key": "haiku-3-5", "share": 0.4, "requests": 30},
+                {"key": "fable-5-1", "share": 0.4, "requests": 30},
             ]
         }
         fixes = rate._legacy_fixes(facts)
         self.assertEqual(len(fixes), 2)
         self.assertIn("legacy Opus 4.1 ($15/$75 per 1M). Opus 5.5 is $4/$20", fixes[0])
-        self.assertIn("legacy Haiku 3.5 ($0.8/$4 per 1M). Haiku 5.5 is $0.1/$0.5", fixes[1])
+        self.assertIn("legacy Fable 5.1 ($10/$50 per 1M). Fable 5.2 is $8/$40", fixes[1])
         self.assertEqual(rate._score_models(facts, 0).score, 0)  # all spend is legacy
 
 

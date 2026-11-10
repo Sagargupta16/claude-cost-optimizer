@@ -13,7 +13,7 @@ Each benchmark file compares costs along a specific dimension: task type, model 
 
 ### Pricing Reference
 
-All cost calculations use the following rates (verified 2026-11-01):
+All cost calculations use the following rates (verified 2026-11-10):
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Cache Hit (per 1M tokens) |
 |-------|:---------------------:|:----------------------:|:-------------------------:|
@@ -40,7 +40,7 @@ These benchmarks are **estimates**, not deterministic measurements. Every Claude
 - Exact prompt wording and follow-up turns
 - Size and complexity of the codebase being worked on
 - Contents of CLAUDE.md and other context files
-- Whether prompt caching is active (cached input tokens cost 90% less; 95% on Opus 5.5 and Sonnet 5.5, 97.5% on Fable 5.1)
+- Whether prompt caching is active (cached input tokens cost 90% less; 95% on Opus 5.5 and Sonnet 5.5, 97.5% on Fable 5.2 and Fable 5.1)
 - Network conditions and retries
 
 Each figure is one number with its formula or source, never a range. The numbers are designed to show **relative differences** between approaches rather than exact dollar amounts you will see on your bill.
@@ -50,7 +50,7 @@ Each figure is one number with its formula or source, never a range. The numbers
 Claude Code automatically caches stable content (system prompt, CLAUDE.md, earlier conversation turns) between turns. This means:
 
 - **First turn** of a session is always the most expensive because nothing is cached yet.
-- **Subsequent turns** benefit from caching -- input tokens for unchanged content cost 90% less (0.1x input) on most models, 95% less on Opus 5.5 and Sonnet 5.5 (0.05x), 97.5% less on Fable 5.1 (0.025x) ([prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)).
+- **Subsequent turns** benefit from caching -- input tokens for unchanged content cost 90% less (0.1x input) on most models, 95% less on Opus 5.5 and Sonnet 5.5 (0.05x), 97.5% less on Fable 5.2 and Fable 5.1 (0.025x) ([prompt caching](https://platform.claude.com/docs/en/build-with-claude/prompt-caching)).
 - The benchmarks below show **pre-cache** token counts (worst case). Your actual costs will often be lower due to caching, especially in longer sessions.
 - Strategies that keep content stable between turns (like a well-structured CLAUDE.md) benefit more from caching than strategies that change context frequently.
 
@@ -145,7 +145,7 @@ When submitting results, please include:
 ### [Your Scenario Name]
 
 **Environment:**
-- Model: [Fable 5.1 / Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Opus 5 / Sonnet 5 / Opus 4.8 / Opus 4.7 / Opus 4.6 / Sonnet 4.6 / Haiku 4.5 (legacy)]
+- Model: [Fable 5.2 / Opus 5.5 / Sonnet 5.5 / Haiku 5.5 / Fable 5.1 / Opus 5 / Sonnet 5 / Opus 4.8 / Opus 4.7 / Opus 4.6 / Sonnet 4.6 / Haiku 4.5 (legacy)]
 - CLAUDE.md: [line count] lines (~[token count] tokens)
 - Codebase: [language/framework], [approximate size]
 - Date: [YYYY-MM-DD]
