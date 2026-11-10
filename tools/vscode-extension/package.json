@@ -28,9 +28,10 @@
         "claudeCost.defaultModel": {
           "type": "string",
           "default": "sonnet",
-          "enum": ["fable", "fable-5", "opus", "opus-5", "opus-4.8", "opus-4.7", "opus-4.6", "sonnet", "sonnet-5", "sonnet-4.6", "haiku", "haiku-4.5"],
+          "enum": ["fable", "fable-5.1", "fable-5", "opus", "opus-5", "opus-4.8", "opus-4.7", "opus-4.6", "sonnet", "sonnet-5", "sonnet-4.6", "haiku", "haiku-4.5"],
           "enumDescriptions": [
-            "Fable 5.1 ($10/$50 per 1M, cache reads $0.25)",
+            "Fable 5.2 ($8/$40 per 1M, cache reads $0.20)",
+            "Fable 5.1, legacy ($10/$50 per 1M, cache reads $0.25)",
             "Fable 5, legacy ($10/$50 per 1M, cache reads $1.00)",
             "Opus 5.5 ($4/$20 per 1M, cache reads $0.20)",
             "Opus 5, legacy ($5/$25 per 1M)",

@@ -1,5 +1,5 @@
-// Pricing data verified against Anthropic docs on 2026-11-01 (no rate changed since
-// the Haiku 5.5 launch and the Sonnet 5.5 cache-read cut on 2026-10-07):
+// Pricing data verified against Anthropic docs on 2026-11-10 (Fable 5.2 and Mythos 5.2 added
+// 2026-11-09; Haiku 3.5 dropped from the pricing page):
 //   - https://platform.claude.com/docs/en/about-claude/pricing
 //   - https://platform.claude.com/docs/en/models/overview
 //   - https://platform.claude.com/docs/en/models/haiku-5-5/overview
@@ -8,6 +8,7 @@
 //   - https://platform.claude.com/docs/en/models/sonnet-5-5/whats-new-sonnet-5-5
 //   - https://platform.claude.com/docs/en/models/opus-5-5/overview
 //   - https://platform.claude.com/docs/en/models/opus-5-5/migration-guide
+//   - https://platform.claude.com/docs/en/models/fable-5-2/whats-new-fable-5-2
 //   - https://platform.claude.com/docs/en/models/fable-5-1/overview
 //   - https://platform.claude.com/docs/en/build-with-claude/fast-mode
 //   - https://platform.claude.com/docs/en/build-with-claude/prompt-caching
@@ -15,6 +16,7 @@
 //   - https://claude.com/pricing
 
 export type ModelId =
+  | 'fable-5-2'
   | 'fable-5-1'
   | 'fable-5'
   | 'opus-5-5'
@@ -29,6 +31,7 @@ export type ModelId =
   | 'sonnet-4-5'
   | 'haiku-5-5'
   | 'haiku'
+  | 'mythos-5-2'
   | 'mythos-5-1'
   | 'mythos-5'
   | 'mythos'
@@ -44,9 +47,10 @@ export interface ModelPricing {
   contextWindow: string
   maxOutput: string
   fastModeCapable: boolean
-  // Fast Mode premium relative to standard rates. Opus 5.5, Opus 5 and Opus 4.8
-  // are the only supported models, all at 2x of their own base rate: $8/$40 on
-  // Opus 5.5, $10/$50 on the other two. Undefined when fastModeCapable is false.
+  // Fast Mode premium relative to standard rates. Fable 5.2, Mythos 5.2, Opus 5.5, Opus 5
+  // and Opus 4.8 are the supported models, all at 2x of their own base rate: $16/$80 on
+  // Fable 5.2 and Mythos 5.2, $8/$40 on Opus 5.5, $10/$50 on the other two.
+  // Undefined when fastModeCapable is false.
   fastModeMultiplier?: number
   // Fast Mode availability caveat shown in the calculator; unset when Fast Mode is
   // generally available (Opus 5.5 since 2026-10-15).
@@ -127,13 +131,14 @@ export function turnInputCost(
   }
 }
 
-// Cache hits are 0.1x base input on every model EXCEPT four: Fable 5.1 and
-// Mythos 5.1 read at 0.025x ($0.25/MTok), and Opus 5.5 ($0.20/MTok) and Sonnet 5.5
-// ($0.10/MTok, cut from $0.20 on 2026-10-07) read at 0.05x. Derive displays from
-// cacheHitPer1M rather than multiplying input by 0.1 -- that shortcut is now
-// wrong on four models.
+// Cache hits are 0.1x base input on every model EXCEPT six: Fable 5.2, Mythos 5.2,
+// Fable 5.1 and Mythos 5.1 read at 0.025x ($0.20/MTok on the 5.2 pair, $0.25 on the 5.1
+// pair), and Opus 5.5 ($0.20/MTok) and Sonnet 5.5 ($0.10/MTok, cut from $0.20 on
+// 2026-10-07) read at 0.05x. Derive displays from cacheHitPer1M rather than
+// multiplying input by 0.1 -- that shortcut is now wrong on six models.
 export const CACHE_HIT_MULTIPLIER_DEFAULT = 0.1
 export const CACHE_HIT_MULTIPLIER_FABLE_5_1 = 0.025
+export const CACHE_HIT_MULTIPLIER_FABLE_5_2 = 0.025
 export const CACHE_HIT_MULTIPLIER_OPUS_5_5 = 0.05
 export const CACHE_HIT_MULTIPLIER_SONNET_5_5 = 0.05
 
@@ -143,12 +148,44 @@ export function cacheDiscountShare(model: ModelPricing): number {
 }
 
 export const MODELS: Record<ModelId, ModelPricing> = {
+  'fable-5-2': {
+    id: 'fable-5-2',
+    name: 'Fable 5.2',
+    // $8/$40 -- 20% below Fable 5.1's $10/$50 on every rate; exactly 2x Opus 5.5 ($4/$20).
+    inputPer1M: 8,
+    outputPer1M: 40,
+    // 0.025x base input (8 * 0.025 = 0.20) -- the same $0.20 as Opus 5.5's 0.05x of $4.
+    cacheHitPer1M: 0.2,
+    // 5m write 1.25x (8 * 1.25 = 10), 1h write 2x (8 * 2 = 16).
+    cacheWrite5mPer1M: 10,
+    cacheWrite1hPer1M: 16,
+    contextWindow: '1M',
+    maxOutput: '128K',
+    fastModeCapable: true,
+    // 2x of its own base: $16/$80 (8 * 2, 40 * 2).
+    fastModeMultiplier: 2,
+    // Same tokenizer as Opus 4.7+: ~30% more tokens vs pre-4.7 models.
+    tokenizerOverhead: 1.3,
+    minCacheTokens: 512,
+    lifecycle: 'active',
+    notes:
+      "Anthropic's most capable widely released model (released 2026-11-09), for demanding reasoning and " +
+      'long-horizon agentic work. $8/$40 -- 20% below Fable 5.1 on every rate and exactly 2x Opus 5.5 ' +
+      '(Fable 5.1 was 2.5x); cache reads are $0.20/MTok (0.025x), the same as Opus 5.5. Anthropic still says ' +
+      'start with Opus 5.5 and move up when evals at higher effort fall short. Fast Mode 2x ($16/$80, ' +
+      'no beta header). Adaptive thinking always on (disabled/budget_tokens return 400); effort default is ' +
+      'high on the API and medium in Claude Code. Forced tool_choice (any/tool) returns 400. Breaking changes ' +
+      'vs Fable 5.1: the edited-history prefix check applies on every account, only Fable 5.2 and Mythos 5.2 ' +
+      'read its thinking blocks, computer_20251124 returns 400 except on Bedrock, and an advisor tool needs a ' +
+      'Fable 5.2 or Mythos 5.2 advisor. Batch $4/$20. Requires 30-day retention. 1M context at standard rates; ' +
+      '128K max output. Min cacheable prompt 512 tokens. Earliest retirement: 2027-11-09.',
+  },
   'fable-5-1': {
     id: 'fable-5-1',
     name: 'Fable 5.1',
     inputPer1M: 10,
     outputPer1M: 50,
-    // 0.025x base input -- the deepest cache discount in the lineup (Opus 5.5 is 0.05x).
+    // 0.025x base input, same multiplier as Fable 5.2 (Opus 5.5 is 0.05x).
     cacheHitPer1M: 0.25,
     cacheWrite5mPer1M: 12.5,
     cacheWrite1hPer1M: 20,
@@ -158,11 +195,12 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     // Same tokenizer as Fable 5 / Opus 4.7+: ~30% more tokens vs pre-4.7 models.
     tokenizerOverhead: 1.3,
     minCacheTokens: 512,
-    lifecycle: 'active',
+    lifecycle: 'legacy',
     notes:
-      "Anthropic's most capable widely released model (released 2026-09-01). Same $10/$50 as Fable 5, " +
-      'but cache reads are $0.25/MTok -- 0.025x base input, a quarter of Fable 5 and the deepest ' +
-      'cache discount in the lineup. That makes a cache miss expensive relative to a hit, ' +
+      'Legacy Fable release (2026-09-01), superseded by Fable 5.2, which is 20% cheaper. Still served ' +
+      '(not deprecated, earliest retirement 2027-09-01). Same $10/$50 as Fable 5, ' +
+      'but cache reads are $0.25/MTok -- 0.025x base input, a quarter of Fable 5 ' +
+      '(Fable 5.2 reads at $0.20). That makes a cache miss expensive relative to a hit, ' +
       'so a max_tokens:0 keep-alive on the 5-minute TTL usually beats paying the 2x 1-hour write. ' +
       'Adaptive thinking always on (thinking disabled/budget_tokens both 400); control depth with effort. ' +
       'Three breaking changes vs Fable 5: forced tool_choice (any/tool) returns 400, thinking blocks ' +
@@ -480,6 +518,30 @@ export const MODELS: Record<ModelId, ModelPricing> = {
       'Haiku 5.5 is 10x cheaper per token up to 100K prompt tokens. Active; no retirement announced ' +
       '(its earliest date, 2026-10-15, has passed).',
   },
+  'mythos-5-2': {
+    id: 'mythos-5-2',
+    name: 'Mythos 5.2',
+    // Price alias of Fable 5.2: same rates, including the 0.025x cache read (8 * 0.025 = 0.20).
+    inputPer1M: 8,
+    outputPer1M: 40,
+    cacheHitPer1M: 0.2,
+    cacheWrite5mPer1M: 10,
+    cacheWrite1hPer1M: 16,
+    contextWindow: '1M',
+    maxOutput: '128K',
+    fastModeCapable: true,
+    fastModeMultiplier: 2,
+    tokenizerOverhead: 1.3,
+    minCacheTokens: 512,
+    inviteOnly: true,
+    lifecycle: 'active',
+    notes:
+      'Fable 5.2 for verified organizations: same capabilities and prices, including Fast Mode ' +
+      '($16/$80) and the $0.20/MTok (0.025x) cache-read rate. Available only through ' +
+      "Anthropic's verification programs (e.g. the Cyber Verification Program); on the Claude API, " +
+      'Bedrock (anthropic.claude-mythos-5-2), Google Cloud and Foundry, not Claude Platform on AWS. ' +
+      'Min cacheable prompt 512 tokens. Successor to Mythos 5.1.',
+  },
   'mythos-5-1': {
     id: 'mythos-5-1',
     name: 'Mythos 5.1',
@@ -495,8 +557,9 @@ export const MODELS: Record<ModelId, ModelPricing> = {
     tokenizerOverhead: 1.3,
     minCacheTokens: 512,
     inviteOnly: true,
-    lifecycle: 'active',
+    lifecycle: 'legacy',
     notes:
+      'Superseded by Mythos 5.2 ($8/$40). ' +
       'Fable 5.1 for verified organizations: same capabilities, limits, and pricing, ' +
       'including the $0.25/MTok (0.025x) cache-read rate. Unlike Mythos 5 it runs safeguards ' +
       'that depend on the access program, so stop_reason "refusal" can occur. ' +
@@ -548,9 +611,9 @@ export const MODELS: Record<ModelId, ModelPricing> = {
 }
 
 // Default Fast Mode premium for models without an explicit fastModeMultiplier.
-// Prefer ModelPricing.fastModeMultiplier. Only Opus 5.5, Opus 5 and Opus 4.8
-// support Fast Mode, and all three are 2x of their own base rate ($8/$40 on
-// Opus 5.5, $10/$50 on the other two), so 2 is the only sensible default.
+// Prefer ModelPricing.fastModeMultiplier. Only Fable 5.2, Mythos 5.2, Opus 5.5, Opus 5 and
+// Opus 4.8 support Fast Mode, and all are 2x of their own base rate ($16/$80 on the 5.2 pair,
+// $8/$40 on Opus 5.5, $10/$50 on the other two), so 2 is the only sensible default.
 export const FAST_MODE_MULTIPLIER = 2
 export const FAST_MODE_OTPS_GAIN = 2.5 // up to 2.5x output tokens per second
 export const BATCH_DISCOUNT = 0.5

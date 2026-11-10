@@ -111,7 +111,7 @@ You can also press Shift+Tab to cycle into plan mode. Approve the plan, or press
 
 ## Step 5: Start fresh sessions often (0 minutes)
 
-Every turn, Claude resends the entire conversation history. Claude Code bills the unchanged part as a cache read (0.05x input on Opus 5.5 and Sonnet 5.5, 0.1x on most other models), so a long session pays a cache read of its whole history on every turn, and a full cache re-write after any pause longer than the cache TTL.
+Every turn, Claude resends the entire conversation history. Claude Code bills the unchanged part as a cache read (0.025x input on Fable 5.2 and Fable 5.1, 0.05x on Opus 5.5 and Sonnet 5.5, 0.1x on most other models), so a long session pays a cache read of its whole history on every turn, and a full cache re-write after any pause longer than the cache TTL.
 
 Best practice:
 - **Start a new session** when switching tasks

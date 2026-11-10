@@ -1,5 +1,48 @@
 # Changelog
 
+## [1.20.0] - 2026-11-10
+
+Claude Fable 5.2 is added. It launched on 2026-11-09 as the most capable widely released model, and it costs less than the Fable model it replaces. Mythos 5.2 comes with it, and Fable 5.1 and Mythos 5.1 become legacy. The weekly pricing-drift job caught the launch by itself: it opened [#73](https://github.com/Sagargupta16/claude-cost-optimizer/issues/73) on 2026-11-09, and this release clears it. Every fact was read from a live Anthropic page on 2026-11-10.
+
+### Added
+- **Claude Fable 5.2** (`claude-fable-5-2`, Bedrock `anthropic.claude-fable-5-2`, released 2026-11-09, earliest retirement 2027-11-09) in every pricing table, guide, tool and the web calculator.
+  - **$8/$40 per 1M**: 20% below Fable 5.1's $10/$50 on every rate (computed: 1 - 8/10), and 2x Opus 5.5 (Fable 5.1 was 2.5x).
+  - Cache read $0.20 (0.025x, the same multiplier as Fable 5.1 and the same dollars as Opus 5.5's read). 5m write $10, 1h write $16, Batch $4/$20, min cacheable prompt 512, 1M context, 128K output.
+  - **First Fable model with Fast Mode**: $16/$80 (2x), no beta header. Available on the Claude API, both Google Cloud offerings (Google sets the price on the Google-managed one) and Microsoft Foundry hosted on Anthropic as `claude-fable-5-2-fast`. Computed Fast Mode cache rates: read $0.40, 5m write $20, 1h write $32.
+- **Claude Mythos 5.2** (`claude-mythos-5-2`): Fable 5.2's prices and capabilities for verified organizations. claude-rate prices it through `_PRICE_ALIASES`.
+- **Guide 03: a "Migrating to Fable 5.2" section** with the four breaking changes vs Fable 5.1:
+  - The prefix check now applies on every account.
+  - Only Fable 5.2 and Mythos 5.2 read Fable 5.2 thinking blocks.
+  - `computer_20251124` returns 400 except on Bedrock.
+  - An advisor-tool executor on Fable 5.2 needs a Fable 5.2 or Mythos 5.2 advisor.
+- **Guide 03: the two cost habits Anthropic reports for Fable 5.2:**
+  - It keeps thinking at `medium` and above even when the prompt asks it not to, so lower the effort for easy turns.
+  - It delegates readily to subagents, which "can account for a large part of what a session costs".
+- **Claude Code facts for Fable 5.2:**
+  - The `fable` alias resolves to Fable 5.2 from v2.1.321.
+  - Saved `claude-fable-5-1` picks move to `fable` on Pro and Max.
+  - Its Claude Code default effort is `medium` (the API default is `high`).
+  - Effort changes keep the cache on Fable 5.1 and later.
+  - `ultrathink` raises a Fable 5.2 turn to `xhigh`.
+  - `/fast` works on Fable 5.2 from v2.1.321.
+- **Fable 5.2 on subscription plans:**
+  - It is included the same way as Fable 5.1 (up to half the weekly limit on Max, Ultra and Team Premium; usage credits on Pro and Team Standard).
+  - Pro and Team Standard get Fable included through 2026-11-16 as a launch offer.
+  - Max, Ultra and Team Premium get one to three Fable limit resets by subscription length, expiring 2027-03-08.
+
+### Changed
+- **Fable 5.1 and Mythos 5.1 are legacy** (still Active, not deprecated, earliest retirement 2027-09-01). claude-rate's `_legacy_fixes` now suggests Fable 5.2 for Fable 5.1 and Fable 5 spend, and the calculator's Fable migration tip points to Fable 5.2.
+- **The 0.025x cache-read group** is Fable 5.2, Mythos 5.2, Fable 5.1 and Mythos 5.1, so the "`input * 0.1` is wrong" note now covers six models.
+- **Fast Mode lists** name Fable 5.2 and Mythos 5.2 beside Opus 5.5, Opus 5 and Opus 4.8. Every "Fast Mode is Opus only" line is fixed.
+- **The `fable` key** in token-estimator, the MCP server, the VS Code extension, usage-analyzer and `hooks/cost-logger.sh` now means Fable 5.2. Fable 5.1 keeps its own legacy key (`fable-5.1` or `fable_5_1`).
+- claude-rate 0.4.1; the pricing verified date is 2026-11-10.
+
+### Removed
+- **Haiku 3.5's rate rows.** Anthropic's pricing, prompt-caching and models pages no longer list it (it was on the pricing page on 2026-11-03, gone by 2026-11-09). Following the "rows stay while any platform serves the model" rule in `docs/pricing-data.md`, it was removed from `rate.py`, usage-analyzer and `hooks/cost-logger.sh`. Its last posted rate ($0.80/$4) stays in the retired-models list.
+
+### Fixed
+- `scripts/check-live-pricing.py` looked up Fast Mode names in `MODELS` without resolving `_PRICE_ALIASES`. It would have reported every aliased Fast Mode model (Mythos 5.2 is the first) as missing.
+
 ## [1.19.0] - 2026-11-03
 
 A comparison against the 104 most-starred Claude Code and LLM cost, token and usage tools on GitHub (from 897 search hits; each read from its own README and source through `gh api`, never installed or run). 95 were relevant. Their ideas were merged into 30 proposals, each checked twice: once against this repo's rules and once against the cited source file. What they did better is now in this repo, rebuilt from the ideas (no code copied) and held to the same rule as before: every number is a first-party fact with a read date, a project's own labelled claim, or computed with its formula shown. Credits are at the end.

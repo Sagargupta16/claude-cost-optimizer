@@ -8,10 +8,10 @@ import {
 } from "@modelcontextprotocol/sdk/types.js";
 
 // -------------------------------------------------------------------
-// Pricing tables -- verified 2026-11-01
+// Pricing tables -- verified 2026-11-10
 //
 // cacheHitPerMillion has three multipliers: 0.1x input by default, 0.025x on
-// Fable 5.1 / Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok) and
+// Fable 5.2 / Mythos 5.2 ($0.20/MTok) and Fable 5.1 / Mythos 5.1 ($0.25/MTok), and 0.05x on Opus 5.5 ($0.20/MTok) and
 // Sonnet 5.5 ($0.10/MTok since 2026-10-07). Always read the field; never derive it.
 // longPrompt (Haiku 5.5 only): a request whose prompt is over `threshold` tokens,
 // cache reads and writes included, pays those rates on the whole request.
@@ -32,9 +32,10 @@ interface ModelPricing {
 }
 
 const PRICING: Record<string, ModelPricing> = {
-  // "fable" = Fable 5.1, the most capable widely released model (2.5x Opus 5.5 rates,
-  // but a 0.025x cache read -- a quarter of Fable 5's)
-  fable: { inputPerMillion: 10, outputPerMillion: 50, cacheHitPerMillion: 0.25, minCacheTokens: 512 },
+  // "fable" = Fable 5.2 (released 2026-11-09), the most capable widely released model
+  // (2x Opus 5.5 rates, 20% below Fable 5.1, a 0.025x cache read). "fable-5.1" is legacy
+  fable: { inputPerMillion: 8, outputPerMillion: 40, cacheHitPerMillion: 0.2, minCacheTokens: 512 },
+  "fable-5.1": { inputPerMillion: 10, outputPerMillion: 50, cacheHitPerMillion: 0.25, minCacheTokens: 512 },
   "fable-5": { inputPerMillion: 10, outputPerMillion: 50, cacheHitPerMillion: 1, minCacheTokens: 512 },
   // "opus" alias maps to Opus 5.5 (released 2026-09-22), the recommended default Opus:
   // $4/$20, 20% below Opus 5, with a 0.05x cache read. Opus 5 is legacy at $5/$25.
@@ -63,7 +64,7 @@ const PRICING: Record<string, ModelPricing> = {
 };
 
 const MODEL_IDS = Object.keys(PRICING);
-const UNKNOWN_MODEL_HINT = `Use one of: ${MODEL_IDS.join(", ")} ("opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5.5, "sonnet-5" is legacy Sonnet 5, "haiku" is Haiku 5.5, "haiku-4.5" is legacy Haiku 4.5, "fable" is Fable 5.1).`;
+const UNKNOWN_MODEL_HINT = `Use one of: ${MODEL_IDS.join(", ")} ("opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5.5, "sonnet-5" is legacy Sonnet 5, "haiku" is Haiku 5.5, "haiku-4.5" is legacy Haiku 4.5, "fable" is Fable 5.2, "fable-5.1" is legacy Fable 5.1).`;
 
 // -------------------------------------------------------------------
 // Helpers
@@ -229,7 +230,7 @@ function sessionEstimate(args: {
   }
   if (model === "fable") {
     recommendations.push(
-      "Fable 5.1 costs 2.5x Opus 5.5 ($10/$50 vs $4/$20). Reserve it for demanding reasoning and long-horizon work; route routine work to Opus 5.5 or Sonnet 5.5."
+      "Fable 5.2 costs 2x Opus 5.5 ($8/$40 vs $4/$20). Reserve it for demanding reasoning and long-horizon work; route routine work to Opus 5.5 or Sonnet 5.5."
     );
   }
   if (model === "opus") {
@@ -345,7 +346,7 @@ server.setRequestHandler(ListToolsRequestSchema, () => ({
             type: "string",
             enum: MODEL_IDS,
             description:
-              'Claude model (default: sonnet). "opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5.5, "sonnet-5" is legacy Sonnet 5, "fable" is Fable 5.1.',
+              'Claude model (default: sonnet). "opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5.5, "sonnet-5" is legacy Sonnet 5, "fable" is Fable 5.2, "fable-5.1" is legacy Fable 5.1.',
           },
           turns: {
             type: "number",
@@ -371,7 +372,7 @@ server.setRequestHandler(ListToolsRequestSchema, () => ({
             type: "string",
             enum: MODEL_IDS,
             description:
-              'Claude model (default: sonnet). "opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5.5, "sonnet-5" is legacy Sonnet 5, "fable" is Fable 5.1.',
+              'Claude model (default: sonnet). "opus" is Opus 5.5, "opus-5" is legacy Opus 5, "sonnet" is Sonnet 5.5, "sonnet-5" is legacy Sonnet 5, "fable" is Fable 5.2, "fable-5.1" is legacy Fable 5.1.',
           },
           claude_md_lines: {
             type: "number",
@@ -389,7 +390,7 @@ server.setRequestHandler(ListToolsRequestSchema, () => ({
     {
       name: "compare_models",
       description:
-        "Compare cost across Fable 5.1, Fable 5, Opus 5.5, legacy Opus snapshots (Opus 5, 4.8, 4.7, 4.6), Sonnet 5.5, Sonnet 5, Sonnet 4.6, Haiku 5.5, and legacy Haiku 4.5 for a given token count, treated as one request (so Haiku 5.5 pays its $0.50/$2.50 tier when input_tokens is over 100,000). Shows which model is cheapest and savings percentages.",
+        "Compare cost across Fable 5.2, Fable 5.1, Fable 5, Opus 5.5, legacy Opus snapshots (Opus 5, 4.8, 4.7, 4.6), Sonnet 5.5, Sonnet 5, Sonnet 4.6, Haiku 5.5, and legacy Haiku 4.5 for a given token count, treated as one request (so Haiku 5.5 pays its $0.50/$2.50 tier when input_tokens is over 100,000). Shows which model is cheapest and savings percentages.",
       inputSchema: {
         type: "object" as const,
         properties: {

@@ -8,7 +8,8 @@
 
 | Model | Input (per 1M tokens) | Output (per 1M tokens) | Relative Cost |
 |-------|:---------------------:|:----------------------:|:-------------:|
-| Fable 5.1 (highest capability) | $10.00 | $50.00 | 2.5x baseline |
+| Fable 5.2 (highest capability) | $8.00 | $40.00 | 2x baseline |
+| Fable 5.1 (legacy) | $10.00 | $50.00 | 2.5x baseline |
 | Fable 5 (legacy) | $10.00 | $50.00 | 2.5x baseline |
 | Opus 5.5 (Opus flagship) | $4.00 | $20.00 | 1x (baseline) |
 | Opus 5 (legacy) | $5.00 | $25.00 | 1.25x baseline |
@@ -32,7 +33,7 @@
 >
 > **Opus 5 cost warning**: Opus 5 (GA 2026-07-24, now legacy) posts the same $5/$25 as Opus 4.8, but adaptive thinking is **on by default** and reasoning tokens bill as output at the normal output rate. An untuned Opus 5 run therefore costs more than the same task on Opus 4.8 at identical posted rates. Tune `output_config.effort` (`low`/`medium`/`high`/`xhigh`/`max`, default `high`) down for routine work before comparing cost figures. Fast Mode ($10/$50, a flat 2x) is a research preview on Opus 5 and Opus 4.8, on the Claude API only and with the `fast-mode-2026-02-01` beta header; Opus 4.8's fast mode is deprecated (2026-10-30) and removed on 2026-11-30, after which `speed: "fast"` on `claude-opus-4-8` returns an error with no fallback ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01). Opus 5.5 supports it at $8/$40 with no beta header.
 >
-> **Fable 5.1** (released 2026-09-01, $10/$50, the same posted rate as legacy Fable 5, which went GA 2026-06-09) is not benchmarked here yet -- it doubles every $5/$25 Opus cost figure below for the same token counts (2.5x Opus 5.5). For task-routing purposes, treat it as a tier above Opus reserved for work where Opus 5.5 quality is insufficient; Anthropic's [models overview](https://platform.claude.com/docs/en/models/overview), read 2026-11-01, points to it for demanding reasoning and long-horizon agentic work, or when Opus 5.5 at higher effort still falls short. Benchmark contributions welcome.
+> **Fable 5.2** (released 2026-11-09, $8/$40, 20% below legacy Fable 5.1's $10/$50) is not benchmarked here yet -- for the same token counts it is 1.6x every $5/$25 Opus cost figure below ($8 / $5) and 2x Opus 5.5 ($8 / $4); legacy Fable 5.1 and Fable 5 ($10/$50, Fable 5 GA 2026-06-09) double the $5/$25 figures (2.5x Opus 5.5). For task-routing purposes, treat it as a tier above Opus reserved for work where Opus 5.5 quality is insufficient; Anthropic's [models overview](https://platform.claude.com/docs/en/about-claude/models/overview), read 2026-11-10, still says to start with Opus 5.5 for most workloads and points to Fable 5.2 for demanding reasoning and long-horizon agentic work, when Opus 5.5 at higher effort still falls short. Benchmark contributions welcome.
 
 ## How to Read This
 

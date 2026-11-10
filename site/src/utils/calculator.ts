@@ -572,6 +572,8 @@ function modelRecommendations(inputs: CalculatorInputs): { text: string; impact:
   const sonnetFlagship = MODELS['sonnet-5-5']
 
   const isFableTier =
+    inputs.model === 'fable-5-2' ||
+    inputs.model === 'mythos-5-2' ||
     inputs.model === 'fable-5-1' ||
     inputs.model === 'fable-5' ||
     inputs.model === 'mythos-5-1' ||
@@ -584,11 +586,18 @@ function modelRecommendations(inputs: CalculatorInputs): { text: string; impact:
     })
   }
 
-  // Fable 5 -> 5.1 is the same posted price with a 4x cheaper cache read, so on
-  // any cached workload it is a strict win with no quality tradeoff.
-  if (inputs.model === 'fable-5' || inputs.model === 'mythos-5') {
+  // Every older Fable/Mythos snapshot is $10/$50; Fable 5.2 is $8/$40 (20% cheaper on every
+  // rate: 1 - 8/10) with a 0.025x cache read ($0.20), so moving up is a strict price cut.
+  // Rates come from MODELS so the text follows the table.
+  const olderFableTier =
+    inputs.model === 'fable-5' ||
+    inputs.model === 'mythos-5' ||
+    inputs.model === 'fable-5-1' ||
+    inputs.model === 'mythos-5-1'
+  if (olderFableTier) {
+    const fable52 = MODELS['fable-5-2']
     recs.push({
-      text: 'Migrate to Fable 5.1 -- same $10/$50, but cache reads drop from $1.00 to $0.25 per 1M (0.025x vs 0.1x). Free savings on every cached turn',
+      text: `Migrate to Fable 5.2 -- ${pctBelow(fable52.inputPer1M, model.inputPer1M)}% cheaper ($${fable52.inputPer1M}/$${fable52.outputPer1M} vs $${model.inputPer1M}/$${model.outputPer1M}), cache reads drop from $${model.cacheHitPer1M.toFixed(2)} to $${fable52.cacheHitPer1M.toFixed(2)} per 1M. Free savings on every turn`,
       impact: 45,
     })
   }
@@ -640,7 +649,7 @@ function modelRecommendations(inputs: CalculatorInputs): { text: string; impact:
 
   if (model.minCacheTokens >= 4096) {
     recs.push({
-      text: `${model.name} needs ${model.minCacheTokens.toLocaleString()}+ tokens before a prompt caches at all. Below that you pay full input price every turn -- Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.1 cache from 512 tokens`,
+      text: `${model.name} needs ${model.minCacheTokens.toLocaleString()}+ tokens before a prompt caches at all. Below that you pay full input price every turn -- Opus 5.5, Sonnet 5.5, Haiku 5.5 and Fable 5.2 cache from 512 tokens`,
       impact: 12,
     })
   }

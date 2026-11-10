@@ -412,10 +412,13 @@ def _compare_fast(
     fast_rows: list[FastRow],
     index: dict[str, str],
     models: dict[str, dict],
+    aliases: dict[str, str],
 ) -> None:
     listed = {name: row for row in fast_rows for name in row.names}
     for name, row in listed.items():
-        ours = models.get(index.get(name, ""))
+        # An alias (Mythos 5.2 -> Fable 5.2) has no MODELS row of its own.
+        key = index.get(name, "")
+        ours = models.get(aliases.get(key, key))
         problems = []
         if ours is None or not ours.get("fast_mode"):
             problems.append(
@@ -461,7 +464,7 @@ def compare(
             report.drift.append(
                 f"rate.py carries {name} ({key}), but the page has no row for it"
             )
-    _compare_fast(report, fast_rows, index, models)
+    _compare_fast(report, fast_rows, index, models, aliases)
     return report
 
 

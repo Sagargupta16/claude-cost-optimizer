@@ -188,7 +188,7 @@ Short answer: **there is no published typical figure for a whole Claude Code wor
 
 | Lever | Published savings | Applies to | Source |
 |-------|:-----------------:|------------|--------|
-| **Prompt caching** | **up to 90%** cost (**95%** on Opus 5.5 and Sonnet 5.5, **97.5%** on Fable 5.1), 85% latency; cost cut by a factor of 4.8 to 7.2 on a research agent and by 83% to 86% on a small triage agent (cost guide, read 2026-11-01) | cached input only (0.1x input price; 0.05x on Opus 5.5 / Sonnet 5.5; 0.025x on Fable 5.1 / Mythos 5.1) | [Anthropic: Prompt caching](https://claude.com/resources/articles/prompt-caching), [pricing docs](https://platform.claude.com/docs/en/about-claude/pricing), [cost and intelligence guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) |
+| **Prompt caching** | **up to 90%** cost (**95%** on Opus 5.5 and Sonnet 5.5, **97.5%** on Fable 5.2 and Fable 5.1), 85% latency; cost cut by a factor of 4.8 to 7.2 on a research agent and by 83% to 86% on a small triage agent (cost guide, read 2026-11-01) | cached input only (0.1x input price; 0.05x on Opus 5.5 / Sonnet 5.5; 0.025x on Fable 5.2 / Mythos 5.2 / Fable 5.1 / Mythos 5.1) | [Anthropic: Prompt caching](https://claude.com/resources/articles/prompt-caching), [pricing docs](https://platform.claude.com/docs/en/about-claude/pricing), [cost and intelligence guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence) |
 | **Batch API** | flat **50%** off input **and** output, stacks with caching | any async (24h) work | [Anthropic: Message Batches API](https://claude.com/resources/articles/message-batches-api), [batch docs](https://platform.claude.com/docs/en/build-with-claude/batch-processing) |
 | **Model routing** | **up to 97.5%** per token (Opus 5.5->Haiku 5.5 is 40x at <=100K prompt tokens, 8x above; legacy Haiku 4.5 was 4x); measured per correct answer on GPQA Diamond, Haiku 5.5 cost about 1/20 of Opus 5.5 and about 1/10 of Sonnet 5.5, at 85% accuracy vs 91% for each (read 2026-11-01); RouteLLM reports cost cuts of over 85% on MT Bench, 45% on MMLU and 35% on GSM8K against GPT-4 only, at 95% of GPT-4 quality; its controller routes on the last message only ([routellm/controller.py:108-110](https://github.com/lm-sys/RouteLLM/blob/main/routellm/controller.py#L108-L110)) and its paper assumes short single-turn prompts when costing (read 2026-11-03), so none of the three figures comes from a multi-turn tool session like Claude Code's | tasks a cheaper model handles well | [cost and intelligence guide](https://platform.claude.com/docs/en/about-claude/models/optimizing-for-cost-and-intelligence), [LMSYS RouteLLM post](https://www.lmsys.org/blog/2024-07-01-routellm/) (2024-07-01, the source of the 85% / 45% / 35% figures; the [RouteLLM paper, arXiv 2406.18665](https://arxiv.org/pdf/2406.18665), says costs fall "by over 2 times in certain cases") |
 | **Context management** | **84%** fewer tokens in a 100-turn eval | long agentic sessions | [Anthropic: Context management](https://claude.com/resources/articles/context-management) |
@@ -201,7 +201,7 @@ Short answer: **there is no published typical figure for a whole Claude Code wor
 - **The cost-mode skill has not been benchmarked.** It trims visible output and suggests model routing. Its effect on cost is the output cut times the output share of your spend: in the token mix of Anthropic's own [/usage example](https://code.claude.com/docs/en/costs), priced at Opus 5.5 rates, output is 19% of the bill, so a 40% output cut saves about 8% (computed: 0.40 x 19.3%). Thinking bills as output and brevity rules do not shrink it; `/effort` does. See [when cost-mode saves nothing](skills/cost-mode/README.md#when-cost-mode-saves-nothing).
 - **Caching and batch are the firmest floors** (first-party Anthropic pricing; batch is a documented flat 50% that provably stacks with caching). Routing and subscription savings are the most workload-sensitive.
 
-> Prices verified against the [pricing reference](#pricing-reference) below (2026-11-01). Cache hit = 0.1x base input on every model **except Fable 5.1 and Mythos 5.1 (0.025x) and Opus 5.5 and Sonnet 5.5 (0.05x)**; Batch = 50% off both input and output.
+> Prices verified against the [pricing reference](#pricing-reference) below (2026-11-10). Cache hit = 0.1x base input on every model **except Fable 5.2, Mythos 5.2, Fable 5.1 and Mythos 5.1 (0.025x) and Opus 5.5 and Sonnet 5.5 (0.05x)**; Batch = 50% off both input and output.
 
 ---
 
@@ -296,11 +296,12 @@ The 8 tools in `tools/`, plus the budget hooks in `hooks/`. [Full tools document
 
 ## Pricing Reference
 
-Current models, per 1M tokens, verified 2026-11-01 against Anthropic's [pricing page](https://platform.claude.com/docs/en/about-claude/pricing). Legacy snapshots, Batch and Fast Mode rates, subscriptions, the `sonnet`/`haiku` alias gotcha, migration notes for Opus 5.5, Sonnet 5.5, Haiku 5.5 and Opus 5, and retired models are in **[docs/pricing-reference.md](docs/pricing-reference.md)**.
+Current models plus legacy Fable 5.1, per 1M tokens, verified 2026-11-10 against Anthropic's [pricing page](https://platform.claude.com/docs/en/about-claude/pricing). Fable 5.2 (released 2026-11-09) is the most capable widely released model, at 2x Opus 5.5 and 20% below Fable 5.1 on every rate; Anthropic still says to start with Opus 5.5 for most workloads ([models overview](https://platform.claude.com/docs/en/about-claude/models/overview), read 2026-11-10). Legacy snapshots, Batch and Fast Mode rates, subscriptions, the `sonnet`/`haiku` alias gotcha, migration notes for Opus 5.5, Sonnet 5.5, Haiku 5.5 and Opus 5, and retired models are in **[docs/pricing-reference.md](docs/pricing-reference.md)**.
 
 | Model | Input | Output | Cache hit | 5m cache write | Min cacheable prompt |
 |-------|:-----:|:------:|:---------:|:--------------:|:--------------------:|
-| **Fable 5.1** (highest capability) | $10.00 | $50.00 | $0.25 | $12.50 | 512 |
+| **Fable 5.2** (highest capability) | $8.00 | $40.00 | $0.20 | $10.00 | 512 |
+| Fable 5.1 (legacy) | $10.00 | $50.00 | $0.25 | $12.50 | 512 |
 | **Opus 5.5** (recommended default) | $4.00 | $20.00 | $0.20 | $5.00 | 512 |
 | **Sonnet 5.5** | $2.00 | $10.00 | $0.10 | $2.50 | 512 |
 | **Haiku 5.5** (prompt <= 100K tokens) | $0.10 | $0.50 | $0.01 | $0.125 | 512 |

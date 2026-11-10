@@ -54,7 +54,7 @@ export function tieredModel(): { name: string; line: string } | undefined {
   return m?.longPrompt ? { name: m.name, line: formatTokensShort(m.longPrompt.threshold) } : undefined
 }
 
-/** "Fable 5.1 $10 in / $50 out; ..." for alt text and screen readers. */
+/** "Fable 5.2 $8 in / $40 out; ..." for alt text and screen readers. */
 export function ladderSummary(rows: LadderRow[]): string {
   return rows
     .map((r) => {
@@ -87,7 +87,7 @@ export function cacheRows(): CacheRow[] {
 
 /**
  * Groups every active model (invite-only included) by cache-read multiple:
- * "0.025x on Fable 5.1 and Mythos 5.1, 0.05x on ...".
+ * "0.025x on Fable 5.2 and Mythos 5.2, 0.05x on ...".
  */
 export function cacheTierSummary(): string {
   const tiers = new Map<string, string[]>()

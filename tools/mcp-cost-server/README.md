@@ -58,7 +58,7 @@ Estimate token count and cost for a given text input.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `text` | string | yes | The text to estimate tokens for |
-| `model` | string | no | `fable` (Fable 5.1), `fable-5`, `opus` (Opus 5.5), `opus-5`, `opus-4.8`, `opus-4.7`, `opus-4.6`, `sonnet` (Sonnet 5.5), `sonnet-5`, `sonnet-4.6`, `haiku` (Haiku 5.5), or `haiku-4.5` (legacy Haiku 4.5) (default: `sonnet`) |
+| `model` | string | no | `fable` (Fable 5.2), `fable-5.1` (legacy), `fable-5`, `opus` (Opus 5.5), `opus-5`, `opus-4.8`, `opus-4.7`, `opus-4.6`, `sonnet` (Sonnet 5.5), `sonnet-5`, `sonnet-4.6`, `haiku` (Haiku 5.5), or `haiku-4.5` (legacy Haiku 4.5) (default: `sonnet`) |
 | `turns` | number | no | Project cost over this many conversation turns |
 
 **Example usage:**
@@ -76,7 +76,7 @@ Estimate total cost for an entire Claude Code session.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | `turns` | number | yes | Number of conversation turns |
-| `model` | string | no | `fable` (Fable 5.1), `fable-5`, `opus` (Opus 5.5), `opus-5`, `opus-4.8`, `opus-4.7`, `opus-4.6`, `sonnet` (Sonnet 5.5), `sonnet-5`, `sonnet-4.6`, `haiku` (Haiku 5.5), or `haiku-4.5` (legacy Haiku 4.5) (default: `sonnet`) |
+| `model` | string | no | `fable` (Fable 5.2), `fable-5.1` (legacy), `fable-5`, `opus` (Opus 5.5), `opus-5`, `opus-4.8`, `opus-4.7`, `opus-4.6`, `sonnet` (Sonnet 5.5), `sonnet-5`, `sonnet-4.6`, `haiku` (Haiku 5.5), or `haiku-4.5` (legacy Haiku 4.5) (default: `sonnet`) |
 | `claude_md_lines` | number | no | Lines in your CLAUDE.md (default: 0) |
 | `mcp_servers` | number | no | Number of configured MCP servers (default: 0) |
 
@@ -114,11 +114,12 @@ Returns cost for each model, identifies the cheapest option, and shows the perce
 
 ## Pricing Reference
 
-All estimates use current API pricing (verified 2026-11-01, per 1M tokens):
+All estimates use current API pricing (verified 2026-11-10, per 1M tokens):
 
 | Model | Input | Output | Cache Hit | Min cacheable prompt |
 |-------|-------|--------|-----------|---------------------:|
-| Fable 5.1 (alias: `fable`) | $10.00 | $50.00 | **$0.25** | 512 |
+| Fable 5.2 (alias: `fable`) | $8.00 | $40.00 | **$0.20** | 512 |
+| Fable 5.1 (alias: `fable-5.1`, legacy) | $10.00 | $50.00 | $0.25 | 512 |
 | Fable 5 (alias: `fable-5`) | $10.00 | $50.00 | $1.00 | 512 |
 | Opus 5.5 (alias: `opus`) | $4.00 | $20.00 | **$0.20** | 512 |
 | Opus 5 (alias: `opus-5`, legacy) | $5.00 | $25.00 | $0.50 | 512 |
@@ -131,7 +132,7 @@ All estimates use current API pricing (verified 2026-11-01, per 1M tokens):
 | Haiku 5.5 (alias: `haiku`), prompt > 100K tokens | $0.50 | $2.50 | $0.05 | 512 |
 | Haiku 4.5 (alias: `haiku-4.5`, legacy) | $1.00 | $5.00 | $0.10 | 4,096 |
 
-Cache hits have three multipliers: 0.1x base input by default, 0.025x on Fable 5.1 and Mythos 5.1, and 0.05x on Opus 5.5 and Sonnet 5.5.
+Cache hits have three multipliers: 0.1x base input by default, 0.025x on Fable 5.2, Mythos 5.2, Fable 5.1 and Mythos 5.1, and 0.05x on Opus 5.5 and Sonnet 5.5.
 
 Token estimation uses a ~4 characters per token approximation. That ratio fits pre-4.7 models; Anthropic puts the current tokenizer at about 2.5 characters per token for general text (1M tokens is roughly 2.5M characters, per the [models overview](https://platform.claude.com/docs/en/models/overview)), so on Claude 4.7 and later models these counts can run 37.5% low (computed: 1 - 2.5/4). Use the [token counting API](https://platform.claude.com/docs/en/build-with-claude/token-counting) for exact numbers.
 
@@ -143,7 +144,7 @@ Token estimation uses a ~4 characters per token approximation. That ratio fits p
 
 **Sonnet 5.5 note.** Sonnet 5.5 (released 2026-09-28) has the same $2/$10 and tokenizer as Sonnet 5, and since 2026-10-07 half the cache-read price ($0.10 vs $0.20), but adaptive thinking is on by default (effort `high`) and reasoning tokens bill as output, so the ~500 output tokens per turn is a floor here too. `thinking: {type: "disabled"}` returns a 400; the lowest setting is `thinking: {type: "between_tools"}`, accepted at effort `high` or below. Effort levels are recalibrated, so re-run your effort sweep rather than carrying a Sonnet 5 setting over.
 
-Fast Mode is 2x each model's own base rate -- $8/$40 on Opus 5.5 (generally available since 2026-10-15, no beta header) and $10/$50 on Opus 5 and Opus 4.8 (research preview, `fast-mode-2026-02-01` beta header; Opus 4.8's is deprecated and removed on 2026-11-30), the only models that support it ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-01) -- and this server does not model it. The old 6x tier on Opus 4.7 / 4.6 no longer exists: Opus 4.7 errors on `speed: "fast"`, and Opus 4.6 silently runs at standard speed and standard rates.
+Fast Mode is 2x each model's own base rate -- $16/$80 on Fable 5.2 and Mythos 5.2 (no beta header), $8/$40 on Opus 5.5 (generally available since 2026-10-15, no beta header) and $10/$50 on Opus 5 and Opus 4.8 (research preview, `fast-mode-2026-02-01` beta header; Opus 4.8's is deprecated and removed on 2026-11-30), the only models that support it ([fast mode](https://platform.claude.com/docs/en/build-with-claude/fast-mode), read 2026-11-10) -- and this server does not model it. The old 6x tier on Opus 4.7 / 4.6 no longer exists: Opus 4.7 errors on `speed: "fast"`, and Opus 4.6 silently runs at standard speed and standard rates.
 
 ## Development
 
