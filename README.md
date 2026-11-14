@@ -14,11 +14,17 @@
 curl -sSL https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python3 - . --user --usage --fix
 ```
 
-Windows PowerShell: `irm https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python - . --user --usage --fix`. Add `--what-if fable-5-2` (or any model) to reprice your own recorded tokens on that model. Every flag is in [Rate your setup](#rate-your-setup).
+Windows PowerShell:
+
+```powershell
+irm https://raw.githubusercontent.com/Sagargupta16/claude-cost-optimizer/main/tools/claude-rate/rate.py | python - . --user --usage --fix
+```
 
 <p align="center"><img src="docs/assets/terminal-demo.svg" alt="claude-rate grading this repo in a terminal: 88 of 100 (A) across seven categories, then the estimated monthly cost on Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5, and a hint to run --fix" width="560"></p>
 
 <p align="center"><sub>The tool's real output on this repo (project grade only), rendered by <code>scripts/render-terminal-demo.py</code>.</sub></p>
+
+Add `--what-if fable-5-2` (or any model) to reprice your own recorded tokens on that model. Every flag is in [Rate your setup](#rate-your-setup).
 
 > **Cut Claude Code costs with sourced levers**: cache reads bill at 5% of input on Opus 5.5 and Sonnet 5.5, Haiku 5.5 costs 1/40 of Opus 5.5 per token (prompts up to 100K tokens), and Batch is 50% off ([Anthropic pricing](https://platform.claude.com/docs/en/about-claude/pricing)) -- with an installable skill, CLI tools, and 12 deep-dive guides.
 >
